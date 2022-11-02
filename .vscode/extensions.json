@@ -1,0 +1,18 @@
+{
+    "recommendations": [
+        "llvm-vs-code-extensions.vscode-clangd",
+        "jeff-hykin.better-cpp-syntax",
+        "ibm.output-colorizer",
+        "ms-vscode.cpptools",
+        "twxs.cmake",
+        "ms-vscode.cmake-tools",
+        "cschlosser.doxdocgen",
+        "yzhang.markdown-all-in-one",
+        "davidanson.vscode-markdownlint",
+        "ms-vscode.cpptools-themes",
+        "hbenl.vscode-test-explorer",
+        "ms-vscode.test-adapter-converter",
+        "fredericbonnet.cmake-test-adapter",
+        "ms-vscode.cpptools-extension-pack"
+    ]
+}
