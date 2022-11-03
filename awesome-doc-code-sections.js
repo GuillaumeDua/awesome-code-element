@@ -675,7 +675,7 @@ class CodeSection extends BasicCodeSection {
 
         // right panel: loading
         let loading_animation = document.createElement('div');
-            loading_animation.style.backgroundImage = 'url("loading.gif")'
+            loading_animation.style.backgroundImage = 'url("loading.gif")' // TODO: inline svg ?
             loading_animation.style.backgroundSize = 'contain'
             loading_animation.style.backgroundRepeat = 'no-repeat'
             loading_animation.style.backgroundPosition = 'center'
