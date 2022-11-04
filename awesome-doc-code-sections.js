@@ -197,7 +197,6 @@ class remote_resources_cache {
         return this.#remote_files.get(uri)
     }
 }
-
 class ce_API {
 // fetch CE API informations asynchronously
 
@@ -318,6 +317,12 @@ class ce_API {
         })
     }
 }
+class Misc {
+    static apply_css(element, styles) {
+        for (const property in styles)
+            element.style[property] = styles[property];
+    }
+}
 
 // ============
 // HTMLElements
@@ -370,10 +375,12 @@ class CopyToClipboardButton extends HTMLButtonElement {
         this.title = CopyToClipboardButton.title
         this.innerHTML = CopyToClipboardButton.copyIcon
 
-        this.style.zIndex = 2;
-        this.style.position = 'absolute';
-        this.style.top = 5 + 'px';
-        this.style.right = 5 + 'px';
+        Misc.apply_css(this, {
+            zIndex      : 2,
+            position    : 'absolute',
+            top         : '5px',
+            right       : '5px',
+        })
 
         this.addEventListener('click', function(){
 
@@ -411,10 +418,13 @@ class SendToGodboltButton extends HTMLButtonElement {
 
         this.title = SendToGodboltButton.title;
         this.innerHTML = SendToGodboltButton.icon;
-        this.style.zIndex = 2;
-        this.style.position = 'absolute';
-        this.style.top = 5 + 'px';
-        this.style.right = 55 + 'px';
+
+        Misc.apply_css(this, {
+            zIndex      : 2,
+            position    : 'absolute',
+            top         : '5px',
+            right       : '55px',
+        })
 
         this.addEventListener(
             'click',
@@ -534,26 +544,32 @@ class BasicCodeSection extends HTMLElement {
 
     load() {
 
-        this.style.display = 'flex'
-        this.style.alignItems = 'stretch'
-        this.style.boxSizing = 'border-box'
-        this.style.width = '100%'
+        Misc.apply_css(this, {
+            display:    'flex',
+            alignItems: 'stretch',
+            boxSizing:  'border-box',
+            width:      '100%'
+        })
 
         // code content
         let code_node = document.createElement('pre');
-            code_node.style.zIndex = 1;
-            code_node.style.position = 'relative'
-            code_node.style.boxSizing = 'border-box'
-            code_node.style.top = 0
-            code_node.style.left = 0
-            code_node.style.width = '100%'
-            code_node.style.margin = 0
+        Misc.apply_css(code_node, {
+            zIndex:     1,
+            position:   'relative',
+            boxSizing:  'border-box',
+            top:        0,
+            left:       0,
+            width:      '100%',
+            margin:     0
+        })
             
         let code = document.createElement('code');
-            code.style.height = '100%'
-            code.style.width = 'auto'
-            code.style.boxSizing = 'border-box'
             code.textContent = this.code
+        Misc.apply_css(code, {
+            height:     '100%',
+            width:      'auto',
+            boxSizing:  'border-box'
+        })
         code_node.appendChild(code)
 
         code.classList.add('hljs')
@@ -573,7 +589,7 @@ class BasicCodeSection extends HTMLElement {
         if (// ce_API.languages.has(code_hljs_language)
             awesome_doc_code_sections.configuration.CE.has(code_hljs_language)) {
             let CE_button = new SendToGodboltButton
-            CE_button.style.zIndex = code_node.style.zIndex + 1
+                CE_button.style.zIndex = code_node.style.zIndex + 1
             code_node.appendChild(CE_button)
         }
 
@@ -646,17 +662,21 @@ class CodeSection extends BasicCodeSection {
     static HTMLElement_name = 'awesome-doc-code-sections_code-section'
     static loading_animation = (function(){
     // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
+    // TODO: cache animation image (otherwise, too slow to load)
         const loading_animation_fallback_url = 'https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/images/loading_animation.gif?raw=true'
         let loading_animation = document.createElement('div');
-            loading_animation.style.backgroundImage = `url("${loading_animation_fallback_url}")`
-        //  loading_animation.style.backgroundImage = 'url("loading_animation.gif")'
+        //  loading_animation.style.backgroundImage = `url("${loading_animation_fallback_url}")`
         //  loading_animation.style.backgroundImage = 'url("loading_animation.svg")'
-            loading_animation.style.backgroundSize = 'contain'
-            loading_animation.style.backgroundRepeat = 'no-repeat'
-            loading_animation.style.backgroundPosition = 'center'
-            loading_animation.style.border = '1px solid var(--primary-color)'
-            loading_animation.style.borderRadius = '5px'
-            loading_animation.style.width = '100px'
+        Misc.apply_css(loading_animation, {
+            backgroundImage     : 'url("loading_animation.gif")',
+            backgroundSize      : 'contain',
+            backgroundRepeat    : 'no-repeat',
+            backgroundPosition  : 'center',
+            backgroundColor     : 'var(--page-background-color)',
+            border              : '1px solid var(--primary-color)',
+            borderRadius        : '5px',
+            width               : '100px'
+        })
         return loading_animation
     })()
 
@@ -716,13 +736,14 @@ class CodeSection extends BasicCodeSection {
             .then((result) => {
 
                 let right_panel_element = new BasicCodeSection(result.value)
-                    right_panel_element.style.width = '50%'
                     right_panel_element.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
-                    right_panel_element.style.padding 
-                    right_panel_element.style.paddingTop = '1px'
-                    right_panel_element.style.backgroundColor = result.return_code == -1
+                Misc.apply_css(right_panel_element, {
+                    width:              '50%',
+                    paddingTop:         '1px',
+                    backgroundColor:    result.return_code == -1
                         ? 'red'
                         : 'green'
+                })
 
                 left_panel.style.width = '50%'
                 loading_animation.replaceWith(right_panel_element)
