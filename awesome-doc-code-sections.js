@@ -108,18 +108,21 @@ class ParsedCode {
     #parse(code_content) {
 
         // CE options
-        let regexp = new RegExp(`${ParsedCode.tag}::CE=({(.*?\n//.*?)+}\n?)`, 'gm')
+        let regexp = new RegExp(`^\\s*?${ParsedCode.tag}::CE=({(.*?\n\\s*//.*?)+}\n?)`, 'gm')
         let matches = [...code_content.matchAll(regexp)] // expect exactly 1 match
         if (matches.length > 1)
             console.error(`awesome-doc-code-sections.js:ParsedCode::constructor: multiples CE configurations`)
+
         matches.map((match) => {
-            let result = match[1].replaceAll('\n//', '')
+            let result = match[1].replaceAll(
+                new RegExp(`^\\s*?//`, 'gm'),
+                ''
+            )
             // remove from original content
             code_content = code_content.slice(0, match.index)
                          + code_content.slice(match.index + match[0].length)
             return result
         }).forEach((value) => {
-
             // Merge CE configuration. Local can override global.
             this.ce_options = {
                 ...this.ce_options,
@@ -130,7 +133,7 @@ class ParsedCode {
         // skip block, line (documentation & execution sides)
         // block
         code_content = code_content.replaceAll(
-            new RegExp(`^${ParsedCode.tag}::skip::block::begin\n(.*?\n)*${ParsedCode.tag}::skip::block::end\\s*$`, 'gm'),
+            new RegExp(`^\\s*?${ParsedCode.tag}::skip::block::begin\n(.*?\n)*${ParsedCode.tag}::skip::block::end\\s*?$`, 'gm'),
             ''
         )
         // line
@@ -138,8 +141,6 @@ class ParsedCode {
             new RegExp(`^.*?\\s+${ParsedCode.tag}::skip::line\\s*$`, 'gm'),
             ''
         )
-
-        console.log(code_content)
 
         // show block, line (documentation side)
         let regex_show_block    = `(^\\s*?${ParsedCode.tag}::show::block::begin\n(?<block>(^.*?$\n)+)\\s*${ParsedCode.tag}::show::block::end\n?)`
@@ -154,7 +155,6 @@ class ParsedCode {
                     : match.groups.line
                 // remove from original content
                 code_content = code_content.replace(match[0], result)
-                console.log(result)
                 return result
             })
             .join('\n')
@@ -169,7 +169,9 @@ class ParsedCode {
             this.ce_options.includes_transformation.forEach((value) => {
                 // replace includes
 
-                const regex = new RegExp(`^(\\s*\\#.*?[\\"|\\<"].*?)(${value[0]})(.*?[\\"|\\>"])`, 'gm')
+                console.log(value)
+
+                const regex = new RegExp(`^(\\s*?\\#.*?[\\"|\\<"].*?)(${value[0]})(.*?[\\"|\\>"])`, 'gm')
                 this.ce_code = this.ce_code.replace(regex, `$1${value[1]}$3`)
             })
         }
@@ -705,6 +707,8 @@ class CodeSection extends BasicCodeSection {
         super(parsed_code.code, language);
         this.parsed_code = parsed_code
 
+        console.log(this.parsed_code.ce_options)
+
         if (this.parsed_code.ce_options.add_in_doc_execution)
             this.#add_execution_panel()
     }
@@ -745,12 +749,13 @@ class CodeSection extends BasicCodeSection {
                 let right_panel_element = new BasicCodeSection(result.value)
                     right_panel_element.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
                 Misc.apply_css(right_panel_element, {
-                    width:              '50%',
-                    paddingTop:         '1px',
-                    backgroundColor:    result.return_code == -1
-                        ? 'red'
-                        : 'green'
+                    width:          '50%',
+                    paddingTop:     '1px'
                 })
+                
+                right_panel_element.childNodes[0].childNodes[0].style.borderTopColor = result.return_code == -1
+                    ? 'red'
+                    : 'green'
 
                 left_panel.style.width = '50%'
                 loading_animation.replaceWith(right_panel_element)
