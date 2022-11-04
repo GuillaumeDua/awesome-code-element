@@ -54,6 +54,8 @@
 
 if (typeof hljs === 'undefined')
     console.error('awesome-doc-code-sections.js: depends on highlightjs, which is missing')
+if (typeof jQuery === 'undefined')
+    console.error('awesome-doc-code-sections.js: depends on jQuery, which is missing')
 
 var awesome_doc_code_sections = {}
     awesome_doc_code_sections.configuration = {}
@@ -137,8 +139,12 @@ class ParsedCode {
             ''
         )
 
+        console.log(code_content)
+
         // show block, line (documentation side)
-        regexp = new RegExp(`(^${ParsedCode.tag}::show::block::begin\n(?<block>(^.*?$\n)+)${ParsedCode.tag}::show::block::end\n?)|(^(?<line>.*?)\s*${ParsedCode.tag}::show::line$)`, 'gm')
+        let regex_show_block    = `(^\\s*?${ParsedCode.tag}::show::block::begin\n(?<block>(^.*?$\n)+)\\s*${ParsedCode.tag}::show::block::end\n?)`
+        let regex_show_line     = `(^(?<line>.*?)\\s*${ParsedCode.tag}::show::line$)`
+        regexp = new RegExp(`${regex_show_block}|${regex_show_line}`, 'gm')
         matches = [...code_content.matchAll(regexp)]
         let code_only_show = matches
         // TODO: reverse() so we can use indexes to remove elements rather than replace()
@@ -148,6 +154,7 @@ class ParsedCode {
                     : match.groups.line
                 // remove from original content
                 code_content = code_content.replace(match[0], result)
+                console.log(result)
                 return result
             })
             .join('\n')
