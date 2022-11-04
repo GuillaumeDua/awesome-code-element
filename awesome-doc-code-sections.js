@@ -644,7 +644,21 @@ class CodeSection extends BasicCodeSection {
 // <CodeSection language='cpp'>[some code here]</CodeSection>
 
     static HTMLElement_name = 'awesome-doc-code-sections_code-section'
-    static loading_animation_fallback_url = 'https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/images/loading.gif?raw=true'
+    static loading_animation = (function(){
+    // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
+        const loading_animation_fallback_url = 'https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/images/loading_animation.gif?raw=true'
+        let loading_animation = document.createElement('div');
+            loading_animation.style.backgroundImage = `url("${loading_animation_fallback_url}")`
+        //  loading_animation.style.backgroundImage = 'url("loading_animation.gif")'
+        //  loading_animation.style.backgroundImage = 'url("loading_animation.svg")'
+            loading_animation.style.backgroundSize = 'contain'
+            loading_animation.style.backgroundRepeat = 'no-repeat'
+            loading_animation.style.backgroundPosition = 'center'
+            loading_animation.style.border = '1px solid var(--primary-color)'
+            loading_animation.style.borderRadius = '5px'
+            loading_animation.style.width = '100px'
+        return loading_animation
+    })()
 
     get ce_code() {
         return this.parsed_code.ce_code
@@ -675,18 +689,7 @@ class CodeSection extends BasicCodeSection {
             console.error('awesome-doc-code-sections.js:CodeSection::add_execution_panel : ill-formed firstChild')
 
         // right panel: loading
-        let loading_animation = document.createElement('div');
-            // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
-            loading_animation.style.backgroundImage = `url("${CodeSection.loading_animation_fallback_url}")`
-        //  loading_animation.style.backgroundImage = 'url("loading_animation.gif")'
-        //  loading_animation.style.backgroundImage = 'url("loading_animation.svg")' 
-            loading_animation.style.backgroundSize = 'contain'
-            loading_animation.style.backgroundRepeat = 'no-repeat'
-            loading_animation.style.backgroundPosition = 'center'
-            loading_animation.style.border = '1px solid var(--primary-color)'
-            loading_animation.style.borderRadius = '5px'
-            loading_animation.style.width = '100px'
-        this.appendChild(loading_animation)
+        let loading_animation = this.appendChild(CodeSection.loading_animation.cloneNode())
 
         // right panel: replace with result
         ce_API.fetch_execution_result(this.ce_options, this.ce_code)
