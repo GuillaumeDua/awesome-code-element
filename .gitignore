@@ -1,49 +1,9 @@
-# CMake
-build/
-Testing/
-
-# LLVM
-.cache/clangd
-
-# MSVC
-*.vs
-bin
-out
-Debug/
-Release/
-*.vcxproj.user
-*.idb
-*.pdb
-
-# Outputs
-*.o
-*.obj
-*.elf
-*.lo
-*.slo
-*.gch
-*.pch
-*.so
-*.so.*
-*.dylib
-*.dll
-*.lai
-*.la
-*.a
-*.lib
-
-x64
-x86
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
+# tests
+tests/*/loading_animation.gif
 
 # docs
 docs/output
 
 # Others
 local
-.clangd
+
