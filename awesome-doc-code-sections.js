@@ -644,6 +644,7 @@ class CodeSection extends BasicCodeSection {
 // <CodeSection language='cpp'>[some code here]</CodeSection>
 
     static HTMLElement_name = 'awesome-doc-code-sections_code-section'
+    static loading_animation_fallback_url = 'https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/images/loading.gif?raw=true'
 
     get ce_code() {
         return this.parsed_code.ce_code
@@ -675,7 +676,10 @@ class CodeSection extends BasicCodeSection {
 
         // right panel: loading
         let loading_animation = document.createElement('div');
-            loading_animation.style.backgroundImage = 'url("loading.gif")' // TODO: inline svg ?
+            // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
+            loading_animation.style.backgroundImage = `url("${CodeSection.loading_animation_fallback_url}")`
+        //  loading_animation.style.backgroundImage = 'url("loading_animation.gif")'
+        //  loading_animation.style.backgroundImage = 'url("loading_animation.svg")' 
             loading_animation.style.backgroundSize = 'contain'
             loading_animation.style.backgroundRepeat = 'no-repeat'
             loading_animation.style.backgroundPosition = 'center'
