@@ -60,12 +60,12 @@
             --spacing-large: 16px;
             --content-maxwidth: 1050px;
         }
-        code, div.fragment, pre.fragment {
+        code.stylished {
             border-radius: var(--border-radius-small);
             border: 1px solid var(--separator-color);
             overflow: hidden;
         }
-        div.contents {
+        div.contents.stylished {
             max-width: var(--content-maxwidth);
             margin: calc(var(--spacing-medium) + .2em) auto var(--spacing-medium) auto;
         }
@@ -115,8 +115,26 @@
         ])
         awesome_doc_code_sections.initialize(); // initialize all features
     </script>
+
+    <script type="text/javascript">
+        let is_stylished = false
+        function toggle_style() {
+
+            const stylished_classname = 'stylished'
+
+            let apply_toggle_style = is_stylished
+                ? function (elements) { elements.removeClass(`${stylished_classname}`)}
+                : function (elements) { elements.addClass   (`${stylished_classname}`)}
+            is_stylished = !is_stylished
+
+            let elements = $('body').find('code, div.fragment, pre.fragment, div.contents')
+            apply_toggle_style(elements)
+        }
+    </script>
 </head>
 <body>
+    <button onclick="toggle_style()">Toggle style</button>
+
     <div class="contents">
     <div class='awesome-doc-code-sections_code-section'>
         <pre><code>
