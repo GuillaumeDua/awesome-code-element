@@ -130,10 +130,22 @@
             let elements = $('body').find('code, div.fragment, pre.fragment, div.contents')
             apply_toggle_style(elements)
         }
+
+        let is_small = false
+        function toggle_small() {
+
+            let r = document.querySelector(':root');
+            let rs = getComputedStyle(r);
+            let content_max_width = rs.getPropertyValue('--content-maxwidth');
+
+            r.style.setProperty('--content-maxwidth', (is_small ? 1050 : 500) + 'px');
+            is_small = !is_small
+        }
     </script>
 </head>
 <body>
     <button onclick="toggle_style()">Toggle style</button>
+    <button onclick="toggle_small()">Toggle small</button>
 
     <div class="contents">
     <div class='awesome-doc-code-sections_code-section'>
