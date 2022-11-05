@@ -51,6 +51,24 @@
             --fragment-linenumber-background: #35393c;
             --fragment-linenumber-border: #1f1f1f;
         }
+        :root {
+            --border-radius-small: 4px;
+            --border-radius-medium: 6px;
+            --border-radius-large: 8px;
+            --spacing-small: 5px;
+            --spacing-medium: 10px;
+            --spacing-large: 16px;
+            --content-maxwidth: 1050px;
+        }
+        code, div.fragment, pre.fragment {
+            border-radius: var(--border-radius-small);
+            border: 1px solid var(--separator-color);
+            overflow: hidden;
+        }
+        div.contents {
+            max-width: var(--content-maxwidth);
+            margin: calc(var(--spacing-medium) + .2em) auto var(--spacing-medium) auto;
+        }
     </style>
 
     <!-- highlight -->
@@ -99,7 +117,7 @@
     </script>
 </head>
 <body>
-
+    <div class="contents">
     <div class='awesome-doc-code-sections_code-section'>
         <pre><code>
         // some comment here
@@ -216,6 +234,8 @@
         // @awesome-doc-code-sections::show::block::end
         }
         </code></pre>
+    </div>
+
     </div>
 </body>
 </html>
