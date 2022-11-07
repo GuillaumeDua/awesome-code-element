@@ -39,7 +39,7 @@
 //      - copy-to-clipboard
 //      - toggle light/dark mode
 
-// TODO: as an external standalone project ?
+// TODO: Documentation
 // TODO: compatibility with https://github.com/EnlighterJS/EnlighterJS instead of highlightjs
 // TODO: compatibility with Marp
 //
@@ -133,7 +133,7 @@ class ParsedCode {
         // skip block, line (documentation & execution sides)
         // block
         code_content = code_content.replaceAll(
-            new RegExp(`^\\s*?${ParsedCode.tag}::skip::block::begin\n(.*?\n)*${ParsedCode.tag}::skip::block::end\\s*?$`, 'gm'),
+            new RegExp(`^\\s*?${ParsedCode.tag}::skip::block::begin\n(.*?\n)*\\s*?${ParsedCode.tag}::skip::block::end\\s*?$`, 'gm'),
             ''
         )
         // line
@@ -168,8 +168,6 @@ class ParsedCode {
         if (this.ce_options.includes_transformation !== undefined) {
             this.ce_options.includes_transformation.forEach((value) => {
                 // replace includes
-
-                console.log(value)
 
                 const regex = new RegExp(`^(\\s*?\\#.*?[\\"|\\<"].*?)(${value[0]})(.*?[\\"|\\>"])`, 'gm')
                 this.ce_code = this.ce_code.replace(regex, `$1${value[1]}$3`)
