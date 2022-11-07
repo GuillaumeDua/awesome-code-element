@@ -149,69 +149,68 @@
 
     <div class="contents">
 
-    Code section: CE Execution, show block, show line, header replacement
+    Code section: CE Execution (explicit), show block, show line, header replacement
     <div class='awesome-doc-code-sections_code-section'>
         <pre><code>
-        // some comment here
-        // ...
-        
-        // @awesome-doc-code-sections::CE={
-        //  "language"            : "c++",
-        //  "compiler_id"         : "clang1400",
-        //  "compilation_options" : "-O2 -std=c++20",
-        //  "libs"                : [ {"id": "fmt", "version": "trunk"} ],
-        //  "includes_transformation" : [
-        //        [ "csl/",       "https://raw.githubusercontent.com/GuillaumeDua/CppShelf/main/includes/ag/csl/" ],
-        //        [ "toto",       "iostream" ]
-        //  ],
-        //  "add_in_doc_execution" : true
-        //  }
-        // #include "csl/ag.hpp"
-        #include &lt;csl/ag.hpp&gt; // @awesome-doc-code-sections::show::line
-        
-        auto main() -> int {
-        // @awesome-doc-code-sections::show::block::begin
-        
-        auto i = 42; // test
-        return i;
-        // @awesome-doc-code-sections::show::block::end
-        }
+// some comment here
+// ...
+
+// @awesome-doc-code-sections::CE={
+//  "language"            : "c++",
+//  "compiler_id"         : "clang1400",
+//  "compilation_options" : "-O2 -std=c++20",
+//  "libs"                : [ {"id": "fmt", "version": "trunk"} ],
+//  "includes_transformation" : [
+//        [ "csl/",       "https://raw.githubusercontent.com/GuillaumeDua/CppShelf/main/includes/ag/csl/" ],
+//        [ "toto",       "iostream" ]
+//  ],
+//  "add_in_doc_execution" : true
+//  }
+// #include "csl/ag.hpp"
+#include &lt;csl/ag.hpp&gt; // @awesome-doc-code-sections::show::line
+
+auto main() -> int {
+// @awesome-doc-code-sections::show::block::begin
+
+auto i = 42; // test
+return i;
+// @awesome-doc-code-sections::show::block::end
+}
         </code></pre>
     </div>
 
     <br />
 
-    Code section: CE Execution, show block, show line, header replacement, stdout/stderr outputs
+    Code section: CE Execution (explicit), show block, show line, header replacement, stdout/stderr outputs
     <div class='awesome-doc-code-sections_code-section'>
         <pre><code>
-        // some comment here
-        // ...
-        
-        // @awesome-doc-code-sections::CE={
-        //  "language"            : "c++",
-        //  "compiler_id"         : "clang1400",
-        //  "compilation_options" : "-O2 -std=c++20",
-        //  "libs"                : [ {"id": "fmt", "version": "trunk"} ],
-        //  "includes_transformation" : [
-        //        [ "csl/",       "https://raw.githubusercontent.com/GuillaumeDua/CppShelf/main/includes/ag/csl/" ],
-        //        [ "toto",       "iostream" ]
-        //  ],
-        //  "add_in_doc_execution" : true
-        //  }
-        
-        #include &lt;csl/ag.hpp&gt; // @awesome-doc-code-sections::show::line
-        #include &lt;toto&gt;
-        
-        auto main() -> int {
-        // @awesome-doc-code-sections::show::block::begin
-        std::cout &lt;&lt; "a\nb\nc\nd\ne\nf";
-        std::cerr &lt;&lt; "some stderr output\n";
-        std::cout &lt;&lt; "a\nb\nc\nd\ne\nf";
-        auto i = 42; // this is a pretty long comment, don't you think so ?
-        return i;
-        // @awesome-doc-code-sections::show::block::end
-        }
-        
+// some comment here
+// ...
+
+// @awesome-doc-code-sections::CE={
+//  "language"            : "c++",
+//  "compiler_id"         : "clang1400",
+//  "compilation_options" : "-O2 -std=c++20",
+//  "libs"                : [ {"id": "fmt", "version": "trunk"} ],
+//  "includes_transformation" : [
+//        [ "csl/",       "https://raw.githubusercontent.com/GuillaumeDua/CppShelf/main/includes/ag/csl/" ],
+//        [ "toto",       "iostream" ]
+//  ],
+//  "add_in_doc_execution" : true
+//  }
+
+#include &lt;csl/ag.hpp&gt; // @awesome-doc-code-sections::show::line
+#include &lt;toto&gt;
+
+auto main() -> int {
+// @awesome-doc-code-sections::show::block::begin
+std::cout &lt;&lt; "a\nb\nc\nd\ne\nf";
+std::cerr &lt;&lt; "some stderr output\n";
+std::cout &lt;&lt; "a\nb\nc\nd\ne\nf";
+auto i = 42; // this is a pretty long comment, don't you think so ?
+return i;
+// @awesome-doc-code-sections::show::block::end
+}
         </code></pre>
     </div>
 
@@ -220,26 +219,25 @@
     Code section: CE Execution (default), skip line, skip block
     <div class='awesome-doc-code-sections_code-section' language="cpp">
         <pre><code>
-        // some comment here
-        // ...
-        
-        // @awesome-doc-code-sections::CE={
-        //  "add_in_doc_execution" : true
-        //  }
-        
-        
-        auto main() -> int {
-          return 42;
-        }
-        
-        BAD CODE // @awesome-doc-code-sections::skip::line 
-        
-        // @awesome-doc-code-sections::skip::block::begin
-        // skip me !
-        // and me !
-        // and me too !
-        // @awesome-doc-code-sections::skip::block::end
-        
+// some comment here
+// ...
+
+// @awesome-doc-code-sections::CE={
+//  "add_in_doc_execution" : true
+//  }
+
+
+auto main() -> int {
+    return 42;
+}
+
+BAD CODE // @awesome-doc-code-sections::skip::line 
+
+// @awesome-doc-code-sections::skip::block::begin
+// skip me !
+// and me !
+// and me too !
+// @awesome-doc-code-sections::skip::block::end
         </code></pre>
     </div>
 
@@ -248,26 +246,26 @@
     Basic code section (no parsing, no execution)
     <div class='awesome-doc-code-sections_basic-code-section' language="cpp">
         <pre><code>
-        // some comment here
-        // ...
-        
-        // @awesome-doc-code-sections::CE={
-        //  "language"            : "c++",
-        //  "compiler_id"         : "clang1400",
-        //  "compilation_options" : "-O2 -std=c++20",
-        //  "libs"                : [ {"id": "fmt", "version": "trunk"} ],
-        //  "includes_transformation" : [
-        //        [ "csl/",       "https://raw.githubusercontent.com/GuillaumeDua/CppShelf/main/includes/ag/csl/" ]
-        //  ]
-        //  }
-        #include "csl/ag.hpp" // @awesome-doc-code-sections::show::line
-        
-        auto main() -> int {
-        // @awesome-doc-code-sections::show::block::begin
-        auto i = 42; // test
-        return i;
-        // @awesome-doc-code-sections::show::block::end
-        }
+// some comment here
+// ...
+
+// @awesome-doc-code-sections::CE={
+//  "language"            : "c++",
+//  "compiler_id"         : "clang1400",
+//  "compilation_options" : "-O2 -std=c++20",
+//  "libs"                : [ {"id": "fmt", "version": "trunk"} ],
+//  "includes_transformation" : [
+//        [ "csl/",       "https://raw.githubusercontent.com/GuillaumeDua/CppShelf/main/includes/ag/csl/" ]
+//  ]
+//  }
+#include "csl/ag.hpp" // @awesome-doc-code-sections::show::line
+
+auto main() -> int {
+// @awesome-doc-code-sections::show::block::begin
+auto i = 42; // test
+return i;
+// @awesome-doc-code-sections::show::block::end
+}
         </code></pre>
     </div>
 
