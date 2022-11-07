@@ -144,7 +144,7 @@ class ParsedCode {
 
         // show block, line (documentation side)
         let regex_show_block    = `(^\\s*?${ParsedCode.tag}::show::block::begin\n(?<block>(^.*?$\n)+)\\s*${ParsedCode.tag}::show::block::end\n?)`
-        let regex_show_line     = `(^(?<line>.*?)\\s*${ParsedCode.tag}::show::line$)`
+        let regex_show_line     = `(^(?<line>.*?)\\s*${ParsedCode.tag}::show::line\\s*?$)`
         regexp = new RegExp(`${regex_show_block}|${regex_show_line}`, 'gm')
         matches = [...code_content.matchAll(regexp)]
         let code_only_show = matches
