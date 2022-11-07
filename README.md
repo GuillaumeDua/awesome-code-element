@@ -23,7 +23,7 @@ auto main() -> int {
     return 42;
 }
 `
-let code_section = new CodeSection(code, 'c++')
+let code_section = new CodeSection(code, 'cpp')
     // equivalent to   awesome_doc_code_sections.HTML_elements.CodeSection
 
 // attach `code_section` to the DOM ...
@@ -32,14 +32,11 @@ let code_section = new CodeSection(code, 'c++')
 Which is equivalent to :
 
 ```html
-<div class='awesome-doc-code-sections_basic-code-section' language="cpp">
-    <pre><code>
-#include <iostream>
+<div class='awesome-doc-code-sections_basic-code-section' language="cpp" code = "#include <iostream>
 auto main() -> int {
     std::cout << 'Hello, there';
     return 42;
-}
-    </code></pre>
+}">
 </div>
 ```
 

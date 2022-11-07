@@ -524,31 +524,49 @@ class BasicCodeSection extends HTMLElement {
 
     static HTMLElement_name = 'awesome-doc-code-sections_basic-code-section'
 
+// TODO: Shadow-root ?
+// https://stackoverflow.com/questions/48663678/how-to-have-a-connectedcallback-for-when-all-child-custom-elements-have-been-c
+
     constructor(code, language) {
         super();
 
-        try {
-            // arguments
-            if (code === undefined && this.textContent !== undefined)
-                code = this.textContent
-            if (! language)
-                language = this.getAttribute('language') || undefined
-            if (language !== undefined && language.startsWith("language-"))
-                language = language.replace('language-', '')
+        this.code = code
+        this._language = language
+    }
 
-            this._language = language
-            this.code = code
+    on_critical_internal_error(error = "") {
 
-            if (this.code === undefined || this.code.length == 0)
-                throw 'invalid or empty code'
-            this.load();
-        }
-        catch (error) {
-            this.innerHTML = `<p style="color:red; border-style: solid; border-color: red;">awesome-doc-code-sections:BasicCodeSection: error : ${error}</p>`
-        }
+        console.error('awesome-doc-code-sections.js:BasicCodeSection: on_critical_internal_error : fallback rendering')
+
+        if (!this.isConnected)
+            return
+
+        let error_element = document.createElement('p')
+            error_element.textContent = `awesome-doc-code-sections:BasicCodeSection: error :` + error.replace('awesome-doc-code-sections.js:BasicCodeSection:', '')
+        Misc.apply_css(error_element, {
+            color: "red",
+            "border-style": "solid",
+            "border-color": "red"
+        })
+        this.replaceWith(error_element)
     }
 
     connectedCallback() {
+        try {
+            // arguments
+
+            this.code = this.code || this.textContent || this.getAttribute('code')
+            this._language = this._language || this.getAttribute('language') || undefined
+            this._language = this._language || this._language.replace('language-', '')
+
+            if (this.code === undefined || this.code.length == 0)
+                throw 'awesome-doc-code-sections.js:BasicCodeSection: invalid or empty code'
+            this.load()
+        }
+        catch (error) {
+            console.log(`${error}`)
+            this.on_critical_internal_error(error)
+        }
     }
 
     load() {
@@ -655,7 +673,7 @@ class BasicCodeSection extends HTMLElement {
 
         let code = $(this).find("pre code")
         if (code.length == 0)
-            console.error(`awesome-doc-code-sections.js:CodeSection::language(get): ill-formed element`)
+            console.error(`awesome-doc-code-sections.js:CodeSection::language(get): ill-formed element (expect pre>code as childrens)`)
         return BasicCodeSection.get_code_hljs_language(code[0])
     }
 }
@@ -697,14 +715,28 @@ class CodeSection extends BasicCodeSection {
     }
 
     constructor(code, language) {
+        super(code, language)
+    }
+
+    connectedCallback() {
+
+        console.log('>>>> CodeSection::connectedCallback')
+
+        super.connectedCallback()
+
+        console.log(this.code)
+        console.log(this._language)
+
+
         let parsed_code = undefined
-        try             { parsed_code = new ParsedCode(code, language) }
+        try             { parsed_code = new ParsedCode(this.code, this._language) }
         catch (error)   {
-            super()
             this.innerHTML = `<p style="color:red; border-style: solid; border-color: red;">awesome-doc-code-sections:CodeSection: error : ${error}</p>`
             return
         }
-        super(parsed_code.code, language);
+        // super(parsed_code.code, language);
+        this.code = parsed_code.code
+        this.load()
         this.parsed_code = parsed_code
 
         console.log(this.parsed_code.ce_options)
@@ -1108,7 +1140,7 @@ awesome_doc_code_sections.options = new class{
 }()
 
 awesome_doc_code_sections.initialize = function() {
-
+   
     $(function() {
         $(document).ready(function() {
 
