@@ -7,7 +7,7 @@ Originaly created to ease the documentation creation process of [CppShelf](https
 
 ---
 
-! [](https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/docs/images/simple_test_output.JPG)
+    ![](https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/docs/images/simple_test_output.JPG)
 
 ## Content
 
