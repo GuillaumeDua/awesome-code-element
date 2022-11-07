@@ -148,15 +148,17 @@ class ParsedCode {
         regexp = new RegExp(`${regex_show_block}|${regex_show_line}`, 'gm')
         matches = [...code_content.matchAll(regexp)]
         let code_only_show = matches
-        // TODO: reverse() so we can use indexes to remove elements rather than replace()
+            .reverse()
             .map((match) => {
                 let result = match.groups.block !== undefined
                     ? match.groups.block
                     : match.groups.line
                 // remove from original content
-                code_content = code_content.replace(match[0], result)
+                // code_content = code_content.replace(match[0], result) // really slower than 2 reverse + 2 substring ?
+                code_content = code_content.substring(0, match.index) + result + code_content.substring(match.index + match[0].length)
                 return result
             })
+            .reverse()
             .join('\n')
 
         this.code = (code_only_show !== "" ? code_only_show : code_content)
