@@ -617,8 +617,6 @@ class BasicCodeSection extends HTMLElement {
         })
         code_node.appendChild(code)
 
-        console.log(`DEBUG: ${this._language}`)
-
         if (this._language)
             code.classList.add('hljs', `language-${this.language}`);
         hljs.highlightElement(code)
@@ -765,46 +763,44 @@ class CodeSection extends BasicCodeSection {
         // right panel: loading
         let loading_animation = this.appendChild(CodeSection.loading_animation.cloneNode())
 
-        // // right panel: replace with result
-        // ce_API.fetch_execution_result(this.ce_options, this.ce_code)
-        //     .then((result) => {
+        // right panel: replace with result
+        ce_API.fetch_execution_result(this.ce_options, this.ce_code)
+            .then((result) => {
 
-        //         // CE header: parse & remove
-        //         let regex = new RegExp('# Compilation provided by Compiler Explorer at https://godbolt.org/\n\n(# Compiler exited with result code (-?\\d+))')
-        //         let regex_result = regex.exec(result)
+                // CE header: parse & remove
+                let regex = new RegExp('# Compilation provided by Compiler Explorer at https://godbolt.org/\n\n(# Compiler exited with result code (-?\\d+))')
+                let regex_result = regex.exec(result)
 
-        //         if (regex_result === null || regex_result.length != 3) {
-        //             return {
-        //                 value : result,
-        //                 error : 'unknown',
-        //                 return_code : -1
-        //             }
-        //         }
+                if (regex_result === null || regex_result.length != 3) {
+                    return {
+                        value : result,
+                        error : 'unknown',
+                        return_code : -1
+                    }
+                }
                 
-        //         return {
-        //             value : result.substring(regex_result[0].length - regex_result[1].length), // trim off header
-        //             error : undefined,
-        //             return_code : regex_result[2]
-        //         }
-        //     })
-        //     .then((result) => {
+                return {
+                    value : result.substring(regex_result[0].length - regex_result[1].length), // trim off header
+                    error : undefined,
+                    return_code : regex_result[2]
+                }
+            })
+            .then((result) => {
 
-        //         let right_panel_element = new BasicCodeSection(result.value)
-        //             right_panel_element.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
-        //         Misc.apply_css(right_panel_element, {
-        //             width:          '50%',
-        //             paddingTop:     '1px'
-        //         })
-                
-        //         console.log(right_panel_element)
+                let right_panel_element = new BasicCodeSection(result.value)
+                    right_panel_element.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
 
-        //         // right_panel_element.childNodes[0].childNodes[0].style.borderTopColor = result.return_code == -1
-        //         //     ? 'red'
-        //         //     : 'green'
+                loading_animation.replaceWith(right_panel_element) // connected
 
-        //         left_panel.style.width = '50%'
-        //         loading_animation.replaceWith(right_panel_element)
-        //     })
+                Misc.apply_css(right_panel_element, {
+                    width:          '50%',
+                    paddingTop:     '1px'
+                })
+                left_panel.style.width = '50%'
+                right_panel_element.childNodes[0].childNodes[0].style.borderTopColor = result.return_code == -1
+                    ? 'red'
+                    : 'green'
+            })
     }
 
     static Initialize_DivHTMLElements() {
