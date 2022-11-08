@@ -571,7 +571,8 @@ class BasicCodeSection extends HTMLElement {
         try {
             this.code = this.code || this.textContent || this.getAttribute('code')
             this._language = this._language || this.getAttribute('language') || undefined
-            this._language = this._language || this._language.replace('language-', '')
+            if (this._language)
+                this._language = this._language.replace('language-', '')
 
             if (!this.code || this.code.length == 0) {
                 let _this = this
@@ -617,7 +618,7 @@ class BasicCodeSection extends HTMLElement {
         code_node.appendChild(code)
 
         code.classList.add('hljs')
-        if (this._language !== undefined && this._language !== null)
+        if (this._language)
             code.classList.add(`language-${this._language}`);
         hljs.highlightElement(code)
 
@@ -792,9 +793,11 @@ class CodeSection extends BasicCodeSection {
                     paddingTop:     '1px'
                 })
                 
-                right_panel_element.childNodes[0].childNodes[0].style.borderTopColor = result.return_code == -1
-                    ? 'red'
-                    : 'green'
+                console.log(right_panel_element)
+
+                // right_panel_element.childNodes[0].childNodes[0].style.borderTopColor = result.return_code == -1
+                //     ? 'red'
+                //     : 'green'
 
                 left_panel.style.width = '50%'
                 loading_animation.replaceWith(right_panel_element)
