@@ -617,9 +617,10 @@ class BasicCodeSection extends HTMLElement {
         })
         code_node.appendChild(code)
 
-        code.classList.add('hljs')
+        console.log(`DEBUG: ${this._language}`)
+
         if (this._language)
-            code.classList.add(`language-${this._language}`);
+            code.classList.add('hljs', `language-${this.language}`);
         hljs.highlightElement(code)
 
         // buttons : copy-to-clipboard
@@ -631,6 +632,7 @@ class BasicCodeSection extends HTMLElement {
         let code_hljs_language = BasicCodeSection.get_code_hljs_language(code)
         if (this._language !== undefined && code_hljs_language !== this._language) // unlikely
             console.warn(`awesome-doc-code-sections.js:CodeSection::load : incompatible language specification (user-specified is ${this._language}, detected is ${code_hljs_language})`)
+        
         if (// ce_API.languages.has(code_hljs_language)
             awesome_doc_code_sections.configuration.CE.has(code_hljs_language)) {
             let CE_button = new SendToGodboltButton
@@ -665,6 +667,7 @@ class BasicCodeSection extends HTMLElement {
             let code = value.textContent
                         .replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
             let node = new BasicCodeSection(code, language);
+            if (language)
                 node.setAttribute('language', language)
             value.replaceWith(node);
         };
@@ -762,46 +765,46 @@ class CodeSection extends BasicCodeSection {
         // right panel: loading
         let loading_animation = this.appendChild(CodeSection.loading_animation.cloneNode())
 
-        // right panel: replace with result
-        ce_API.fetch_execution_result(this.ce_options, this.ce_code)
-            .then((result) => {
+        // // right panel: replace with result
+        // ce_API.fetch_execution_result(this.ce_options, this.ce_code)
+        //     .then((result) => {
 
-                // CE header: parse & remove
-                let regex = new RegExp('# Compilation provided by Compiler Explorer at https://godbolt.org/\n\n(# Compiler exited with result code (-?\\d+))')
-                let regex_result = regex.exec(result)
+        //         // CE header: parse & remove
+        //         let regex = new RegExp('# Compilation provided by Compiler Explorer at https://godbolt.org/\n\n(# Compiler exited with result code (-?\\d+))')
+        //         let regex_result = regex.exec(result)
 
-                if (regex_result === null || regex_result.length != 3) {
-                    return {
-                        value : result,
-                        error : 'unknown',
-                        return_code : -1
-                    }
-                }
+        //         if (regex_result === null || regex_result.length != 3) {
+        //             return {
+        //                 value : result,
+        //                 error : 'unknown',
+        //                 return_code : -1
+        //             }
+        //         }
                 
-                return {
-                    value : result.substring(regex_result[0].length - regex_result[1].length), // trim off header
-                    error : undefined,
-                    return_code : regex_result[2]
-                }
-            })
-            .then((result) => {
+        //         return {
+        //             value : result.substring(regex_result[0].length - regex_result[1].length), // trim off header
+        //             error : undefined,
+        //             return_code : regex_result[2]
+        //         }
+        //     })
+        //     .then((result) => {
 
-                let right_panel_element = new BasicCodeSection(result.value)
-                    right_panel_element.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
-                Misc.apply_css(right_panel_element, {
-                    width:          '50%',
-                    paddingTop:     '1px'
-                })
+        //         let right_panel_element = new BasicCodeSection(result.value)
+        //             right_panel_element.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
+        //         Misc.apply_css(right_panel_element, {
+        //             width:          '50%',
+        //             paddingTop:     '1px'
+        //         })
                 
-                console.log(right_panel_element)
+        //         console.log(right_panel_element)
 
-                // right_panel_element.childNodes[0].childNodes[0].style.borderTopColor = result.return_code == -1
-                //     ? 'red'
-                //     : 'green'
+        //         // right_panel_element.childNodes[0].childNodes[0].style.borderTopColor = result.return_code == -1
+        //         //     ? 'red'
+        //         //     : 'green'
 
-                left_panel.style.width = '50%'
-                loading_animation.replaceWith(right_panel_element)
-            })
+        //         left_panel.style.width = '50%'
+        //         loading_animation.replaceWith(right_panel_element)
+        //     })
     }
 
     static Initialize_DivHTMLElements() {
@@ -827,6 +830,7 @@ class CodeSection extends BasicCodeSection {
             let code = value.textContent
                         .replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
             let node = new CodeSection(code, language);
+            if (language)
                 node.setAttribute('language', language)
             value.replaceWith(node);
         };
@@ -918,8 +922,8 @@ class RemoteCodeSection extends CodeSection {
             // let language = (value.classList.length != 1 ? value.classList[1] : undefined);
 
             let node = new RemoteCodeSection(url, language);
-                node.setAttribute('url', url);
-                node.setAttribute('language', language)
+            if (url)        node.setAttribute('url', url);
+            if (language)   node.setAttribute('language', language)
             value.replaceWith(node);
         });
     }
