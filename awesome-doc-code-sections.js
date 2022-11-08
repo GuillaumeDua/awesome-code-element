@@ -515,6 +515,17 @@ class SendToGodboltButton extends HTMLButtonElement {
 }
 customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton, {extends: 'button'});
 
+function create_shadowroot_slot(element, when_childrens_attached) {
+    element.attachShadow({ mode: 'open' });
+    element.shadowRoot.innerHTML = `<slot></slot>`;
+    const slot = element.shadowRoot.querySelector('slot');
+
+    slot.addEventListener('slotchange', (event) => {
+        const childrens = event.target.assignedElements();
+        when_childrens_attached(childrens)
+    });
+}
+
 class BasicCodeSection extends HTMLElement {
 // Basic code section (meaning, no metadata parsing), with synthax-coloration provided by highlightjs
 // Additionaly, the language code language can be forced (`code_language` parameter, or `language` attributes),
@@ -523,11 +534,10 @@ class BasicCodeSection extends HTMLElement {
 // <BasicCodeSection language='cpp'>[some code here]</BasicCodeSection>
 
     static HTMLElement_name = 'awesome-doc-code-sections_basic-code-section'
-
-// TODO: Shadow-root ?
-// https://stackoverflow.com/questions/48663678/how-to-have-a-connectedcallback-for-when-all-child-custom-elements-have-been-c
+    type = BasicCodeSection
 
     constructor(code, language) {
+        console.log('BasicCodeSection::constructor')
         super();
 
         this.code = code
@@ -542,26 +552,33 @@ class BasicCodeSection extends HTMLElement {
             return
 
         let error_element = document.createElement('p')
-            error_element.textContent = `awesome-doc-code-sections:BasicCodeSection: error :` + error.replace('awesome-doc-code-sections.js:BasicCodeSection:', '')
+            error_element.textContent = error || `awesome-doc-code-sections:BasicCodeSection: unknown error`
         Misc.apply_css(error_element, {
             color: "red",
             "border-style": "solid",
             "border-color": "red"
         })
-        this.replaceWith(error_element)
+        this.appendChild(error_element)
+    }
+
+    shadow_root_callback(childrens) {
+        console.log(`BasicCodeSection::shadowRoot : [${this.textContent}]`)
+        this.replaceWith(new this.type(this.textContent, this._language))
     }
 
     connectedCallback() {
+        console.log(`BasicCodeSection::connectedCallback with\n[${this.code}]`)
         try {
-            // arguments
-
             this.code = this.code || this.textContent || this.getAttribute('code')
             this._language = this._language || this.getAttribute('language') || undefined
             this._language = this._language || this._language.replace('language-', '')
 
-            if (this.code === undefined || this.code.length == 0)
-                throw 'awesome-doc-code-sections.js:BasicCodeSection: invalid or empty code'
-            this.load()
+            if (!this.code || this.code.length == 0) {
+                let _this = this
+                create_shadowroot_slot(this, function(){ _this.shadow_root_callback()})
+            }
+            else
+                this.load()
         }
         catch (error) {
             console.log(`${error}`)
@@ -686,6 +703,8 @@ class CodeSection extends BasicCodeSection {
 //
 // <CodeSection language='cpp'>[some code here]</CodeSection>
 
+    type = CodeSection
+
     static HTMLElement_name = 'awesome-doc-code-sections_code-section'
     static loading_animation = (function(){
     // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
@@ -715,31 +734,19 @@ class CodeSection extends BasicCodeSection {
     }
 
     constructor(code, language) {
+        console.log('CodeSection::constructor')
         super(code, language)
     }
 
-    connectedCallback() {
-
-        console.log('>>>> CodeSection::connectedCallback')
-
-        super.connectedCallback()
-
-        console.log(this.code)
-        console.log(this._language)
-
-
+    load() {
         let parsed_code = undefined
         try             { parsed_code = new ParsedCode(this.code, this._language) }
-        catch (error)   {
-            this.innerHTML = `<p style="color:red; border-style: solid; border-color: red;">awesome-doc-code-sections:CodeSection: error : ${error}</p>`
-            return
-        }
-        // super(parsed_code.code, language);
+        catch (error)   { this.on_critical_internal_error(error); return }
+
         this.code = parsed_code.code
-        this.load()
         this.parsed_code = parsed_code
 
-        console.log(this.parsed_code.ce_options)
+        super.load()
 
         if (this.parsed_code.ce_options.add_in_doc_execution)
             this.#add_execution_panel()
