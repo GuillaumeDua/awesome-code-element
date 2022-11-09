@@ -713,12 +713,11 @@ class CodeSection extends BasicCodeSection {
     static loading_animation = (function(){
     // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
     // TODO: cache animation image (otherwise, too slow to load)
-        const loading_animation_fallback_url = 'https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/images/loading_animation.gif?raw=true'
+        const loading_animation_fallback_url = 'url("https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/images/loading_animation.gif?raw=true")'
         let loading_animation = document.createElement('div');
-        //  loading_animation.style.backgroundImage = `url("${loading_animation_fallback_url}")`
-        //  loading_animation.style.backgroundImage = 'url("loading_animation.svg")'
         Misc.apply_css(loading_animation, {
-            backgroundImage     : 'url("loading_animation.gif")',
+            // backgroundImage     : 'url("resources/images/loading_animation.gif")',
+            backgroundImage     : loading_animation_fallback_url,
             backgroundSize      : 'contain',
             backgroundRepeat    : 'no-repeat',
             backgroundPosition  : 'center',
@@ -765,8 +764,10 @@ class CodeSection extends BasicCodeSection {
         let loading_animation = this.appendChild(CodeSection.loading_animation.cloneNode())
 
         // right panel: replace with result
-        // TODO: handle errors (network, ...)
         ce_API.fetch_execution_result(this.ce_options, this.ce_code)
+            .catch((error) => {
+                this.on_critical_internal_error(`CodeSection: ce_API.fetch_execution_result failed [${error}]`)
+            })
             .then((result) => {
 
                 // CE header: parse & remove
