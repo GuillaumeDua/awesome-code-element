@@ -326,7 +326,7 @@ class ce_API {
         })
     }
 }
-class Misc {
+class utility {
     static apply_css(element, styles) {
         for (const property in styles)
             element.style[property] = styles[property];
@@ -384,7 +384,7 @@ class CopyToClipboardButton extends HTMLButtonElement {
         this.title = CopyToClipboardButton.title
         this.innerHTML = CopyToClipboardButton.copyIcon
 
-        Misc.apply_css(this, {
+        utility.apply_css(this, {
             zIndex      : 2,
             position    : 'absolute',
             top         : '5px',
@@ -428,7 +428,7 @@ class SendToGodboltButton extends HTMLButtonElement {
         this.title = SendToGodboltButton.title;
         this.innerHTML = SendToGodboltButton.icon;
 
-        Misc.apply_css(this, {
+        utility.apply_css(this, {
             zIndex      : 2,
             position    : 'absolute',
             top         : '5px',
@@ -591,7 +591,7 @@ class BasicCodeSection extends HTMLElement {
 
     load() {
 
-        Misc.apply_css(this, {
+        utility.apply_css(this, {
             display:    'flex',
             alignItems: 'stretch',
             boxSizing:  'border-box',
@@ -600,7 +600,7 @@ class BasicCodeSection extends HTMLElement {
 
         // code content
         let code_node = document.createElement('pre');
-        Misc.apply_css(code_node, {
+        utility.apply_css(code_node, {
             zIndex:     1,
             position:   'relative',
             boxSizing:  'border-box',
@@ -612,7 +612,7 @@ class BasicCodeSection extends HTMLElement {
             
         let code = document.createElement('code');
             code.textContent = this.code
-        Misc.apply_css(code, {
+        utility.apply_css(code, {
             height:     '100%',
             width:      'auto',
             boxSizing:  'border-box'
@@ -712,19 +712,15 @@ class CodeSection extends BasicCodeSection {
     static HTMLElement_name = 'awesome-doc-code-sections_code-section'
     static loading_animation = (function(){
     // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
-    // TODO: cache animation image (otherwise, too slow to load)
-        const loading_animation_fallback_url = 'url("https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/images/loading_animation.gif?raw=true")'
-        let loading_animation = document.createElement('div');
-        Misc.apply_css(loading_animation, {
-            // backgroundImage     : 'url("resources/images/loading_animation.gif")',
-            backgroundImage     : loading_animation_fallback_url,
-            backgroundSize      : 'contain',
-            backgroundRepeat    : 'no-repeat',
-            backgroundPosition  : 'center',
-            backgroundColor     : 'var(--page-background-color)',
+        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/images/loading_animation.svg'
+        let loading_animation = document.createElement('img');
+            loading_animation.src = loading_animation_fallback_url
+        utility.apply_css(loading_animation, {
+            contain             : 'strict',
             border              : '1px solid var(--primary-color)',
             borderRadius        : '5px',
-            width               : '100px'
+            width               : '100%',
+            display             : 'none' // hidden by default
         })
         return loading_animation
     })()
@@ -750,18 +746,48 @@ class CodeSection extends BasicCodeSection {
 
         super.load()
 
+        this.#initialize_panels()
         if (this.parsed_code.ce_options.add_in_doc_execution)
-            this.#add_execution_panel()
+            this.fetch_execution()
     }
 
-    #add_execution_panel() {
-
-        let left_panel_element = this.firstChild
-        if (left_panel_element === undefined || left_panel_element.tagName !== 'PRE')
+    #initialize_panels() {
+        this.left_panel = this.firstChild
+        if (this.left_panel === undefined || this.left_panel.tagName !== 'PRE')
             console.error('awesome-doc-code-sections.js:CodeSection::add_execution_panel : ill-formed firstChild')
 
+        // right panel
+        this.right_panel = document.createElement('div')
+        this.appendChild(this.right_panel)
+
+        utility.apply_css(this.right_panel, {
+            display:    'none',
+            alignItems: 'stretch',
+            boxSizing:  'border-box',
+            position:   'relative',
+            top:        0,
+            left:       0,
+            width:      '50%',
+            margin:     0
+        })
         // right panel: loading
-        let loading_animation = this.appendChild(CodeSection.loading_animation.cloneNode())
+        this.loading_animation_element = this.right_panel.appendChild(CodeSection.loading_animation.cloneNode())
+        this.loading_animation_element.style.display = 'block'
+        // right panel: execution
+        this.execution_element = document.createElement('div') // placeholder
+        utility.apply_css(this.execution_element, {
+            width:          '100%',
+            paddingTop:     '1px',
+            display:        'none' // hidden by default
+        })
+        this.right_panel.appendChild(this.execution_element)
+    }
+    fetch_execution() {
+
+        this.left_panel.style.width = '50%'
+        this.right_panel.style.display = 'flex'
+        this.execution_element.style.display = 'none'
+        this.loading_animation_element.style.display = 'flex'
 
         // right panel: replace with result
         ce_API.fetch_execution_result(this.ce_options, this.ce_code)
@@ -790,21 +816,15 @@ class CodeSection extends BasicCodeSection {
             })
             .then((result) => {
 
-                let right_panel_element = new BasicCodeSection(result.value)
-                    right_panel_element.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
+                let execution_element = new BasicCodeSection(result.value)
+                    execution_element.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
+                    execution_element.style.borderTop = '2px solid ' + (result.return_code == -1 ? 'red' : 'green')
 
-                loading_animation.replaceWith(right_panel_element) // connected
+                this.execution_element.replaceWith(execution_element)
+                this.execution_element = execution_element
 
-                // split in halves (lhs, rhs)
-                Misc.apply_css(right_panel_element, {
-                    width:          '50%',
-                    paddingTop:     '1px'
-                })
-                left_panel_element.style.width = '50%'
-
-                right_panel_element.childNodes[0].childNodes[0].style.borderTopColor = result.return_code == -1
-                    ? 'red'
-                    : 'green'
+                this.loading_animation_element.style.display = 'none'
+                this.execution_element.style.display = 'flex'
             })
     }
 
