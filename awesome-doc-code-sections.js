@@ -671,7 +671,7 @@ class CodeSection extends BasicCodeSection {
     static HTMLElement_name = 'awesome-doc-code-sections_code-section'
     static loading_animation = (function(){
     // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
-        const loading_animation_fallback_url = 'url("https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/images/loading_animation.svg?raw=true")'
+        const loading_animation_fallback_url = 'url("https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/images/loading_animation.svg")'
         let loading_animation = document.createElement('div');
         Misc.apply_css(loading_animation, {
             // backgroundImage     : 'url("/images/loading_animation.svg")',
@@ -720,6 +720,8 @@ class CodeSection extends BasicCodeSection {
 
         // right panel
         this.right_panel = document.createElement('div')
+        this.appendChild(this.right_panel)
+
         Misc.apply_css(this.right_panel, {
             display:    'flex',
             alignItems: 'stretch',
@@ -736,13 +738,12 @@ class CodeSection extends BasicCodeSection {
         // right panel: execution
         this.execution_element = document.createElement('div') // placeholder
         this.execution_element.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
-            Misc.apply_css(this.execution_element, {
-                width:          '100%',
-                paddingTop:     '1px',
-                display:        'none' // hidden by default
-            })
+        Misc.apply_css(this.execution_element, {
+            width:          '100%',
+            paddingTop:     '1px',
+            display:        'none' // hidden by default
+        })
         this.right_panel.appendChild(this.execution_element)
-        this.appendChild(this.right_panel)
     }
     fetch_execution() {
 
