@@ -91,9 +91,10 @@ Even though, users might prefer to wait for such API response, and only once rec
 
 ## Special thanks
 
-<foreignObject width="100%" height="100%" style="display:flex; align-items: center;">
+<foreignObject width="100%" height="100%">
+    <div style="display:flex; align-items: center;">
     <a href="https://github.com/MikeFernandez-Pro">
         <img src='https://avatars.githubusercontent.com/u/79382274' style="object-fit: cover; border-radius: 50%; width: 80px;" title="MikeFernandez-Pro"/>
-    </a>
-    <p style="margin-left: 10px;">for his kind CSS reviews & mentoring</p>
+    </a> &nbsp; for his kind CSS reviews & mentoring
+    </div>
 </foreignObject>
