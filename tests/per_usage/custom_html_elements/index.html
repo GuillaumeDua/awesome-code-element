@@ -151,17 +151,38 @@
 
     <div class="contents">
 
-        <!-- <awesome-doc-code-sections_code-section language="cpp">
+        <h2>Code Section</h2>
+
+        no execution, show::block
+        <awesome-doc-code-sections_code-section language="cpp">
+        THIS IS HIDDEN
 // @awesome-doc-code-sections::show::block::begin
 auto i = 42; // test
 return i;
 // @awesome-doc-code-sections::show::block::end
-}      
-        </awesome-doc-code-sections_code-section> -->
+        THIS IS HIDDEN TOO
+        </awesome-doc-code-sections_code-section>
 
         <!-- TODO: other test cases -->
 
-        <awesome-doc-code-sections_remote-code-section url="https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/6-cleaner-pure-html-elements/tests/resources/code_content/simple_main.cpp">
+        <h2>Remote Code Section</h2>
+
+        <a href="https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/tests/resources/code_content/simple_main.cpp">
+            no execution, show::block
+        </a>
+        <awesome-doc-code-sections_remote-code-section url="https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/tests/resources/code_content/simple_main.cpp">
+        </awesome-doc-code-sections_remote-code-section>
+
+        <a href="https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/tests/resources/code_content/metadatas_show_skip.cpp">
+            execute, show, skip
+        </a>
+        <awesome-doc-code-sections_remote-code-section url="https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/tests/resources/code_content/metadatas_show_skip.cpp">
+        </awesome-doc-code-sections_remote-code-section>
+
+        <a href="https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/tests/resources/code_content/metadatas_combination.cpp">
+            execute (custom CE configuration), show (line, block)
+        </a>
+        <awesome-doc-code-sections_remote-code-section url="https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/tests/resources/code_content/metadatas_combination.cpp">
         </awesome-doc-code-sections_remote-code-section>
 
     </div>
