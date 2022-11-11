@@ -96,3 +96,11 @@ Even though, users might prefer to wait for such API response, and only once rec
         <img src='https://avatars.githubusercontent.com/u/79382274' style="object-fit: cover; border-radius: 50%; width: 80px;" title="MikeFernandez-Pro"/>
     </a> &nbsp; for his kind CSS reviews & mentoring
 </div>
+
+And to all contributors :
+
+<a href="https://github.com/GuillaumeDua/awesome-doc-code-sections/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=GuillaumeDua/awesome-doc-code-sections" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
