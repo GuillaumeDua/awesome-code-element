@@ -86,3 +86,14 @@ Internally, it creates a `shadow-root` slot, which associated with an event list
 
 The main scenario for such usage is defered initialization, for instance when polling some code from an API.  
 Even though, users might prefer to wait for such API response, and only once received then create the `CodeSection` element and attach it to the DOM.
+
+---
+
+## Special thanks
+
+<div style="display:flex; align-items: center;">
+    <a href="https://github.com/MikeFernandez-Pro">
+        <img src='https://avatars.githubusercontent.com/u/79382274' style="object-fit: cover; border-radius: 50%; width: 80px;" title="MikeFernandez-Pro"/>
+    </a>
+    <p style="margin-left: 10px;">for his kind CSS reviews & mentoring</p>
+</div>
