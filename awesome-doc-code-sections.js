@@ -555,7 +555,7 @@ class BasicCodeSection extends HTMLElement {
 
         let error_element = document.createElement('p')
             error_element.textContent = error || `awesome-doc-code-sections:BasicCodeSection: unknown error`
-        Misc.apply_css(error_element, {
+        utility.apply_css(error_element, {
             color: "red",
             "border" : "2px solid red"
         })
