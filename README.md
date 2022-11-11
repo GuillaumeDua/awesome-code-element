@@ -23,23 +23,66 @@ auto main() -> int {
     return 42;
 }
 `
-let code_section = new CodeSection(code, 'c++')
-    // equivalent to   awesome_doc_code_sections.HTML_elements.CodeSection
-
+let code_section = new CodeSection(code, 'cpp')
+    // equivalent to:  awesome_doc_code_sections.HTML_elements.CodeSection
 // attach `code_section` to the DOM ...
 ```
 
-Which is equivalent to :
+Which is equivalent to the following plain HTML:
 
-```html
-<div class='awesome-doc-code-sections_basic-code-section' language="cpp">
+- As `div`
+
+    ```html
+    <div class='awesome-doc-code-sections_basic-code-section' language="cpp">
     <pre><code>
-#include <iostream>
-auto main() -> int {
-    std::cout << 'Hello, there';
-    return 42;
-}
+    #include &lt;iostream&gt;
+    auto main() -> int {
+        std::cout << 'Hello, there';
+        return 42;
+    }
     </code></pre>
-</div>
-```
+    </div>
+    ```
 
+- As custom `awesome-doc-code-sections_code-section` HTMLElement
+
+    ```html
+    <awesome-doc-code-sections_code-section language="cpp">
+    #include &lt;iostream&gt;
+    auto main() -> int {
+        std::cout << 'Hello, there';
+        return 42;
+    }
+    </awesome-doc-code-sections_code-section>
+    ```
+
+- As custom `awesome-doc-code-sections_code-section` HTMLElement (formated)
+
+    ```html
+    <awesome-doc-code-sections_code-section language="cpp">
+    <pre><code>
+    #include &lt;iostream&gt;
+    auto main() -> int {
+        std::cout << 'Hello, there';
+        return 42;
+    }
+    </code></pre>
+    </awesome-doc-code-sections_code-section>
+    ```
+
+- As custom `awesome-doc-code-sections_code-section` HTMLElement (using 'code' attribute)
+
+    ```html
+    <awesome-doc-code-sections_code-section language="cpp" code="#include <iostream>
+    auto main() -> int {
+        std::cout << 'Hello, there';
+        return 42;
+    }">
+    </awesome-doc-code-sections_code-section>
+    ```
+
+Note that creating an empty `CodeSection`/`code-section` is **not** recommanded on the user-side.  
+Internally, it creates a `shadow-root` slot, which associated with an event listener will wait for some content to be added. Once done, the shadow-root is removed, and the element cleaned-up.  
+
+The main scenario for such usage is defered initialization, for instance when polling some code from an API.  
+Even though, users might prefer to wait for such API response, and only once received then create the `CodeSection` element and attach it to the DOM.

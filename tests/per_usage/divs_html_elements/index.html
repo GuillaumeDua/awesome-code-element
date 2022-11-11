@@ -147,6 +147,8 @@
     <button onclick="toggle_style()">Toggle style</button>
     <button onclick="toggle_small()">Toggle small</button>
 
+    <br />
+
     <div class="contents">
 
     Code section: CE Execution (explicit), show block, show line, header replacement
@@ -181,7 +183,40 @@ return i;
 
     <br />
 
-    Code section: CE Execution (explicit), show block, show line, header replacement, stdout/stderr outputs
+    Code section: CE Execution (explicit), show block, show line, header replacement, long-line
+    <div class='awesome-doc-code-sections_code-section'>
+        <pre><code>
+// some comment here
+// ...
+
+// @awesome-doc-code-sections::CE={
+//  "language"            : "c++",
+//  "compiler_id"         : "clang1400",
+//  "compilation_options" : "-O2 -std=c++20",
+//  "libs"                : [ {"id": "fmt", "version": "trunk"} ],
+//  "includes_transformation" : [
+//        [ "csl/",       "https://raw.githubusercontent.com/GuillaumeDua/CppShelf/main/includes/ag/csl/" ],
+//        [ "toto",       "iostream" ]
+//  ],
+//  "add_in_doc_execution" : true
+//  }
+// #include "csl/ag.hpp"
+#include &lt;csl/ag.hpp&gt; // @awesome-doc-code-sections::show::line
+
+auto main() -> int {
+// @awesome-doc-code-sections::show::block::begin
+
+auto i = 42; // test
+return i;
+// .................................................................................................
+// @awesome-doc-code-sections::show::block::end
+}
+        </code></pre>
+    </div>
+
+    <br />
+
+    Code section: CE Execution (explicit), show block, show (possibly empty) line, header replacement, stdout/stderr outputs
     <div class='awesome-doc-code-sections_code-section'>
         <pre><code>
 // some comment here
@@ -200,6 +235,7 @@ return i;
 //  }
 
 #include &lt;csl/ag.hpp&gt; // @awesome-doc-code-sections::show::line
+// @awesome-doc-code-sections::show::line
 #include &lt;toto&gt;
 
 auto main() -> int {

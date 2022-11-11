@@ -95,13 +95,13 @@ class ParsedCode {
     ce_code = ''
     ce_options = {}
 
-    constructor(code_content, language) {
+    constructor(code_arg, language) {
 
         // apply default configuration for given - non-mandatory - language
         if (awesome_doc_code_sections.configuration.CE.has(language))
             this.ce_options = awesome_doc_code_sections.configuration.CE.get(language)
 
-        this.#parse(code_content)
+        this.#parse(code_arg)
         this.#apply_ce_transformations()
     }
 
@@ -515,6 +515,17 @@ class SendToGodboltButton extends HTMLButtonElement {
 }
 customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton, {extends: 'button'});
 
+function create_shadowroot_slot(element, when_childrens_attached) {
+    element.attachShadow({ mode: 'open' });
+    element.shadowRoot.innerHTML = `<slot></slot>`;
+    const slot = element.shadowRoot.querySelector('slot');
+
+    slot.addEventListener('slotchange', (event) => {
+        const childrens = event.target.assignedElements();
+        when_childrens_attached(childrens)
+    });
+}
+
 class BasicCodeSection extends HTMLElement {
 // Basic code section (meaning, no metadata parsing), with synthax-coloration provided by highlightjs
 // Additionaly, the language code language can be forced (`code_language` parameter, or `language` attributes),
@@ -523,32 +534,58 @@ class BasicCodeSection extends HTMLElement {
 // <BasicCodeSection language='cpp'>[some code here]</BasicCodeSection>
 
     static HTMLElement_name = 'awesome-doc-code-sections_basic-code-section'
+    type = BasicCodeSection
 
     constructor(code, language) {
         super();
 
-        try {
-            // arguments
-            if (code === undefined && this.textContent !== undefined)
-                code = this.textContent
-            if (! language)
-                language = this.getAttribute('language') || undefined
-            if (language !== undefined && language.startsWith("language-"))
-                language = language.replace('language-', '')
+        this.code = code
+        this._language = language
+    }
 
-            this._language = language
-            this.code = code
+    on_critical_internal_error(error = "") {
 
-            if (this.code === undefined || this.code.length == 0)
-                throw 'invalid or empty code'
-            this.load();
-        }
-        catch (error) {
-            this.innerHTML = `<p style="color:red; border-style: solid; border-color: red;">awesome-doc-code-sections:BasicCodeSection: error : ${error}</p>`
-        }
+        console.error(
+            `awesome-doc-code-sections.js:BasicCodeSection: on_critical_internal_error : fallback rendering
+            ${error}`
+        )
+
+        if (!this.isConnected)
+            return
+
+        let error_element = document.createElement('p')
+            error_element.textContent = error || `awesome-doc-code-sections:BasicCodeSection: unknown error`
+        Misc.apply_css(error_element, {
+            color: "red",
+            "border" : "2px solid red"
+        })
+        this.appendChild(error_element)
+    }
+
+    shadow_root_callback(childrens) {
+        console.log(`BasicCodeSection::shadowRoot : [${this.textContent}]`)
+        this.replaceWith(new this.type(this.textContent, this._language))
     }
 
     connectedCallback() {
+        console.log(`BasicCodeSection::connectedCallback with\n[${this.code}]`)
+        try {
+            this.code = this.code || this.textContent || this.getAttribute('code')
+            this._language = this._language || this.getAttribute('language') || undefined
+            if (this._language)
+                this._language = this._language.replace('language-', '')
+
+            if (!this.code || this.code.length == 0) {
+                let _this = this
+                create_shadowroot_slot(this, function(){ _this.shadow_root_callback()})
+            }
+            else
+                this.load()
+        }
+        catch (error) {
+            console.log(`${error}`)
+            this.on_critical_internal_error(error)
+        }
     }
 
     load() {
@@ -581,9 +618,8 @@ class BasicCodeSection extends HTMLElement {
         })
         code_node.appendChild(code)
 
-        code.classList.add('hljs')
-        if (this._language !== undefined && this._language !== null)
-            code.classList.add(`language-${this._language}`);
+        if (this._language)
+            code.classList.add('hljs', `language-${this.language}`);
         hljs.highlightElement(code)
 
         // buttons : copy-to-clipboard
@@ -595,6 +631,7 @@ class BasicCodeSection extends HTMLElement {
         let code_hljs_language = BasicCodeSection.get_code_hljs_language(code)
         if (this._language !== undefined && code_hljs_language !== this._language) // unlikely
             console.warn(`awesome-doc-code-sections.js:CodeSection::load : incompatible language specification (user-specified is ${this._language}, detected is ${code_hljs_language})`)
+        
         if (// ce_API.languages.has(code_hljs_language)
             awesome_doc_code_sections.configuration.CE.has(code_hljs_language)) {
             let CE_button = new SendToGodboltButton
@@ -629,6 +666,7 @@ class BasicCodeSection extends HTMLElement {
             let code = value.textContent
                         .replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
             let node = new BasicCodeSection(code, language);
+            if (language)
                 node.setAttribute('language', language)
             value.replaceWith(node);
         };
@@ -655,7 +693,7 @@ class BasicCodeSection extends HTMLElement {
 
         let code = $(this).find("pre code")
         if (code.length == 0)
-            console.error(`awesome-doc-code-sections.js:CodeSection::language(get): ill-formed element`)
+            console.error(`awesome-doc-code-sections.js:CodeSection::language(get): ill-formed element (expect pre>code as childrens)`)
         return BasicCodeSection.get_code_hljs_language(code[0])
     }
 }
@@ -667,6 +705,8 @@ class CodeSection extends BasicCodeSection {
 // otherwise it is automatically detected based on fetched code content
 //
 // <CodeSection language='cpp'>[some code here]</CodeSection>
+
+    type = CodeSection
 
     static HTMLElement_name = 'awesome-doc-code-sections_code-section'
     static loading_animation = (function(){
@@ -692,17 +732,18 @@ class CodeSection extends BasicCodeSection {
     }
 
     constructor(code, language) {
+        super(code, language)
+    }
+
+    load() {
         let parsed_code = undefined
-        try             { parsed_code = new ParsedCode(code, language) }
-        catch (error)   {
-            super()
-            this.innerHTML = `<p style="color:red; border-style: solid; border-color: red;">awesome-doc-code-sections:CodeSection: error : ${error}</p>`
-            return
-        }
-        super(parsed_code.code, language);
+        try             { parsed_code = new ParsedCode(this.code, this._language) }
+        catch (error)   { this.on_critical_internal_error(error); return }
+
+        this.code = parsed_code.code
         this.parsed_code = parsed_code
 
-        console.log(this.parsed_code.ce_options)
+        super.load()
 
         this.#initialize_panels()
         if (this.parsed_code.ce_options.add_in_doc_execution)
@@ -719,7 +760,7 @@ class CodeSection extends BasicCodeSection {
         this.appendChild(this.right_panel)
 
         utility.apply_css(this.right_panel, {
-            display:    'flex',
+            display:    'none',
             alignItems: 'stretch',
             boxSizing:  'border-box',
             position:   'relative',
@@ -743,11 +784,15 @@ class CodeSection extends BasicCodeSection {
     fetch_execution() {
 
         this.left_panel.style.width = '50%'
+        this.right_panel.style.display = 'flex'
         this.execution_element.style.display = 'none'
         this.loading_animation_element.style.display = 'flex'
 
         // right panel: replace with result
         ce_API.fetch_execution_result(this.ce_options, this.ce_code)
+            .catch((error) => {
+                this.on_critical_internal_error(`CodeSection: ce_API.fetch_execution_result failed [${error}]`)
+            })
             .then((result) => {
 
                 // CE header: parse & remove
@@ -805,6 +850,7 @@ class CodeSection extends BasicCodeSection {
             let code = value.textContent
                         .replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
             let node = new CodeSection(code, language);
+            if (language)
                 node.setAttribute('language', language)
             value.replaceWith(node);
         };
@@ -822,29 +868,30 @@ class RemoteCodeSection extends CodeSection {
 // Additionaly, the language code language can be forced (`code_language` parameter, or `language` attributes),
 // otherwise it is automatically detected based on fetched code content
 
+    type = RemoteCodeSection
+
     static HTMLElement_name = 'awesome-doc-code-sections_remote-code-section'
 
     constructor(code_url, language) {
-        super(); // defered initialization in `#load`
+        super(undefined, language); // defered initialization in `#load`
+        this.code_url = code_url;
+    }
 
-        if (code_url === undefined && this.getAttribute('url') != undefined)
-            code_url = this.getAttribute('url')
-        if (language === undefined && this.getAttribute('language') != undefined)
-            language = this.getAttribute('language')
+    connectedCallback() {
+        this.code_url = this.code_url || this.getAttribute('url')
+        this._language = this._language || this.getAttribute('language') || undefined
+        if (this._language)
+            this._language = this._language.replace('language-', '')
 
-        if (code_url === undefined) {
-            this.innerHTML = '<p>awesome-doc-code-sections:RemoteCodeSection : missing code_url</p>'
+        if (!this.code_url) {
+            super.on_critical_internal_error('RemoteCodeSection : missing mandatory [url] attribute')
             return
         }
-        if (language === undefined) { // perhaps nothing is better than that ... ?
-            console.log(`awesome-doc-code-sections.js:RemoteCodeSection : attempting fallback language : ${language}`)
-            language = RemoteCodeSection.get_url_extension(code_url)
+        if (!this._language && this.code_url) { // perhaps nothing is better than that ... ?
+            this._language = RemoteCodeSection.get_url_extension(this.code_url)
+            console.log(`awesome-doc-code-sections.js:RemoteCodeSection : fallback language from url extension : [${this._language}]`)
         }
-
-        this.code_url = code_url;
-        super._language = language;
-
-        this.#load();
+        this.load()
     }
 
     static get_url_extension(url) {
@@ -856,27 +903,29 @@ class RemoteCodeSection extends CodeSection {
         }
     }
 
-    #load() {
+    load() {
 
         let apply_code = (code) => {
         // defered initialization
-            super.parsed_code = new ParsedCode(code, super.language)
+            this.code = code
             super.load();
         }
 
+        let _this = this
         let xhr = new XMLHttpRequest();
-        xhr.open('GET', this.code_url); // TODO: async
-        xhr.onerror = function() {
-            console.error(`awesome-doc-code-sections.js:RemoteCodeSection : Network Error`);
-        };
-        xhr.onload = function() {
+            xhr.open('GET', this.code_url);
+            xhr.onerror = function() {
+                _this.on_critical_internal_error(`RemoteCodeSection: network Error`)
+            };
+            xhr.onload = function() {
 
-            if (xhr.status != 200) {
-                return;
-            }
-            apply_code(xhr.responseText)
-        };
-        xhr.send();
+                if (xhr.status != 200) {
+                    _this.on_critical_internal_error(`RemoteCodeSection: bad request status ${xhr.status}`)
+                    return;
+                }
+                apply_code(xhr.responseText)
+            };
+            xhr.send();
     }
 
     static Initialize_DivHTMLElements() {
@@ -896,8 +945,8 @@ class RemoteCodeSection extends CodeSection {
             // let language = (value.classList.length != 1 ? value.classList[1] : undefined);
 
             let node = new RemoteCodeSection(url, language);
-                node.setAttribute('url', url);
-                node.setAttribute('language', language)
+            if (url)        node.setAttribute('url', url);
+            if (language)   node.setAttribute('language', language)
             value.replaceWith(node);
         });
     }
@@ -1128,7 +1177,7 @@ awesome_doc_code_sections.options = new class{
 }()
 
 awesome_doc_code_sections.initialize = function() {
-
+   
     $(function() {
         $(document).ready(function() {
 
