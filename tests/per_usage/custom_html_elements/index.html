@@ -153,7 +153,7 @@
 
         <h2>Code Section</h2>
 
-        <!-- no execution, show::block
+        no execution, show::block
         <awesome-doc-code-sections_code-section language="cpp">
         THIS IS HIDDEN
 // @awesome-doc-code-sections::show::block::begin
@@ -161,13 +161,29 @@ auto i = 42; // test
 return i;
 // @awesome-doc-code-sections::show::block::end
         THIS IS HIDDEN TOO
-        </awesome-doc-code-sections_code-section> -->
+        </awesome-doc-code-sections_code-section>
+
+        execute (default CE configuration), success
+        <awesome-doc-code-sections_code-section language="cpp">
+            // @awesome-doc-code-sections::CE={
+            //  "add_in_doc_execution" : true
+            //  }
+            auto main() -> int { return 42; }
+        </awesome-doc-code-sections_code-section>
+
+        execute (default CE configuration), failure
+        <awesome-doc-code-sections_code-section language="cpp">
+            // @awesome-doc-code-sections::CE={
+            //  "add_in_doc_execution" : true
+            //  }
+            auto main() -> int { THIS IS ILL-FORMED CODE }
+        </awesome-doc-code-sections_code-section>
 
         <!-- TODO: other test cases -->
 
         <h2>Remote Code Section</h2>
 
-        <!-- <a href="https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/tests/resources/code_content/noexecute_show_block.cpp">
+        <a href="https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/tests/resources/code_content/noexecute_show_block.cpp">
             no execution, show (block)
         </a>
         <awesome-doc-code-sections_remote-code-section url="https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/tests/resources/code_content/noexecute_show_block.cpp">
@@ -183,12 +199,16 @@ return i;
             execute (default CE configuration), skip block/line
         </a>
         <awesome-doc-code-sections_remote-code-section url="https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/tests/resources/code_content/execute_defaultCE_skip_line_block.cpp">
-        </awesome-doc-code-sections_remote-code-section> -->
+        </awesome-doc-code-sections_remote-code-section>
 
         <a href="https://github.com/GuillaumeDua/awesome-doc-code-sections/blob/main/tests/resources/code_content/execute_customCE_show_line_block.cpp">
             execution (custom CE configuration), show (line, block)
         </a>
         <awesome-doc-code-sections_remote-code-section url="https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/tests/resources/code_content/execute_customCE_show_line_block.cpp">
+        </awesome-doc-code-sections_remote-code-section>
+
+        Error : non-existing resource at url
+        <awesome-doc-code-sections_remote-code-section url="https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/tests/resources/code_content/NOT_EXISTING_RESOURCE">
         </awesome-doc-code-sections_remote-code-section>
 
     </div>
