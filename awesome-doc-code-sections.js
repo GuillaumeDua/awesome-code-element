@@ -711,7 +711,7 @@ class CodeSection extends BasicCodeSection {
     static HTMLElement_name = 'awesome-doc-code-sections_code-section'
     static loading_animation = (function(){
     // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
-        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/images/loading_animation.svg'
+        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/resources/images/loading_animation.svg'
         let loading_animation = document.createElement('img');
             loading_animation.src = loading_animation_fallback_url
         utility.apply_css(loading_animation, {
