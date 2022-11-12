@@ -331,6 +331,16 @@ class utility {
         for (const property in styles)
             element.style[property] = styles[property];
     }
+    static create_shadowroot_slot(element, when_childrens_attached) {
+        element.attachShadow({ mode: 'open' });
+        element.shadowRoot.innerHTML = `<slot></slot>`;
+        const slot = element.shadowRoot.querySelector('slot');
+    
+        slot.addEventListener('slotchange', (event) => {
+            const childrens = event.target.assignedElements();
+            when_childrens_attached(childrens)
+        });
+    }
 }
 
 // ============
@@ -515,17 +525,6 @@ class SendToGodboltButton extends HTMLButtonElement {
 }
 customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton, {extends: 'button'});
 
-function create_shadowroot_slot(element, when_childrens_attached) {
-    element.attachShadow({ mode: 'open' });
-    element.shadowRoot.innerHTML = `<slot></slot>`;
-    const slot = element.shadowRoot.querySelector('slot');
-
-    slot.addEventListener('slotchange', (event) => {
-        const childrens = event.target.assignedElements();
-        when_childrens_attached(childrens)
-    });
-}
-
 class BasicCodeSection extends HTMLElement {
 // Basic code section (meaning, no metadata parsing), with synthax-coloration provided by highlightjs
 // Additionaly, the language code language can be forced (`code_language` parameter, or `language` attributes),
@@ -562,13 +561,12 @@ class BasicCodeSection extends HTMLElement {
         this.appendChild(error_element)
     }
 
-    shadow_root_callback(childrens) {
+    #shadow_root_callback(childrens) {
         console.log(`BasicCodeSection::shadowRoot : [${this.textContent}]`)
         this.replaceWith(new this.type(this.textContent, this._language))
     }
 
     connectedCallback() {
-        console.log(`BasicCodeSection::connectedCallback with\n[${this.code}]`)
         try {
             this.code = this.code || this.textContent || this.getAttribute('code')
             this._language = this._language || this.getAttribute('language') || undefined
@@ -577,7 +575,7 @@ class BasicCodeSection extends HTMLElement {
 
             if (!this.code || this.code.length == 0) {
                 let _this = this
-                create_shadowroot_slot(this, function(){ _this.shadow_root_callback()})
+                utility.create_shadowroot_slot(this, function(){ _this.#shadow_root_callback()})
             }
             else
                 this.load()
@@ -643,39 +641,6 @@ class BasicCodeSection extends HTMLElement {
         awesome_doc_code_sections.auto_hide_buttons_resize_observer.observe(this.firstChild /* code_node */)
     }
 
-    static Initialize_DivHTMLElements() {
-    // expected formats :
-    //
-    // <div class='awesome-doc-code-sections_basic-code-section' [language='cpp']>
-    //  one line of code here
-    // </div>
-    //
-    // <div class='awesome-doc-code-sections_basic-code-section' [language='cpp']>
-    //   <pre>
-    //      <code>
-    //  mutiples
-    //  lines of
-    //  code here
-    //      </code>
-    //   </pre>
-    // </div>
-
-        let replace_by_HTMLElement = (index, value) => {
-
-            let language = value.getAttribute('language')
-            let code = value.textContent
-                        .replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
-            let node = new BasicCodeSection(code, language);
-            if (language)
-                node.setAttribute('language', language)
-            value.replaceWith(node);
-        };
-
-        let elements = $('body').find(`div[class=${BasicCodeSection.HTMLElement_name}]`)
-        console.log(`awesome-doc-code-sections.js:CodeSection : Initialize_DivHTMLElements : replacing ${elements.length} element(s) ...`)
-        elements.each(replace_by_HTMLElement)
-    }
-
     static get_code_hljs_language(code_tag) {
         if (code_tag === undefined || code_tag.tagName !== 'CODE')
             console.error(`awesome-doc-code-sections.js:CodeSection::get_code_hljs_language(): bad input`)
@@ -695,6 +660,20 @@ class BasicCodeSection extends HTMLElement {
         if (code.length == 0)
             console.error(`awesome-doc-code-sections.js:CodeSection::language(get): ill-formed element (expect pre>code as childrens)`)
         return BasicCodeSection.get_code_hljs_language(code[0])
+    }
+
+    static PlaceholdersTranslation = {
+        type : BasicCodeSection,
+        query : `div[class=${BasicCodeSection.HTMLElement_name}]`,
+        translate : (element) => {
+            let language = element.getAttribute('language')
+            let code = element.textContent
+                        .replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
+            let node = new BasicCodeSection(code, language);
+            if (language)
+                node.setAttribute('language', language)
+            return node
+        }
     }
 }
 customElements.define(BasicCodeSection.HTMLElement_name, BasicCodeSection);
@@ -827,37 +806,18 @@ class CodeSection extends BasicCodeSection {
             })
     }
 
-    static Initialize_DivHTMLElements() {
-    // expected formats :
-    //
-    // <div class='awesome-doc-code-sections_code-section' [language='cpp']>
-    //  one line of code here
-    // </div>
-    //
-    // <div class='awesome-doc-code-sections_code-section' [language='cpp']>
-    //   <pre>
-    //      <code>
-    //  mutiples
-    //  lines of
-    //  code here
-    //      </code>
-    //   </pre>
-    // </div>
-
-        let replace_by_HTMLElement = (index, value) => {
-
-            let language = value.getAttribute('language')
-            let code = value.textContent
+    static PlaceholdersTranslation = { // TODO: remove redundancy (with BasicCodeSection)
+        type : CodeSection,
+        query : `div[class=${CodeSection.HTMLElement_name}]`,
+        translate : (element) => {
+            let language = element.getAttribute('language')
+            let code = element.textContent
                         .replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
             let node = new CodeSection(code, language);
             if (language)
                 node.setAttribute('language', language)
-            value.replaceWith(node);
-        };
-
-        let elements = $('body').find(`div[class=${CodeSection.HTMLElement_name}]`)
-        console.log(`awesome-doc-code-sections.js:CodeSection : Initialize_DivHTMLElements : replacing ${elements.length} element(s) ...`)
-        elements.each(replace_by_HTMLElement)
+            return node
+        }
     }
 }
 customElements.define(CodeSection.HTMLElement_name, CodeSection);
@@ -928,27 +888,23 @@ class RemoteCodeSection extends CodeSection {
             xhr.send();
     }
 
-    static Initialize_DivHTMLElements() {
-    // expected format :
-    // <div class='awesome-doc-code-sections_remote-code-section' url='some/url/to/code[.language]' [language='cpp']>
-    // </div>
-        var place_holders = $('body').find(`div[class=${RemoteCodeSection.HTMLElement_name}]`);
-        console.log(`awesome-doc-code-sections.js:RemoteCodeSection : Initialize_DivHTMLElements : replacing ${place_holders.length} elements ...`)
-        place_holders.each((index, value) => {
-
-            if (value.getAttribute('url') === undefined) {
-                console.error('awesome-doc-code-sections.js:inject_examples : div/code_example is missing an url attribute')
-                return true; // ill-formed, skip this element but continue iteration
+    static PlaceholdersTranslation = { // TODO: remove redundancy (with BasicCodeSection)
+        type : RemoteCodeSection,
+        query : `div[class=${RemoteCodeSection.HTMLElement_name}]`,
+        translate : (element) => {
+            if (element.getAttribute('url') === undefined) {
+                console.error('awesome-doc-code-sections.js: PlaceholdersTranslation(RemoteCodeSection): div/code_example is missing an url attribute')
+                return undefined; // ill-formed, skip this element but continue iteration
             }
-            let url = value.getAttribute('url')
-            let language = value.getAttribute('language')
-            // let language = (value.classList.length != 1 ? value.classList[1] : undefined);
+            let url = element.getAttribute('url')
+            let language = element.getAttribute('language')
+            // let language = (element.classList.length != 1 ? element.classList[1] : undefined);
 
             let node = new RemoteCodeSection(url, language);
             if (url)        node.setAttribute('url', url);
             if (language)   node.setAttribute('language', language)
-            value.replaceWith(node);
-        });
+            return node
+        }
     }
 }
 customElements.define(RemoteCodeSection.HTMLElement_name, RemoteCodeSection);
@@ -998,7 +954,7 @@ class ThemeSelector {
                 <link id="${ThemeSelector.stylesheet_HTML_placeholder_id}" rel="stylesheet"/>`
             )
     }
-    static Initialize_SelectHTMLElements = function() {
+    static Initialize = function() {
 
         let onOptionSelectedChange = function() {
             let selected_option = $(this).find('option:selected')
@@ -1193,13 +1149,23 @@ awesome_doc_code_sections.initialize = function() {
                     awesome_doc_code_sections.ToggleDarkMode.initialize()
             }
 
-            // replace <select/> with proper HTML elements
-            awesome_doc_code_sections.ThemeSelector.Initialize_SelectHTMLElements();
-            // replace <div/> with proper HTML elements
-            // TODO: Make generic
-            awesome_doc_code_sections.HTML_elements.BasicCodeSection.Initialize_DivHTMLElements();
-            awesome_doc_code_sections.HTML_elements.CodeSection.Initialize_DivHTMLElements();
-            awesome_doc_code_sections.HTML_elements.RemoteCodeSection.Initialize_DivHTMLElements();
+            awesome_doc_code_sections.ThemeSelector.Initialize()
+
+            let ReplaceHTMLPlaceholders = (translation) => {
+
+                let elements = $('body').find(translation.query)
+                console.log(`awesome-doc-code-sections.js: ReplaceHTMLPlaceholders(${translation.type.name}) : replacing ${elements.length} element(s) ...`)
+                elements.each((index, element) => {
+                    let translated_element = translation.translate(element)
+                    if (translated_element)
+                        element.replaceWith(translated_element)
+                })
+            }
+            [   // replace placeholders with proper HTML elements
+                awesome_doc_code_sections.HTML_elements.BasicCodeSection,
+                awesome_doc_code_sections.HTML_elements.CodeSection,
+                awesome_doc_code_sections.HTML_elements.RemoteCodeSection
+            ].forEach(html_component => ReplaceHTMLPlaceholders(html_component.PlaceholdersTranslation))
 
             if (awesome_doc_code_sections.options.doxygen_awesome_css_compatibility === true) {
                 console.log(`awesome-doc-code-sections.js:initialize: doxygen-awesome-css compatiblity ...`)
