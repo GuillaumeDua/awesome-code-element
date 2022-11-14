@@ -525,6 +525,233 @@ class SendToGodboltButton extends HTMLButtonElement {
 }
 customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton, {extends: 'button'});
 
+// WIP
+// TODO: private/hidden
+class CodeSection_HTMLElement extends HTMLElement {
+// HTML layout for CodeSection
+
+    constructor(parameters) {
+        super();
+        this.initialize_parameters(parameters)
+    }
+
+    initialize_parameters(parameters) {
+        throw 'BasicCodeSection_HTMLElement:initialize_parameters : not overrided yet'
+    }
+
+    connectedCallback() {
+        try {
+            if (!this.initialize_parameters()) {
+                let _this = this
+                utility.create_shadowroot_slot(this, function(){ _this.#shadow_root_callback()})
+            }
+            else
+                this.#initialize_HTML()
+        }
+        catch (error) {
+            console.log(`${error}`)
+            this.on_critical_internal_error(error)
+        }
+    }
+    #shadow_root_callback(childrens) {
+    // defered initialization
+        this.initialize_parameters()
+        console.log(`BasicCodeSection_HTMLElement::shadowRoot : [${this.parameters}]`)
+        // this.replaceWith(new this.type(this.parameters))
+        this.#initialize_HTML()
+    }
+
+    html_elements = {
+        panels : {
+            left : undefined,
+            right: undefined
+        },
+        code_element : undefined,
+        execution_element : undefined
+    }
+
+    #initialize_HTML() {
+
+        this.innerHTML = ""
+
+        // this element
+        utility.apply_css(this, {
+            display:    'flex',
+            alignItems: 'stretch',
+            boxSizing:  'border-box',
+            width:      '100%'
+        })
+
+        // left panel : code content
+        const { left_panel, code_element } = this.#make_HTML_left_panel()
+        this.html_elements.panels.left = left_panel
+        this.html_elements.code_element = code_element
+        this.appendChild(this.html_elements.panels.left)
+        awesome_doc_code_sections.auto_hide_buttons_resize_observer.observe(this.html_elements.panels.left) // TODO: unobserve when this element is removed from the DOM
+
+        // right panel : execution
+        const { right_panel, execution_element } = this.#make_HTML_right_panel()
+        this.html_elements.panels.right = right_panel
+        this.html_elements.execution_element = execution_element
+        this.appendChild(this.html_elements.panels.right)
+
+        console.log('panels ok')
+    }
+    #make_HTML_left_panel() {
+        let left_panel = document.createElement('pre');
+        utility.apply_css(left_panel, {
+            zIndex:     1,
+            position:   'relative',
+            boxSizing:  'border-box',
+            top:        0,
+            left:       0,
+            width:      '100%',
+            margin:     0
+        })
+
+        let code = document.createElement('code');
+        utility.apply_css(code, {
+            height:     '100%',
+            width:      'auto',
+            boxSizing:  'border-box'
+        })
+        left_panel.appendChild(code)
+
+        // buttons : copy-to-clipboard
+        let copy_button = new CopyToClipboardButton()
+            copy_button.style.zIndex = left_panel.style.zIndex + 1
+        left_panel.appendChild(copy_button)
+
+        // TODO: dynamically
+        // buttons : send-to-godbolt (only if a CE configuration for that language exists)
+        let code_hljs_language = BasicCodeSection.get_code_hljs_language(code)
+        if (this._language !== undefined && code_hljs_language !== this._language) // unlikely
+            console.warn(`awesome-doc-code-sections.js:CodeSection::load : incompatible language specification (user-specified is ${this._language}, detected is ${code_hljs_language})`)
+        
+        if (// ce_API.languages.has(code_hljs_language)
+            awesome_doc_code_sections.configuration.CE.has(code_hljs_language)) {
+            let CE_button = new SendToGodboltButton
+                CE_button.style.zIndex = left_panel.style.zIndex + 1
+            left_panel.appendChild(CE_button)
+        }
+        return { left_panel, code }
+    }
+    #make_HTML_right_panel() {
+        let right_panel = document.createElement('div')
+
+        utility.apply_css(right_panel, {
+            display:    'none',
+            alignItems: 'stretch',
+            boxSizing:  'border-box',
+            position:   'relative',
+            top:        0,
+            left:       0,
+            width:      '50%',
+            margin:     0
+        })
+        // right panel: loading
+        this.loading_animation_element = right_panel.appendChild(CodeSection.loading_animation.cloneNode())
+        this.loading_animation_element.style.display = 'block'
+        // right panel: execution
+        let execution_element = document.createElement('div') // placeholder
+        utility.apply_css(execution_element, {
+            width:          '100%',
+            paddingTop:     '1px',
+            display:        'none' // hidden by default
+        })
+        right_panel.appendChild(execution_element)
+        return { right_panel, execution_element }
+    }
+
+    get language() {
+
+        if (this._language !== undefined)
+            return this._language
+
+        let code = $(this).find("pre code")
+        if (code.length == 0)
+            console.error(`awesome-doc-code-sections.js:CodeSection::language(get): ill-formed element (expect pre>code as childrens)`)
+        return BasicCodeSection.get_code_hljs_language(code[0])
+    }
+
+    static get_code_hljs_language(code_tag) {
+        if (code_tag === undefined || code_tag.tagName !== 'CODE')
+            console.error(`awesome-doc-code-sections.js:CodeSection::get_code_hljs_language(): bad input`)
+
+        let result = code_tag.classList.toString().replace(/hljs language-/g, '')
+        if (result.indexOf(' ') !== -1)
+            console.error(`awesome-doc-code-sections.js:CodeSection::get_code_hljs_language(): ill-formed code hljs classList`)
+        return result
+    }
+
+    on_critical_internal_error(error = "") {
+
+        console.error(
+            `awesome-doc-code-sections.js:BasicCodeSection: on_critical_internal_error : fallback rendering
+            ${error}`
+        )
+
+        if (!this.isConnected)
+            return
+
+        let error_element = document.createElement('p')
+            error_element.textContent = error || `awesome-doc-code-sections:BasicCodeSection: unknown error`
+        utility.apply_css(error_element, {
+            color: "red",
+            "border" : "2px solid red"
+        })
+        this.innerHTML = ""
+        // this.childNodes.forEach((child) => { child.style.display = 'none' })
+        this.appendChild(error_element)
+    }
+}
+
+class SimpleCodeSection extends CodeSection_HTMLElement {
+
+    _code = ""
+    _language = ""
+
+    get code() {
+        return this._code
+    }
+    set code(value) {
+        this._code = value
+
+        // update view
+        this.html_elements.code_element.textContent = this._code || ""
+
+        // update view syle
+        this.code_element.classList = ""
+        if (this._language) {
+            this.code_element.classList.add('hljs', `language-${this.language}`);
+        }
+        hljs.highlightElement(code)
+    }
+
+    constructor(parameters) {
+        super(parameters)
+    }
+
+    initialize_parameters(parameters) {
+        if (parameters) {
+            this._code = parameters.code
+            this._language = parameters.language
+        }
+
+        this._code      = this._code || this.textContent || this.getAttribute('code') || undefined
+        this._language  = this._language || this.getAttribute('language') || undefined
+        if (this._language)
+            this._language = this._language.replace('language-', '')
+
+        return (!this.code || this.code.length == 0)
+    }
+}
+customElements.define('simple-code-section', SimpleCodeSection);
+
+
+// /WIP
+
+
 class BasicCodeSection extends HTMLElement {
 // Basic code section (meaning, no metadata parsing), with synthax-coloration provided by highlightjs
 // Additionaly, the language code language can be forced (`code_language` parameter, or `language` attributes),
@@ -606,7 +833,7 @@ class BasicCodeSection extends HTMLElement {
             width:      '100%',
             margin:     0
         })
-            
+
         let code = document.createElement('code');
             code.textContent = this.code
         utility.apply_css(code, {
