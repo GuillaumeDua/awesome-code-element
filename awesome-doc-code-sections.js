@@ -579,7 +579,8 @@ class CodeSection_HTMLElement extends HTMLElement {
             display:    'flex',
             alignItems: 'stretch',
             boxSizing:  'border-box',
-            width:      '100%'
+            width:      '100%',
+            'min-height': '50px'
         })
 
         // left panel : code content
@@ -609,13 +610,13 @@ class CodeSection_HTMLElement extends HTMLElement {
             margin:     0
         })
 
-        let code = document.createElement('code');
-        utility.apply_css(code, {
+        let code_element = document.createElement('code');
+        utility.apply_css(code_element, {
             height:     '100%',
             width:      'auto',
             boxSizing:  'border-box'
         })
-        left_panel.appendChild(code)
+        code_element = left_panel.appendChild(code_element)
 
         // buttons : copy-to-clipboard
         let copy_button = new CopyToClipboardButton()
@@ -624,7 +625,7 @@ class CodeSection_HTMLElement extends HTMLElement {
 
         // TODO: dynamically
         // buttons : send-to-godbolt (only if a CE configuration for that language exists)
-        let code_hljs_language = BasicCodeSection.get_code_hljs_language(code)
+        let code_hljs_language = BasicCodeSection.get_code_hljs_language(code_element)
         if (this._language !== undefined && code_hljs_language !== this._language) // unlikely
             console.warn(`awesome-doc-code-sections.js:CodeSection::load : incompatible language specification (user-specified is ${this._language}, detected is ${code_hljs_language})`)
         
@@ -634,7 +635,7 @@ class CodeSection_HTMLElement extends HTMLElement {
                 CE_button.style.zIndex = left_panel.style.zIndex + 1
             left_panel.appendChild(CE_button)
         }
-        return { left_panel, code }
+        return { left_panel, code_element }
     }
     #make_HTML_right_panel() {
         let right_panel = document.createElement('div')
