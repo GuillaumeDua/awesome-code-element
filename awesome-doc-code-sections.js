@@ -341,6 +341,10 @@ class utility {
             when_childrens_attached(childrens)
         });
     }
+    static remove_shadowroot(element) {
+        element.shadowRoot.innerHTML = ""
+        element.outerHTML = element.outerHTML
+    }
 }
 
 // ============
@@ -536,15 +540,19 @@ class CodeSection_HTMLElement extends HTMLElement {
     constructor(parameters) {
         super();
         this.#_parameters = parameters
-        this.#initialize_HTML()
     }
 
     connectedCallback() {
-        console.log('connected')
+        console.log('CodeSection_HTMLElement: connectedCallback')
         try {
             if (!this.initialize_parameters(this.#_parameters)) {
+                console.log('CodeSection_HTMLElement: create shadown-root')
                 let _this = this
                 utility.create_shadowroot_slot(this, function(){ _this.#shadow_root_callback()})
+            }
+            else {
+                console.log('CodeSection_HTMLElement: no need for shadown-root')
+                this.when_initialized()
             }
         }
         catch (error) {
@@ -554,10 +562,13 @@ class CodeSection_HTMLElement extends HTMLElement {
     }
     #shadow_root_callback(childrens) {
     // defered initialization
-        this.initialize_parameters(this.#_parameters)
-        console.log(`BasicCodeSection_HTMLElement::shadowRoot : [${this.parameters}]`)
-        // this.replaceWith(new this.type(this.parameters))
-        // this.#initialize_HTML()
+
+        if (!this.initialize_parameters(this.#_parameters))
+            throw 'CodeSection_HTMLElement: invalid initialization after shadown-root callback'
+        
+        utility.remove_shadowroot(this)
+
+        this.when_initialized()
     }
 
     // html layout
@@ -668,7 +679,10 @@ class CodeSection_HTMLElement extends HTMLElement {
         // throw 'awesome-doc-code-sections.js:CodeSection_HTMLElement:initialize_parameters : not overrided yet'
         return true
     }
-
+    when_initialized() {
+        this.#initialize_HTML()
+    }
+    
     static get_code_hljs_language(code_tag) {
         if (code_tag === undefined || code_tag.tagName !== 'CODE')
             console.error(`awesome-doc-code-sections.js:CodeSection_HTMLElement::get_code_hljs_language(): bad input`)
@@ -747,13 +761,11 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         if (this._language)
             this._language = this._language.replace('language-', '')
 
-        console.log(this._code)
-        console.log(this._language)
-
-        return (this.code && this.code.length)
+        return (this.code && this.code.length) // requirement: valid, non-empty code
     }
-    connectedCallback() {
-        super.connectedCallback()
+
+    when_initialized() {
+        super.when_initialized()
         this.code = this.code // default view initialization
     }
 }
