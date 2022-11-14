@@ -530,23 +530,22 @@ customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton,
 class CodeSection_HTMLElement extends HTMLElement {
 // HTML layout for CodeSection
 
+    #_parameters = undefined // temporary storage for possible constructor-provided arguments
+
+    // HTMLElement
     constructor(parameters) {
         super();
-        this.initialize_parameters(parameters)
-    }
-
-    initialize_parameters(parameters) {
-        throw 'BasicCodeSection_HTMLElement:initialize_parameters : not overrided yet'
+        this.#_parameters = parameters
+        this.#initialize_HTML()
     }
 
     connectedCallback() {
+        console.log('connected')
         try {
-            if (!this.initialize_parameters()) {
+            if (!this.initialize_parameters(this.#_parameters)) {
                 let _this = this
                 utility.create_shadowroot_slot(this, function(){ _this.#shadow_root_callback()})
             }
-            else
-                this.#initialize_HTML()
         }
         catch (error) {
             console.log(`${error}`)
@@ -555,12 +554,13 @@ class CodeSection_HTMLElement extends HTMLElement {
     }
     #shadow_root_callback(childrens) {
     // defered initialization
-        this.initialize_parameters()
+        this.initialize_parameters(this.#_parameters)
         console.log(`BasicCodeSection_HTMLElement::shadowRoot : [${this.parameters}]`)
         // this.replaceWith(new this.type(this.parameters))
-        this.#initialize_HTML()
+        // this.#initialize_HTML()
     }
 
+    // html layout
     html_elements = {
         panels : {
             left : undefined,
@@ -569,7 +569,6 @@ class CodeSection_HTMLElement extends HTMLElement {
         code_element : undefined,
         execution_element : undefined
     }
-
     #initialize_HTML() {
 
         this.innerHTML = ""
@@ -664,24 +663,19 @@ class CodeSection_HTMLElement extends HTMLElement {
         return { right_panel, execution_element }
     }
 
-    get language() {
-
-        if (this._language !== undefined)
-            return this._language
-
-        let code = $(this).find("pre code")
-        if (code.length == 0)
-            console.error(`awesome-doc-code-sections.js:CodeSection::language(get): ill-formed element (expect pre>code as childrens)`)
-        return BasicCodeSection.get_code_hljs_language(code[0])
+    // initialization
+    initialize_parameters(parameters) {
+        // throw 'awesome-doc-code-sections.js:CodeSection_HTMLElement:initialize_parameters : not overrided yet'
+        return true
     }
 
     static get_code_hljs_language(code_tag) {
         if (code_tag === undefined || code_tag.tagName !== 'CODE')
-            console.error(`awesome-doc-code-sections.js:CodeSection::get_code_hljs_language(): bad input`)
+            console.error(`awesome-doc-code-sections.js:CodeSection_HTMLElement::get_code_hljs_language(): bad input`)
 
         let result = code_tag.classList.toString().replace(/hljs language-/g, '')
         if (result.indexOf(' ') !== -1)
-            console.error(`awesome-doc-code-sections.js:CodeSection::get_code_hljs_language(): ill-formed code hljs classList`)
+            console.error(`awesome-doc-code-sections.js:CodeSection_HTMLElement::get_code_hljs_language(): ill-formed code hljs classList`)
         return result
     }
 
@@ -722,11 +716,20 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this.html_elements.code_element.textContent = this._code || ""
 
         // update view syle
-        this.code_element.classList = ""
+        this.html_elements.code_element.classList = ""
         if (this._language) {
-            this.code_element.classList.add('hljs', `language-${this.language}`);
+            this.html_elements.code_element.classList.add('hljs', `language-${this.language}`);
         }
-        hljs.highlightElement(code)
+        hljs.highlightElement(this.html_elements.code_element)
+    }
+    get language() {
+
+        if (this._language !== undefined)
+            return this._language
+
+        if (!this.html_elements.code_element)
+            console.error(`awesome-doc-code-sections.js:CodeSection::language(get): ill-formed element (expect pre>code as childrens)`)
+        return BasicCodeSection.get_code_hljs_language(this.html_elements.code_element)
     }
 
     constructor(parameters) {
@@ -744,7 +747,14 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         if (this._language)
             this._language = this._language.replace('language-', '')
 
-        return (!this.code || this.code.length == 0)
+        console.log(this._code)
+        console.log(this._language)
+
+        return (this.code && this.code.length)
+    }
+    connectedCallback() {
+        super.connectedCallback()
+        this.code = this.code // default view initialization
     }
 }
 customElements.define('simple-code-section', SimpleCodeSection);
