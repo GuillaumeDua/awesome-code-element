@@ -351,32 +351,33 @@ class utility {
 // HTMLElements
 
 awesome_doc_code_sections.auto_hide_buttons_resize_observer = new ResizeObserver(entries => {
+
     for (let entry of entries) {
 
         let auto_hide_elements = (container, elements) => {
 
-            elements.each((index, element) => element.hidden = true)
+            elements.each((index, element) => element.style.display = 'none')
             container.onmouseover = () => {
-                elements.each((index, element) => { element.hidden = false })
+                elements.each((index, element) => { element.style.display = 'block' })
             }
             container.onmouseout = () => {
-                elements.each((index, element) => element.hidden = true)
+                elements.each((index, element) => element.style.display = 'none')
             }
         }
         let no_auto_hide_elements = (container, elements) => {
 
-            elements.each((index, element) => { element.hidden = false })
+            elements.each((index, element) => { element.style.display = 'block' })
             container.onmouseout = null
             container.onmouseover = null
         }
 
-        // cheaper than proper AABB to check if code's content overlap
-        let functor = (awesome_doc_code_sections.options.auto_hide_buttons
+        // cheaper than a proper AABB to check if code's content overlap with other elements
+        let functor = (
+                awesome_doc_code_sections.options.auto_hide_buttons
             ||  entry.target.clientWidth < 500
-            ||  entry.target.clientHeight < 50)
-            ? auto_hide_elements
+            ||  entry.target.clientHeight < 50
+        )   ? auto_hide_elements
             : no_auto_hide_elements
-        ;
 
         let elements = $(entry.target).find('button[is^=awesome-doc-code-sections_el_]')
         functor(entry.target, elements)
@@ -394,6 +395,7 @@ class CopyToClipboardButton extends HTMLButtonElement {
 
     constructor() {
         super();
+        this.setAttribute('is', CopyToClipboardButton.HTMLElement_name)
 
         this.title = CopyToClipboardButton.title
         this.innerHTML = CopyToClipboardButton.copyIcon
@@ -438,6 +440,7 @@ class SendToGodboltButton extends HTMLButtonElement {
     constructor() {
 
         super();
+        this.setAttribute('is', SendToGodboltButton.HTMLElement_name)
 
         this.title = SendToGodboltButton.title;
         this.innerHTML = SendToGodboltButton.icon;
@@ -600,14 +603,14 @@ class CodeSection_HTMLElement extends HTMLElement {
         this.html_elements.panels.left  = left_panel
         this.html_elements.code         = left_panel_elements.code
         this.html_elements.buttons      = left_panel_elements.buttons
-        this.appendChild(this.html_elements.panels.left)
+        this.html_elements.panels.left  = this.appendChild(this.html_elements.panels.left)
         awesome_doc_code_sections.auto_hide_buttons_resize_observer.observe(this.html_elements.panels.left) // TODO: unobserve when this element is removed from the DOM
 
         // right panel : execution
         const { right_panel, execution_element } = this.#make_HTML_right_panel()
         this.html_elements.panels.right = right_panel
         this.html_elements.execution_element = execution_element
-        this.appendChild(this.html_elements.panels.right)
+        this.html_elements.panels.right = this.appendChild(this.html_elements.panels.right)
     }
     #make_HTML_left_panel() {
         let left_panel = document.createElement('pre');
@@ -752,9 +755,8 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
     set language(value) {
 
-        console.log(`setting language from ${this._language} to ${value} ...`)
-
         this._language = value
+        this.setAttribute('language', this._language)
 
         // update hljs language
         this.html_elements.code.classList = this.html_elements.code.classList.toString().replace(/language-\w+/, `language-${this._language}`)
