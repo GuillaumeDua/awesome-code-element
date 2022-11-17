@@ -532,7 +532,7 @@ customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton,
 // WIP
 // TODO: private/hidden
 class CodeSection_HTMLElement extends HTMLElement {
-// HTML layout for CodeSection
+// HTML layout/barebone for CodeSection
 
     #_parameters = undefined // temporary storage for possible constructor-provided arguments
 
@@ -562,12 +562,10 @@ class CodeSection_HTMLElement extends HTMLElement {
     }
     #shadow_root_callback(childrens) {
     // defered initialization
-
         if (!this.initialize_parameters(this.#_parameters))
             throw 'CodeSection_HTMLElement: invalid initialization after shadown-root callback'
         
         utility.remove_shadowroot(this)
-
         this.when_initialized()
     }
 
@@ -577,13 +575,13 @@ class CodeSection_HTMLElement extends HTMLElement {
             left : undefined,
             right: undefined
         },
-        code_element : undefined,
-        execution_element : undefined
+        code : undefined,
+        execution_element : undefined,
+        buttons : undefined
     }
     #initialize_HTML() {
 
         this.innerHTML = ""
-
         // this element
         utility.apply_css(this, {
             display:    'flex',
@@ -594,9 +592,14 @@ class CodeSection_HTMLElement extends HTMLElement {
         })
 
         // left panel : code content
-        const { left_panel, code_element } = this.#make_HTML_left_panel()
-        this.html_elements.panels.left = left_panel
-        this.html_elements.code_element = code_element
+        const { 
+            panel: left_panel,
+            elements: left_panel_elements
+        } = this.#make_HTML_left_panel()
+
+        this.html_elements.panels.left  = left_panel
+        this.html_elements.code         = left_panel_elements.code
+        this.html_elements.buttons      = left_panel_elements.buttons
         this.appendChild(this.html_elements.panels.left)
         awesome_doc_code_sections.auto_hide_buttons_resize_observer.observe(this.html_elements.panels.left) // TODO: unobserve when this element is removed from the DOM
 
@@ -605,8 +608,6 @@ class CodeSection_HTMLElement extends HTMLElement {
         this.html_elements.panels.right = right_panel
         this.html_elements.execution_element = execution_element
         this.appendChild(this.html_elements.panels.right)
-
-        console.log('panels ok')
     }
     #make_HTML_left_panel() {
         let left_panel = document.createElement('pre');
@@ -631,21 +632,25 @@ class CodeSection_HTMLElement extends HTMLElement {
         // buttons : copy-to-clipboard
         let copy_button = new CopyToClipboardButton()
             copy_button.style.zIndex = left_panel.style.zIndex + 1
-        left_panel.appendChild(copy_button)
+            copy_button = left_panel.appendChild(copy_button)
 
-        // TODO: dynamically
-        // buttons : send-to-godbolt (only if a CE configuration for that language exists)
-        let code_hljs_language = BasicCodeSection.get_code_hljs_language(code_element)
-        if (this._language !== undefined && code_hljs_language !== this._language) // unlikely
-            console.warn(`awesome-doc-code-sections.js:CodeSection::load : incompatible language specification (user-specified is ${this._language}, detected is ${code_hljs_language})`)
-        
-        if (// ce_API.languages.has(code_hljs_language)
-            awesome_doc_code_sections.configuration.CE.has(code_hljs_language)) {
-            let CE_button = new SendToGodboltButton
-                CE_button.style.zIndex = left_panel.style.zIndex + 1
-            left_panel.appendChild(CE_button)
+        let CE_button = new SendToGodboltButton
+        utility.apply_css(CE_button, {
+            zIndex : left_panel.style.zIndex + 1,
+            display : 'none' // hidden by default
+        })
+        CE_button = left_panel.appendChild(CE_button)
+
+        return { 
+            panel: left_panel,
+            elements: {
+                code : code_element,
+                buttons : {
+                    copy: copy_button,
+                    CE: CE_button
+                }
+            }
         }
-        return { left_panel, code_element }
     }
     #make_HTML_right_panel() {
         let right_panel = document.createElement('div')
@@ -727,23 +732,37 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this._code = value
 
         // update view
-        this.html_elements.code_element.textContent = this._code || ""
+        this.html_elements.code.textContent = this._code || ""
 
         // update view syle
-        this.html_elements.code_element.classList = ""
+        this.html_elements.code.classList = ""
         if (this._language) {
-            this.html_elements.code_element.classList.add('hljs', `language-${this.language}`);
+            this.html_elements.code.classList.add('hljs', `language-${this.language}`);
         }
-        hljs.highlightElement(this.html_elements.code_element)
+        hljs.highlightElement(this.html_elements.code)
     }
     get language() {
 
         if (this._language !== undefined)
             return this._language
 
-        if (!this.html_elements.code_element)
+        if (!this.html_elements.code)
             console.error(`awesome-doc-code-sections.js:CodeSection::language(get): ill-formed element (expect pre>code as childrens)`)
-        return BasicCodeSection.get_code_hljs_language(this.html_elements.code_element)
+        return BasicCodeSection.get_code_hljs_language(this.html_elements.code)
+    }
+    set language(value) {
+
+        console.log(`setting language from ${this._language} to ${value} ...`)
+
+        this._language = value
+
+        // update hljs language
+        this.html_elements.code.classList = this.html_elements.code.classList.toString().replace(/language-\w+/, `language-${this._language}`)
+        hljs.highlightElement(this.html_elements.code)
+
+        this.html_elements.buttons.CE.style.display = awesome_doc_code_sections.configuration.CE.has(this._language)
+            ? 'block'
+            : 'none'
     }
 
     constructor(parameters) {
@@ -766,7 +785,10 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
 
     when_initialized() {
         super.when_initialized()
-        this.code = this.code // default view initialization
+
+        // default view initialization
+        this.code = this.code
+        this.language = this.language
     }
 }
 customElements.define('simple-code-section', SimpleCodeSection);
