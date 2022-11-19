@@ -91,17 +91,23 @@ class ParsedCode {
 
     static tag = '// @awesome-doc-code-sections'
 
-    code    = ''
-    ce_code = ''
+    raw = ''
+    to_display = ''
+    to_execute = ''
     ce_options = {}
 
-    constructor(code_arg, language) {
+    constructor(code_content, language) {
 
         // apply default configuration for given - non-mandatory - language
         if (awesome_doc_code_sections.configuration.CE.has(language))
             this.ce_options = awesome_doc_code_sections.configuration.CE.get(language)
 
-        this.#parse(code_arg)
+        if (!code_content || code_content.length === 0)
+            return // default construction
+
+        this.raw = code_content
+
+        this.#parse(code_content)
         this.#apply_ce_transformations()
     }
 
@@ -161,8 +167,8 @@ class ParsedCode {
             .reverse()
             .join('\n')
 
-        this.code = (code_only_show !== "" ? code_only_show : code_content)
-        this.ce_code = code_content
+        this.to_display = (code_only_show !== "" ? code_only_show : code_content)
+        this.to_execute = code_content
     }
     #apply_ce_transformations() {
 
@@ -172,7 +178,7 @@ class ParsedCode {
                 // replace includes
 
                 const regex = new RegExp(`^(\\s*?\\#.*?[\\"|\\<"].*?)(${value[0]})(.*?[\\"|\\>"])`, 'gm')
-                this.ce_code = this.ce_code.replace(regex, `$1${value[1]}$3`)
+                this.to_execute = this.to_execute.replace(regex, `$1${value[1]}$3`)
             })
         }
     }
@@ -343,7 +349,7 @@ class utility {
     }
     static remove_shadowroot(element) {
         element.shadowRoot.innerHTML = ""
-        element.outerHTML = element.outerHTML
+        // element.outerHTML = element.outerHTML
     }
 }
 
@@ -534,6 +540,7 @@ customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton,
 
 // WIP
 // TODO: private/hidden
+// TODO: as view
 class CodeSection_HTMLElement extends HTMLElement {
 // HTML layout/barebone for CodeSection
 
@@ -551,7 +558,7 @@ class CodeSection_HTMLElement extends HTMLElement {
             if (!this.initialize_parameters(this.#_parameters)) {
                 console.log('CodeSection_HTMLElement: create shadown-root')
                 let _this = this
-                utility.create_shadowroot_slot(this, function(){ _this.#shadow_root_callback()})
+                utility.create_shadowroot_slot(this, function(){ _this.#shadow_root_callback() })
             }
             else {
                 console.log('CodeSection_HTMLElement: no need for shadown-root')
@@ -563,13 +570,26 @@ class CodeSection_HTMLElement extends HTMLElement {
             this.on_critical_internal_error(error)
         }
     }
-    #shadow_root_callback(childrens) {
+    #shadow_root_callback() {
     // defered initialization
-        if (!this.initialize_parameters(this.#_parameters))
-            throw 'CodeSection_HTMLElement: invalid initialization after shadown-root callback'
-        
-        utility.remove_shadowroot(this)
-        this.when_initialized()
+
+        let _this = this
+        let error = (function(){
+            try {
+                return _this.initialize_parameters(_this.#_parameters)
+                    ? undefined
+                    : 'initialize_parameters failed with no detailed informations'
+            }
+            catch (error) {
+                return error
+            }
+        })()
+
+        utility.remove_shadowroot(this) // invalidates `this`
+        if (error) {
+            console.log(_this)
+            _this.on_critical_internal_error(error)
+        }
     }
 
     // html layout
@@ -715,27 +735,28 @@ class CodeSection_HTMLElement extends HTMLElement {
             error_element.textContent = error || `awesome-doc-code-sections:BasicCodeSection: unknown error`
         utility.apply_css(error_element, {
             color: "red",
-            "border" : "2px solid red"
+            border : "2px solid red"
         })
         this.innerHTML = ""
         // this.childNodes.forEach((child) => { child.style.display = 'none' })
-        this.appendChild(error_element)
+        this.replaceWith(error_element)
     }
 }
 
+// TODO: better model & view separation
 class SimpleCodeSection extends CodeSection_HTMLElement {
 
-    _code = ""
     _language = ""
 
     get code() {
-        return this._code
+        return this._code.to_display
     }
     set code(value) {
-        this._code = value
+        this._code = new ParsedCode(value, this.language)
+        this.toggle_execution = this.toggle_execution // trigger execution if required
 
         // update view
-        this.html_elements.code.textContent = this._code || ""
+        this.html_elements.code.textContent = this._code.to_display || ""
 
         // update view syle
         this.html_elements.code.classList = ""
@@ -767,10 +788,10 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             : 'none'
     }
 
+    // construction/initialization
     constructor(parameters) {
         super(parameters)
     }
-
     initialize_parameters(parameters) {
         if (parameters) {
             this._code = parameters.code
@@ -784,7 +805,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
 
         return (this.code && this.code.length) // requirement: valid, non-empty code
     }
-
     when_initialized() {
         super.when_initialized()
 
@@ -792,6 +812,99 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this.code = this.code
         this.language = this.language
     }
+
+    // core logic
+    //      proxy on CE configuration -> refresh execution
+
+    // parsing
+    _code = new ParsedCode()
+    set toggle_parsing(value) {
+
+        let parsed_code = undefined
+        try             { parsed_code = new ParsedCode(this.code, this._language) }
+        catch (error)   { this.on_critical_internal_error(error); return }
+
+        this.code = parsed_code.to_display
+        this.parsed_code = parsed_code
+    }
+
+    // execution
+    _toggle_execution = false
+    set toggle_execution(value) {
+
+        _toggle_execution = value
+        if (_toggle_execution) {
+            this.html_elements.panels.right.style.display = 'block'
+        }
+        else {
+            this.html_elements.panels.right.style.display = 'none'
+        }
+    }
+    get toggle_execution() {
+        return _toggle_execution
+    }
+    fetch_execution() {
+
+        // WIP
+
+        this.left_panel.style.width = '50%'
+        this.right_panel.style.display = 'flex'
+        this.execution_element.style.display = 'none'
+        this.loading_animation_element.style.display = 'flex'
+
+        // right panel: replace with result
+        ce_API.fetch_execution_result(this.ce_options, this.ce_code)
+            .catch((error) => {
+                this.on_critical_internal_error(`CodeSection: ce_API.fetch_execution_result failed [${error}]`)
+            })
+            .then((result) => {
+
+                // CE header: parse & remove
+                let regex = new RegExp('# Compilation provided by Compiler Explorer at https://godbolt.org/\n\n(# Compiler exited with result code (-?\\d+))')
+                let regex_result = regex.exec(result)
+
+                if (regex_result === null || regex_result.length != 3) {
+                    return {
+                        value : result,
+                        error : 'unknown',
+                        return_code : -1
+                    }
+                }
+                
+                return {
+                    value : result.substring(regex_result[0].length - regex_result[1].length), // trim off header
+                    error : undefined,
+                    return_code : regex_result[2]
+                }
+            })
+            .then((result) => {
+
+                let execution_element = new BasicCodeSection(result.value)
+                    execution_element.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
+                    execution_element.style.borderTop = '2px solid ' + (result.return_code == -1 ? 'red' : 'green')
+
+                this.execution_element.replaceWith(execution_element)
+                this.execution_element = execution_element
+
+                this.loading_animation_element.style.display = 'none'
+                this.execution_element.style.display = 'flex'
+            })
+    }
+
+    static loading_animation = (function(){
+        // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
+        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/resources/images/loading_animation.svg'
+        let loading_animation = document.createElement('img');
+            loading_animation.src = loading_animation_fallback_url
+        utility.apply_css(loading_animation, {
+            contain             : 'strict',
+            border              : '1px solid var(--primary-color)',
+            borderRadius        : '5px',
+            width               : '100%',
+            display             : 'none' // hidden by default
+        })
+        return loading_animation
+    })()
 }
 customElements.define('simple-code-section', SimpleCodeSection);
 
@@ -919,7 +1032,7 @@ class BasicCodeSection extends HTMLElement {
         if (code_tag === undefined || code_tag.tagName !== 'CODE')
             console.error(`awesome-doc-code-sections.js:CodeSection::get_code_hljs_language(): bad input`)
 
-        let result = code_tag.classList.toString().replace(/hljs language-/g, '')
+        let result = code_tag.classList.toString().replace(/hljs language-/g, '') // TODO: proper matching
         if (result.indexOf(' ') !== -1)
             console.error(`awesome-doc-code-sections.js:CodeSection::get_code_hljs_language(): ill-formed code hljs classList`)
         return result
@@ -978,7 +1091,7 @@ class CodeSection extends BasicCodeSection {
     })()
 
     get ce_code() {
-        return this.parsed_code.ce_code
+        return this.parsed_code.to_execute
     }
     get ce_options() {
         return this.parsed_code.ce_options
@@ -993,7 +1106,7 @@ class CodeSection extends BasicCodeSection {
         try             { parsed_code = new ParsedCode(this.code, this._language) }
         catch (error)   { this.on_critical_internal_error(error); return }
 
-        this.code = parsed_code.code
+        this.code = parsed_code.to_display
         this.parsed_code = parsed_code
 
         super.load()
