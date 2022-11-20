@@ -338,14 +338,22 @@ class utility {
             element.style[property] = styles[property];
     }
     static create_shadowroot_slot(element, when_childrens_attached) {
-        element.attachShadow({ mode: 'open' });
+        if (!element.shadowRoot)
+            element.attachShadow({ mode: 'open' });
         element.shadowRoot.innerHTML = `<slot></slot>`;
         const slot = element.shadowRoot.querySelector('slot');
     
-        slot.addEventListener('slotchange', (event) => {
+        let callback = (event) => {
             const childrens = event.target.assignedElements();
             when_childrens_attached(childrens)
-        });
+        }
+        slot.addEventListener('slotchange', callback, { once: true });
+        return { // accessor
+            remove: () => {
+                slot.removeEventListener('slotchange', callback);
+                element.shadowRoot.innerHTML = ""
+            }
+        }
     }
     static remove_shadowroot(element) {
         element.shadowRoot.innerHTML = ""
@@ -556,12 +564,15 @@ class CodeSection_HTMLElement extends HTMLElement {
         console.log('CodeSection_HTMLElement: connectedCallback')
         try {
             if (!this.initialize_parameters(this.#_parameters)) {
-                console.log('CodeSection_HTMLElement: create shadown-root')
+                console.log('CodeSection_HTMLElement: create shadowroot slot')
                 let _this = this
-                utility.create_shadowroot_slot(this, function(){ _this.#shadow_root_callback() })
+                this.shadowroot_accessor = utility.create_shadowroot_slot(
+                    this,
+                    function(){ _this.#shadow_root_callback() }
+                )
             }
             else {
-                console.log('CodeSection_HTMLElement: no need for shadown-root')
+                console.log('CodeSection_HTMLElement: no need for shadowroot slot')
                 this.when_initialized()
             }
         }
@@ -572,6 +583,8 @@ class CodeSection_HTMLElement extends HTMLElement {
     }
     #shadow_root_callback() {
     // defered initialization
+
+        console.trace('CodeSection_HTMLElement: shadow_root_callback')
 
         let _this = this
         let error = (function(){
@@ -585,7 +598,8 @@ class CodeSection_HTMLElement extends HTMLElement {
             }
         })()
 
-        utility.remove_shadowroot(this) // invalidates `this`
+        // utility.remove_shadowroot(this) // invalidates `this`
+        this.shadowroot_accessor.remove()
         if (error) {
             console.log(_this)
             _this.on_critical_internal_error(error)
