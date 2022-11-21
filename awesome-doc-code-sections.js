@@ -766,8 +766,6 @@ class CodeSection_HTMLElement extends HTMLElement {
 // TODO: better encapsulation
 class SimpleCodeSection extends CodeSection_HTMLElement {
 
-    _language = undefined
-
     get code() {
         return this._toggle_parsing
             ? this._code.to_display
@@ -792,12 +790,10 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this.toggle_execution = this.toggle_execution
     }
     
+    _language = undefined
+    toggle_language_autodetect = undefined
     get #is_valid_language() {
-        return (
-            this._language &&
-            this._language.length != 0 &&
-            this._language !== 'undefined'
-        )
+        return Boolean(this._language && this._language.length != 0 && this._language !== 'undefined')
     }
     get language() {
 
@@ -811,26 +807,28 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
     set language(value) {
 
-        if (value && this._language === value)
-            return
+        // if (value && this._language === value)
+        //     return
 
         this._language = (value || '').replace('language-', '')
         this.setAttribute('language', this._language)
 
+        this.toggle_language_autodetect = !this.#is_valid_language
+        // if (!this.#is_valid_language())
+        //     return
+
         this.#view_update_language()
     }
     #view_update_language(){
+    // Note: autodetect is always considered as `on`
 
         this.html_elements.code.classList = new Array // clear existing classList
-
-        if (this.#is_valid_language)
+        if (!this.toggle_language_autodetect)
             this.html_elements.code.classList.add(`language-${this._language}`)
         hljs.highlightElement(this.html_elements.code)
 
-        console.trace(`DEBUG: ${this._language} vs. ${CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code)}`)
-
         // retro-action: update language with view (hljs) detected one
-        if (!this.#is_valid_language) {
+        if (this.toggle_language_autodetect) {
             this._language = CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code)
             this.setAttribute('language', this._language)
         }
@@ -840,7 +838,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             ? 'block'
             : 'none'
 
-        console.log(`>>>>>>>>> ${this._language}`)
     }
 
     get ce_options() {
@@ -868,8 +865,8 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
 
         // defered initialiation
         this._language = this.#_parameters.language
-        this.code = this.#_parameters.code
-        this.toggle_language_autodetect = this.#is_valid_language
+        this.toggle_language_autodetect = !this.#is_valid_language
+        this.code = this.#_parameters.code // will update the view
     }
 
     // core logic
@@ -886,7 +883,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this._toggle_parsing = value
         if (!this._toggle_parsing) {
             this.#view_update_code()
-            // this.language = this.language // update language (possibly, view)
             return
         }
 
@@ -896,8 +892,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     get toggle_parsing() {
         return this._toggle_parsing
     }
-
-    toggle_language_autodetect = false
 
     // execution
     get is_executable() {
