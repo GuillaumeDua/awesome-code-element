@@ -869,6 +869,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         // defered initialiation
         this._language = this.#_parameters.language
         this.code = this.#_parameters.code
+        this.toggle_language_autodetect = this.#is_valid_language
     }
 
     // core logic
@@ -884,8 +885,8 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
 
         this._toggle_parsing = value
         if (!this._toggle_parsing) {
-            // this.#view_update_code()
-            this.language = this.language // update language (possibly, view)
+            this.#view_update_code()
+            // this.language = this.language // update language (possibly, view)
             return
         }
 
@@ -896,7 +897,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         return this._toggle_parsing
     }
 
-    // TODO: toggle_language_autodetect
+    toggle_language_autodetect = false
 
     // execution
     get is_executable() {
