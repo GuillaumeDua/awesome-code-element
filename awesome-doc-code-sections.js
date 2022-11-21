@@ -39,6 +39,8 @@
 //      - copy-to-clipboard
 //      - toggle light/dark mode
 
+// ----------------------------------------------------------------------------------------------------------------------------
+
 // TODO: Documentation
 // TODO: compatibility with https://github.com/EnlighterJS/EnlighterJS instead of highlightjs
 // TODO: compatibility with Marp
@@ -51,6 +53,8 @@
 // TODO: soft errors (replace HTMLElement content with red error message, rather than stopping the process)
 // TODO: make Initialize_DivHTMLElements generic
 // TODO: CE execution: bottom or right panel
+
+// ----------------------------------------------------------------------------------------------------------------------------
 
 if (typeof hljs === 'undefined')
     console.error('awesome-doc-code-sections.js: depends on highlightjs, which is missing')
@@ -555,18 +559,18 @@ customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton,
 class CodeSection_HTMLElement extends HTMLElement {
 // HTML layout/barebone for CodeSection
 
-    _parameters = undefined // temporary storage for possible constructor-provided arguments
+    #_parameters = undefined // temporary storage for possible constructor-provided arguments
 
     // HTMLElement
     constructor(parameters) {
         super();
-        this._parameters = parameters || {}
+        this.#_parameters = parameters || {}
     }
 
     connectedCallback() {
         console.log('CodeSection_HTMLElement: connectedCallback')
         try {
-            if (!this.initialize_parameters(this._parameters)) {
+            if (!this.acquire_parameters(this._parameters)) {
                 console.log('CodeSection_HTMLElement: create shadowroot slot')
                 let _this = this
                 this.shadowroot_accessor = utility.create_shadowroot_slot(
@@ -576,7 +580,7 @@ class CodeSection_HTMLElement extends HTMLElement {
             }
             else {
                 console.log('CodeSection_HTMLElement: no need for shadowroot slot')
-                this.when_initialized()
+                this.initialize()
             }
         }
         catch (error) {
@@ -589,9 +593,9 @@ class CodeSection_HTMLElement extends HTMLElement {
         let _this = this
         let error = (function(){
             try {
-                return _this.initialize_parameters(_this._parameters)
+                return _this.acquire_parameters(_this.#_parameters)
                     ? undefined
-                    : 'initialize_parameters failed with no detailed informations'
+                    : 'acquire_parameters failed with no detailed informations'
             }
             catch (error) {
                 return error
@@ -717,11 +721,11 @@ class CodeSection_HTMLElement extends HTMLElement {
     }
 
     // initialization
-    initialize_parameters(parameters) {
-        // throw 'awesome-doc-code-sections.js:CodeSection_HTMLElement:initialize_parameters : not overrided yet'
+    acquire_parameters(parameters) {
+        // throw 'awesome-doc-code-sections.js:CodeSection_HTMLElement:acquire_parameters : not overrided yet'
         return true
     }
-    when_initialized() {
+    initialize() {
         this.#initialize_HTML()
     }
     
@@ -761,6 +765,7 @@ class CodeSection_HTMLElement extends HTMLElement {
 // TODO: options { toggle_parsing, toggle_execution } + prototype/factories
 //       same with attr
 //       default to true for both ?
+// TODO: better encapsulation
 class SimpleCodeSection extends CodeSection_HTMLElement {
 
     _language = ""
@@ -772,14 +777,17 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
     set code(value) {
 
-        console.trace('SimpleCodeSection: set code')
+        console.trace(value)
 
-        if (typeof value === 'ParsedCode')
+        if (value instanceof ParsedCode)
             this._code = value
         else if (typeof value === 'string')
             this._code = new ParsedCode(value, this.language)
         else throw 'SimpleCodeSection: set code: invalid input argument type'
 
+        this.#view_update_code()
+    }
+    #view_update_code() {
         // update view
         this.html_elements.code.textContent = this.code || ""
         // update view syle
@@ -792,6 +800,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         // trigger (refresh) execution panel if required
         this.toggle_execution = this.toggle_execution
     }
+    
     get language() {
 
         if (this._language !== undefined)
@@ -802,10 +811,12 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
     set language(value) {
 
-        this._language = value
+        this._language = (value || '').replace('language-', '')
         this.setAttribute('language', this._language)
 
-        // update hljs language
+        this.#view_update_language()
+    }
+    #view_update_language(){
         this.html_elements.code.classList = this.html_elements.code.classList.toString().replace(/language-\w+/, `language-${this._language}`)
         hljs.highlightElement(this.html_elements.code)
 
@@ -814,33 +825,32 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             : 'none'
     }
 
+    get ce_options() {
+        return this._code.ce_options
+    }
+
     // construction/initialization
     constructor(parameters) {
         super(parameters)
     }
-    initialize_parameters(parameters) {
-        let code_parameter = undefined
+    #_parameters = {}
+    acquire_parameters(parameters) {
         if (parameters) {
-            code_parameter = parameters.code
-            this._language = parameters.language
+            this.#_parameters.code = parameters.code
+            this.#_parameters.language = parameters.language
         }
+        this.#_parameters.code = this.#_parameters.code || this.textContent || this.getAttribute('code') || ''
+        this.#_parameters.language = this.#_parameters.language || this.getAttribute('language') || undefined
 
-        code_parameter  = code_parameter || this.textContent || this.getAttribute('code') || undefined
-        this._language  = this._language || this.getAttribute('language') || undefined
-        if (this._language)
-            this._language = this._language.replace('language-', '')
-
-        this._parameters.code = code_parameter
-        return (this._parameters.code && this._parameters.code.length != 0)
+        // post-condition: valid code content
+        return (this.#_parameters.code && this.#_parameters.code.length != 0)
     }
-    when_initialized() {
-        super.when_initialized()
+    initialize() {
+        super.initialize()
 
-        // defered this.code initialiation
-        this.code = this._parameters.code
-
-        // initial/default view initialization
-        this.language = this.language
+        // defered initialiation
+        this.language = this.#_parameters.language
+        this.code = this.#_parameters.code
     }
 
     // core logic
@@ -851,10 +861,13 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     _toggle_parsing = false
     set toggle_parsing(value) {
 
-        this._toggle_parsing = value
+        if (this._toggle_parsing == value)
+            return
 
-        console.log(`>>>>>>>> [${this._code.raw}]`)
-        try             { this.code = new ParsedCode(this.code.raw, this._language) }
+        this._toggle_parsing = value
+        if (!this._toggle_parsing) return
+
+        try             { this.code = new ParsedCode(this._code.raw, this._language) }
         catch (error)   { this.on_critical_internal_error(error); return }
     }
     get toggle_parsing() {
@@ -865,6 +878,9 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     // TODO: fix style (height)
     _toggle_execution = false
     set toggle_execution(value) {
+
+        if (this._toggle_execution == value)
+            return
 
         this._toggle_execution = value
 
