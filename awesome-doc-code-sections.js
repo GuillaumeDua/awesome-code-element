@@ -107,15 +107,17 @@ class ParsedCode {
 
         this.raw = code_content
 
-        this.#parse(code_content)
+        this.#parse()
         this.#apply_ce_transformations()
     }
 
-    #parse(code_content) {
+    #parse() {
+
+        let code_content = this.raw
 
         // CE options
         let regexp = new RegExp(`^\\s*?${ParsedCode.tag}::CE=({(.*?\n\\s*//.*?)+}\n?)`, 'gm')
-        let matches = [...code_content.matchAll(regexp)] // expect exactly 1 match
+        let matches = [...this.raw.matchAll(regexp)] // expect exactly 1 match
         if (matches.length > 1)
             console.error(`awesome-doc-code-sections.js:ParsedCode::constructor: multiples CE configurations`)
 
@@ -352,6 +354,7 @@ class utility {
             remove: () => {
                 slot.removeEventListener('slotchange', callback);
                 element.shadowRoot.innerHTML = ""
+                element.outerHTML = element.outerHTML
             }
         }
     }
@@ -552,18 +555,18 @@ customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton,
 class CodeSection_HTMLElement extends HTMLElement {
 // HTML layout/barebone for CodeSection
 
-    #_parameters = undefined // temporary storage for possible constructor-provided arguments
+    _parameters = undefined // temporary storage for possible constructor-provided arguments
 
     // HTMLElement
     constructor(parameters) {
         super();
-        this.#_parameters = parameters
+        this._parameters = parameters || {}
     }
 
     connectedCallback() {
         console.log('CodeSection_HTMLElement: connectedCallback')
         try {
-            if (!this.initialize_parameters(this.#_parameters)) {
+            if (!this.initialize_parameters(this._parameters)) {
                 console.log('CodeSection_HTMLElement: create shadowroot slot')
                 let _this = this
                 this.shadowroot_accessor = utility.create_shadowroot_slot(
@@ -583,13 +586,10 @@ class CodeSection_HTMLElement extends HTMLElement {
     }
     #shadow_root_callback() {
     // defered initialization
-
-        console.trace('CodeSection_HTMLElement: shadow_root_callback')
-
         let _this = this
         let error = (function(){
             try {
-                return _this.initialize_parameters(_this.#_parameters)
+                return _this.initialize_parameters(_this._parameters)
                     ? undefined
                     : 'initialize_parameters failed with no detailed informations'
             }
@@ -758,35 +758,47 @@ class CodeSection_HTMLElement extends HTMLElement {
 }
 
 // TODO: better model & view separation
+// TODO: options { toggle_parsing, toggle_execution } + prototype/factories
+//       same with attr
+//       default to true for both ?
 class SimpleCodeSection extends CodeSection_HTMLElement {
 
     _language = ""
 
     get code() {
-        return this._code.to_display
+        return this._toggle_parsing
+            ? this._code.to_display
+            : this._code.raw
     }
     set code(value) {
-        this._code = new ParsedCode(value, this.language)
-        this.toggle_execution = this.toggle_execution // trigger execution if required
+
+        console.trace('SimpleCodeSection: set code')
+
+        if (typeof value === 'ParsedCode')
+            this._code = value
+        else if (typeof value === 'string')
+            this._code = new ParsedCode(value, this.language)
+        else throw 'SimpleCodeSection: set code: invalid input argument type'
 
         // update view
-        this.html_elements.code.textContent = this._code.to_display || ""
-
+        this.html_elements.code.textContent = this.code || ""
         // update view syle
         this.html_elements.code.classList = ""
         if (this._language) {
             this.html_elements.code.classList.add('hljs', `language-${this.language}`);
         }
         hljs.highlightElement(this.html_elements.code)
+
+        // trigger (refresh) execution panel if required
+        this.toggle_execution = this.toggle_execution
     }
     get language() {
 
         if (this._language !== undefined)
             return this._language
-
-        if (!this.html_elements.code)
-            console.error(`awesome-doc-code-sections.js:CodeSection::language(get): ill-formed element (expect pre>code as childrens)`)
-        return BasicCodeSection.get_code_hljs_language(this.html_elements.code)
+        if (this.html_elements.code)
+            return BasicCodeSection.get_code_hljs_language(this.html_elements.code)
+        return false
     }
     set language(value) {
 
@@ -807,23 +819,27 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         super(parameters)
     }
     initialize_parameters(parameters) {
+        let code_parameter = undefined
         if (parameters) {
-            this._code = parameters.code
+            code_parameter = parameters.code
             this._language = parameters.language
         }
 
-        this._code      = this._code || this.textContent || this.getAttribute('code') || undefined
+        code_parameter  = code_parameter || this.textContent || this.getAttribute('code') || undefined
         this._language  = this._language || this.getAttribute('language') || undefined
         if (this._language)
             this._language = this._language.replace('language-', '')
 
-        return (this.code && this.code.length) // requirement: valid, non-empty code
+        this._parameters.code = code_parameter
+        return (this._parameters.code && this._parameters.code.length != 0)
     }
     when_initialized() {
         super.when_initialized()
 
-        // default view initialization
-        this.code = this.code
+        // defered this.code initialiation
+        this.code = this._parameters.code
+
+        // initial/default view initialization
         this.language = this.language
     }
 
@@ -832,30 +848,36 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
 
     // parsing
     _code = new ParsedCode()
+    _toggle_parsing = false
     set toggle_parsing(value) {
 
-        let parsed_code = undefined
-        try             { parsed_code = new ParsedCode(this.code, this._language) }
-        catch (error)   { this.on_critical_internal_error(error); return }
+        this._toggle_parsing = value
 
-        this.code = parsed_code.to_display
-        this.parsed_code = parsed_code
+        console.log(`>>>>>>>> [${this._code.raw}]`)
+        try             { this.code = new ParsedCode(this.code.raw, this._language) }
+        catch (error)   { this.on_critical_internal_error(error); return }
+    }
+    get toggle_parsing() {
+        return this._toggle_parsing
     }
 
     // execution
+    // TODO: fix style (height)
     _toggle_execution = false
     set toggle_execution(value) {
 
-        _toggle_execution = value
-        if (_toggle_execution) {
+        this._toggle_execution = value
+
+        if (this._toggle_execution) {
             this.html_elements.panels.right.style.display = 'block'
+            // TODO: fetch_execution
         }
         else {
             this.html_elements.panels.right.style.display = 'none'
         }
     }
     get toggle_execution() {
-        return _toggle_execution
+        return this._toggle_execution
     }
     fetch_execution() {
 
