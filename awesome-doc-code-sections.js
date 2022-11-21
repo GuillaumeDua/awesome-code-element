@@ -733,16 +733,14 @@ class CodeSection_HTMLElement extends HTMLElement {
         if (code_tag === undefined || code_tag.tagName !== 'CODE')
             console.error(`awesome-doc-code-sections.js:CodeSection_HTMLElement::get_code_hljs_language(): bad input`)
 
-        let result = code_tag.classList.toString().replace(/hljs language-/g, '')
-        if (result.indexOf(' ') !== -1)
-            console.error(`awesome-doc-code-sections.js:CodeSection_HTMLElement::get_code_hljs_language(): ill-formed code hljs classList`)
-        return result
+        let result = code_tag.classList.toString().match(/language-(\w+)/, '')
+        return result ? result[1] : undefined// first capture group
     }
 
     on_critical_internal_error(error = "") {
 
         console.error(
-            `awesome-doc-code-sections.js:BasicCodeSection: on_critical_internal_error : fallback rendering
+            `awesome-doc-code-sections.js:CodeSection_HTMLElement: on_critical_internal_error : fallback rendering
             ${error}`
         )
 
@@ -750,7 +748,7 @@ class CodeSection_HTMLElement extends HTMLElement {
             return
 
         let error_element = document.createElement('p')
-            error_element.textContent = error || `awesome-doc-code-sections:BasicCodeSection: unknown error`
+            error_element.textContent = error || `awesome-doc-code-sections:CodeSection_HTMLElement: unknown error`
         utility.apply_css(error_element, {
             color: "red",
             border : "2px solid red"
@@ -768,7 +766,7 @@ class CodeSection_HTMLElement extends HTMLElement {
 // TODO: better encapsulation
 class SimpleCodeSection extends CodeSection_HTMLElement {
 
-    _language = ""
+    _language = undefined
 
     get code() {
         return this._toggle_parsing
@@ -776,8 +774,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             : this._code.raw
     }
     set code(value) {
-
-        console.trace(value)
 
         if (value instanceof ParsedCode)
             this._code = value
@@ -791,25 +787,32 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         // update view
         this.html_elements.code.textContent = this.code || ""
         // update view syle
-        this.html_elements.code.classList = ""
-        if (this._language) {
-            this.html_elements.code.classList.add('hljs', `language-${this.language}`);
-        }
-        hljs.highlightElement(this.html_elements.code)
-
+        this.#view_update_language()
         // trigger (refresh) execution panel if required
         this.toggle_execution = this.toggle_execution
     }
     
+    get #is_valid_language() {
+        return (
+            this._language &&
+            this._language.length != 0 &&
+            this._language !== 'undefined'
+        )
+    }
     get language() {
 
-        if (this._language !== undefined)
+        if (this.#is_valid_language)
             return this._language
-        if (this.html_elements.code)
-            return BasicCodeSection.get_code_hljs_language(this.html_elements.code)
-        return false
+        if (this.html_elements.code) {
+            let detected_language = CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code)
+            return detected_language === 'undefined' ? undefined : detected_language
+        }
+        return undefined
     }
     set language(value) {
+
+        if (value && this._language === value)
+            return
 
         this._language = (value || '').replace('language-', '')
         this.setAttribute('language', this._language)
@@ -817,12 +820,27 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this.#view_update_language()
     }
     #view_update_language(){
-        this.html_elements.code.classList = this.html_elements.code.classList.toString().replace(/language-\w+/, `language-${this._language}`)
+
+        this.html_elements.code.classList = new Array // clear existing classList
+
+        if (this.#is_valid_language)
+            this.html_elements.code.classList.add(`language-${this._language}`)
         hljs.highlightElement(this.html_elements.code)
 
-        this.html_elements.buttons.CE.style.display = awesome_doc_code_sections.configuration.CE.has(this._language)
+        console.trace(`DEBUG: ${this._language} vs. ${CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code)}`)
+
+        // retro-action: update language with view (hljs) detected one
+        if (!this.#is_valid_language) {
+            this._language = CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code)
+            this.setAttribute('language', this._language)
+        }
+
+        this.html_elements.buttons.CE.style.display = 
+            this.#is_valid_language && awesome_doc_code_sections.configuration.CE.has(this._language)
             ? 'block'
             : 'none'
+
+        console.log(`>>>>>>>>> ${this._language}`)
     }
 
     get ce_options() {
@@ -849,7 +867,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         super.initialize()
 
         // defered initialiation
-        this.language = this.#_parameters.language
+        this._language = this.#_parameters.language
         this.code = this.#_parameters.code
     }
 
@@ -865,7 +883,11 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             return
 
         this._toggle_parsing = value
-        if (!this._toggle_parsing) return
+        if (!this._toggle_parsing) {
+            // this.#view_update_code()
+            this.language = this.language // update language (possibly, view)
+            return
+        }
 
         try             { this.code = new ParsedCode(this._code.raw, this._language) }
         catch (error)   { this.on_critical_internal_error(error); return }
@@ -874,7 +896,12 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         return this._toggle_parsing
     }
 
+    // TODO: toggle_language_autodetect
+
     // execution
+    get is_executable() {
+        return Boolean(this._code.ce_options)
+    }
     // TODO: fix style (height)
     _toggle_execution = false
     set toggle_execution(value) {
@@ -931,7 +958,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             })
             .then((result) => {
 
-                let execution_element = new BasicCodeSection(result.value)
+                let execution_element = new CodeSection_HTMLElement(result.value)
                     execution_element.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
                     execution_element.style.borderTop = '2px solid ' + (result.return_code == -1 ? 'red' : 'green')
 
@@ -962,6 +989,10 @@ customElements.define('simple-code-section', SimpleCodeSection);
 
 
 // /WIP
+
+
+
+
 
 
 class BasicCodeSection extends HTMLElement {
@@ -1084,10 +1115,10 @@ class BasicCodeSection extends HTMLElement {
         if (code_tag === undefined || code_tag.tagName !== 'CODE')
             console.error(`awesome-doc-code-sections.js:CodeSection::get_code_hljs_language(): bad input`)
 
-        let result = code_tag.classList.toString().replace(/hljs language-/g, '') // TODO: proper matching
-        if (result.indexOf(' ') !== -1)
+        let result = code_tag.classList.toString().match(/language-(\w+)/, '')
+        if (!result)
             console.error(`awesome-doc-code-sections.js:CodeSection::get_code_hljs_language(): ill-formed code hljs classList`)
-        return result
+        return result[1] // first capture group
     }
 
     get language() {
