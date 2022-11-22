@@ -52,7 +52,7 @@
 // TODO: hide warnings for undefined/fallback hljs language
 // TODO: soft errors (replace HTMLElement content with red error message, rather than stopping the process)
 // TODO: make Initialize_DivHTMLElements generic
-// TODO: CE execution: bottom or right panel
+// TODO: CE execution: orientation: bottom or right panel
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -61,15 +61,17 @@ if (typeof hljs === 'undefined')
 if (typeof jQuery === 'undefined')
     console.error('awesome-doc-code-sections.js: depends on jQuery, which is missing')
 
-var awesome_doc_code_sections = {}
-    awesome_doc_code_sections.configuration = {}
-    awesome_doc_code_sections.configuration.CE = new Map()
-    // key   : language_hljs_name
-    // value : {
-    //      language,       // not mandatory, if same as key. Refers to https://godbolt.org/api/languages
-    //      compiler_id,
-    //      default_options // not mandatory
-    // }
+var awesome_doc_code_sections = {
+    configuration : {
+        CE : new Map()
+        // key   : language_hljs_name
+        // value : {
+        //      language,       // not mandatory, if same as key. Refers to https://godbolt.org/api/languages
+        //      compiler_id,
+        //      default_options // not mandatory
+        // }
+    }
+}
 
 class ParsedCode {
 // TODO: @awesome-doc-code-sections::keep : keep tag anyway as comment (for documentation purpose)
@@ -621,8 +623,6 @@ class CodeSection_HTMLElement extends HTMLElement {
             elements: left_panel_elements
         } = this.#make_HTML_left_panel()
 
-        console.log(`>>> initialize_HTML: ${left_panel_elements.buttons.CE.style.display}`)
-
         this.html_elements.panels.left  = left_panel
         this.html_elements.code         = left_panel_elements.code
         this.html_elements.buttons      = left_panel_elements.buttons
@@ -884,8 +884,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this._language = this.#_parameters.language
         this.toggle_language_autodetect = !this.#is_valid_language
         this.code = this.#_parameters.code // will update the view
-
-        console.trace(`DEBUG: initialize: ${this.html_elements.buttons.CE.style.display}`)
     }
 
     // core logic
