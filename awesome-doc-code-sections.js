@@ -594,13 +594,16 @@ class CodeSection_HTMLElement extends HTMLElement {
 
     // html layout
     html_elements = {
-        panels : {
-            left : undefined,
+        panels: {
+            left: undefined,
             right: undefined
         },
-        code : undefined,
-        execution_element : undefined,
-        buttons : undefined
+        code: undefined,
+        execution_element: undefined,
+        buttons: {
+            CE: undefined,
+            copy_to_clipboard: undefined
+        }
     }
     #initialize_HTML() {
 
@@ -672,8 +675,8 @@ class CodeSection_HTMLElement extends HTMLElement {
             elements: {
                 code : code_element,
                 buttons : {
-                    copy: copy_button,
-                    CE: CE_button
+                    CE: CE_button,
+                    copy_to_clipboard: copy_button
                 }
             }
         }
@@ -709,17 +712,13 @@ class CodeSection_HTMLElement extends HTMLElement {
     on_resize() {
         let auto_hide_elements = (container, elements) => {
 
-            elements.each((index, element) => element.style.display = 'none')
-            container.onmouseover = () => {
-                elements.each((index, element) => { element.style.display = 'block' })
-            }
-            container.onmouseout = () => {
-                elements.each((index, element) => element.style.display = 'none')
-            }
+            elements.forEach((element) => element.style.display = 'none')
+            container.onmouseover   = () => { elements.forEach((element) => { element.style.display = 'block' }) }
+            container.onmouseout    = () => { elements.forEach((element) => element.style.display = 'none') }
         }
         let no_auto_hide_elements = (container, elements) => {
 
-            elements.each((index, element) => { element.style.display = 'block' })
+            elements.forEach((element) => { element.style.display = 'block' })
             container.onmouseout = null
             container.onmouseover = null
         }
@@ -732,8 +731,8 @@ class CodeSection_HTMLElement extends HTMLElement {
         )   ? auto_hide_elements
             : no_auto_hide_elements
 
-        let elements = $(this).find('button[is^=awesome-doc-code-sections_el_]')
-        functor(this, elements)
+        // let elements = $(this).find('button[is^=awesome-doc-code-sections_el_]')
+        functor(this, [ this.html_elements.buttons.CE, this.html_elements.buttons.copy_to_clipboard ])
     }
 
     // initialization
@@ -826,9 +825,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         return undefined
     }
     set language(value) {
-
-        // if (value && this._language === value)
-        //     return
 
         this._language = (value || '').replace('language-', '')
         this.setAttribute('language', this._language)
