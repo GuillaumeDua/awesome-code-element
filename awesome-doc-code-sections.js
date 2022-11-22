@@ -344,6 +344,7 @@ class utility {
             element.style[property] = styles[property];
     }
     static create_shadowroot_slot(element, when_childrens_attached) {
+
         if (!element.shadowRoot)
             element.attachShadow({ mode: 'open' });
         element.shadowRoot.innerHTML = `<slot></slot>`;
@@ -363,45 +364,21 @@ class utility {
         }
     }
     static remove_shadowroot(element) {
+
         element.shadowRoot.innerHTML = ""
-        // element.outerHTML = element.outerHTML
+        element.outerHTML = element.outerHTML
     }
 }
 
 // ============
 // HTMLElements
 
-awesome_doc_code_sections.auto_hide_buttons_resize_observer = new ResizeObserver(entries => {
+// TODO: encapsulation
+// TODO: should be replaced by dynamic CSS at some point
+awesome_doc_code_sections.resize_observer = new ResizeObserver(entries => {
 
     for (let entry of entries) {
-
-        let auto_hide_elements = (container, elements) => {
-
-            elements.each((index, element) => element.style.display = 'none')
-            container.onmouseover = () => {
-                elements.each((index, element) => { element.style.display = 'block' })
-            }
-            container.onmouseout = () => {
-                elements.each((index, element) => element.style.display = 'none')
-            }
-        }
-        let no_auto_hide_elements = (container, elements) => {
-
-            elements.each((index, element) => { element.style.display = 'block' })
-            container.onmouseout = null
-            container.onmouseover = null
-        }
-
-        // cheaper than a proper AABB to check if code's content overlap with other elements
-        let functor = (
-                awesome_doc_code_sections.options.auto_hide_buttons
-            ||  entry.target.clientWidth < 500
-            ||  entry.target.clientHeight < 50
-        )   ? auto_hide_elements
-            : no_auto_hide_elements
-
-        let elements = $(entry.target).find('button[is^=awesome-doc-code-sections_el_]')
-        functor(entry.target, elements)
+        entry.target.on_resize()
     }
 });
 
@@ -588,6 +565,9 @@ class CodeSection_HTMLElement extends HTMLElement {
             this.on_critical_internal_error(error)
         }
     }
+    disconnectedCallback() {
+        awesome_doc_code_sections.resize_observer.unobserve(this)
+    }
     #shadow_root_callback() {
     // defered initialization
         let _this = this
@@ -622,6 +602,9 @@ class CodeSection_HTMLElement extends HTMLElement {
     }
     #initialize_HTML() {
 
+        if (!this.isConnected)
+            throw 'CodeSection_HTMLElement:#initialize_HTML: not connected yet '
+
         this.innerHTML = ""
         // this element
         utility.apply_css(this, {
@@ -638,11 +621,13 @@ class CodeSection_HTMLElement extends HTMLElement {
             elements: left_panel_elements
         } = this.#make_HTML_left_panel()
 
+        console.log(`>>> initialize_HTML: ${left_panel_elements.buttons.CE.style.display}`)
+
         this.html_elements.panels.left  = left_panel
         this.html_elements.code         = left_panel_elements.code
         this.html_elements.buttons      = left_panel_elements.buttons
         this.html_elements.panels.left  = this.appendChild(this.html_elements.panels.left)
-        awesome_doc_code_sections.auto_hide_buttons_resize_observer.observe(this.html_elements.panels.left) // TODO: unobserve when this element is removed from the DOM
+        awesome_doc_code_sections.resize_observer.observe(this)
 
         // right panel : execution
         const { right_panel, execution_element } = this.#make_HTML_right_panel()
@@ -720,6 +705,37 @@ class CodeSection_HTMLElement extends HTMLElement {
         return { right_panel, execution_element }
     }
 
+    // html-related events
+    on_resize() {
+        let auto_hide_elements = (container, elements) => {
+
+            elements.each((index, element) => element.style.display = 'none')
+            container.onmouseover = () => {
+                elements.each((index, element) => { element.style.display = 'block' })
+            }
+            container.onmouseout = () => {
+                elements.each((index, element) => element.style.display = 'none')
+            }
+        }
+        let no_auto_hide_elements = (container, elements) => {
+
+            elements.each((index, element) => { element.style.display = 'block' })
+            container.onmouseout = null
+            container.onmouseover = null
+        }
+
+        // cheaper than a proper AABB to check if code's content overlap with other elements
+        let functor = (
+                awesome_doc_code_sections.options.auto_hide_buttons
+            ||  this.clientWidth < 500
+            ||  this.clientHeight < 50
+        )   ? auto_hide_elements
+            : no_auto_hide_elements
+
+        let elements = $(this).find('button[is^=awesome-doc-code-sections_el_]')
+        functor(this, elements)
+    }
+
     // initialization
     acquire_parameters(parameters) {
         // throw 'awesome-doc-code-sections.js:CodeSection_HTMLElement:acquire_parameters : not overrided yet'
@@ -793,7 +809,11 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     _language = undefined
     toggle_language_autodetect = undefined
     get #is_valid_language() {
-        return Boolean(this._language && this._language.length != 0 && this._language !== 'undefined')
+        return Boolean(
+            this._language &&
+            this._language.length != 0 &&
+            this._language !== 'undefined'
+        )
     }
     get language() {
 
@@ -820,7 +840,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this.#view_update_language()
     }
     #view_update_language(){
-    // Note: autodetect is always considered as `on`
 
         this.html_elements.code.classList = new Array // clear existing classList
         if (!this.toggle_language_autodetect)
@@ -833,11 +852,9 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             this.setAttribute('language', this._language)
         }
 
-        this.html_elements.buttons.CE.style.display = 
-            this.#is_valid_language && awesome_doc_code_sections.configuration.CE.has(this._language)
-            ? 'block'
-            : 'none'
-
+        this.html_elements.buttons.CE.style.visibility = Boolean(this.#is_valid_language && awesome_doc_code_sections.configuration.CE.has(this._language))
+            ? 'visible'
+            : 'hidden'
     }
 
     get ce_options() {
@@ -867,6 +884,8 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this._language = this.#_parameters.language
         this.toggle_language_autodetect = !this.#is_valid_language
         this.code = this.#_parameters.code // will update the view
+
+        console.trace(`DEBUG: initialize: ${this.html_elements.buttons.CE.style.display}`)
     }
 
     // core logic
@@ -1103,7 +1122,7 @@ class BasicCodeSection extends HTMLElement {
         }
 
         this.innerHTML = code_node.outerHTML;
-        awesome_doc_code_sections.auto_hide_buttons_resize_observer.observe(this.firstChild /* code_node */)
+        awesome_doc_code_sections.resize_observer.observe(this.firstChild /* code_node */)
     }
 
     static get_code_hljs_language(code_tag) {
