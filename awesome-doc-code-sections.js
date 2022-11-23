@@ -472,57 +472,65 @@ class SendToGodboltButton extends HTMLButtonElement {
         );
     }
 
+    static #make_user_options_accessor(codeSectionElement) {
+        return (() => {
+            return {
+                configuration : function() {
+
+                    let configuration = awesome_doc_code_sections.configuration.CE.get(codeSectionElement.language)
+                    if (configuration === undefined)
+                        throw `awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: missing configuration for language [${codeSectionElement.language}]`
+                    return configuration
+                },
+                ce_options : function() {
+                    return codeSectionElement.ce_options || this.configuration()
+                },
+                language : function() {
+                //      hljs    https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
+                //  vs. godbolt https://godbolt.org/api/languages
+                    return ce_API.languages.includes(this.ce_options().language)
+                        ? this.ce_options().language
+                        : this.configuration().language
+                },
+                code : function() {
+                    let result = codeSectionElement.ce_code || codeSectionElement.code
+                    if (result === undefined)
+                        throw `awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: missing code`
+                    return result
+                }
+            }
+        })()
+    }
+
     onClickSend() {
         let codeSectionElement = this.parentElement.parentElement
 
         if (codeSectionElement === undefined
         ||  codeSectionElement.tagName.match(`\w+${CodeSection.HTMLElement_name.toUpperCase()}`) === '')
-            console.error("awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: unexpected parent.parent element (must be an - optionaly Basic - CodeSection)")
+            throw 'awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: ill-formed element: unexpected parent.parent element (must be a CodeSection)'
         console.log('awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: : sending ...')
 
-        var get_configuration = function() {
-
-            let configuration = awesome_doc_code_sections.configuration.CE.get(codeSectionElement.language)
-            if (configuration === undefined)
-                console.error(`awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: missing configuration for language [${codeSectionElement.language}]`)
-            return configuration
-        }
-        var get_ce_options = function() {
-            return codeSectionElement.ce_options || get_configuration()
-        }
-        var get_language = function() {
-        //      hljs    https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
-        //  vs. godbolt https://godbolt.org/api/languages
-            return ce_API.languages.includes(get_ce_options().language)
-                ? get_ce_options().language
-                : get_configuration().language
-        }
-        var get_code = function() {
-            let result = codeSectionElement.ce_code || codeSectionElement.code
-            if (result === undefined)
-                console.error(`awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: missing code`)
-            return result
-        }
+        let accessor = SendToGodboltButton.#make_user_options_accessor(codeSectionElement)
 
         // build request as JSon
         let data = {
             "sessions": [{
                 "id": 1,
-                "language": get_language(),
-                "source": get_code(),
+                "language": accessor.language(),
+                "source": accessor.code(),
                 "compilers":  [
                     {
-                        "id": get_ce_options().compiler_id || get_configuration().compiler_id,
-                        "libs": get_ce_options().libs || [ ],
-                        "options": get_ce_options().compilation_options || get_configuration().default_options
+                        "id": accessor.ce_options().compiler_id || accessor.configuration().compiler_id,
+                        "libs": accessor.ce_options().libs || [ ],
+                        "options": accessor.ce_options().compilation_options || accessor.configuration().default_options
                     }
                 ],
                 "executors": [{
                     "compiler":
                     {
-                        "id": get_ce_options().compiler_id || get_configuration().compiler_id,
-                        "libs": get_ce_options().libs || [ ],
-                        "options": get_ce_options().compilation_options || get_configuration().default_options
+                        "id": accessor.ce_options().compiler_id || accessor.configuration().compiler_id,
+                        "libs": accessor.ce_options().libs || [ ],
+                        "options": accessor.ce_options().compilation_options || accessor.configuration().default_options
                     }
                     // TODO: exec
                 }]
@@ -857,15 +865,10 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this.setAttribute('language', this._language)
 
         this.toggle_language_autodetect = !this.#is_valid_language
-        // if (!this.#is_valid_language())
-        //     return
 
         // Load matching CE options if invalid
-        // WIP: debug this
-        console.log(this._code.ce_options)
         if (!this._code.ce_options) {
             this._code.ce_options = awesome_doc_code_sections.configuration.CE.get(this._language)
-            console.log(this._code.ce_options)
         }
 
         this.#view_update_language()
