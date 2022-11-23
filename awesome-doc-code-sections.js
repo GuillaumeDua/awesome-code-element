@@ -97,10 +97,10 @@ class ParsedCode {
 
     static tag = '// @awesome-doc-code-sections'
 
-    raw = ''
-    to_display = ''
-    to_execute = ''
-    ce_options = {}
+    raw = undefined
+    to_display = undefined
+    to_execute = undefined
+    ce_options = undefined
 
     constructor(code_content, language) {
 
@@ -139,7 +139,7 @@ class ParsedCode {
         }).forEach((value) => {
             // Merge CE configuration. Local can override global.
             this.ce_options = {
-                ...this.ce_options,
+                ...(this.ce_options || {}),
                 ...JSON.parse(value)
             }
         })
@@ -181,7 +181,7 @@ class ParsedCode {
     #apply_ce_transformations() {
 
         // includes_transformation
-        if (this.ce_options.includes_transformation !== undefined) {
+        if (this.ce_options && this.ce_options.includes_transformation) {
             this.ce_options.includes_transformation.forEach((value) => {
                 // replace includes
 
@@ -287,7 +287,7 @@ class ce_API {
     // https://godbolt.org/api/compiler/${compiler_id}/compile
 
         if (ce_options.compiler_id === undefined)
-            throw 'awesome-doc-code-sections.js::ce_API::open_in_new_tab: invalid argument, missing .compiler_id'
+            throw 'awesome-doc-code-sections.js::ce_API::fetch_execution_result: invalid argument, missing .compiler_id'
 
         // POST /api/compiler/<compiler-id>/compile endpoint is not working with remote header-files in `#include`s PP directions
         // https://github.com/compiler-explorer/compiler-explorer/issues/4190
@@ -369,6 +369,10 @@ class utility {
 
         element.shadowRoot.innerHTML = ""
         element.outerHTML = element.outerHTML
+    }
+    static remove_all_childrens(element) {
+        while (element.firstChild)
+            element.removeChild(element.lastChild)
     }
 }
 
@@ -484,9 +488,7 @@ class SendToGodboltButton extends HTMLButtonElement {
             return configuration
         }
         var get_ce_options = function() {
-            return typeof codeSectionElement.ce_options === 'undefined' || codeSectionElement.ce_options === undefined
-                ? get_configuration()
-                : codeSectionElement.ce_options
+            return codeSectionElement.ce_options || get_configuration()
         }
         var get_language = function() {
         //      hljs    https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
@@ -599,7 +601,8 @@ class CodeSection_HTMLElement extends HTMLElement {
             right: undefined
         },
         code: undefined,
-        execution_element: undefined,
+        execution: undefined,
+        loading_animation: undefined,
         buttons: {
             CE: undefined,
             copy_to_clipboard: undefined
@@ -633,10 +636,14 @@ class CodeSection_HTMLElement extends HTMLElement {
         awesome_doc_code_sections.resize_observer.observe(this)
 
         // right panel : execution
-        const { right_panel, execution_element } = this.#make_HTML_right_panel()
-        this.html_elements.panels.right = right_panel
-        this.html_elements.execution_element = execution_element
-        this.html_elements.panels.right = this.appendChild(this.html_elements.panels.right)
+        const { 
+            panel: right_panel,
+            elements: right_panel_elements
+        } = this.#make_HTML_right_panel()
+        this.html_elements.panels.right      = right_panel
+        this.html_elements.execution         = right_panel_elements.execution
+        this.html_elements.loading_animation = right_panel_elements.loading_animation
+        this.html_elements.panels.right      = this.appendChild(this.html_elements.panels.right)
     }
     #make_HTML_left_panel() {
         let left_panel = document.createElement('pre');
@@ -695,8 +702,8 @@ class CodeSection_HTMLElement extends HTMLElement {
             margin:     0
         })
         // right panel: loading
-        this.loading_animation_element = right_panel.appendChild(CodeSection.loading_animation.cloneNode())
-        this.loading_animation_element.style.display = 'block'
+        let loading_animation_element = right_panel.appendChild(CodeSection_HTMLElement.loading_animation.cloneNode())
+            loading_animation_element.style.display = 'block'
         // right panel: execution
         let execution_element = document.createElement('div') // placeholder
         utility.apply_css(execution_element, {
@@ -704,9 +711,29 @@ class CodeSection_HTMLElement extends HTMLElement {
             paddingTop:     '1px',
             display:        'none' // hidden by default
         })
-        right_panel.appendChild(execution_element)
-        return { right_panel, execution_element }
+        execution_element = right_panel.appendChild(execution_element)
+        return { 
+            panel: right_panel,
+            elements: {
+                loading_animation: loading_animation_element,
+                execution: execution_element
+            }
+        }
     }
+    static loading_animation = (function(){
+        // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
+        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/resources/images/loading_animation.svg'
+        let loading_animation = document.createElement('img');
+            loading_animation.src = loading_animation_fallback_url
+        utility.apply_css(loading_animation, {
+            contain             : 'strict',
+            border              : '1px solid var(--primary-color)',
+            borderRadius        : '5px',
+            width               : '100%',
+            display             : 'none' // hidden by default
+        })
+        return loading_animation
+    })()
 
     // html-related events
     on_resize() {
@@ -762,7 +789,7 @@ class CodeSection_HTMLElement extends HTMLElement {
         if (!this.isConnected)
             return
 
-        let error_element = document.createElement('p')
+        let error_element = document.createElement('pre')
             error_element.textContent = error || `awesome-doc-code-sections:CodeSection_HTMLElement: unknown error`
         utility.apply_css(error_element, {
             color: "red",
@@ -833,6 +860,14 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         // if (!this.#is_valid_language())
         //     return
 
+        // Load matching CE options if invalid
+        // WIP: debug this
+        console.log(this._code.ce_options)
+        if (!this._code.ce_options) {
+            this._code.ce_options = awesome_doc_code_sections.configuration.CE.get(this._language)
+            console.log(this._code.ce_options)
+        }
+
         this.#view_update_language()
     }
     #view_update_language(){
@@ -848,6 +883,8 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             this.setAttribute('language', this._language)
         }
 
+        // CE button visibility
+        // Note that resize observer can still toggle display: block|none
         this.html_elements.buttons.CE.style.visibility = Boolean(this.#is_valid_language && awesome_doc_code_sections.configuration.CE.has(this._language))
             ? 'visible'
             : 'hidden'
@@ -858,6 +895,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
 
     // construction/initialization
+    // TODO: options { toggle_* : ... }
     constructor(parameters) {
         super(parameters)
     }
@@ -910,7 +948,12 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     get is_executable() {
         return Boolean(this._code.ce_options)
     }
-    // TODO: fix style (height)
+    get executable_code() {
+        if (!this.is_executable)
+            throw 'CodeSection:fetch_execution: not executable.'
+        return this.toggle_parsing ? this._code.to_execute : this._code.raw
+    }
+
     _toggle_execution = false
     set toggle_execution(value) {
 
@@ -920,29 +963,29 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this._toggle_execution = value
 
         if (this._toggle_execution) {
-            this.html_elements.panels.right.style.display = 'block'
-            // TODO: fetch_execution
+            this.html_elements.panels.left.style.width = '50%'
+            this.html_elements.panels.right.style.display = 'flex'
+            this.html_elements.execution.style.display = 'none'
+            this.html_elements.loading_animation.style.display = 'flex'
+            this.#fetch_execution()
         }
         else {
+            this.html_elements.panels.left.style.width = '100%'
             this.html_elements.panels.right.style.display = 'none'
         }
     }
     get toggle_execution() {
         return this._toggle_execution
     }
-    fetch_execution() {
+    #fetch_execution() {
 
-        // WIP
-
-        this.left_panel.style.width = '50%'
-        this.right_panel.style.display = 'flex'
-        this.execution_element.style.display = 'none'
-        this.loading_animation_element.style.display = 'flex'
+        if (!this.is_executable)
+            throw 'CodeSection:fetch_execution: not executable.'
 
         // right panel: replace with result
-        ce_API.fetch_execution_result(this.ce_options, this.ce_code)
+        ce_API.fetch_execution_result(this._code.ce_options, this.executable_code)
             .catch((error) => {
-                this.on_critical_internal_error(`CodeSection: ce_API.fetch_execution_result failed [${error}]`)
+                this.on_critical_internal_error(`CodeSection:fetch_execution: ce_API.fetch_execution_result: failed:\n\t[${error}]`)
             })
             .then((result) => {
 
@@ -966,32 +1009,34 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             })
             .then((result) => {
 
-                let execution_element = new CodeSection_HTMLElement(result.value)
-                    execution_element.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
-                    execution_element.style.borderTop = '2px solid ' + (result.return_code == -1 ? 'red' : 'green')
+                let execution_content = new SimpleCodeSection(result.value) // or simple [pre>code] ?
+                    execution_content.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
+                    execution_content.style.borderTop = '2px solid ' + (result.return_code == -1 ? 'red' : 'green')
 
-                this.execution_element.replaceWith(execution_element)
-                this.execution_element = execution_element
+                // clear existing execution elements
+                utility.remove_all_childrens(this.html_elements.execution)
 
-                this.loading_animation_element.style.display = 'none'
-                this.execution_element.style.display = 'flex'
+                // switch loading animation and execution content
+                this.html_elements.execution.appendChild(execution_content)
+                this.html_elements.loading_animation.style.display = 'none'
+                this.html_elements.execution.style.display = 'flex'
             })
     }
 
-    static loading_animation = (function(){
-        // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
-        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/resources/images/loading_animation.svg'
-        let loading_animation = document.createElement('img');
-            loading_animation.src = loading_animation_fallback_url
-        utility.apply_css(loading_animation, {
-            contain             : 'strict',
-            border              : '1px solid var(--primary-color)',
-            borderRadius        : '5px',
-            width               : '100%',
-            display             : 'none' // hidden by default
-        })
-        return loading_animation
-    })()
+    static PlaceholdersTranslation = {
+        type : SimpleCodeSection,
+        query : `div[class=${SimpleCodeSection.HTMLElement_name}]`,
+        translate : (element) => {
+            // TODO: all attributes -> options
+            let language = element.getAttribute('language')
+            let code = element.textContent
+                        .replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
+            let node = new SimpleCodeSection(code, language);
+            if (language)
+                node.setAttribute('language', language)
+            return node
+        }
+    }
 }
 customElements.define('simple-code-section', SimpleCodeSection);
 
