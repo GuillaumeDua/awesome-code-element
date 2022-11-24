@@ -760,10 +760,11 @@ class CodeSection_HTMLElement extends HTMLElement {
         }
 
         // cheaper than a proper AABB to check if code's content overlap with other elements
+        let container = this.html_elements.panels.left
         let functor = (
                 awesome_doc_code_sections.options.auto_hide_buttons
-            ||  this.clientWidth < 500
-            ||  this.clientHeight < 50
+            ||  container.offsetWidth < 500
+            ||  container.offsetHeight < 50
         )   ? auto_hide_elements
             : no_auto_hide_elements
 
