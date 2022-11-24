@@ -982,8 +982,30 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
     #fetch_execution() {
 
-        if (!this.is_executable)
-            throw 'CodeSection:fetch_execution: not executable.'
+        let set_execution_content = (execution_content) => {
+            // clear existing execution elements
+            utility.remove_all_childrens(this.html_elements.execution)
+
+            // switch loading animation and execution content
+            this.html_elements.execution.appendChild(execution_content)
+            this.html_elements.loading_animation.style.display = 'none'
+            this.html_elements.execution.style.display = 'flex'
+        }
+
+        if (!this.is_executable) {
+
+            let error = 'CodeSection:fetch_execution: not executable.'
+
+            let error_element = document.createElement('pre')
+                error_element.textContent = error
+            utility.apply_css(error_element, {
+                color: 'red',
+                border: '2px solid red',
+                margin:  '0px'
+            })
+            set_execution_content(error_element)
+            throw error
+        }
 
         // right panel: replace with result
         ce_API.fetch_execution_result(this._code.ce_options, this.executable_code)
@@ -1012,17 +1034,16 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             })
             .then((result) => {
 
+                console.log(result)
+
                 let execution_content = new SimpleCodeSection(result.value) // or simple [pre>code] ?
                     execution_content.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
-                    execution_content.style.borderTop = '2px solid ' + (result.return_code == -1 ? 'red' : 'green')
+                    utility.apply_css(execution_content, {
+                        borderTop : '2px solid ' + (result.return_code == -1 ? 'red' : 'green'),
+                        width : '100%'
+                    })
 
-                // clear existing execution elements
-                utility.remove_all_childrens(this.html_elements.execution)
-
-                // switch loading animation and execution content
-                this.html_elements.execution.appendChild(execution_content)
-                this.html_elements.loading_animation.style.display = 'none'
-                this.html_elements.execution.style.display = 'flex'
+                set_execution_content(execution_content)
             })
     }
 
