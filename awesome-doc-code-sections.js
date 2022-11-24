@@ -486,8 +486,9 @@ class SendToGodboltButton extends HTMLButtonElement {
                     return codeSectionElement.ce_options || this.configuration()
                 },
                 language : function() {
+                // translate hljs into CE language
                 //      hljs    https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
-                //  vs. godbolt https://godbolt.org/api/languages
+                //  vs. CE      https://godbolt.org/api/languages
                     return ce_API.languages.includes(this.ce_options().language)
                         ? this.ce_options().language
                         : this.configuration().language
@@ -866,13 +867,9 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
 
         this.toggle_language_autodetect = !this.#is_valid_language
 
-        // Load matching CE options if invalid
-        if (!this._code.ce_options) {
-            this._code.ce_options = awesome_doc_code_sections.configuration.CE.get(this._language)
-        }
-
         this.#view_update_language()
     }
+
     #view_update_language(){
 
         this.html_elements.code.classList = new Array // clear existing classList
@@ -884,6 +881,10 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         if (this.toggle_language_autodetect) {
             this._language = CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code)
             this.setAttribute('language', this._language)
+            // Load matching CE options if previously invalid
+            if (!this._code.ce_options) {
+                this._code.ce_options = awesome_doc_code_sections.configuration.CE.get(this._language)
+            }
         }
 
         // CE button visibility
@@ -891,10 +892,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this.html_elements.buttons.CE.style.visibility = Boolean(this.#is_valid_language && awesome_doc_code_sections.configuration.CE.has(this._language))
             ? 'visible'
             : 'hidden'
-    }
-
-    get ce_options() {
-        return this._code.ce_options
     }
 
     // construction/initialization
@@ -948,6 +945,12 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
 
     // execution
+    get ce_options() {
+        return this._code.ce_options
+    }
+    get ce_code() {
+        return this._code.to_execute || this.code
+    }
     get is_executable() {
         return Boolean(this._code.ce_options)
     }
