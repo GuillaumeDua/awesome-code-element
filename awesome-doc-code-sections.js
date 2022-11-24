@@ -560,7 +560,7 @@ class CodeSection_HTMLElement extends HTMLElement {
     connectedCallback() {
         console.log('CodeSection_HTMLElement: connectedCallback')
         try {
-            if (!this.acquire_parameters(this._parameters)) {
+            if (!this.acquire_parameters(this.#_parameters)) {
                 console.log('CodeSection_HTMLElement: create shadowroot slot')
                 let _this = this
                 this.shadowroot_accessor = utility.create_shadowroot_slot(
@@ -901,6 +901,10 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
     #_parameters = {}
     acquire_parameters(parameters) {
+
+        console.log('DEBUG: : acquire_parameters :')
+        console.log(parameters)
+
         if (parameters) {
             this.#_parameters.code = parameters.code
             this.#_parameters.language = parameters.language
@@ -998,7 +1002,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         if (!this.is_executable) {
 
             let error = 'CodeSection:fetch_execution: not executable.'
-
             let error_element = document.createElement('pre')
                 error_element.textContent = error
             utility.apply_css(error_element, {
@@ -1037,9 +1040,10 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             })
             .then((result) => {
 
-                console.log(result)
-
-                let execution_content = new SimpleCodeSection(result.value) // or simple [pre>code] ?
+                let execution_content = new SimpleCodeSection({
+                    code: result.value,
+                    language: 'bash' // something plain
+                }) // or simple [pre>code] ?
                     execution_content.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
                     utility.apply_css(execution_content, {
                         borderTop : '2px solid ' + (result.return_code == -1 ? 'red' : 'green'),
