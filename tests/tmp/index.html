@@ -86,6 +86,7 @@
         <script type="text/javascript" src="/awesome-doc-code-sections.js"></script>
         <script type="text/javascript" src="/awesome-doc-code-sections_dark-mode.js"></script>
     
+        <!-- hljs, awesome-doc setup -->
         <!-- <script type="module">
             import adcs from "./awesome-doc-code-sections.js"
             adcs.initialize();
@@ -116,6 +117,7 @@
             awesome_doc_code_sections.initialize(); // initialize all features
         </script>
     
+        <!-- Style alterations -->
         <script type="text/javascript">
             let is_stylished = false
             function toggle_style() {
@@ -142,6 +144,49 @@
                 is_small = !is_small
             }
         </script>
+
+        <!-- demo component -->
+        <script type="text/javascript">
+            class CodeSection_demo extends SimpleCodeSection {
+                constructor() {
+                    super()
+                }
+                initialize() {
+                    super.initialize()
+
+                    
+                    if (!this.isConnected)
+                        throw 'CodeSection_demo: not connected yet '
+
+                    let options_container = document.createElement('div')
+
+                    let toggle_parsing_label = options_container.appendChild(document.createElement('label'))
+                        toggle_parsing_label.textContent = 'toggle parsing ?'
+                    let toggle_parsing_checkbox = options_container.appendChild(document.createElement('input'))
+                        toggle_parsing_checkbox.type = "checkbox"
+                        toggle_parsing_checkbox.name = 'toggle parsing'
+                        toggle_parsing_checkbox.onchange = () => {
+                            console.log(`debug: toggle_parsing_checkbox checked ? ${toggle_parsing_checkbox.checked}`)
+                        }
+
+                    let toggle_execution_label = options_container.appendChild(document.createElement('label'))
+                        toggle_execution_label.textContent = 'toggle execution ?'
+                    let toggle_execution_checkbox = options_container.appendChild(document.createElement('input'))
+                        toggle_execution_checkbox.type = "checkbox"
+                        toggle_execution_checkbox.name = 'toggle parsing'
+                        toggle_execution_checkbox.onchange = () => {
+                            console.log(`debug: toggle_execution_checkbox checked ? ${toggle_execution_checkbox.checked}`)
+                        }
+                    
+                    this.appendChild(options_container)
+
+                    // TODO: language   (proxy)
+                    // TODO: code       (proxy)
+                    // TODO: small ?
+                }
+            }
+            customElements.define('code-section-demo', CodeSection_demo);
+        </script>
     </head>
 <body>
 
@@ -164,8 +209,16 @@
     " id="scs_3">
     </simple-code-section> -->
 
+
+    <!-- Test case :
+        document.getElementById('scs_4_row').toggle_parsing = true;
+        document.getElementById('scs_4_row').toggle_execution = true;
+        document.getElementById('scs_4_column').toggle_parsing = true;
+        document.getElementById('scs_4_column').toggle_execution = true;
+    -->
+
     simple-code-section : language + parsing
-    <simple-code-section id="scs_4">
+    <simple-code-section id="scs_4_row">
         THIS IS REMOVED // @awesome-doc-code-sections::skip::line
 auto main() -> int {    
                         // @awesome-doc-code-sections::show::block::begin
@@ -175,6 +228,27 @@ return i;
 }                       
         THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
     </simple-code-section>
+    <simple-code-section id="scs_4_column" style="flex-direction: column">
+        THIS IS REMOVED // @awesome-doc-code-sections::skip::line
+auto main() -> int {    
+                        // @awesome-doc-code-sections::show::block::begin
+auto i = 42; // test
+return i;
+                        // @awesome-doc-code-sections::show::block::end
+}                       
+        THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
+    </simple-code-section>
+
+    <code-section-demo>
+        THIS IS REMOVED // @awesome-doc-code-sections::skip::line
+auto main() -> int {    
+                        // @awesome-doc-code-sections::show::block::begin
+auto i = 42; // test
+return i;
+                        // @awesome-doc-code-sections::show::block::end
+}                       
+        THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
+    </code-section-demo>
 
 </body>
 </html>
