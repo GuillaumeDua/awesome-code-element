@@ -549,12 +549,17 @@ customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton,
 class CodeSection_HTMLElement extends HTMLElement {
 // HTML layout/barebone for CodeSection
 
-    #_parameters = undefined // temporary storage for possible constructor-provided arguments
+    #_parameters = { // temporary storage for possible constructor-provided arguments
+        style:{}
+    }
 
     // HTMLElement
     constructor(parameters) {
         super();
-        this.#_parameters = parameters || {}
+        this.#_parameters = {
+            ...this.#_parameters,
+            ...(parameters || {})
+        };
     }
 
     connectedCallback() {
@@ -624,8 +629,12 @@ class CodeSection_HTMLElement extends HTMLElement {
 
         this.innerHTML = ""
         // this element
+        console.log('>>>> DEBUG')
+        console.log(this.#_parameters)
+        console.log('<<<<< DEBUG')
         utility.apply_css(this, {
             display:    'flex',
+            flexDirection: this.#_parameters.style.direction,
             alignItems: 'stretch',
             boxSizing:  'border-box',
             width:      '100%',
@@ -775,6 +784,10 @@ class CodeSection_HTMLElement extends HTMLElement {
     // initialization
     acquire_parameters(parameters) {
         // throw 'awesome-doc-code-sections.js:CodeSection_HTMLElement:acquire_parameters : not overrided yet'
+
+        // style
+        this.#_parameters.style.direction = this.#_parameters.style.direction || this.style.flexDirection || 'row'
+
         return true
     }
     initialize() {
@@ -903,9 +916,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     #_parameters = {}
     acquire_parameters(parameters) {
 
-        console.log('DEBUG: : acquire_parameters :')
-        console.log(parameters)
-
         if (parameters) {
             this.#_parameters.code = parameters.code
             this.#_parameters.language = parameters.language
@@ -974,7 +984,8 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this._toggle_execution = value
 
         if (this._toggle_execution) {
-            this.html_elements.panels.left.style.width = '50%'
+            this.html_elements.panels.left.style.width  = (this.style.flexDirection === 'column' ? '100%' : '50%')
+            this.html_elements.panels.right.style.width = (this.style.flexDirection === 'column' ? '100%' : '50%')
             this.html_elements.panels.right.style.display = 'flex'
             this.html_elements.execution.style.display = 'none'
             this.html_elements.loading_animation.style.display = 'flex'
