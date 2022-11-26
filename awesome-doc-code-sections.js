@@ -546,6 +546,7 @@ customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton,
 // WIP
 // TODO: private/hidden
 // TODO: as view
+// TODO: flex-resizer between the two panels ?
 class CodeSection_HTMLElement extends HTMLElement {
 // HTML layout/barebone for CodeSection
 
@@ -629,9 +630,6 @@ class CodeSection_HTMLElement extends HTMLElement {
 
         this.innerHTML = ""
         // this element
-        console.log('>>>> DEBUG')
-        console.log(this.#_parameters)
-        console.log('<<<<< DEBUG')
         utility.apply_css(this, {
             display:    'flex',
             flexDirection: this.#_parameters.style.direction,
@@ -662,18 +660,33 @@ class CodeSection_HTMLElement extends HTMLElement {
         this.html_elements.execution         = right_panel_elements.execution
         this.html_elements.loading_animation = right_panel_elements.loading_animation
         this.html_elements.panels.right      = this.appendChild(this.html_elements.panels.right)
+
+        // panels : style (auto-resize, scroll-bar, etc.)
+        let set_panel_style = (panel) => {
+            utility.apply_css(panel, {
+                flex: 1,
+                overflow: 'auto',
+                position:   'relative',
+                top:        0,
+                left:       0,
+                width:      '100%',
+                margin:     0
+            })
+        }
+        set_panel_style(this.html_elements.panels.left)
+        set_panel_style(this.html_elements.panels.right)
     }
     #make_HTML_left_panel() {
         let left_panel = document.createElement('pre');
-        utility.apply_css(left_panel, {
-            zIndex:     1,
-            position:   'relative',
-            boxSizing:  'border-box',
-            top:        0,
-            left:       0,
-            width:      '100%',
-            margin:     0
-        })
+        // utility.apply_css(left_panel, {
+        //     zIndex:     1,
+        //     position:   'relative',
+        //     boxSizing:  'border-box',
+        //     top:        0,
+        //     left:       0,
+        //     width:      '100%',
+        //     margin:     0
+        // })
 
         let code_element = document.createElement('code');
         utility.apply_css(code_element, {
@@ -712,12 +725,7 @@ class CodeSection_HTMLElement extends HTMLElement {
         utility.apply_css(right_panel, {
             display:    'none',
             alignItems: 'stretch',
-            boxSizing:  'border-box',
-            position:   'relative',
-            top:        0,
-            left:       0,
-            width:      '50%',
-            margin:     0
+            boxSizing:  'border-box'
         })
         // right panel: loading
         let loading_animation_element = right_panel.appendChild(CodeSection_HTMLElement.loading_animation.cloneNode())
@@ -984,8 +992,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this._toggle_execution = value
 
         if (this._toggle_execution) {
-            this.html_elements.panels.left.style.width  = (this.style.flexDirection === 'column' ? '100%' : '50%')
-            this.html_elements.panels.right.style.width = (this.style.flexDirection === 'column' ? '100%' : '50%')
             this.html_elements.panels.right.style.display = 'flex'
             this.html_elements.execution.style.display = 'none'
             this.html_elements.loading_animation.style.display = 'flex'

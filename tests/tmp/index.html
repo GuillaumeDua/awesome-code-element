@@ -217,17 +217,20 @@
         document.getElementById('scs_4_column').toggle_execution = true;
     -->
 
-    simple-code-section : language + parsing
+    simple-code-section : language + parsing - row presentation
     <simple-code-section id="scs_4_row">
         THIS IS REMOVED // @awesome-doc-code-sections::skip::line
 auto main() -> int {    
                         // @awesome-doc-code-sections::show::block::begin
-auto i = 42; // test
+auto i = 42; // test ----------------------------------------
 return i;
                         // @awesome-doc-code-sections::show::block::end
 }                       
         THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
     </simple-code-section>
+
+    simple-code-section : language + parsing - column presentation
+
     <simple-code-section id="scs_4_column" style="flex-direction: column">
         THIS IS REMOVED // @awesome-doc-code-sections::skip::line
 auto main() -> int {    
