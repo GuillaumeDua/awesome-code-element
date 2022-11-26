@@ -664,8 +664,8 @@ class CodeSection_HTMLElement extends HTMLElement {
         // panels : style (auto-resize, scroll-bar, etc.)
         let set_panel_style = (panel) => {
             utility.apply_css(panel, {
-                flex: 1,
-                overflow: 'auto',
+                flex:       1,
+                overflow:   'auto',
                 position:   'relative',
                 top:        0,
                 left:       0,
@@ -678,20 +678,11 @@ class CodeSection_HTMLElement extends HTMLElement {
     }
     #make_HTML_left_panel() {
         let left_panel = document.createElement('pre');
-        // utility.apply_css(left_panel, {
-        //     zIndex:     1,
-        //     position:   'relative',
-        //     boxSizing:  'border-box',
-        //     top:        0,
-        //     left:       0,
-        //     width:      '100%',
-        //     margin:     0
-        // })
 
         let code_element = document.createElement('code');
         utility.apply_css(code_element, {
-            height:     '100%',
             width:      'auto',
+            height:     '100%',
             boxSizing:  'border-box'
         })
         code_element = left_panel.appendChild(code_element)
@@ -998,7 +989,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             this.#fetch_execution()
         }
         else {
-            this.html_elements.panels.left.style.width = '100%'
             this.html_elements.panels.right.style.display = 'none'
         }
     }
