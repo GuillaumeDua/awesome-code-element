@@ -220,9 +220,11 @@
     simple-code-section : language + parsing - row presentation
     <simple-code-section id="scs_4_row">
         THIS IS REMOVED // @awesome-doc-code-sections::skip::line
+#include &lt;iostream&gt;
 auto main() -> int {    
                         // @awesome-doc-code-sections::show::block::begin
 auto i = 42; // test ----------------------------------------
+std::cout &lt;&lt; &quot;some console output&quot;;
 return i;
                         // @awesome-doc-code-sections::show::block::end
 }                       

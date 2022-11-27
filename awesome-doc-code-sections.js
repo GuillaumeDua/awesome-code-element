@@ -988,7 +988,13 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
 
         if (this._toggle_execution) {
             this.html_elements.panels.right.style.display = 'flex'
-            this.#fetch_execution()
+            try {
+                this.#fetch_execution()
+            }
+            catch (error) {
+                console.error(error)
+                this._toggle_execution = false // remain visible, but can be re-enabled
+            }
         }
         else {
             this.html_elements.panels.right.style.display = 'none'
@@ -1019,8 +1025,10 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
                 error_element.textContent = error
             utility.apply_css(error_element, {
                 color: 'red',
-                border: '2px solid red',
-                margin:  '0px'
+                border: '1px solid red',
+                borderRadius : '5px',
+                margin:  '0px',
+                width : '100%'
             })
             set_execution_content(error_element)
             throw error
@@ -1056,7 +1064,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
                 let execution_content = new SimpleCodeSection({
                     code: result.value,
                     language: 'bash' // something plain
-                }) // or simple [pre>code] ?
+                }) // or simple [pre>code] with CopyToClipboardButton ?
                     execution_content.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
                     utility.apply_css(execution_content, {
                         borderTop : '2px solid ' + (result.return_code == -1 ? 'red' : 'green'),
