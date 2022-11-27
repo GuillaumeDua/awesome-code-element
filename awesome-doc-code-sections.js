@@ -716,9 +716,6 @@ class CodeSection_HTMLElement extends HTMLElement {
             }
         }
     }
-
-    // WIP: simplification
-
     #make_HTML_right_panel() {
         let right_panel = document.createElement('div')
 
@@ -732,11 +729,11 @@ class CodeSection_HTMLElement extends HTMLElement {
             loading_animation_element.style.display = 'block'
         // right panel: execution
         let execution_element = document.createElement('div') // placeholder
-        utility.apply_css(execution_element, {
-            width:          '100%',
-            paddingTop:     '1px',
-            display:        'none' // hidden by default
-        })
+        // utility.apply_css(execution_element, {
+        //     width:          '100%',
+        //     paddingTop:     '1px',
+        //     display:        'none' // hidden by default
+        // })
         execution_element = right_panel.appendChild(execution_element)
         return { 
             panel: right_panel,
@@ -991,8 +988,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
 
         if (this._toggle_execution) {
             this.html_elements.panels.right.style.display = 'flex'
-            this.html_elements.execution.style.display = 'none'
-            this.html_elements.loading_animation.style.display = 'flex'
             this.#fetch_execution()
         }
         else {
@@ -1004,12 +999,15 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
     #fetch_execution() {
 
-        let set_execution_content = (execution_content) => {
-            // clear existing execution elements
-            utility.remove_all_childrens(this.html_elements.execution)
+        // switch execution content (if any) to loading animation
+        this.html_elements.execution.style.display = 'none'
+        this.html_elements.loading_animation.style.display = 'flex'
 
-            // switch loading animation and execution content
-            this.html_elements.execution.appendChild(execution_content)
+        let set_execution_content = (execution_content) => {
+
+            // switch loading animation to execution content
+            this.html_elements.execution.replaceWith(execution_content)
+            this.html_elements.execution = execution_content
             this.html_elements.loading_animation.style.display = 'none'
             this.html_elements.execution.style.display = 'flex'
         }
