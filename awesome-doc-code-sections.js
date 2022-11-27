@@ -670,7 +670,7 @@ class CodeSection_HTMLElement extends HTMLElement {
         // panels : style (auto-resize, scroll-bar, etc.)
         let set_panel_style = (panel) => {
             utility.apply_css(panel, {
-                flex:       1,
+                flex:       '1 1 min-content',
                 overflow:   'auto',
                 position:   'relative',
                 top:        0,
@@ -716,6 +716,9 @@ class CodeSection_HTMLElement extends HTMLElement {
             }
         }
     }
+
+    // WIP: simplification
+
     #make_HTML_right_panel() {
         let right_panel = document.createElement('div')
 
