@@ -831,7 +831,7 @@ class CodeSection_HTMLElement extends HTMLElement {
 // TODO: options { toggle_parsing, toggle_execution } + prototype/factories
 //       same with attr
 //       default to true for both ?
-// TODO: better encapsulation
+// TODO: better encapsulation (private '_.*' variables)
 class SimpleCodeSection extends CodeSection_HTMLElement {
 
     get code() {
@@ -981,9 +981,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     _toggle_execution = false
     set toggle_execution(value) {
 
-        if (this._toggle_execution == value)
-            return
-
         this._toggle_execution = value
 
         if (this._toggle_execution) {
@@ -993,7 +990,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             }
             catch (error) {
                 console.error(error)
-                this._toggle_execution = false // remain visible, but can be re-enabled
             }
         }
         else {

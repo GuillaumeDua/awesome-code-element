@@ -188,8 +188,12 @@
                         flexDirection: 'column',
                         display: 'flex',
                     })
-                        options_container.appendChild(create_boolean_proxy_view('toggle parsing',   (value) => { this.toggle_parsing = value }))
-                        options_container.appendChild(create_boolean_proxy_view('toggle execution', (value) => { this.toggle_execution = value }))
+                        options_container.appendChild(create_boolean_proxy_view('toggle parsing',   (value) => {
+                            this.toggle_parsing = value 
+                        }))
+                        options_container.appendChild(create_boolean_proxy_view('toggle execution', (value) => {
+                            this.toggle_execution = value
+                        }))
                     
                     
                     this.prepend(options_container)
