@@ -147,6 +147,10 @@
 
         <!-- demo component -->
         <script type="text/javascript">
+            let apply_css = (element, styles) => {
+                for (const property in styles)
+                    element.style[property] = styles[property];
+            }
             class CodeSection_demo extends SimpleCodeSection {
                 constructor() {
                     super()
@@ -154,31 +158,41 @@
                 initialize() {
                     super.initialize()
 
-                    
                     if (!this.isConnected)
                         throw 'CodeSection_demo: not connected yet '
 
+                    // view proxies
+                    const create_boolean_proxy_view = (name, onchange) => {
+                        
+                        let sub_container = document.createElement('div')
+                            apply_css(sub_container, {
+                                flex: '0 0 fit-content',
+                                borderRadius: 'var(--border-radius-small)',
+                                border: '1px solid var(--separator-color)'
+                            })
+                        
+                        let checkbox = sub_container.appendChild(document.createElement('input'))
+                            checkbox.type = "checkbox"
+                            checkbox.name = `${name} ?`
+                            checkbox.onchange = () => {
+                                onchange(checkbox.checked)
+                            }
+                        let label = sub_container.appendChild(document.createElement('label'))
+                            label.textContent = ` ${name}`
+
+                        return sub_container
+                    }
+
                     let options_container = document.createElement('div')
-
-                    let toggle_parsing_label = options_container.appendChild(document.createElement('label'))
-                        toggle_parsing_label.textContent = 'toggle parsing ?'
-                    let toggle_parsing_checkbox = options_container.appendChild(document.createElement('input'))
-                        toggle_parsing_checkbox.type = "checkbox"
-                        toggle_parsing_checkbox.name = 'toggle parsing'
-                        toggle_parsing_checkbox.onchange = () => {
-                            console.log(`debug: toggle_parsing_checkbox checked ? ${toggle_parsing_checkbox.checked}`)
-                        }
-
-                    let toggle_execution_label = options_container.appendChild(document.createElement('label'))
-                        toggle_execution_label.textContent = 'toggle execution ?'
-                    let toggle_execution_checkbox = options_container.appendChild(document.createElement('input'))
-                        toggle_execution_checkbox.type = "checkbox"
-                        toggle_execution_checkbox.name = 'toggle parsing'
-                        toggle_execution_checkbox.onchange = () => {
-                            console.log(`debug: toggle_execution_checkbox checked ? ${toggle_execution_checkbox.checked}`)
-                        }
+                    apply_css(options_container, {
+                        flexDirection: 'column',
+                        display: 'flex',
+                    })
+                        options_container.appendChild(create_boolean_proxy_view('toggle parsing',   (value) => { this.toggle_parsing = value }))
+                        options_container.appendChild(create_boolean_proxy_view('toggle execution', (value) => { this.toggle_execution = value }))
                     
-                    this.appendChild(options_container)
+                    
+                    this.prepend(options_container)
 
                     // TODO: language   (proxy)
                     // TODO: code       (proxy)
