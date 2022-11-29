@@ -147,6 +147,9 @@
 
         <!-- demo component -->
         <script type="text/javascript">
+
+            // TODO: cleaner two-way data-binding ? https://jsfiddle.net/v5owbwf0/4/
+
             let apply_css = (element, styles) => {
                 for (const property in styles)
                     element.style[property] = styles[property];
@@ -178,7 +181,7 @@
                         
                         let checkbox = sub_container.appendChild(document.createElement('input'))
                             checkbox.type = "checkbox"
-                            checkbox.name = `${name} ?`
+                            checkbox.title = `${name} ?`
                             checkbox.onchange = () => {
                                 onchange(checkbox.checked)
                             }
@@ -205,7 +208,46 @@
                     
                     this.prepend(options_container)
 
-                    // TODO: language   (proxy)
+                    // language two-way binding
+                    options_container.appendChild((() => {
+
+                        let language_storage = super.language
+
+                        let sub_container = document.createElement('div')
+                            apply_css(sub_container, {
+                                flex: '0 0 fit-content',
+                                borderRadius: 'var(--border-radius-small)',
+                                border: '1px solid var(--separator-color)'
+                            })
+                        let label = sub_container.appendChild(document.createElement('label'))
+                            label.textContent = `language `
+                        let input_field = sub_container.appendChild(document.createElement('input'))
+                            input_field.type = "text"
+                            input_field.value = super.language
+                            input_field.title = 'clear to attempt a fallback autodetection'
+
+                        let delay_timer = null
+                        input_field.addEventListener('keyup', (arg) => {
+                            if (delay_timer) window.clearTimeout(delay_timer)
+                                delay_timer = window.setTimeout(() => {
+                                    delay_timer = null // reset timer
+                                    this.language = arg.target.value
+                            }, 300)
+                        })
+
+                        Object.defineProperty(this, '_language', {
+                            set: (value) => {
+                                language_storage = value
+                                input_field.value = language_storage
+                            },
+                            get: () => { 
+                                return language_storage
+                            }
+                        })
+
+                        return sub_container
+                    })())
+
                     // TODO: code       (proxy)
                     // TODO: small ?
                 }

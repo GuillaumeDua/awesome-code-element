@@ -872,6 +872,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         if (this.#is_valid_language)
             return this._language
         if (this.html_elements.code) {
+            console.info('CodeSection:language : invalid language, attempting a detection as fallback')
             let detected_language = CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code)
             return detected_language === 'undefined' ? undefined : detected_language
         }
@@ -881,12 +882,12 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
 
         this._language = (value || '').replace('language-', '')
         this.setAttribute('language', this._language)
+        this._code.ce_options = awesome_doc_code_sections.configuration.CE.get(this._language)
 
         this.toggle_language_autodetect = !this.#is_valid_language
 
         this.#view_update_language()
     }
-
     #view_update_language(){
 
         this.html_elements.code.classList = new Array // clear existing classList
@@ -898,10 +899,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         if (this.toggle_language_autodetect) {
             this._language = CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code)
             this.setAttribute('language', this._language)
-            // Load matching CE options if previously invalid
-            if (!this._code.ce_options) {
-                this._code.ce_options = awesome_doc_code_sections.configuration.CE.get(this._language)
-            }
+            this._code.ce_options = awesome_doc_code_sections.configuration.CE.get(this._language)
         }
 
         // CE button visibility
@@ -909,6 +907,9 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this.html_elements.buttons.CE.style.visibility = Boolean(this.#is_valid_language && awesome_doc_code_sections.configuration.CE.has(this._language))
             ? 'visible'
             : 'hidden'
+
+        // trigger (refresh) execution panel if required
+        this.toggle_execution = this.toggle_execution
     }
 
     // construction/initialization
@@ -918,6 +919,8 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
     #_parameters = {}
     acquire_parameters(parameters) {
+
+        // super ?
 
         if (parameters) {
             this.#_parameters.code = parameters.code
@@ -955,7 +958,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             return
         }
 
-        try             { this.code = new ParsedCode(this._code.raw, this._language) }
+        try             { this.code = new ParsedCode(this._code.raw, this._language) } // code setter will updates the view
         catch (error)   { this.on_critical_internal_error(error); return }
     }
     get toggle_parsing() {
