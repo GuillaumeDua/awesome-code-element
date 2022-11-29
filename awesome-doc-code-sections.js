@@ -1092,8 +1092,8 @@ customElements.define('simple-code-section', SimpleCodeSection);
 // /WIP
 
 
-
-
+// TODO: remove BasicCodeSection, CodeSection
+// TODO: refactor RemoteCodeSection
 
 
 class BasicCodeSection extends HTMLElement {

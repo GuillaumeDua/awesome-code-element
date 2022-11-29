@@ -155,6 +155,11 @@
                 constructor() {
                     super()
                 }
+
+                set style_direction(value) {
+                    this.style.flexDirection = (this.style.flexDirection === 'column' ?  'row' : 'column')
+                }
+
                 initialize() {
                     super.initialize()
 
@@ -194,7 +199,9 @@
                         options_container.appendChild(create_boolean_proxy_view('toggle execution', (value) => {
                             this.toggle_execution = value
                         }))
-                    
+                        options_container.appendChild(create_boolean_proxy_view('switch style direction', (value) => {
+                            this.style_direction = value
+                        }))
                     
                     this.prepend(options_container)
 
