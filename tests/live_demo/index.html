@@ -157,24 +157,17 @@ let apply_css = (element, styles) => {
 let inject_field_proxy = (owner, property_name, { getter_payload, setter_payload } = {}) => {
 // generate a proxy to a value's field, injecting optional payload
     
-    console.log(`getter : ${getter_payload}`)
-    console.log(`setter : ${setter_payload}`)
-
-    let _owner = owner
-    let storage = this[property_name] // unused if the field custom getter or setter
+    var _owner = owner
+    var storage = _owner[property_name] // unused if the field custom getter or setter
 
     let js_parser_sucks = (function(){
         var old_getter = _owner.__lookupGetter__(property_name)
         var old_setter = _owner.__lookupSetter__(property_name)
 
         var getter = function(){
-            console.log(`${property_name}: get`)
             if (getter_payload)
                 getter_payload()
-            if (old_getter)
-                return old_getter.call(_owner)
-            else
-                return storage
+            return old_getter ? old_getter.call(_owner) : storage
         };
         var setter = function(newValue){
             console.log(`${property_name}: set to ${newValue}`)
