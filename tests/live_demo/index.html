@@ -170,12 +170,12 @@ class CodeSection_demo extends SimpleCodeSection {
             throw 'CodeSection_demo: not connected yet '
 
         // view proxies
-
         let options_container = document.createElement('div')
         apply_css(options_container, {
             flexDirection: 'column',
             display: 'flex',
         })
+            // toggles : one-way
             options_container.appendChild(this.#make_boolean_proxy_view('toggle parsing', (value) => {
                 this.toggle_parsing = value 
             }))
@@ -185,17 +185,35 @@ class CodeSection_demo extends SimpleCodeSection {
             options_container.appendChild(this.#make_boolean_proxy_view('switch style direction', (value) => {
                 this.style_direction = value
             }))
-        
-        this.prepend(options_container)
 
-        // language two-way binding
+            // language two-way binding
+        {
+            let _toggle_language_detection_storage = this.toggle_language_detection
+            let [ toggle_language_detection_input ] = options_container.appendChild(this.#make_boolean_proxy_view('toggle language detection', (value) => {
+                _toggle_language_detection_storage = value
+            }, _toggle_language_detection_storage)).children
+            Object.defineProperty(this, 'toggle_language_detection', {
+            // internal value proxy
+                set: (value) => {
+                    _toggle_language_detection_storage = value
+                    toggle_language_detection_input.checked = Boolean(_toggle_language_detection_storage)
+                },
+                get: () => {
+                    console.log(`DEBUG: get to ${_toggle_language_detection_storage}`)
+                    return _toggle_language_detection_storage
+                }
+            })
+        }
         options_container.appendChild(this.#make_language_view())
+
+        this.prepend(options_container)
 
         // TODO: code       (proxy)
         // TODO: small ?
     }
 
-    #make_boolean_proxy_view(name, onchange) {
+    // one-way bindings
+    #make_boolean_proxy_view(name, onchange, value) {
             
         let sub_container = document.createElement('div')
             apply_css(sub_container, {
@@ -207,6 +225,7 @@ class CodeSection_demo extends SimpleCodeSection {
         let checkbox = sub_container.appendChild(document.createElement('input'))
             checkbox.type = "checkbox"
             checkbox.title = `${name} ?`
+            checkbox.checked = value || false
             checkbox.onchange = () => {
                 onchange(checkbox.checked)
             }
@@ -215,6 +234,7 @@ class CodeSection_demo extends SimpleCodeSection {
 
         return sub_container
     }
+    // two-way bindings
     #make_language_view(){
         let language_storage = super.language
 

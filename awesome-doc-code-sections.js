@@ -832,6 +832,7 @@ class CodeSection_HTMLElement extends HTMLElement {
 //       same with attr
 //       default to true for both ?
 // TODO: better encapsulation (private '_.*' variables)
+// TODO: dont cleanup external classlist (e.g style)
 class SimpleCodeSection extends CodeSection_HTMLElement {
 
     get code() {
@@ -859,7 +860,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
     
     _language = undefined
-    toggle_language_detection = undefined
+    toggle_language_detection = true
     get #is_valid_language() {
         return Boolean(
             this._language &&
@@ -903,7 +904,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         }
 
         // CE button visibility
-        // Note that resize observer can still toggle display: block|none
+        // Note that resize observer can still toggle `display: block|none`
         this.html_elements.buttons.CE.style.visibility = Boolean(this.#is_valid_language && awesome_doc_code_sections.configuration.CE.has(this._language))
             ? 'visible'
             : 'hidden'
