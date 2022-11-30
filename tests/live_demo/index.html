@@ -154,6 +154,44 @@ let apply_css = (element, styles) => {
     for (const property in styles)
         element.style[property] = styles[property];
 }
+let inject_field_proxy = (owner, property_name, { getter_payload, setter_payload } = {}) => {
+// generate a proxy to a value's field, injecting optional payload
+    
+    console.log(`getter : ${getter_payload}`)
+    console.log(`setter : ${setter_payload}`)
+
+    let _owner = owner
+    let storage = this[property_name] // unused if the field custom getter or setter
+
+    let js_parser_sucks = (function(){
+        var old_getter = _owner.__lookupGetter__(property_name)
+        var old_setter = _owner.__lookupSetter__(property_name)
+
+        var getter = function(){
+            console.log(`${property_name}: get`)
+            if (getter_payload)
+                getter_payload()
+            if (old_getter)
+                return old_getter.call(_owner)
+            else
+                return storage
+        };
+        var setter = function(newValue){
+            console.log(`${property_name}: set to ${newValue}`)
+            if (setter_payload)
+                setter_payload(newValue)
+            if (old_setter)
+                old_setter.call(_owner, newValue)
+            else
+                storage = newValue
+        };
+        Object.defineProperty(_owner, property_name, {
+            get: getter,
+            set: setter
+        });
+    })();
+}
+
 class CodeSection_demo extends SimpleCodeSection {
     constructor() {
         super()
@@ -161,6 +199,9 @@ class CodeSection_demo extends SimpleCodeSection {
 
     set style_direction(value) {
         this.style.flexDirection = (this.style.flexDirection === 'column' ?  'row' : 'column')
+    }
+    get style_direction() {
+        return this.style.flexDirection || 'row'
     }
 
     initialize() {
@@ -175,36 +216,12 @@ class CodeSection_demo extends SimpleCodeSection {
             flexDirection: 'column',
             display: 'flex',
         })
-            // toggles : one-way
-            options_container.appendChild(this.#make_boolean_proxy_view('toggle parsing', (value) => {
-                this.toggle_parsing = value 
-            }))
-            options_container.appendChild(this.#make_boolean_proxy_view('toggle execution', (value) => {
-                this.toggle_execution = value
-            }))
-            options_container.appendChild(this.#make_boolean_proxy_view('switch style direction', (value) => {
-                this.style_direction = value
-            }))
-
-            // language two-way binding
-        {
-            let _toggle_language_detection_storage = this.toggle_language_detection
-            let [ toggle_language_detection_input ] = options_container.appendChild(this.#make_boolean_proxy_view('toggle language detection', (value) => {
-                _toggle_language_detection_storage = value
-            }, _toggle_language_detection_storage)).children
-            Object.defineProperty(this, 'toggle_language_detection', {
-            // internal value proxy
-                set: (value) => {
-                    _toggle_language_detection_storage = value
-                    toggle_language_detection_input.checked = Boolean(_toggle_language_detection_storage)
-                },
-                get: () => {
-                    console.log(`DEBUG: get to ${_toggle_language_detection_storage}`)
-                    return _toggle_language_detection_storage
-                }
-            })
-        }
-        options_container.appendChild(this.#make_language_view())
+            // two-way binding ...
+            options_container.appendChild(this.#make_boolean_field_view('toggle_parsing'))
+            options_container.appendChild(this.#make_boolean_field_view('toggle_execution'))
+            options_container.appendChild(this.#make_boolean_field_view('toggle_language_detection'))
+            options_container.appendChild(this.#make_boolean_field_view('style_direction'))
+            options_container.appendChild(this.#make_language_view())
 
         this.prepend(options_container)
 
@@ -212,51 +229,59 @@ class CodeSection_demo extends SimpleCodeSection {
         // TODO: small ?
     }
 
-    // one-way bindings
-    #make_boolean_proxy_view(name, onchange, value) {
-            
+    // two-way bindings
+    #make_boolean_field_view(property_name) {
+
+        let printable_name = property_name.replace('_', ' ')
+        // html
         let sub_container = document.createElement('div')
-            apply_css(sub_container, {
-                flex: '0 0 fit-content',
-                borderRadius: 'var(--border-radius-small)',
-                border: '1px solid var(--separator-color)'
-            })
-        
+        apply_css(sub_container, {
+            flex: '0 0 fit-content',
+            borderRadius: 'var(--border-radius-small)',
+            border: '1px solid var(--separator-color)'
+        })
         let checkbox = sub_container.appendChild(document.createElement('input'))
             checkbox.type = "checkbox"
-            checkbox.title = `${name} ?`
-            checkbox.checked = value || false
+            checkbox.title = `${printable_name} ?`
+            checkbox.checked = Boolean(this[property_name])
             checkbox.onchange = () => {
-                onchange(checkbox.checked)
+                this[property_name] = checkbox.checked
             }
+
         let label = sub_container.appendChild(document.createElement('label'))
-            label.textContent = ` ${name}`
+        label.textContent = ` ${printable_name}`
+
+        inject_field_proxy(this, property_name, {
+            getter_payload : undefined,
+            setter_payload : (value) => {
+                checkbox.checked = value
+            }
+        })
 
         return sub_container
     }
-    // two-way bindings
-    #make_language_view(){
+    #make_language_view() {
         let language_storage = super.language
 
         let sub_container = document.createElement('div')
-            apply_css(sub_container, {
-                flex: '0 0 fit-content',
-                borderRadius: 'var(--border-radius-small)',
-                border: '1px solid var(--separator-color)'
-            })
+        apply_css(sub_container, {
+            flex: '0 0 fit-content',
+            borderRadius: 'var(--border-radius-small)',
+            border: '1px solid var(--separator-color)'
+        })
         let label = sub_container.appendChild(document.createElement('label'))
-            label.textContent = `language `
+        label.textContent = `language `
         let input_field = sub_container.appendChild(document.createElement('input'))
-            input_field.type = "text"
-            input_field.value = super.language
-            input_field.title = 'clear to attempt a fallback autodetection'
+        input_field.type = "text"
+        input_field.value = super.language
+        input_field.title = 'clear to attempt a fallback autodetection'
 
         let delay_timer = null
         input_field.addEventListener('keyup', (arg) => {
             if (delay_timer) window.clearTimeout(delay_timer)
-                delay_timer = window.setTimeout(() => {
-                    delay_timer = null // reset timer
-                    this.language = arg.target.value
+            delay_timer = window.setTimeout(() => {
+                delay_timer = null // reset timer
+                this.language = arg.target.value
             }, 300)
         })
 
@@ -266,7 +291,7 @@ class CodeSection_demo extends SimpleCodeSection {
                 language_storage = value
                 input_field.value = language_storage
             },
-            get: () => { 
+            get: () => {
                 return language_storage
             }
         })

@@ -951,6 +951,8 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     _toggle_parsing = false
     set toggle_parsing(value) {
 
+        console.log('CodeSection: set toggle_parsing')
+
         if (this._toggle_parsing == value)
             return
 
