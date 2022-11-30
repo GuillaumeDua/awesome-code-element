@@ -148,8 +148,6 @@
         <!-- demo component -->
         <script type="text/javascript">
 
-// TODO: cleaner two-way data-binding ? https://jsfiddle.net/v5owbwf0/4/
-
 let apply_css = (element, styles) => {
     for (const property in styles)
         element.style[property] = styles[property];
@@ -170,7 +168,6 @@ let inject_field_proxy = (owner, property_name, { getter_payload, setter_payload
             return old_getter ? old_getter.call(_owner) : storage
         };
         var setter = function(newValue){
-            console.log(`${property_name}: set to ${newValue}`)
             if (setter_payload)
                 setter_payload(newValue)
             if (old_setter)
