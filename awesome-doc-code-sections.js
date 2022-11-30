@@ -859,7 +859,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
     
     _language = undefined
-    toggle_language_autodetect = undefined
+    toggle_language_detection = undefined
     get #is_valid_language() {
         return Boolean(
             this._language &&
@@ -884,19 +884,19 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this.setAttribute('language', this._language)
         this._code.ce_options = awesome_doc_code_sections.configuration.CE.get(this._language)
 
-        this.toggle_language_autodetect = !this.#is_valid_language
+        this.toggle_language_detection = !this.#is_valid_language
 
         this.#view_update_language()
     }
     #view_update_language(){
 
         this.html_elements.code.classList = new Array // clear existing classList
-        if (!this.toggle_language_autodetect)
+        if (!this.toggle_language_detection)
             this.html_elements.code.classList.add(`language-${this._language}`)
         hljs.highlightElement(this.html_elements.code)
 
         // retro-action: update language with view (hljs) detected one
-        if (this.toggle_language_autodetect) {
+        if (this.toggle_language_detection) {
             this._language = CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code)
             this.setAttribute('language', this._language)
             this._code.ce_options = awesome_doc_code_sections.configuration.CE.get(this._language)
@@ -912,6 +912,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this.toggle_execution = this.toggle_execution
     }
 
+    // --------------------------------
     // construction/initialization
     // TODO: options { toggle_* : ... }
     constructor(parameters) {
@@ -937,12 +938,12 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
 
         // defered initialiation
         this._language = this.#_parameters.language
-        this.toggle_language_autodetect = !this.#is_valid_language
+        this.toggle_language_detection = !this.#is_valid_language
         this.code = this.#_parameters.code // will update the view
     }
 
+    // --------------------------------
     // core logic
-    //      proxy on CE configuration -> refresh execution
 
     // parsing
     _code = new ParsedCode()
@@ -977,7 +978,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
     get executable_code() {
         if (!this.is_executable)
-            throw 'CodeSection:fetch_execution: not executable.'
+            throw 'CodeSection:get executable_code: not executable.'
         return this.toggle_parsing ? this._code.to_execute : this._code.raw
     }
 
@@ -1019,7 +1020,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
 
         if (!this.is_executable) {
 
-            let error = 'CodeSection:fetch_execution: not executable.'
+            let error = `CodeSection:fetch_execution: not executable. No known valid configuration for language [${this.language}]`
             let error_element = document.createElement('pre')
                 error_element.textContent = error
             utility.apply_css(error_element, {
