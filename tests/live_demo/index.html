@@ -234,9 +234,6 @@ class CodeSection_demo extends SimpleCodeSection {
             checkbox.type = "checkbox"
             checkbox.title = `${printable_name} ?`
             checkbox.checked = Boolean(this[property_name])
-            checkbox.onchange = () => {
-                this[property_name] = checkbox.checked
-            }
 
         let label = sub_container.appendChild(document.createElement('label'))
         label.textContent = ` ${printable_name}`
@@ -248,6 +245,10 @@ class CodeSection_demo extends SimpleCodeSection {
             }
         })
 
+        sub_container.addEventListener('click', () => {
+            checkbox.checked = !checkbox.checked
+            this[property_name] = checkbox.checked
+        }, false)
         return sub_container
     }
     #make_language_view() {
