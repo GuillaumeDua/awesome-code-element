@@ -187,10 +187,10 @@ class CodeSection_demo extends SimpleCodeSection {
         super()
     }
 
-    set style_direction(value) {
+    set switch_style_direction(value) {
         this.style.flexDirection = (this.style.flexDirection === 'column' ?  'row' : 'column')
     }
-    get style_direction() {
+    get switch_style_direction() {
         return this.style.flexDirection || 'row'
     }
 
@@ -210,7 +210,7 @@ class CodeSection_demo extends SimpleCodeSection {
             options_container.appendChild(this.#make_boolean_field_view('toggle_parsing'))
             options_container.appendChild(this.#make_boolean_field_view('toggle_execution'))
             options_container.appendChild(this.#make_boolean_field_view('toggle_language_detection'))
-            options_container.appendChild(this.#make_boolean_field_view('style_direction'))
+            options_container.appendChild(this.#make_boolean_field_view('switch_style_direction'))
             options_container.appendChild(this.#make_language_view())
 
         this.prepend(options_container)
@@ -236,7 +236,7 @@ class CodeSection_demo extends SimpleCodeSection {
             checkbox.checked = Boolean(this[property_name])
 
         let label = sub_container.appendChild(document.createElement('label'))
-        label.textContent = ` ${printable_name}`
+            label.textContent = ` ${printable_name}`
 
         inject_field_proxy(this, property_name, {
             getter_payload : undefined,
@@ -245,9 +245,13 @@ class CodeSection_demo extends SimpleCodeSection {
             }
         })
 
-        sub_container.addEventListener('click', () => {
+        let _this = this
+        checkbox.onclick = function(event){
             checkbox.checked = !checkbox.checked
-            this[property_name] = checkbox.checked
+            _this[property_name] = checkbox.checked
+        }
+        sub_container.addEventListener('click', (event) => {
+            checkbox.onclick(event)
         }, false)
         return sub_container
     }
