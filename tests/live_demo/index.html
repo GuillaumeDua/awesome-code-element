@@ -201,11 +201,21 @@ let inject_field_proxy = (owner, property_name, { getter_payload, setter_payload
             if (setter_payload)
                 setter_payload(old_getter ? old_getter.call(_owner) : storage)
         };
+
         Object.defineProperty(_owner, property_name, {
             get: getter,
             set: setter
         });
+
+        console.log
+
     })();
+}
+let element_shake_effect_for = (element, duration) => {
+    element.classList.add('shake')
+    window.setTimeout(() => {
+        element.classList.remove('shake')
+    }, duration)
 }
 
 class CodeSection_demo extends SimpleCodeSection {
@@ -241,30 +251,34 @@ class CodeSection_demo extends SimpleCodeSection {
 
         this.prepend(options_container)
 
+        this.#transform_code_into_editable()   
+
+        // TODO: small ?
+    }
+
+    #transform_code_into_editable() {
         // make code editable
-        this.html_elements.code.setAttribute('contentEditable', true)
+        let _this = this
+        this.html_elements.code.addEventListener('click', () => {
+            _this.html_elements.code.setAttribute('contentEditable', !_this.toggle_parsing)
+            if (_this.toggle_parsing)
+                element_shake_effect_for(_this.html_elements.code, 500)
+        })
         let delay_timer = null
-        this.html_elements.code.addEventListener('change', function(){
+        this.html_elements.code.addEventListener('keyup', function(event){
 
             console.log(event)
 
-            if (!this.toggle_parsing)
-            {
-                console.log('NOPE !')
-                // stop event propagation
-                event.stopImmediatePropagation()
-                return
-            }
+            if (_this.toggle_parsing)
+                throw 'CodeSection demo: invalid attempt to edit parsed code'
 
             if (delay_timer)
                 window.clearTimeout(delay_timer)
             delay_timer = window.setTimeout(() => {
                 delay_timer = null // reset timer
-                this.code = arg.target.textContent
+                _this.code = _this.html_elements.code.textContent
             }, 500)
         })
-
-        // TODO: small ?
     }
 
     // two-way bindings
