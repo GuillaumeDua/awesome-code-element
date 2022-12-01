@@ -879,11 +879,19 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         }
         return undefined
     }
-    set language(value) {
+    set language(arg) {
+
+        let value       = (typeof arg === "object" ? arg.value : arg)
+        let update_view = (typeof arg === "object" ? arg.update_view : true)
+
+        console.log(`CodeSection: set language ${value}`)
 
         this._language = (value || '').replace('language-', '')
         this.setAttribute('language', this._language)
         this._code.ce_options = awesome_doc_code_sections.configuration.CE.get(this._language)
+        
+        if (!update_view)
+            return
 
         this.toggle_language_detection = !this.#is_valid_language
 
@@ -898,9 +906,10 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
 
         // retro-action: update language with view (hljs) detected one
         if (this.toggle_language_detection) {
-            this._language = CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code)
-            this.setAttribute('language', this._language)
-            this._code.ce_options = awesome_doc_code_sections.configuration.CE.get(this._language)
+            this.language = {
+                value: CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code),
+                update_view: false // no recursion here
+            }
         }
 
         // CE button visibility
@@ -950,8 +959,6 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     _code = new ParsedCode()
     _toggle_parsing = false
     set toggle_parsing(value) {
-
-        console.log('CodeSection: set toggle_parsing')
 
         if (this._toggle_parsing == value)
             return
