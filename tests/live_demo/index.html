@@ -69,6 +69,29 @@
                 max-width: var(--content-maxwidth);
                 margin: calc(var(--spacing-medium) + .2em) auto var(--spacing-medium) auto;
             }
+
+            @-webkit-keyframes shake {
+                0%  { -webkit-transform: translate(2px, 1px) rotate(0deg); } 
+                10% { -webkit-transform: translate(-1px, -2px) rotate(-1deg); }
+                20% { -webkit-transform: translate(-3px, 0px) rotate(1deg); }
+                30% { -webkit-transform: translate(0px, 2px) rotate(0deg); }
+                40% { -webkit-transform: translate(1px, -1px) rotate(1deg); }
+                50% { -webkit-transform: translate(-1px, 2px) rotate(-1deg); }
+                60% { -webkit-transform: translate(-3px, 1px) rotate(0deg); }
+                70% { -webkit-transform: translate(2px, 1px) rotate(-1deg); }
+                80% { -webkit-transform: translate(-1px, -1px) rotate(1deg); }
+                90% { -webkit-transform: translate(2px, 2px) rotate(0deg); }
+                100% { -webkit-transform: translate(1px, -2px) rotate(-1deg); }
+            }
+            .shake:hover {
+                -webkit-animation-name: shake;
+                -webkit-animation-duration: 0.5s;
+                -webkit-transform-origin:50% 50%;
+                -webkit-animation-iteration-count: infinite;
+            }
+            .shake {
+                display:inline-block
+            }
         </style>
     
         <!-- highlight -->
@@ -163,17 +186,20 @@ let inject_field_proxy = (owner, property_name, { getter_payload, setter_payload
         var old_setter = _owner.__lookupSetter__(property_name)
 
         var getter = function(){
+            let result = old_getter ? old_getter.call(_owner) : storage
+            // notify get with value
             if (getter_payload)
-                getter_payload()
-            return old_getter ? old_getter.call(_owner) : storage
+                getter_payload(result)
+            return result
         };
         var setter = function(newValue){
-            if (setter_payload)
-                setter_payload(newValue)
             if (old_setter)
                 old_setter.call(_owner, newValue)
             else
                 storage = newValue
+            // notify set with value
+            if (setter_payload)
+                setter_payload(old_getter ? old_getter.call(_owner) : storage)
         };
         Object.defineProperty(_owner, property_name, {
             get: getter,
@@ -215,14 +241,36 @@ class CodeSection_demo extends SimpleCodeSection {
 
         this.prepend(options_container)
 
-        // TODO: code       (proxy)
+        // make code editable
+        this.html_elements.code.setAttribute('contentEditable', true)
+        let delay_timer = null
+        this.html_elements.code.addEventListener('change', function(){
+
+            console.log(event)
+
+            if (!this.toggle_parsing)
+            {
+                console.log('NOPE !')
+                // stop event propagation
+                event.stopImmediatePropagation()
+                return
+            }
+
+            if (delay_timer)
+                window.clearTimeout(delay_timer)
+            delay_timer = window.setTimeout(() => {
+                delay_timer = null // reset timer
+                this.code = arg.target.textContent
+            }, 500)
+        })
+
         // TODO: small ?
     }
 
     // two-way bindings
     #make_boolean_field_view(property_name) {
 
-        let printable_name = property_name.replace('_', ' ')
+        let printable_name = property_name.replaceAll(/[\-|\_]/g, ' ')
         // html
         let sub_container = document.createElement('div')
         apply_css(sub_container, {
@@ -247,16 +295,17 @@ class CodeSection_demo extends SimpleCodeSection {
 
         let _this = this
         checkbox.onclick = function(event){
-            checkbox.checked = !checkbox.checked
-            _this[property_name] = checkbox.checked
+            event.stopImmediatePropagation()
+            checkbox.checked = (_this[property_name] = checkbox.checked)
         }
         sub_container.addEventListener('click', (event) => {
+            event.stopImmediatePropagation()
+            checkbox.checked = !checkbox.checked
             checkbox.onclick(event)
         }, false)
         return sub_container
     }
     #make_language_view() {
-        let language_storage = super.language
 
         let sub_container = document.createElement('div')
         apply_css(sub_container, {
@@ -265,31 +314,32 @@ class CodeSection_demo extends SimpleCodeSection {
             border: '1px solid var(--separator-color)'
         })
         let label = sub_container.appendChild(document.createElement('label'))
-        label.textContent = `language `
+            label.textContent = `language `
         let input_field = sub_container.appendChild(document.createElement('input'))
-        input_field.type = "text"
-        input_field.value = super.language
-        input_field.title = 'clear to attempt a fallback autodetection'
+            input_field.type = "text"
+            input_field.value = super.language
+            input_field.title = 'clear to attempt a fallback autodetection'
 
         let delay_timer = null
         input_field.addEventListener('keyup', (arg) => {
-            if (delay_timer) window.clearTimeout(delay_timer)
+            if (delay_timer)
+                window.clearTimeout(delay_timer)
             delay_timer = window.setTimeout(() => {
                 delay_timer = null // reset timer
                 this.language = arg.target.value
             }, 300)
         })
 
-        // internal value proxy
-        Object.defineProperty(this, '_language', {
-            set: (value) => {
-                language_storage = value
-                input_field.value = language_storage
+        inject_field_proxy(this, 'language', {
+            getter_payload : () => {
+                console.log(`called : get`)
             },
-            get: () => {
-                return language_storage
+            setter_payload : (value) => {
+                console.log(`called : set : ${value}`)
+                input_field.value = value
             }
         })
+
         return sub_container
     }
 

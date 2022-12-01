@@ -835,6 +835,8 @@ class CodeSection_HTMLElement extends HTMLElement {
 // TODO: dont cleanup external classlist (e.g style)
 class SimpleCodeSection extends CodeSection_HTMLElement {
 
+    // --------------------------------
+    // accessors
     get code() {
         return this._toggle_parsing
             ? this._code.to_display
@@ -953,9 +955,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
 
     // --------------------------------
-    // core logic
-
-    // parsing
+    // core logic : parsing
     _code = new ParsedCode()
     _toggle_parsing = false
     set toggle_parsing(value) {
@@ -976,7 +976,8 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         return this._toggle_parsing
     }
 
-    // execution
+    // --------------------------------
+    // core logic : execution
     get ce_options() {
         return this._code.ce_options
     }
