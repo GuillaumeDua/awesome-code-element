@@ -53,6 +53,7 @@
 // TODO: soft errors (replace HTMLElement content with red error message, rather than stopping the process)
 // TODO: make Initialize_DivHTMLElements generic
 // TODO: CE execution: orientation: bottom or right panel
+// TODO: Global option: force fallback language to ... [smthg]
 
 // ----------------------------------------------------------------------------------------------------------------------------
 

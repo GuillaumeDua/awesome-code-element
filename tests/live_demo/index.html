@@ -394,8 +394,52 @@ customElements.define('code-section-demo', CodeSection_demo);
 
     <ul>
         <li>
-            <h3>simple-code-section : parsing - row presentation</h3>
-            <simple-code-section toggle_parsing="true" orientation="column">
+            <h3>simple-code-section : default</h3>
+            <simple-code-section>
+#include &lt;iostream&gt;
+auto main() -> int {
+    auto i = 42;
+    std::cout &lt;&lt; &quot;some console output&quot;;
+return i;
+}                       
+            </simple-code-section>
+        </li>
+        <li>
+            <h3>simple-code-section : language</h3>
+            <simple-code-section language="cpp">
+#include &lt;iostream&gt;
+auto main() -> int {
+    auto i = 42;
+    std::cout &lt;&lt; &quot;some console output&quot;;
+return i;
+}                       
+            </simple-code-section>
+        </li>
+        <li>
+            <h3>simple-code-section : language, execution</h3>
+            <simple-code-section language="cpp" toggle_execution="true">
+#include &lt;iostream&gt;
+auto main() -> int {
+    auto i = 42;
+    std::cout &lt;&lt; &quot;some console output&quot;;
+return i;
+}                       
+            </simple-code-section>
+        </li>
+        <li>
+            <h3>simple-code-section : language, execution, column orientation</h3>
+            <simple-code-section language="cpp" toggle_execution="true" orientation="column">
+#include &lt;iostream&gt;
+auto main() -> int {
+    auto i = 42;
+    std::cout &lt;&lt; &quot;some console output&quot;;
+return i;
+}                       
+            </simple-code-section>
+        </li>
+        <li>
+            <h3>simple-code-section : parsing</h3>
+            <simple-code-section toggle_parsing="true">
         THIS IS REMOVED // @awesome-doc-code-sections::skip::line
 #include &lt;iostream&gt;
 auto main() -> int {    
