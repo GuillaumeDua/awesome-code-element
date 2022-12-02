@@ -556,7 +556,7 @@ customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton,
 class CodeSection_HTMLElement extends HTMLElement {
 // HTML layout/barebone for CodeSection
 
-    #_parameters = { // temporary storage for possible constructor-provided arguments
+    #_parameters = { // temporary storage for possibly constructor-provided arguments
         style:{}
     }
 
@@ -615,6 +615,15 @@ class CodeSection_HTMLElement extends HTMLElement {
         }
     }
 
+    // accessors
+    #allowed_directions = [ 'row', 'column' ]
+    set direction(value) {
+        this.style.flexDirection = this.#allowed_directions.includes(value) ? value : this.#allowed_directions[0]
+    }
+    get direction() {
+        return this.style.flexDirection || this.#allowed_directions[0]
+    }
+
     // html layout
     html_elements = {
         panels: {
@@ -638,7 +647,7 @@ class CodeSection_HTMLElement extends HTMLElement {
         // this element
         utility.apply_css(this, {
             display:    'flex',
-            flexDirection: this.#_parameters.style.direction,
+            flexDirection: this.direction,
             alignItems: 'stretch',
             boxSizing:  'border-box',
             width:      '100%',
@@ -786,14 +795,11 @@ class CodeSection_HTMLElement extends HTMLElement {
 
     // initialization
     acquire_parameters(parameters) {
-        // throw 'awesome-doc-code-sections.js:CodeSection_HTMLElement:acquire_parameters : not overrided yet'
-
-        // style
-        this.#_parameters.style.direction = this.#_parameters.style.direction || this.style.flexDirection || 'row'
-
+        this.#_parameters.style.direction = this.#_parameters.style.direction || this.getAttribute('orientation') || this.style.flexDirection
         return true
     }
     initialize() {
+        this.direction = this.#_parameters.style.direction
         this.#initialize_HTML()
     }
     
@@ -833,6 +839,7 @@ class CodeSection_HTMLElement extends HTMLElement {
 //       default to true for both ?
 // TODO: better encapsulation (private '_.*' variables)
 // TODO: dont cleanup external classlist (e.g style)
+// TODO: code loading policy/behavior - as function : default is textContent, but can be remote using an url, or another rich text area for instance
 class SimpleCodeSection extends CodeSection_HTMLElement {
 
     // --------------------------------
@@ -936,22 +943,41 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         // super ?
 
         if (parameters) {
-            this.#_parameters.code = parameters.code
-            this.#_parameters.language = parameters.language
+            this.#_parameters = { 
+                ...this.#_parameters,
+                ...parameters
+            }
         }
+        // TODO: code aquire policy/behavior
         this.#_parameters.code = this.#_parameters.code || this.textContent || this.getAttribute('code') || ''
-        this.#_parameters.language = this.#_parameters.language || this.getAttribute('language') || undefined
+        let maybe_use_attribute = (property_name) => {
+            this.#_parameters[property_name] = this.#_parameters[property_name] || this.getAttribute(property_name) || undefined
+        }
+        maybe_use_attribute('language')
+        maybe_use_attribute('toggle_parsing')
+        maybe_use_attribute('toggle_execution')
+
+        // TODO: load attributes as function, that can possibly override non-existing parameters
 
         // post-condition: valid code content
-        return (this.#_parameters.code && this.#_parameters.code.length != 0)
+        let is_valid = (this.#_parameters.code && this.#_parameters.code.length != 0)
+        if (is_valid)
+            this.acquire_parameters = () => { throw 'CodeSection.acquire_parameters: already called' }
+        return is_valid
     }
     initialize() {
         super.initialize()
 
+        console.log(`initializing with parameters [${JSON.stringify(this.#_parameters, null, 3)}]` )
+
         // defered initialiation
-        this._language = this.#_parameters.language
-        this.toggle_language_detection = !this.#is_valid_language
-        this.code = this.#_parameters.code // will update the view
+        this._language                  = this.#_parameters.language
+        this.toggle_language_detection  = !this.#is_valid_language
+        this.code                       = this.#_parameters.code // will update the view
+        this.toggle_parsing             = this.#_parameters.toggle_parsing
+        this.toggle_execution           = this.#_parameters.toggle_execution
+
+        this.initialize = () => { throw 'CodeSection.initialize: already called' }
     }
 
     // --------------------------------

@@ -224,10 +224,10 @@ class CodeSection_demo extends SimpleCodeSection {
     }
 
     set switch_style_direction(value) {
-        this.style.flexDirection = (this.style.flexDirection === 'column' ?  'row' : 'column')
+        this.direction = (this.direction === 'column' ?  'row' : 'column')
     }
     get switch_style_direction() {
-        return this.style.flexDirection || 'row'
+        return this.direction
     }
 
     initialize() {
@@ -390,8 +390,12 @@ customElements.define('code-section-demo', CodeSection_demo);
         document.getElementById('scs_4_column').toggle_execution = true;
     -->
 
-    simple-code-section : language + parsing - row presentation
-    <simple-code-section id="scs_4_row">
+    <h2>Using attributes </h2>
+
+    <ul>
+        <li>
+            <h3>simple-code-section : parsing - row presentation</h3>
+            <simple-code-section toggle_parsing="true" orientation="column">
         THIS IS REMOVED // @awesome-doc-code-sections::skip::line
 #include &lt;iostream&gt;
 auto main() -> int {    
@@ -402,11 +406,13 @@ return i;
                         // @awesome-doc-code-sections::show::block::end
 }                       
         THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
-    </simple-code-section>
+            </simple-code-section>
+        </li>
 
-    simple-code-section : language + parsing - column presentation
+        <li>
+            <h3>simple-code-section : language + parsing - column presentation</h3>
 
-    <simple-code-section id="scs_4_column" style="flex-direction: column">
+            <simple-code-section id="scs_4_column" style="flex-direction: column">
         THIS IS REMOVED // @awesome-doc-code-sections::skip::line
 auto main() -> int {    
                         // @awesome-doc-code-sections::show::block::begin
@@ -415,7 +421,11 @@ return i;
                         // @awesome-doc-code-sections::show::block::end
 }                       
         THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
-    </simple-code-section>
+            </simple-code-section>
+        </li>
+    </ul>
+
+    <h2>Live demo</h2>
 
     <code-section-demo>
         THIS IS REMOVED // @awesome-doc-code-sections::skip::line
