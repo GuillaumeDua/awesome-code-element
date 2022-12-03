@@ -52,7 +52,6 @@
 // TODO: hide warnings for undefined/fallback hljs language
 // TODO: soft errors (replace HTMLElement content with red error message, rather than stopping the process)
 // TODO: make Initialize_DivHTMLElements generic
-// TODO: CE execution: orientation: bottom or right panel
 // TODO: Global option: force fallback language to ... [smthg]
 
 // ----------------------------------------------------------------------------------------------------------------------------
@@ -61,6 +60,36 @@ if (typeof hljs === 'undefined')
     console.error('awesome-doc-code-sections.js: depends on highlightjs, which is missing')
 if (typeof jQuery === 'undefined')
     console.error('awesome-doc-code-sections.js: depends on jQuery, which is missing')
+
+// TODO: Make generic : override a classic Map type get/set operations, to inject key translation
+class ce_configuration_manager {
+// similar to a Map, but use `hljs.getLanguage(key)` as a key translator
+
+    constructor(initializer_list) {
+        initializer_list.forEach((element) => {
+            let [ key, value ] = element
+            this.set(key, value)
+        })
+    }
+
+    set(key, value) {
+        let language = hljs.getLanguage(key)
+        if (!language)
+            throw `ce_configuration: invalid language [${key}]`
+        console.info(`ce_configuration: mapping [${key}] to [${language.name}] (using aliases: [${language.aliases}])`)
+        if (this.#storage.has(language.name))
+            console.warn(`ce_configuration: overriding existing configuration for language [${language.name}] (with aliases: [${language.aliases}])`)
+        this.#storage.set(language.name, value)
+    }
+    get(key) {
+        return this.#storage.get(hljs.getLanguage(key).name)
+    }
+    has(key) {
+        return this.get(key) !== undefined
+    }
+
+    #storage = new Map()
+}
 
 var awesome_doc_code_sections = {
     configuration : {
