@@ -61,7 +61,48 @@ if (typeof hljs === 'undefined')
 if (typeof jQuery === 'undefined')
     console.error('awesome-doc-code-sections.js: depends on jQuery, which is missing')
 
-// TODO: Make generic : override a classic Map type get/set operations, to inject key translation
+class transformed_map extends Map {
+// Similar to `Map`, with non-mandatory translation for key, mapped
+// example: upper-case keys
+// value = new transformed_map(
+//     [ ['a', 42 ]],
+//     {
+//         key_translator: (key) => { return key.toUpperCase() }
+//     }
+// );
+
+    key_translator      = undefined
+    mapped_translator   = undefined
+
+    constructor(values, { key_translator, mapped_translator }  = {}) {
+        values = values.map((item) => {
+            let [ key, mapped ] = item
+            if (key_translator)
+                key = key_translator(key)
+            if (mapped_translator)
+                mapped = mapped_translator(key)
+            return [ key, mapped ]
+        })
+        super(values)
+
+        this.key_translator     = key_translator
+        this.mapped_translator  = mapped_translator
+    }
+    get(key) {
+        if (this.key_translator)
+            key = this.key_translator(key)
+        return super.get(key)
+    }
+    set(key, mapped) {
+        if (this.key_translator)
+            key = this.key_translator(key)
+        if (this.mapped_translator)
+            mapped = this.mapped_translator(key)
+        super.set(key, mapped)
+        return this
+    }
+}
+
 class ce_configuration_manager {
 // similar to a Map, but use `hljs.getLanguage(key)` as a key translator
 
