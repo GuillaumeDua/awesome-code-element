@@ -916,7 +916,6 @@ class CodeSection_HTMLElement extends HTMLElement {
 //       same with attr
 //       default to true for both ?
 // TODO: better encapsulation (private '_.*' variables)
-// TODO: dont cleanup external classlist (e.g style)
 // TODO: code loading policy/behavior - as function : default is textContent, but can be remote using an url, or another rich text area for instance
 class SimpleCodeSection extends CodeSection_HTMLElement {
 
@@ -986,7 +985,9 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     }
     #view_update_language(){
 
-        this.html_elements.code.classList = new Array // clear existing classList
+        // clear existing hljs-related classList items
+        this.html_elements.code.classList = [...this.html_elements.code.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
+
         if (!this.toggle_language_detection)
             this.html_elements.code.classList.add(`language-${this._language}`)
         hljs.highlightElement(this.html_elements.code)
