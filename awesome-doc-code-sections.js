@@ -83,7 +83,7 @@ class transformed_map extends Map {
                 if (key_translator)
                     key = key_translator(key)
                 if (mapped_translator)
-                    mapped = mapped_translator(key)
+                    mapped = mapped_translator(mapped)
                 return [ key, mapped ]
             })
         super(values)
@@ -100,7 +100,7 @@ class transformed_map extends Map {
         if (this.key_translator)
             key = this.key_translator(key)
         if (this.mapped_translator)
-            mapped = this.mapped_translator(key)
+            mapped = this.mapped_translator(mapped)
         super.set(key, mapped)
         return this
     }
@@ -122,6 +122,11 @@ class ce_configuration_manager extends transformed_map {
                 if (!language)
                     console.warn(`ce_configuration: invalid language [${key}]`)
                 return language ? language.name : undefined
+            },
+            mapped_translator : (mapped) => {
+                if (!mapped || !mapped.compiler_id)
+                    throw `ce_configuration: missing mandatory field '.compiler_id' in configuration ${mapped}`
+                return mapped
             }
         })
     }
