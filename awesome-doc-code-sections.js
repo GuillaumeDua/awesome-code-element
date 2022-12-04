@@ -53,6 +53,7 @@
 // TODO: soft errors (replace HTMLElement content with red error message, rather than stopping the process)
 // TODO: make Initialize_DivHTMLElements generic
 // TODO: Global option: force fallback language to ... [smthg]
+// TODO: per-codeSection CE configuration (local override global)
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -75,14 +76,16 @@ class transformed_map extends Map {
     mapped_translator   = undefined
 
     constructor(values, { key_translator, mapped_translator }  = {}) {
-        values = values.map((item) => {
-            let [ key, mapped ] = item
-            if (key_translator)
-                key = key_translator(key)
-            if (mapped_translator)
-                mapped = mapped_translator(key)
-            return [ key, mapped ]
-        })
+
+        if (values)
+            values = values.map((item) => {
+                let [ key, mapped ] = item
+                if (key_translator)
+                    key = key_translator(key)
+                if (mapped_translator)
+                    mapped = mapped_translator(key)
+                return [ key, mapped ]
+            })
         super(values)
 
         this.key_translator     = key_translator
@@ -101,41 +104,40 @@ class transformed_map extends Map {
         super.set(key, mapped)
         return this
     }
+    has(key) {
+        if (this.key_translator)
+            key = this.key_translator(key)
+        return super.has(key)
+    }
 }
 
-class ce_configuration_manager {
+class ce_configuration_manager extends transformed_map {
 // similar to a Map, but use `hljs.getLanguage(key)` as a key translator
 
-    constructor(initializer_list) {
-        initializer_list.forEach((element) => {
-            let [ key, value ] = element
-            this.set(key, value)
+    constructor(values) {
+        super(values, {
+            key_translator: (key) => {
+            // transform any language alias into a consistent name
+                let language = hljs.getLanguage(key)
+                if (!language)
+                    console.warn(`ce_configuration: invalid language [${key}]`)
+                return language ? language.name : undefined
+            }
         })
     }
-
-    set(key, value) {
-        let language = hljs.getLanguage(key)
-        if (!language)
-            throw `ce_configuration: invalid language [${key}]`
-        console.info(`ce_configuration: mapping [${key}] to [${language.name}] (using aliases: [${language.aliases}])`)
-        if (this.#storage.has(language.name))
-            console.warn(`ce_configuration: overriding existing configuration for language [${language.name}] (with aliases: [${language.aliases}])`)
-        this.#storage.set(language.name, value)
+    set(key, mapped) {
+        if (this.has(key)) {
+            let language = hljs.getLanguage(key)
+            console.warn(`ce_configuration_manager: override existing configuration for language [${key}]. Translated name is [${language.name}], aliases are [${language.aliases}]`)
+        }
+        super.set(key, mapped)
     }
-    get(key) {
-        return this.#storage.get(hljs.getLanguage(key).name)
-    }
-    has(key) {
-        return this.get(key) !== undefined
-    }
-
-    #storage = new Map()
 }
 
 var awesome_doc_code_sections = {
     configuration : {
-        CE : new Map()
-        // key   : language_hljs_name
+        CE : new ce_configuration_manager
+        // key   : language (name or alias. ex: C++, cpp, cc, c++ are equivalent)
         // value : {
         //      language,       // not mandatory, if same as key. Refers to https://godbolt.org/api/languages
         //      compiler_id,
