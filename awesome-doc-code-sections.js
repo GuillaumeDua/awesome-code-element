@@ -466,6 +466,23 @@ class utility {
             return undefined
         }
     }
+    static fetch_resource(url, { on_error, on_success}) {
+
+        let xhr = new XMLHttpRequest();
+            xhr.open('GET', url);
+            xhr.onerror = function() {
+                on_error(`RemoteCodeSection: network Error`)
+            };
+            xhr.onload = function() {
+
+                if (xhr.status != 200) {
+                    on_error(`RemoteCodeSection: bad request status ${xhr.status}`)
+                    return;
+                }
+                on_success(xhr.responseText)
+            };
+            xhr.send();
+    }
 }
 
 // ============
@@ -1029,13 +1046,6 @@ class CodeSection extends CodeSection_HTMLElement {
             }
         }
 
-        // try to acquire local code
-        this.#_parameters.code = this.#_parameters.code || this.#acquire_code_local() || ''
-        // otherwise, remote
-        let url = this.getAttribute('url')
-        if (!this.#_parameters.code && url)
-            this.#acquire_code_remote(url)
-
         let maybe_use_attribute = (property_name) => {
             this.#_parameters[property_name] = this.#_parameters[property_name] || this.getAttribute(property_name) || undefined
         }
@@ -1043,10 +1053,15 @@ class CodeSection extends CodeSection_HTMLElement {
         maybe_use_attribute('toggle_parsing')
         maybe_use_attribute('toggle_execution')
 
+        // try to acquire local code
+        this.#_parameters.code = this.#_parameters.code || this.textContent || this.getAttribute('code') || ''
+        // otherwise, remote
+        this.#_parameters.url = this.#_parameters.url || this.getAttribute('url') || ''
+
         // TODO: load attributes as function, that can possibly override non-existing parameters
 
         // post-condition: valid code content
-        let is_valid = (this.#_parameters.code && this.#_parameters.code.length != 0)
+        let is_valid = (this.#_parameters.code || this.#_parameters.url)
         if (is_valid)
             this.acquire_parameters = () => { throw 'CodeSection.acquire_parameters: already called' }
         return is_valid
@@ -1059,7 +1074,14 @@ class CodeSection extends CodeSection_HTMLElement {
         // defered initialiation
         this._language                  = this.#_parameters.language
         this.toggle_language_detection  = !this.#is_valid_language
-        this.code                       = this.#_parameters.code // will update the view
+
+        if (this.#_parameters.url)
+        // remote code
+            this.url = this.#_parameters.url
+        else
+        // local code
+            this.code                       = this.#_parameters.code // will update the view
+
         this.toggle_parsing             = this.#_parameters.toggle_parsing
         this.toggle_execution           = this.#_parameters.toggle_execution
 
@@ -1199,23 +1221,33 @@ class CodeSection extends CodeSection_HTMLElement {
     }
 
     // core logic: acquire code policies
-    #acquire_code_remote(url) {
+    #_url = undefined
+    get url() {
+        return this.#_url
+    }
+    set url(value) {
 
-        this.remote_code_url = url
+        console.log(`DEBUG: setting url to ${value}`)
+
+        // TODO: use utility.fetch_resource
+        // TODO: loading animation ?
+
+        this.#_url = value
 
         let _this = this
         let apply_code = (code) => {
         // defered initialization
             if (!code)
                 throw 'CodeSection: fetched invalid (possibly empty) remote code'
+
             console.log(code)
-            // remote becomes local
-            _this.setAttribute('language', utility.get_url_extension(url))
-            _this.textContent = code
+
+            this.language = utility.get_url_extension(this.#_url)
+            this.code = code
         }
 
         let xhr = new XMLHttpRequest();
-            xhr.open('GET', url);
+            xhr.open('GET', this.#_url);
             xhr.onerror = function() {
                 _this.on_critical_internal_error(`RemoteCodeSection: network Error`)
             };
@@ -1228,9 +1260,6 @@ class CodeSection extends CodeSection_HTMLElement {
                 apply_code(xhr.responseText)
             };
             xhr.send();
-    }
-    #acquire_code_local() {
-        return this.textContent || this.getAttribute('code')
     }
 
     static PlaceholdersTranslation = {
