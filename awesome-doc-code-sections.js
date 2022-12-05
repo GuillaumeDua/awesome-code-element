@@ -1226,40 +1226,23 @@ class CodeSection extends CodeSection_HTMLElement {
         return this.#_url
     }
     set url(value) {
-
-        console.log(`DEBUG: setting url to ${value}`)
-
-        // TODO: use utility.fetch_resource
-        // TODO: loading animation ?
+    // TODO: loading animation ?
 
         this.#_url = value
 
         let _this = this
-        let apply_code = (code) => {
-        // defered initialization
-            if (!code)
-                throw 'CodeSection: fetched invalid (possibly empty) remote code'
+        utility.fetch_resource(this.#_url, { 
+            on_error: (error) => {
+                _this.on_critical_internal_error(`RemoteCodeSection: network Error ${error}`)
+            },
+            on_success: (code) => {
+                if (!code)
+                    throw 'CodeSection: fetched invalid (possibly empty) remote code'
 
-            console.log(code)
-
-            this.language = utility.get_url_extension(this.#_url)
-            this.code = code
-        }
-
-        let xhr = new XMLHttpRequest();
-            xhr.open('GET', this.#_url);
-            xhr.onerror = function() {
-                _this.on_critical_internal_error(`RemoteCodeSection: network Error`)
-            };
-            xhr.onload = function() {
-
-                if (xhr.status != 200) {
-                    _this.on_critical_internal_error(`RemoteCodeSection: bad request status ${xhr.status}`)
-                    return;
-                }
-                apply_code(xhr.responseText)
-            };
-            xhr.send();
+                _this.language = utility.get_url_extension(_this.#_url)
+                _this.code = code
+            }
+        })
     }
 
     static PlaceholdersTranslation = {
