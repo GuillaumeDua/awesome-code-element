@@ -458,6 +458,14 @@ class utility {
             vertically      : element.scrollHeight > element.clientHeight
         }
     }
+    static get_url_extension(url) {
+        try {
+            return url.split(/[#?]/)[0].split('.').pop().trim();
+        }
+        catch (error) {
+            return undefined
+        }
+    }
 }
 
 // ============
@@ -912,10 +920,6 @@ class CodeSection_HTMLElement extends HTMLElement {
     }
 }
 
-// TODO: better model & view separation
-// TODO: options { toggle_parsing, toggle_execution } + prototype/factories
-//       same with attr
-//       default to true for both ?
 // TODO: better encapsulation (private '_.*' variables)
 // TODO: code loading policy/behavior - as function : default is textContent, but can be remote using an url, or another rich text area for instance
 class CodeSection extends CodeSection_HTMLElement {
@@ -1027,7 +1031,13 @@ class CodeSection extends CodeSection_HTMLElement {
             }
         }
 
-        this.#_parameters.code = this.#_parameters.code || this.#acquire_code() || ''
+        // try to acquire local code
+        this.#_parameters.code = this.#_parameters.code || this.#acquire_code_local() || ''
+        // otherwise, remote
+        let url = this.getAttribute('url')
+        if (!this.#_parameters.code && url)
+            this.#acquire_code_remote(url)
+
         let maybe_use_attribute = (property_name) => {
             this.#_parameters[property_name] = this.#_parameters[property_name] || this.getAttribute(property_name) || undefined
         }
@@ -1190,24 +1200,23 @@ class CodeSection extends CodeSection_HTMLElement {
             })
     }
 
-    // core logic: acquire code policy
-    #acquire_code() {
-        let url = this.getAttribute('url')
-        return this.#acquire_code_local()
-        // return (() => { return url
-        //     ? this.#acquire_code_remote.bind(url)
-        //     : this.#acquire_code_local} )()
-    }
+    // core logic: acquire code policies
     #acquire_code_remote(url) {
 
-        let apply_code = (code) => {
-        // defered initialization
-            this.code = code
-        }
+        this.remote_code_url = url
 
         let _this = this
+        let apply_code = (code) => {
+        // defered initialization
+            if (!code)
+                throw 'CodeSection: fetched invalid (possibly empty) remote code'
+            console.log(code)
+            // remote becomes local
+            this.textContent = code
+        }
+
         let xhr = new XMLHttpRequest();
-            xhr.open('GET', this.code_url);
+            xhr.open('GET', url);
             xhr.onerror = function() {
                 _this.on_critical_internal_error(`RemoteCodeSection: network Error`)
             };
@@ -1243,10 +1252,6 @@ class CodeSection extends CodeSection_HTMLElement {
 customElements.define('code-section', CodeSection);
 
 // /WIP
-
-
-// TODO: remove BasicCodeSection, CodeSection
-// TODO: refactor RemoteCodeSection
 
 class ThemeSelector {
 // For themes, see https://cdnjs.com/libraries/highlight.js
