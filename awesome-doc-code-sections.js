@@ -696,6 +696,7 @@ class CodeSection_HTMLElement extends HTMLElement {
     // accessors
     #allowed_directions = [ 'row', 'column' ]
     set direction(value) {
+        console.log(`debug: setting direction to ${value}`)
         this.style.flexDirection = this.#allowed_directions.includes(value) ? value : this.#allowed_directions[0]
     }
     get direction() {
@@ -1017,7 +1018,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     #_parameters = {}
     acquire_parameters(parameters) {
 
-        // super ?
+        super.acquire_parameters(parameters)
 
         if (parameters) {
             this.#_parameters = { 
