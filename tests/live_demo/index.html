@@ -217,7 +217,7 @@ let element_shake_effect_for = (element, duration) => {
     }, duration)
 }
 
-class CodeSection_demo extends SimpleCodeSection {
+class CodeSection_demo extends CodeSection {
     constructor() {
         super()
     }
@@ -365,21 +365,21 @@ customElements.define('code-section-demo', CodeSection_demo);
     <button onclick="toggle_style()">Toggle style</button>
     <button onclick="toggle_small()">Toggle small</button>
 
-    <!-- simple-code-section : only text content
-    <simple-code-section id="scs_1">
+    <!-- code-section : only text content
+    <code-section id="scs_1">
         auto main() -> int { return 42; }
-    </simple-code-section>
+    </code-section>
 
-    simple-code-section : language + text content
-    <simple-code-section language="cpp" id="scs_2">
+    code-section : language + text content
+    <code-section language="cpp" id="scs_2">
         auto main() -> int { return 42; } // this is a pretty long comment, so it triggers small-rendering behavior
-    </simple-code-section>
+    </code-section>
 
-    simple-code-section : language + code
-    <simple-code-section language="cpp" code="
+    code-section : language + code
+    <code-section language="cpp" code="
     auto main() -> int { return 42; }
     " id="scs_3">
-    </simple-code-section> -->
+    </code-section> -->
 
 
     <!-- Test case :
@@ -392,54 +392,54 @@ customElements.define('code-section-demo', CodeSection_demo);
     <h2>Using attributes </h2>
 
     <ul>
-        <!-- <li>
-            <h3>simple-code-section : default</h3>
-            <simple-code-section>
+        <li>
+            <h3>code-section : default</h3>
+            <code-section>
 #include &lt;iostream&gt;
 auto main() -> int {
     auto i = 42;
     std::cout &lt;&lt; &quot;some console output&quot;;
 return i;
 }                       
-            </simple-code-section>
+            </code-section>
         </li>
         <li>
-            <h3>simple-code-section : language</h3>
-            <simple-code-section language="cpp">
+            <h3>code-section : language</h3>
+            <code-section language="cpp">
 #include &lt;iostream&gt;
 auto main() -> int {
     auto i = 42;
     std::cout &lt;&lt; &quot;some console output&quot;;
 return i;
 }                       
-            </simple-code-section>
+            </code-section>
         </li>
         <li>
-            <h3>simple-code-section : language, execution</h3>
-            <simple-code-section language="cpp" toggle_execution="true">
+            <h3>code-section : language, execution</h3>
+            <code-section language="cpp" toggle_execution="true">
 #include &lt;iostream&gt;
 auto main() -> int {
     auto i = 42;
     std::cout &lt;&lt; &quot;some console output&quot;;
 return i;
 }                       
-            </simple-code-section>
-        </li> -->
+            </code-section>
+        </li>
         <li>
-            <h3>simple-code-section : language, execution, column orientation</h3>
+            <h3>code-section : language, execution, column orientation</h3>
             <!-- WIP:fix orientation -->
-            <simple-code-section language="cpp" toggle_execution="true" direction="column"> 
+            <code-section language="cpp" toggle_execution="true" direction="column"> 
 #include &lt;iostream&gt;
 auto main() -> int {
     auto i = 42;
     std::cout &lt;&lt; &quot;some console output&quot;;
 return i;
 }                       
-            </simple-code-section>
+            </code-section>
         </li>
-        <!-- <li>
-            <h3>simple-code-section : parsing</h3>
-            <simple-code-section toggle_parsing="true">
+        <li>
+            <h3>code-section : parsing</h3>
+            <code-section toggle_parsing="true">
         THIS IS REMOVED // @awesome-doc-code-sections::skip::line
 #include &lt;iostream&gt;
 auto main() -> int {    
@@ -450,13 +450,13 @@ return i;
                         // @awesome-doc-code-sections::show::block::end
 }                       
         THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
-            </simple-code-section>
+            </code-section>
         </li>
 
         <li>
-            <h3>simple-code-section : language + parsing - column presentation</h3>
+            <h3>code-section : language + parsing - column presentation</h3>
 
-            <simple-code-section id="scs_4_column" style="flex-direction: column">
+            <code-section id="scs_4_column" style="flex-direction: column">
         THIS IS REMOVED // @awesome-doc-code-sections::skip::line
 auto main() -> int {    
                         // @awesome-doc-code-sections::show::block::begin
@@ -465,11 +465,11 @@ return i;
                         // @awesome-doc-code-sections::show::block::end
 }                       
         THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
-            </simple-code-section>
-        </li> -->
+            </code-section>
+        </li>
     </ul>
 
-    <!-- <h2>Live demo</h2>
+    <h2>Live demo</h2>
 
     <code-section-demo>
         THIS IS REMOVED // @awesome-doc-code-sections::skip::line
@@ -480,7 +480,7 @@ return i;
                         // @awesome-doc-code-sections::show::block::end
 }                       
         THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
-    </code-section-demo> -->
+    </code-section-demo>
 
 </body>
 </html>

@@ -918,7 +918,7 @@ class CodeSection_HTMLElement extends HTMLElement {
 //       default to true for both ?
 // TODO: better encapsulation (private '_.*' variables)
 // TODO: code loading policy/behavior - as function : default is textContent, but can be remote using an url, or another rich text area for instance
-class SimpleCodeSection extends CodeSection_HTMLElement {
+class CodeSection extends CodeSection_HTMLElement {
 
     // --------------------------------
     // accessors
@@ -1026,8 +1026,8 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
                 ...parameters
             }
         }
-        // TODO: code aquire policy/behavior
-        this.#_parameters.code = this.#_parameters.code || this.textContent || this.getAttribute('code') || ''
+
+        this.#_parameters.code = this.#_parameters.code || this.#acquire_code() || ''
         let maybe_use_attribute = (property_name) => {
             this.#_parameters[property_name] = this.#_parameters[property_name] || this.getAttribute(property_name) || undefined
         }
@@ -1176,7 +1176,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             })
             .then((result) => {
 
-                let execution_content = new SimpleCodeSection({
+                let execution_content = new CodeSection({
                     code: result.value,
                     language: 'bash' // something plain
                 }) // or simple [pre>code] with CopyToClipboardButton ?
@@ -1190,375 +1190,19 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
             })
     }
 
-    static PlaceholdersTranslation = {
-        type : SimpleCodeSection,
-        query : `div[class=${SimpleCodeSection.HTMLElement_name}]`,
-        translate : (element) => {
-            // TODO: all attributes -> options
-            let language = element.getAttribute('language')
-            let code = element.textContent
-                        .replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
-            let node = new SimpleCodeSection(code, language);
-            if (language)
-                node.setAttribute('language', language)
-            return node
-        }
+    // core logic: acquire code policy
+    #acquire_code() {
+        let url = this.getAttribute('url')
+        return this.#acquire_code_local()
+        // return (() => { return url
+        //     ? this.#acquire_code_remote.bind(url)
+        //     : this.#acquire_code_local} )()
     }
-}
-customElements.define('simple-code-section', SimpleCodeSection);
-
-
-// /WIP
-
-
-// TODO: remove BasicCodeSection, CodeSection
-// TODO: refactor RemoteCodeSection
-
-
-class BasicCodeSection extends HTMLElement {
-// Basic code section (meaning, no metadata parsing), with synthax-coloration provided by highlightjs
-// Additionaly, the language code language can be forced (`code_language` parameter, or `language` attributes),
-// otherwise it is automatically detected based on fetched code content
-//
-// <BasicCodeSection language='cpp'>[some code here]</BasicCodeSection>
-
-    static HTMLElement_name = 'awesome-doc-code-sections_basic-code-section'
-    type = BasicCodeSection
-
-    constructor(code, language) {
-        super();
-
-        this.code = code
-        this._language = language
-    }
-
-    on_critical_internal_error(error = "") {
-
-        console.error(
-            `awesome-doc-code-sections.js:BasicCodeSection: on_critical_internal_error : fallback rendering
-            ${error}`
-        )
-
-        if (!this.isConnected)
-            return
-
-        let error_element = document.createElement('p')
-            error_element.textContent = error || `awesome-doc-code-sections:BasicCodeSection: unknown error`
-        utility.apply_css(error_element, {
-            color: "red",
-            "border" : "2px solid red"
-        })
-        this.appendChild(error_element)
-    }
-
-    #shadow_root_callback(childrens) {
-        console.log(`BasicCodeSection::shadowRoot : [${this.textContent}]`)
-        this.replaceWith(new this.type(this.textContent, this._language))
-    }
-
-    connectedCallback() {
-        try {
-            this.code = this.code || this.textContent || this.getAttribute('code')
-            this._language = this._language || this.getAttribute('language') || undefined
-            if (this._language)
-                this._language = this._language.replace('language-', '')
-
-            if (!this.code || this.code.length == 0) {
-                let _this = this
-                utility.create_shadowroot_slot(this, function(){ _this.#shadow_root_callback()})
-            }
-            else
-                this.load()
-        }
-        catch (error) {
-            console.log(`${error}`)
-            this.on_critical_internal_error(error)
-        }
-    }
-
-    load() {
-
-        utility.apply_css(this, {
-            display:    'flex',
-            alignItems: 'stretch',
-            boxSizing:  'border-box',
-            width:      '100%'
-        })
-
-        // code content
-        let code_node = document.createElement('pre');
-        utility.apply_css(code_node, {
-            zIndex:     1,
-            position:   'relative',
-            boxSizing:  'border-box',
-            top:        0,
-            left:       0,
-            width:      '100%',
-            margin:     0
-        })
-
-        let code = document.createElement('code');
-            code.textContent = this.code
-        utility.apply_css(code, {
-            height:     '100%',
-            width:      'auto',
-            boxSizing:  'border-box'
-        })
-        code_node.appendChild(code)
-
-        if (this._language)
-            code.classList.add('hljs', `language-${this.language}`);
-        hljs.highlightElement(code)
-
-        // buttons : copy-to-clipboard
-        let copy_button = new CopyToClipboardButton()
-            copy_button.style.zIndex = code_node.style.zIndex + 1
-        code_node.appendChild(copy_button)
-
-        // buttons : send-to-godbolt (only if a CE configuration for that language exists)
-        let code_hljs_language = BasicCodeSection.get_code_hljs_language(code)
-        if (this._language !== undefined && code_hljs_language !== this._language) // unlikely
-            console.warn(`awesome-doc-code-sections.js:CodeSection::load : incompatible language specification (user-specified is ${this._language}, detected is ${code_hljs_language})`)
-        
-        if (// ce_API.languages.has(code_hljs_language)
-            awesome_doc_code_sections.configuration.CE.has(code_hljs_language)) {
-            let CE_button = new SendToGodboltButton
-                CE_button.style.zIndex = code_node.style.zIndex + 1
-            code_node.appendChild(CE_button)
-        }
-
-        this.innerHTML = code_node.outerHTML;
-        awesome_doc_code_sections.resize_observer.observe(this.firstChild /* code_node */)
-    }
-
-    static get_code_hljs_language(code_tag) {
-        if (code_tag === undefined || code_tag.tagName !== 'CODE')
-            console.error(`awesome-doc-code-sections.js:CodeSection::get_code_hljs_language(): bad input`)
-
-        let result = code_tag.classList.toString().match(/language-(\w+)/, '')
-        if (!result)
-            console.error(`awesome-doc-code-sections.js:CodeSection::get_code_hljs_language(): ill-formed code hljs classList`)
-        return result[1] // first capture group
-    }
-
-    get language() {
-
-        if (this._language !== undefined)
-            return this._language
-
-        let code = $(this).find("pre code")
-        if (code.length == 0)
-            console.error(`awesome-doc-code-sections.js:CodeSection::language(get): ill-formed element (expect pre>code as childrens)`)
-        return BasicCodeSection.get_code_hljs_language(code[0])
-    }
-
-    static PlaceholdersTranslation = {
-        type : BasicCodeSection,
-        query : `div[class=${BasicCodeSection.HTMLElement_name}]`,
-        translate : (element) => {
-            let language = element.getAttribute('language')
-            let code = element.textContent
-                        .replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
-            let node = new BasicCodeSection(code, language);
-            if (language)
-                node.setAttribute('language', language)
-            return node
-        }
-    }
-}
-customElements.define(BasicCodeSection.HTMLElement_name, BasicCodeSection);
-
-class CodeSection extends BasicCodeSection {
-// Code section, with synthax-coloration provided by highlightjs
-// Additionaly, the language code language can be forced (`code_language` parameter, or `language` attributes),
-// otherwise it is automatically detected based on fetched code content
-//
-// <CodeSection language='cpp'>[some code here]</CodeSection>
-
-    type = CodeSection
-
-    static HTMLElement_name = 'awesome-doc-code-sections_code-section'
-    static loading_animation = (function(){
-    // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
-        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/resources/images/loading_animation.svg'
-        let loading_animation = document.createElement('img');
-            loading_animation.src = loading_animation_fallback_url
-        utility.apply_css(loading_animation, {
-            contain             : 'strict',
-            border              : '1px solid var(--primary-color)',
-            borderRadius        : '5px',
-            width               : '100%',
-            display             : 'none' // hidden by default
-        })
-        return loading_animation
-    })()
-
-    get ce_code() {
-        return this.parsed_code.to_execute
-    }
-    get ce_options() {
-        return this.parsed_code.ce_options
-    }
-
-    constructor(code, language) {
-        super(code, language)
-    }
-
-    load() {
-        let parsed_code = undefined
-        try             { parsed_code = new ParsedCode(this.code, this._language) }
-        catch (error)   { this.on_critical_internal_error(error); return }
-
-        this.code = parsed_code.to_display
-        this.parsed_code = parsed_code
-
-        super.load()
-
-        this.#initialize_panels()
-        if (this.parsed_code.ce_options.add_in_doc_execution)
-            this.fetch_execution()
-    }
-
-    #initialize_panels() {
-        this.left_panel = this.firstChild
-        if (this.left_panel === undefined || this.left_panel.tagName !== 'PRE')
-            console.error('awesome-doc-code-sections.js:CodeSection::add_execution_panel : ill-formed firstChild')
-
-        // right panel
-        this.right_panel = document.createElement('div')
-        this.appendChild(this.right_panel)
-
-        utility.apply_css(this.right_panel, {
-            display:    'none',
-            alignItems: 'stretch',
-            boxSizing:  'border-box',
-            position:   'relative',
-            top:        0,
-            left:       0,
-            width:      '50%',
-            margin:     0
-        })
-        // right panel: loading
-        this.loading_animation_element = this.right_panel.appendChild(CodeSection.loading_animation.cloneNode())
-        this.loading_animation_element.style.display = 'block'
-        // right panel: execution
-        this.execution_element = document.createElement('div') // placeholder
-        utility.apply_css(this.execution_element, {
-            width:          '100%',
-            paddingTop:     '1px',
-            display:        'none' // hidden by default
-        })
-        this.right_panel.appendChild(this.execution_element)
-    }
-    fetch_execution() {
-
-        this.left_panel.style.width = '50%'
-        this.right_panel.style.display = 'flex'
-        this.execution_element.style.display = 'none'
-        this.loading_animation_element.style.display = 'flex'
-
-        // right panel: replace with result
-        ce_API.fetch_execution_result(this.ce_options, this.ce_code)
-            .catch((error) => {
-                this.on_critical_internal_error(`CodeSection: ce_API.fetch_execution_result failed [${error}]`)
-            })
-            .then((result) => {
-
-                // CE header: parse & remove
-                let regex = new RegExp('# Compilation provided by Compiler Explorer at https://godbolt.org/\n\n(# Compiler exited with result code (-?\\d+))')
-                let regex_result = regex.exec(result)
-
-                if (regex_result === null || regex_result.length != 3) {
-                    return {
-                        value : result,
-                        error : 'unknown',
-                        return_code : -1
-                    }
-                }
-                
-                return {
-                    value : result.substring(regex_result[0].length - regex_result[1].length), // trim off header
-                    error : undefined,
-                    return_code : regex_result[2]
-                }
-            })
-            .then((result) => {
-
-                let execution_element = new BasicCodeSection(result.value)
-                    execution_element.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
-                    execution_element.style.borderTop = '2px solid ' + (result.return_code == -1 ? 'red' : 'green')
-
-                this.execution_element.replaceWith(execution_element)
-                this.execution_element = execution_element
-
-                this.loading_animation_element.style.display = 'none'
-                this.execution_element.style.display = 'flex'
-            })
-    }
-
-    static PlaceholdersTranslation = { // TODO: remove redundancy (with BasicCodeSection)
-        type : CodeSection,
-        query : `div[class=${CodeSection.HTMLElement_name}]`,
-        translate : (element) => {
-            let language = element.getAttribute('language')
-            let code = element.textContent
-                        .replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
-            let node = new CodeSection(code, language);
-            if (language)
-                node.setAttribute('language', language)
-            return node
-        }
-    }
-}
-customElements.define(CodeSection.HTMLElement_name, CodeSection);
-
-class RemoteCodeSection extends CodeSection {
-// Fetch some code as texts based on the `code_url` parameter (or `url` attribute),
-// and creates a code-sections (pre/code) with synthax-color provided by hightlighthjs
-// Additionaly, the language code language can be forced (`code_language` parameter, or `language` attributes),
-// otherwise it is automatically detected based on fetched code content
-
-    type = RemoteCodeSection
-
-    static HTMLElement_name = 'awesome-doc-code-sections_remote-code-section'
-
-    constructor(code_url, language) {
-        super(undefined, language); // defered initialization in `#load`
-        this.code_url = code_url;
-    }
-
-    connectedCallback() {
-        this.code_url = this.code_url || this.getAttribute('url')
-        this._language = this._language || this.getAttribute('language') || undefined
-        if (this._language)
-            this._language = this._language.replace('language-', '')
-
-        if (!this.code_url) {
-            super.on_critical_internal_error('RemoteCodeSection : missing mandatory [url] attribute')
-            return
-        }
-        if (!this._language && this.code_url) { // perhaps nothing is better than that ... ?
-            this._language = RemoteCodeSection.get_url_extension(this.code_url)
-            console.log(`awesome-doc-code-sections.js:RemoteCodeSection : fallback language from url extension : [${this._language}]`)
-        }
-        this.load()
-    }
-
-    static get_url_extension(url) {
-        try {
-            return url.split(/[#?]/)[0].split('.').pop().trim();
-        }
-        catch (error) {
-            return undefined
-        }
-    }
-
-    load() {
+    #acquire_code_remote(url) {
 
         let apply_code = (code) => {
         // defered initialization
             this.code = code
-            super.load();
         }
 
         let _this = this
@@ -1577,27 +1221,32 @@ class RemoteCodeSection extends CodeSection {
             };
             xhr.send();
     }
+    #acquire_code_local() {
+        return this.textContent || this.getAttribute('code')
+    }
 
-    static PlaceholdersTranslation = { // TODO: remove redundancy (with BasicCodeSection)
-        type : RemoteCodeSection,
-        query : `div[class=${RemoteCodeSection.HTMLElement_name}]`,
+    static PlaceholdersTranslation = {
+        type : CodeSection,
+        query : `div[class=${CodeSection.HTMLElement_name}]`,
         translate : (element) => {
-            if (element.getAttribute('url') === undefined) {
-                console.error('awesome-doc-code-sections.js: PlaceholdersTranslation(RemoteCodeSection): div/code_example is missing an url attribute')
-                return undefined; // ill-formed, skip this element but continue iteration
-            }
-            let url = element.getAttribute('url')
+            // TODO: all attributes -> options
             let language = element.getAttribute('language')
-            // let language = (element.classList.length != 1 ? element.classList[1] : undefined);
-
-            let node = new RemoteCodeSection(url, language);
-            if (url)        node.setAttribute('url', url);
-            if (language)   node.setAttribute('language', language)
+            let code = element.textContent
+                        .replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
+            let node = new CodeSection(code, language);
+            if (language)
+                node.setAttribute('language', language)
             return node
         }
     }
 }
-customElements.define(RemoteCodeSection.HTMLElement_name, RemoteCodeSection);
+customElements.define('code-section', CodeSection);
+
+// /WIP
+
+
+// TODO: remove BasicCodeSection, CodeSection
+// TODO: refactor RemoteCodeSection
 
 class ThemeSelector {
 // For themes, see https://cdnjs.com/libraries/highlight.js
@@ -1716,9 +1365,7 @@ highlightjs_stylesheet_href_mutationObserver.observe(
 awesome_doc_code_sections.HTML_elements = {}
 awesome_doc_code_sections.HTML_elements.CopyToClipboardButton = CopyToClipboardButton
 awesome_doc_code_sections.HTML_elements.SendToGodboltButton   = SendToGodboltButton
-awesome_doc_code_sections.HTML_elements.BasicCodeSection      = BasicCodeSection
 awesome_doc_code_sections.HTML_elements.CodeSection           = CodeSection
-awesome_doc_code_sections.HTML_elements.RemoteCodeSection     = RemoteCodeSection
 awesome_doc_code_sections.ThemeSelector = ThemeSelector
 
 // TODO: make sure that doxygen elements are also still clickable with pure doxygen (not doxygen-awesome-css)
@@ -1852,9 +1499,7 @@ awesome_doc_code_sections.initialize = function() {
                 })
             }
             [   // replace placeholders with proper HTML elements
-                awesome_doc_code_sections.HTML_elements.BasicCodeSection,
-                awesome_doc_code_sections.HTML_elements.CodeSection,
-                awesome_doc_code_sections.HTML_elements.RemoteCodeSection
+                awesome_doc_code_sections.HTML_elements.CodeSection
             ].forEach(html_component => ReplaceHTMLPlaceholders(html_component.PlaceholdersTranslation))
 
             if (awesome_doc_code_sections.options.doxygen_awesome_css_compatibility === true) {
