@@ -96,7 +96,7 @@
     
         <!-- highlight -->
         <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/languages/cpp.min.js" integrity="sha512-IAojhJDNJ4oC/Eui96KT2gmg2iwV2MsxTDs9CzqrrjNF8OdKV4MQE8H9fHbOXIsTaYZjLAVgtPOeyBNtD8LLEw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
         <!-- default theme -->
         <link id='code_theme_stylesheet' rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/tokyo-night-dark.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     
@@ -392,7 +392,7 @@ customElements.define('code-section-demo', CodeSection_demo);
     <h2>Using attributes </h2>
 
     <ul>
-        <li>
+        <!-- <li>
             <h3>simple-code-section : default</h3>
             <simple-code-section>
 #include &lt;iostream&gt;
@@ -424,10 +424,11 @@ auto main() -> int {
 return i;
 }                       
             </simple-code-section>
-        </li>
+        </li> -->
         <li>
             <h3>simple-code-section : language, execution, column orientation</h3>
-            <simple-code-section language="cpp" toggle_execution="true" orientation="column">
+            <!-- WIP:fix orientation -->
+            <simple-code-section language="cpp" toggle_execution="true" direction="column"> 
 #include &lt;iostream&gt;
 auto main() -> int {
     auto i = 42;
@@ -436,7 +437,7 @@ return i;
 }                       
             </simple-code-section>
         </li>
-        <li>
+        <!-- <li>
             <h3>simple-code-section : parsing</h3>
             <simple-code-section toggle_parsing="true">
         THIS IS REMOVED // @awesome-doc-code-sections::skip::line
@@ -465,10 +466,10 @@ return i;
 }                       
         THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
             </simple-code-section>
-        </li>
+        </li> -->
     </ul>
 
-    <h2>Live demo</h2>
+    <!-- <h2>Live demo</h2>
 
     <code-section-demo>
         THIS IS REMOVED // @awesome-doc-code-sections::skip::line
@@ -479,7 +480,7 @@ return i;
                         // @awesome-doc-code-sections::show::block::end
 }                       
         THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
-    </code-section-demo>
+    </code-section-demo> -->
 
 </body>
 </html>

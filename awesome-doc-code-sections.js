@@ -54,6 +54,7 @@
 // TODO: make Initialize_DivHTMLElements generic
 // TODO: Global option: force fallback language to ... [smthg]
 // TODO: per-codeSection CE configuration (local override global)
+// TODO: toggle technical info/warning logs
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -113,7 +114,6 @@ class transformed_map extends Map {
 
 class ce_configuration_manager extends transformed_map {
 // similar to a Map, but use `hljs.getLanguage(key)` as a key translator
-
     constructor(values) {
         super(values, {
             key_translator: (key) => {
@@ -873,7 +873,7 @@ class CodeSection_HTMLElement extends HTMLElement {
 
     // initialization
     acquire_parameters(parameters) {
-        this.#_parameters.style.direction = this.#_parameters.style.direction || this.getAttribute('orientation') || this.style.flexDirection
+        this.#_parameters.style.direction = this.#_parameters.style.direction || this.getAttribute('direction') || this.style.flexDirection
         return true
     }
     initialize() {
@@ -948,11 +948,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
     _language = undefined
     toggle_language_detection = true
     get #is_valid_language() {
-        return Boolean(
-            this._language &&
-            this._language.length != 0 &&
-            this._language !== 'undefined'
-        )
+        return hljs.getLanguage(this._language) !== undefined
     }
     get language() {
 
@@ -975,7 +971,7 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         this._language = (value || '').replace('language-', '')
         this.setAttribute('language', this._language)
         this._code.ce_options = awesome_doc_code_sections.configuration.CE.get(this._language)
-        
+
         if (!update_view)
             return
 
@@ -988,8 +984,10 @@ class SimpleCodeSection extends CodeSection_HTMLElement {
         // clear existing hljs-related classList items
         this.html_elements.code.classList = [...this.html_elements.code.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
 
-        if (!this.toggle_language_detection)
+        if (!this.toggle_language_detection) {
+            this.html_elements.code.classList.add(`hljs`)
             this.html_elements.code.classList.add(`language-${this._language}`)
+        }
         hljs.highlightElement(this.html_elements.code)
 
         // retro-action: update language with view (hljs) detected one
