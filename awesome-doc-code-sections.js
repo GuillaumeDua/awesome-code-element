@@ -704,7 +704,6 @@ class CodeSection_HTMLElement extends HTMLElement {
     // accessors
     #allowed_directions = [ 'row', 'column' ]
     set direction(value) {
-        console.log(`debug: setting direction to ${value}`)
         this.style.flexDirection = this.#allowed_directions.includes(value) ? value : this.#allowed_directions[0]
     }
     get direction() {
@@ -1015,7 +1014,6 @@ class CodeSection extends CodeSection_HTMLElement {
 
     // --------------------------------
     // construction/initialization
-    // TODO: options { toggle_* : ... }
     constructor(parameters) {
         super(parameters)
     }
@@ -1212,7 +1210,8 @@ class CodeSection extends CodeSection_HTMLElement {
                 throw 'CodeSection: fetched invalid (possibly empty) remote code'
             console.log(code)
             // remote becomes local
-            this.textContent = code
+            _this.setAttribute('language', utility.get_url_extension(url))
+            _this.textContent = code
         }
 
         let xhr = new XMLHttpRequest();
