@@ -484,6 +484,54 @@ class utility {
             xhr.send();
     }
 }
+class log_facility {
+    
+    static #default_channels = {
+        debug:  console.debug,
+        error:  console.error,
+        info:   console.info,
+        log:    console.log,
+        trace:  console.trace,
+        warn:   console.warn
+    }
+    static #empty_function = (() => {
+        let value = function(){}
+            value.is_explicitly_empty = true
+        return value
+    })()
+
+    static is_enabled(name) {
+        return Boolean(console[name])
+    }
+    static enable(name) {
+        if (name instanceof Array) {
+            name.forEach(value => log_facility.enable(value))
+            return
+        }
+        console[name] = log_facility.#default_channels[name]
+    }
+    static disable(name) {
+        if (name instanceof Array) {
+            name.forEach(value => log_facility.disable(value))
+            return
+        }
+        console[name] = log_facility.#empty_function
+    }
+
+    static get enabled() {
+        return Object.entries(log_facility.#default_channels).map(element => element[0]).filter(
+            element => !Boolean(console[element].is_explicitly_empty)
+        ) 
+    }
+    static get disabled() {
+        return Object.entries(log_facility.#default_channels).map(element => element[0]).filter(
+            element => Boolean(console[element].is_explicitly_empty)
+        ) 
+    }
+}
+log_facility.disable(['log', 'debug', 'trace'])
+console.info(`log_facility: enabled  channels: [${log_facility.enabled}]`)
+console.info(`log_facility: disabled channels: [${log_facility.disabled}]`)
 
 // ============
 // HTMLElements
@@ -528,10 +576,10 @@ class CopyToClipboardButton extends HTMLButtonElement {
             let text = this.previousSibling.textContent
             navigator.clipboard.writeText(text).then(
                 function() {
-                    console.log('awesome-doc-code-sections.js:CopyToClipboardButton: success');
+                    console.info('awesome-doc-code-sections.js:CopyToClipboardButton: success');
                 },
-                function(err) {
-                    console.error('awesome-doc-code-sections.js:CopyToClipboardButton: failed: ', err);
+                function(error) {
+                    console.error(`awesome-doc-code-sections.js:CopyToClipboardButton: failed: ${error}`);
                 }
             );
             window.setTimeout(() => {
@@ -618,7 +666,7 @@ class SendToGodboltButton extends HTMLButtonElement {
         if (codeSectionElement === undefined
         ||  codeSectionElement.tagName.match(`\w+${CodeSection.HTMLElement_name.toUpperCase()}`) === '')
             throw 'awesome-doc-code-sections.js: SendToGodboltButton.onClickSend: ill-formed element: unexpected parent.parent element (must be a CodeSection)'
-        console.log('awesome-doc-code-sections.js: SendToGodboltButton.onClickSend: sending ...')
+        console.info('awesome-doc-code-sections.js: SendToGodboltButton.onClickSend: sending request ...')
 
         let accessor = SendToGodboltButton.#make_user_options_accessor(codeSectionElement)
 
@@ -673,7 +721,7 @@ class CodeSection_HTMLElement extends HTMLElement {
     }
 
     connectedCallback() {
-        console.log('CodeSection_HTMLElement: connectedCallback')
+        console.debug('CodeSection_HTMLElement: connectedCallback')
         try {
             if (!this.acquire_parameters(this.#_parameters)) {
                 console.log('CodeSection_HTMLElement: create shadowroot slot')
@@ -1071,7 +1119,7 @@ class CodeSection extends CodeSection_HTMLElement {
     initialize() {
         super.initialize()
 
-        console.log(`initializing with parameters [${JSON.stringify(this.#_parameters, null, 3)}]` )
+        // console.log(`initializing with parameters [${JSON.stringify(this.#_parameters, null, 3)}]` )
 
         // defered initialiation
         this._language                  = this.#_parameters.language
@@ -1345,21 +1393,21 @@ class ThemeSelector {
 
         let onOptionSelectedChange = function() {
             let selected_option = $(this).find('option:selected')
-            console.log('awesome-doc-code-sections.js:ThemeSelector : switching to ' + selected_option.text())
+            console.info('awesome-doc-code-sections.js:ThemeSelector : switching to ' + selected_option.text())
 
             let html_node = document.getElementsByTagName('html')[0];
 
             let theme_color = (html_node.classList.contains('dark-mode') ? 'dark' : 'light')
             let new_stylesheet_url = ThemeSelector.BuildUrl(selected_option.text())
                 .replace(ThemeSelector.dark_or_light_placeholder, theme_color)
-            console.log('awesome-doc-code-sections.js:ThemeSelector : switching to stylesheet : ' + new_stylesheet_url)
+            console.info('awesome-doc-code-sections.js:ThemeSelector : switching to stylesheet : ' + new_stylesheet_url)
             document.getElementById('code_theme_stylesheet').href = new_stylesheet_url
 
             hljs.highlightAll()
         }
 
         $(document).ready(function() {
-            console.log('awesome-doc-code-sections.js:ThemeSelector : initializing themes selector ...')
+            console.info('awesome-doc-code-sections.js:ThemeSelector : initializing themes selector ...')
 
             ThemeSelector.check_stylesheet_HTML_placeholder()
 
@@ -1394,7 +1442,7 @@ const highlightjs_stylesheet_href_mutationObserver = new MutationObserver((mutat
         if (mutation.oldValue === code_stylesheet.href ||
             code_stylesheet.href === window.location.href)
             return
-        console.log('awesome-doc-code-sections.js:onHighlightjsHrefChange: Switching highlighthjs stylesheet \n from : ' + mutation.oldValue + '\n to   : ' + code_stylesheet.href)
+        console.info(`awesome-doc-code-sections.js:onHighlightjsHrefChange: Switching highlighthjs stylesheet \nfrom : ${mutation.oldValue} '\n to   : ${code_stylesheet.href}`)
 
         hljs.highlightAll();
     })
@@ -1434,7 +1482,7 @@ awesome_doc_code_sections.initialize_doxygenCodeSections = function() {
     let doc_ref_links = new Map(); // preserve clickable documentation reference links
 
     var place_holders = $('body').find('div[class=doxygen-awesome-fragment-wrapper]');
-    console.log(`awesome-doc-code-sections.js:initialize_doxygenCodeSections : replacing ${place_holders.length} elements ...`)
+    console.info(`awesome-doc-code-sections.js:initialize_doxygenCodeSections : replacing ${place_holders.length} elements ...`)
     place_holders.each((index, value) => {
 
         let lines = $(value).find('div[class=fragment] div[class=line]')
@@ -1452,7 +1500,7 @@ awesome_doc_code_sections.initialize_doxygenCodeSections = function() {
     })
 
     var place_holders = $('body').find('div[class=fragment]')
-    console.log(`awesome-doc-code-sections.js:initialize_doxygenCodeSections : replacing ${place_holders.length} elements ...`)
+    console.info(`awesome-doc-code-sections.js:initialize_doxygenCodeSections : replacing ${place_holders.length} elements ...`)
     place_holders.each((index, value) => {
 
         let lines = $(value).find('div[class=line]')
@@ -1469,7 +1517,7 @@ awesome_doc_code_sections.initialize_doxygenCodeSections = function() {
             $(value).replaceWith(node)
     })
 
-    // WIP: documentation reference links
+    // TODO: restore documentation reference links
     doc_ref_links.forEach((values, keys) => {
         // console.log(">>>>>>> " + value.href + " => " + value.textContent)
         console.log(">>>>>>> " + values + " => " + keys)
@@ -1522,7 +1570,7 @@ awesome_doc_code_sections.initialize = function() {
     $(function() {
         $(document).ready(function() {
 
-            console.log('awesome-doc-code-sections.js:initialize: initializing code sections ...')
+            console.info('awesome-doc-code-sections.js:initialize ...')
 
             if (awesome_doc_code_sections.options.toggle_dark_mode) {
                 if (undefined === awesome_doc_code_sections.ToggleDarkMode)
@@ -1539,7 +1587,7 @@ awesome_doc_code_sections.initialize = function() {
             let ReplaceHTMLPlaceholders = (translation) => {
 
                 let elements = $('body').find(translation.query)
-                console.log(`awesome-doc-code-sections.js: ReplaceHTMLPlaceholders(${translation.type.name}) : replacing ${elements.length} element(s) ...`)
+                console.info(`awesome-doc-code-sections.js: ReplaceHTMLPlaceholders(${translation.type.name}) : replacing ${elements.length} element(s) ...`)
                 elements.each((index, element) => {
                     let translated_element = translation.translate(element)
                     if (translated_element)
@@ -1551,12 +1599,12 @@ awesome_doc_code_sections.initialize = function() {
             ].forEach(html_component => ReplaceHTMLPlaceholders(html_component.PlaceholdersTranslation))
 
             if (awesome_doc_code_sections.options.doxygen_awesome_css_compatibility === true) {
-                console.log(`awesome-doc-code-sections.js:initialize: doxygen-awesome-css compatiblity ...`)
+                console.info(`awesome-doc-code-sections.js:initialize: doxygen-awesome-css compatiblity ...`)
                 awesome_doc_code_sections.initialize_doxygenCodeSections()
             }
 
             if (awesome_doc_code_sections.options.pre_code_compatibility) {
-                console.log(`awesome-doc-code-sections.js:initialize: existing pre-code compatiblity ...`)
+                console.info(`awesome-doc-code-sections.js:initialize: existing pre-code compatiblity ...`)
                 awesome_doc_code_sections.initialize_PreCodeHTMLElements();
             }
         })
