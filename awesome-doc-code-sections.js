@@ -617,8 +617,8 @@ class SendToGodboltButton extends HTMLButtonElement {
 
         if (codeSectionElement === undefined
         ||  codeSectionElement.tagName.match(`\w+${CodeSection.HTMLElement_name.toUpperCase()}`) === '')
-            throw 'awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: ill-formed element: unexpected parent.parent element (must be a CodeSection)'
-        console.log('awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: : sending ...')
+            throw 'awesome-doc-code-sections.js: SendToGodboltButton.onClickSend: ill-formed element: unexpected parent.parent element (must be a CodeSection)'
+        console.log('awesome-doc-code-sections.js: SendToGodboltButton.onClickSend: sending ...')
 
         let accessor = SendToGodboltButton.#make_user_options_accessor(codeSectionElement)
 
@@ -796,6 +796,7 @@ class CodeSection_HTMLElement extends HTMLElement {
     }
     #make_HTML_left_panel() {
         let left_panel = document.createElement('pre');
+            left_panel.style.overflow = 'auto'
 
         let code_element = document.createElement('code');
         utility.apply_css(code_element, {
@@ -958,6 +959,7 @@ class CodeSection extends CodeSection_HTMLElement {
         this.#view_update_code()
     }
     #view_update_code() {
+        this.#error_view = false // clear possibly existing errors
         // update view
         this.html_elements.code.textContent = this.code || ""
         // update view syle
@@ -1173,7 +1175,8 @@ class CodeSection extends CodeSection_HTMLElement {
                 border: '1px solid red',
                 borderRadius : '5px',
                 margin:  '0px',
-                width : '100%'
+                width : '100%',
+                overflow: 'auto'
             })
             set_execution_content(error_element)
             throw error
@@ -1233,11 +1236,12 @@ class CodeSection extends CodeSection_HTMLElement {
         let _this = this
         utility.fetch_resource(this.#_url, { 
             on_error: (error) => {
-                _this.on_critical_internal_error(`RemoteCodeSection: network Error ${error}`)
+                _this.on_error(`RemoteCodeSection: network Error ${error}`)
             },
             on_success: (code) => {
-                if (!code)
-                    throw 'CodeSection: fetched invalid (possibly empty) remote code'
+                if (!code) {
+                    _this.on_error('CodeSection: fetched invalid (possibly empty) remote code')
+                }
 
                 _this.language = utility.get_url_extension(_this.#_url)
                 _this.code = code
@@ -1245,6 +1249,34 @@ class CodeSection extends CodeSection_HTMLElement {
         })
     }
 
+    on_error(error) {
+    // soft (non-critical) error
+        error = error || 'CodeSection: unknown non-critical error'
+
+        // restore a stable status
+        this.toggle_parsing = false
+        this.toggle_execution = false
+        this._code = ''
+        this._language = undefined
+
+        // show error
+        this.code = error
+        this.#error_view = true
+    }
+    set #error_view(value) {
+        if (value)
+            utility.apply_css(this.html_elements.panels.left, {
+                border: '1px solid red',
+                borderRadius : '5px',
+            })
+        else
+            utility.apply_css(this.html_elements.panels.left, {
+                border: '',
+                borderRadius : '',
+            })
+    }
+
+    static HTMLElement_name = 'code-section'
     static PlaceholdersTranslation = {
         type : CodeSection,
         query : `div[class=${CodeSection.HTMLElement_name}]`,
@@ -1260,7 +1292,7 @@ class CodeSection extends CodeSection_HTMLElement {
         }
     }
 }
-customElements.define('code-section', CodeSection);
+customElements.define(CodeSection.HTMLElement_name, CodeSection);
 
 // /WIP
 
