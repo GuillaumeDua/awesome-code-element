@@ -247,6 +247,7 @@ class CodeSection_demo extends CodeSection {
             options_container.appendChild(this.#make_boolean_field_view('toggle_language_detection'))
             options_container.appendChild(this.#make_boolean_field_view('switch_style_direction'))
             options_container.appendChild(this.#make_language_view())
+            options_container.appendChild(this.#make_url_view())
 
         this.prepend(options_container)
 
@@ -258,6 +259,7 @@ class CodeSection_demo extends CodeSection {
     #transform_code_into_editable() {
         // make code editable
         let _this = this
+        this.html_elements.code.title = 'Edit me !'
         this.html_elements.code.addEventListener('click', () => {
             _this.html_elements.code.setAttribute('contentEditable', !_this.toggle_parsing)
             if (_this.toggle_parsing)
@@ -332,6 +334,7 @@ class CodeSection_demo extends CodeSection {
             input_field.type = "text"
             input_field.value = super.language
             input_field.title = 'clear to attempt a fallback autodetection'
+            input_field.style.float = 'right'
 
         let delay_timer = null
         input_field.addEventListener('keyup', (arg) => {
@@ -344,6 +347,38 @@ class CodeSection_demo extends CodeSection {
         })
 
         inject_field_proxy(this, 'language', {
+            getter_payload : () => {
+            },
+            setter_payload : (value) => {
+                input_field.value = value
+            }
+        })
+
+        return sub_container
+    }
+    #make_url_view() {
+
+        let sub_container = document.createElement('div')
+        apply_css(sub_container, {
+            flex: '0 0 fit-content',
+            borderRadius: 'var(--border-radius-small)',
+            border: '1px solid var(--separator-color)'
+        })
+        let label = sub_container.appendChild(document.createElement('label'))
+            label.textContent = `url `
+        let input_field = sub_container.appendChild(document.createElement('input'))
+            input_field.type = "text"
+            input_field.value = !super.url ? '' : super.url
+            input_field.title = 'remote code location. Press <enter> to apply'
+            input_field.style.float = 'right'
+
+        let delay_timer = null
+        input_field.addEventListener('keyup', (arg) => {
+            if (arg.key === 'Enter')
+                this.url = arg.target.value
+        })
+
+        inject_field_proxy(this, 'url', {
             getter_payload : () => {
                 console.log(`called : get`)
             },
@@ -381,7 +416,7 @@ customElements.define('code-section-demo', CodeSection_demo);
     " id="scs_3">
     </code-section> -->
 
-    <code-section url="http://localhost:8001/tests/resources/code_content/noexecute_show_block.cpp"></code-section>
+    <!-- <code-section url="http://localhost:8001/tests/resources/code_content/noexecute_show_block.cpp"></code-section> -->
 
     <!-- <h2>Using attributes </h2>
 
@@ -461,7 +496,7 @@ return i;
             </code-section>
         </li>
     </ul>
-
+-->
     <h2>Live demo</h2>
 
     <code-section-demo>
@@ -473,7 +508,7 @@ return i;
                         // @awesome-doc-code-sections::show::block::end
 }                       
         THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
-    </code-section-demo> -->
+    </code-section-demo>
 
 </body>
 </html>
