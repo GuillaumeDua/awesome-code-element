@@ -530,8 +530,7 @@ class log_facility {
     }
 }
 log_facility.disable(['log', 'debug', 'trace'])
-console.info(`log_facility: enabled  channels: [${log_facility.enabled}]`)
-console.info(`log_facility: disabled channels: [${log_facility.disabled}]`)
+console.info(`log_facility: channels enabled: [${log_facility.enabled}], disabled: [${log_facility.disabled}]`)
 
 // ============
 // HTMLElements
@@ -1050,24 +1049,55 @@ class CodeSection extends CodeSection_HTMLElement {
 
         this.#view_update_language()
     }
-    #view_update_language(){
+    #view_update_language_hljs_highlightAuto() {
+    // can specify user-provided language
+        let hljs_result = (() => {
+            if (this.toggle_language_detection)
+                return hljs.highlightAuto(this.html_elements.code.textContent)
+            else
+                return hljs.highlightAuto(this.html_elements.code.textContent, [ this._language ])
+        })()
 
-        // clear existing hljs-related classList items
-        this.html_elements.code.classList = [...this.html_elements.code.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
+        if (hljs_result.language === undefined && hljs_result.secondBest)
+            hljs_result = hljs_result.secondBest
 
-        if (!this.toggle_language_detection) {
-            this.html_elements.code.classList.add(`hljs`)
-            this.html_elements.code.classList.add(`language-${this._language}`)
-        }
+        return hljs_result
+    }
+    #view_update_language_hljs_highlightElement() {
+    // fallback, cannot provide language as a parameter
         hljs.highlightElement(this.html_elements.code)
+        return {
+            language: CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code),
+            relevance: 10 // max
+        }
+    }
+
+    #view_update_language(){
+        
+        let hljs_result = this.#view_update_language_hljs_highlightAuto()
+        if (!hljs_result.language || hljs_result.relevance < 3)
+            hljs_result = this.#view_update_language_hljs_highlightElement()
+        else
+            this.html_elements.code.innerHTML = hljs_result.value
+        
+        console.info(hljs_result)
+
+        if (hljs_result.relevance < 5)
+            console.warn(`CodeSection: ${hljs_result.relevance === 0 ? 'no' : 'poor'} language matching [${hljs_result.language}] (${hljs_result.relevance}/10). Maybe the code is too small ?`)
 
         // retro-action: update language with view (hljs) detected one
         if (this.toggle_language_detection) {
             this.language = {
-                value: CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code),
+                value: hljs_result.language,
                 update_view: false // no recursion here
             }
         }
+
+        // update classList
+        // clear existing hljs-related classList items
+        this.html_elements.code.classList = [...this.html_elements.code.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
+        this.html_elements.code.classList.add(`hljs`)
+        this.html_elements.code.classList.add(`language-${this._language}`)
 
         // CE button visibility
         // Note that resize observer can still toggle `display: block|none`
@@ -1587,7 +1617,7 @@ awesome_doc_code_sections.initialize = function() {
             let ReplaceHTMLPlaceholders = (translation) => {
 
                 let elements = $('body').find(translation.query)
-                console.info(`awesome-doc-code-sections.js: ReplaceHTMLPlaceholders(${translation.type.name}) : replacing ${elements.length} element(s) ...`)
+                console.info(`awesome-doc-code-sections.js:ReplaceHTMLPlaceholders(${translation.type.name}) : replacing ${elements.length} element(s) ...`)
                 elements.each((index, element) => {
                     let translated_element = translation.translate(element)
                     if (translated_element)
