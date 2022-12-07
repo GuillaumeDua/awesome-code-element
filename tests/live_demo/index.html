@@ -324,7 +324,7 @@ class CodeSection_demo extends CodeSection {
 
         let sub_container = document.createElement('div')
         apply_css(sub_container, {
-            flex: '0 0 fit-content',
+            display: 'flex',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
         })
@@ -334,7 +334,10 @@ class CodeSection_demo extends CodeSection {
             input_field.type = "text"
             input_field.value = super.language
             input_field.title = 'clear to attempt a fallback autodetection'
-            input_field.style.float = 'right'
+            utility.apply_css(input_field, {
+                width: '100%',
+                marginLeft: '10px'
+            })
 
         let delay_timer = null
         input_field.addEventListener('keyup', (arg) => {
@@ -360,7 +363,7 @@ class CodeSection_demo extends CodeSection {
 
         let sub_container = document.createElement('div')
         apply_css(sub_container, {
-            flex: '0 0 fit-content',
+            display: 'flex',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
         })
@@ -370,7 +373,10 @@ class CodeSection_demo extends CodeSection {
             input_field.type = "text"
             input_field.value = !super.url ? '' : super.url
             input_field.title = 'remote code location. Press <enter> to apply'
-            input_field.style.float = 'right'
+                utility.apply_css(input_field, {
+                width: '100%',
+                marginLeft: '10px'
+            })
 
         let delay_timer = null
         input_field.addEventListener('keyup', (arg) => {

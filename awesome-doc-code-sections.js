@@ -1071,7 +1071,6 @@ class CodeSection extends CodeSection_HTMLElement {
             relevance: 10 // max
         }
     }
-
     #view_update_language(){
         
         let hljs_result = this.#view_update_language_hljs_highlightAuto()
