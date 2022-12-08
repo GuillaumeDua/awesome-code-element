@@ -1079,7 +1079,7 @@ class CodeSection extends CodeSection_HTMLElement {
         else
             this.html_elements.code.innerHTML = hljs_result.value
         
-        console.info(hljs_result)
+        console.trace(hljs_result)
 
         if (hljs_result.relevance < 5)
             console.warn(`CodeSection: ${hljs_result.relevance === 0 ? 'no' : 'poor'} language matching [${hljs_result.language}] (${hljs_result.relevance}/10). Maybe the code is too small ?`)
@@ -1148,7 +1148,7 @@ class CodeSection extends CodeSection_HTMLElement {
     initialize() {
         super.initialize()
 
-        // console.log(`initializing with parameters [${JSON.stringify(this.#_parameters, null, 3)}]` )
+        console.log(`CodeSection: initializing with parameters [${JSON.stringify(this.#_parameters, null, 3)}]` )
 
         // defered initialiation
         this._language                  = this.#_parameters.language
@@ -1159,9 +1159,9 @@ class CodeSection extends CodeSection_HTMLElement {
             this.url = this.#_parameters.url
         else
         // local code
-            this.code                       = this.#_parameters.code // will update the view
+            this._code = new ParsedCode(this.#_parameters.code, this.language)
 
-        this.toggle_parsing             = this.#_parameters.toggle_parsing
+        this.toggle_parsing             = this.#_parameters.toggle_parsing // will update the code view
         this.toggle_execution           = this.#_parameters.toggle_execution
 
         this.initialize = () => { throw 'CodeSection.initialize: already called' }
@@ -1319,7 +1319,6 @@ class CodeSection extends CodeSection_HTMLElement {
                 if (!code) {
                     _this.on_error('CodeSection: fetched invalid (possibly empty) remote code')
                 }
-
                 _this.language = utility.get_url_extension(_this.#_url)
                 _this.code = code
             }
