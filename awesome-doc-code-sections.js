@@ -810,12 +810,18 @@ class CodeSection_HTMLElement extends HTMLElement {
         })
 
         // loading animation
-        let add_toggle_loading_animation = function({owner, target }){
+        let add_toggle_loading_animation = function({owner, target_or_accessor }){
         // target accessor preserve access after potential replacement
             let loading_animation_element = owner.appendChild(CodeSection_HTMLElement.loading_animation.cloneNode())
                 loading_animation_element.style.display = 'none'
             Object.defineProperty(owner, 'toggle_loading_animation', {
                 set: function(value){
+                    let target = (() => {
+                        return target_or_accessor instanceof Function
+                            ? target_or_accessor()
+                            : target_or_accessor
+                    })();
+
                     target.style.display                    = Boolean(value) ? 'none' : 'flex'
                     loading_animation_element.style.display = Boolean(value) ? 'flex' : 'none'
                 },
@@ -833,7 +839,7 @@ class CodeSection_HTMLElement extends HTMLElement {
         this.html_elements.buttons      = left_panel_elements.buttons
         add_toggle_loading_animation({
             owner:  this.html_elements.panels.left,
-            target: this.html_elements.code
+            target_or_accessor: this.html_elements.code
         })
         
         this.html_elements.panels.left  = this.appendChild(this.html_elements.panels.left)
@@ -849,7 +855,7 @@ class CodeSection_HTMLElement extends HTMLElement {
         this.html_elements.execution         = right_panel_elements.execution
         add_toggle_loading_animation({
             owner:  this.html_elements.panels.right,
-            target: this.html_elements.execution
+            target_or_accessor: () => { return this.html_elements.execution }
         })
         this.html_elements.panels.right      = this.appendChild(this.html_elements.panels.right)
 
