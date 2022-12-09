@@ -479,7 +479,13 @@ class utility {
                     on_error(`RemoteCodeSection: bad request status ${xhr.status}`)
                     return;
                 }
-                on_success(xhr.responseText)
+
+                // TEST: emulate latency in resource acquisition
+                console.info('[fake] loading ...');
+                setTimeout(function(){
+                    console.info('[fake] loaded !');
+                    on_success(xhr.responseText)
+                }, 1500);
             };
             xhr.send();
     }
@@ -701,7 +707,6 @@ customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton,
 
 // WIP
 // TODO: private/hidden
-// TODO: as view
 // TODO: flex-resizer between the two panels ?
 class CodeSection_HTMLElement extends HTMLElement {
 // HTML layout/barebone for CodeSection
@@ -723,7 +728,7 @@ class CodeSection_HTMLElement extends HTMLElement {
         console.debug('CodeSection_HTMLElement: connectedCallback')
         try {
             if (!this.acquire_parameters(this.#_parameters)) {
-                console.log('CodeSection_HTMLElement: create shadowroot slot')
+                console.debug('CodeSection_HTMLElement: create shadowroot slot')
                 let _this = this
                 this.shadowroot_accessor = utility.create_shadowroot_slot(
                     this,
@@ -731,12 +736,12 @@ class CodeSection_HTMLElement extends HTMLElement {
                 )
             }
             else {
-                console.log('CodeSection_HTMLElement: no need for shadowroot slot')
+                console.debug('CodeSection_HTMLElement: no need for shadowroot slot')
                 this.initialize()
             }
         }
         catch (error) {
-            console.log(`${error}`)
+            console.error(`${error}`)
             this.on_critical_internal_error(error)
         }
     }
@@ -760,7 +765,7 @@ class CodeSection_HTMLElement extends HTMLElement {
         // utility.remove_shadowroot(this) // invalidates `this`
         this.shadowroot_accessor.remove()
         if (error) {
-            console.log(_this)
+            console.error(_this)
             _this.on_critical_internal_error(error)
         }
     }
@@ -804,8 +809,21 @@ class CodeSection_HTMLElement extends HTMLElement {
             'min-height': '50px'
         })
 
+        // loading animation
+        let add_toggle_loading_animation = function({owner, target }){
+        // target accessor preserve access after potential replacement
+            let loading_animation_element = owner.appendChild(CodeSection_HTMLElement.loading_animation.cloneNode())
+                loading_animation_element.style.display = 'none'
+            Object.defineProperty(owner, 'toggle_loading_animation', {
+                set: function(value){
+                    target.style.display                    = Boolean(value) ? 'none' : 'flex'
+                    loading_animation_element.style.display = Boolean(value) ? 'flex' : 'none'
+                },
+            })
+        }
+
         // left panel : code content
-        const { 
+        const {
             panel: left_panel,
             elements: left_panel_elements
         } = this.#make_HTML_left_panel()
@@ -813,6 +831,11 @@ class CodeSection_HTMLElement extends HTMLElement {
         this.html_elements.panels.left  = left_panel
         this.html_elements.code         = left_panel_elements.code
         this.html_elements.buttons      = left_panel_elements.buttons
+        add_toggle_loading_animation({
+            owner:  this.html_elements.panels.left,
+            target: this.html_elements.code
+        })
+        
         this.html_elements.panels.left  = this.appendChild(this.html_elements.panels.left)
         awesome_doc_code_sections.resize_observer.observe(this)
 
@@ -821,9 +844,13 @@ class CodeSection_HTMLElement extends HTMLElement {
             panel: right_panel,
             elements: right_panel_elements
         } = this.#make_HTML_right_panel()
+
         this.html_elements.panels.right      = right_panel
         this.html_elements.execution         = right_panel_elements.execution
-        this.html_elements.loading_animation = right_panel_elements.loading_animation
+        add_toggle_loading_animation({
+            owner:  this.html_elements.panels.right,
+            target: this.html_elements.execution
+        })
         this.html_elements.panels.right      = this.appendChild(this.html_elements.panels.right)
 
         // panels : style (auto-resize, scroll-bar, etc.)
@@ -884,21 +911,12 @@ class CodeSection_HTMLElement extends HTMLElement {
             alignItems: 'stretch',
             boxSizing:  'border-box'
         })
-        // right panel: loading
-        let loading_animation_element = right_panel.appendChild(CodeSection_HTMLElement.loading_animation.cloneNode())
-            loading_animation_element.style.display = 'block'
         // right panel: execution
         let execution_element = document.createElement('div') // placeholder
-        // utility.apply_css(execution_element, {
-        //     width:          '100%',
-        //     paddingTop:     '1px',
-        //     display:        'none' // hidden by default
-        // })
-        execution_element = right_panel.appendChild(execution_element)
+            execution_element = right_panel.appendChild(execution_element)
         return { 
             panel: right_panel,
             elements: {
-                loading_animation: loading_animation_element,
                 execution: execution_element
             }
         }
@@ -1036,7 +1054,7 @@ class CodeSection extends CodeSection_HTMLElement {
         let value       = (typeof arg === "object" ? arg.value : arg)
         let update_view = (typeof arg === "object" ? arg.update_view : true)
 
-        console.log(`CodeSection: set language ${value}`)
+        console.info(`CodeSection: set language to [${value}]`)
 
         this._language = (value || '').replace('language-', '')
         this.setAttribute('language', this._language)
@@ -1078,8 +1096,6 @@ class CodeSection extends CodeSection_HTMLElement {
             hljs_result = this.#view_update_language_hljs_highlightElement()
         else
             this.html_elements.code.innerHTML = hljs_result.value
-        
-        console.trace(hljs_result)
 
         if (hljs_result.relevance < 5)
             console.warn(`CodeSection: ${hljs_result.relevance === 0 ? 'no' : 'poor'} language matching [${hljs_result.language}] (${hljs_result.relevance}/10). Maybe the code is too small ?`)
@@ -1148,20 +1164,18 @@ class CodeSection extends CodeSection_HTMLElement {
     initialize() {
         super.initialize()
 
-        console.log(`CodeSection: initializing with parameters [${JSON.stringify(this.#_parameters, null, 3)}]` )
+        console.debug(`CodeSection: initializing with parameters [${JSON.stringify(this.#_parameters, null, 3)}]` )
 
         // defered initialiation
         this._language                  = this.#_parameters.language
         this.toggle_language_detection  = !this.#is_valid_language
 
-        if (this.#_parameters.url)
-        // remote code
+        if (this.#_parameters.url)  // remote code
             this.url = this.#_parameters.url
-        else
-        // local code
-            this._code = new ParsedCode(this.#_parameters.code, this.language)
+        else                        // local code
+            this._code = new ParsedCode(this.#_parameters.code, this.language)  // only update code, not its view
 
-        this.toggle_parsing             = this.#_parameters.toggle_parsing // will update the code view
+        this.toggle_parsing             = this.#_parameters.toggle_parsing      // will update the code view
         this.toggle_execution           = this.#_parameters.toggle_execution
 
         this.initialize = () => { throw 'CodeSection.initialize: already called' }
@@ -1230,16 +1244,14 @@ class CodeSection extends CodeSection_HTMLElement {
     #fetch_execution() {
 
         // switch execution content (if any) to loading animation
-        this.html_elements.execution.style.display = 'none'
-        this.html_elements.loading_animation.style.display = 'flex'
+        this.html_elements.panels.right.toggle_loading_animation = true
 
         let set_execution_content = (execution_content) => {
 
             // switch loading animation to execution content
             this.html_elements.execution.replaceWith(execution_content)
             this.html_elements.execution = execution_content
-            this.html_elements.loading_animation.style.display = 'none'
-            this.html_elements.execution.style.display = 'flex'
+            this.html_elements.panels.right.toggle_loading_animation = false
         }
 
         if (!this.is_executable) {
@@ -1547,8 +1559,8 @@ awesome_doc_code_sections.initialize_doxygenCodeSections = function() {
 
     // TODO: restore documentation reference links
     doc_ref_links.forEach((values, keys) => {
-        // console.log(">>>>>>> " + value.href + " => " + value.textContent)
-        console.log(">>>>>>> " + values + " => " + keys)
+        // console.debug(">>>>>>> " + value.href + " => " + value.textContent)
+        console.debug(">>>>>>> " + values + " => " + keys)
     })
 
     var place_holders = $('body').find('awesome-doc-code-sections_code-section pre code') // span or text
