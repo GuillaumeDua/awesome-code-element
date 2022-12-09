@@ -857,6 +857,18 @@ class CodeSection_HTMLElement extends HTMLElement {
             owner:  this.html_elements.panels.right,
             target_or_accessor: () => { return this.html_elements.execution }
         })
+        // WIP
+        this.html_elements.panels.right.animate_loading_while = (task) => {
+            this.html_elements.panels.right.toggle_loading_animation = true
+            let task_result = task()
+            if (task_result instanceof Promise)
+                return task_result.then(() => {
+                    // TODO: test throw/errors
+                    this.html_elements.panels.right.toggle_loading_animation = false
+                })
+            this.html_elements.panels.right.toggle_loading_animation = false
+        }
+        // /WIP
         this.html_elements.panels.right      = this.appendChild(this.html_elements.panels.right)
 
         // panels : style (auto-resize, scroll-bar, etc.)
@@ -1233,12 +1245,7 @@ class CodeSection extends CodeSection_HTMLElement {
 
         if (this._toggle_execution) {
             this.html_elements.panels.right.style.display = 'flex'
-            try {
-                this.#fetch_execution()
-            }
-            catch (error) {
-                console.error(error)
-            }
+            this.html_elements.panels.right.animate_loading_while(this.#fetch_execution.bind(this))
         }
         else {
             this.html_elements.panels.right.style.display = 'none'
@@ -1249,15 +1256,10 @@ class CodeSection extends CodeSection_HTMLElement {
     }
     #fetch_execution() {
 
-        // switch execution content (if any) to loading animation
-        this.html_elements.panels.right.toggle_loading_animation = true
-
         let set_execution_content = (execution_content) => {
-
             // switch loading animation to execution content
             this.html_elements.execution.replaceWith(execution_content)
             this.html_elements.execution = execution_content
-            this.html_elements.panels.right.toggle_loading_animation = false
         }
 
         if (!this.is_executable) {
@@ -1278,7 +1280,7 @@ class CodeSection extends CodeSection_HTMLElement {
         }
 
         // right panel: replace with result
-        ce_API.fetch_execution_result(this._code.ce_options, this.executable_code)
+        return ce_API.fetch_execution_result(this._code.ce_options, this.executable_code)
             .catch((error) => {
                 this.on_critical_internal_error(`CodeSection:fetch_execution: ce_API.fetch_execution_result: failed:\n\t[${error}]`)
             })
