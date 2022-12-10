@@ -757,14 +757,14 @@ class LoadingAnimation {
     static #inject_animate_loading_while({owner}){
     // injects `owner.animate_loading_while`
         owner.animate_loading_while = (task) => {
-            this.html_elements.panels.right.toggle_loading_animation = true
+            owner.toggle_loading_animation = true
             let task_result = task()
             if (task_result instanceof Promise)
                 return task_result.then(() => {
                     // TODO: test throw/errors
-                    this.html_elements.panels.right.toggle_loading_animation = false
+                    owner.toggle_loading_animation = false
                 })
-            this.html_elements.panels.right.toggle_loading_animation = false
+            owner.toggle_loading_animation = false
         }
     }
 }
@@ -902,18 +902,6 @@ class CodeSection_HTMLElement extends HTMLElement {
             owner:  this.html_elements.panels.right,
             target_or_accessor: () => { return this.html_elements.execution }
         })
-        // WIP
-        this.html_elements.panels.right.animate_loading_while = (task) => {
-            this.html_elements.panels.right.toggle_loading_animation = true
-            let task_result = task()
-            if (task_result instanceof Promise)
-                return task_result.then(() => {
-                    // TODO: test throw/errors
-                    this.html_elements.panels.right.toggle_loading_animation = false
-                })
-            this.html_elements.panels.right.toggle_loading_animation = false
-        }
-        // /WIP
         this.html_elements.panels.right      = this.appendChild(this.html_elements.panels.right)
 
         // panels : style (auto-resize, scroll-bar, etc.)
