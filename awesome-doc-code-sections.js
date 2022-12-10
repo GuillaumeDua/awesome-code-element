@@ -1369,8 +1369,6 @@ class CodeSection extends CodeSection_HTMLElement {
         return this.#_url
     }
     set url(value) {
-    // TODO: loading animation ?
-
         this.html_elements.panels.left.toggle_loading_animation = true
         this.#_url = value
 
