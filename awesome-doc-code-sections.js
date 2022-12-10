@@ -723,6 +723,8 @@ class LoadingAnimation {
             border              : '1px solid var(--primary-color)',
             borderRadius        : '5px',
             width               : '100%',
+            height              : '100%',
+            boxSizing           : 'border-box',
             display             : 'none' // hidden by default
         })
         return value
@@ -873,12 +875,12 @@ class CodeSection_HTMLElement extends HTMLElement {
         this.innerHTML = ""
         // this element
         utility.apply_css(this, {
-            display:    'flex',
-            flexDirection: this.direction,
-            alignItems: 'stretch',
-            boxSizing:  'border-box',
-            width:      '100%',
-            'min-height': '50px'
+            display         : 'flex',
+            flexDirection   : this.direction,
+            alignItems      : 'stretch',
+            boxSizing       : 'border-box',
+            width           : '100%',
+            minHeight       : '50px'
         })
 
         // left panel : code content
@@ -989,7 +991,7 @@ class CodeSection_HTMLElement extends HTMLElement {
         this.html_elements.panels.left.id   = `${this.id}.panels.left`
         this.html_elements.panels.right.id  = `${this.id}.panels.right`
         this.html_elements.code.id          = `${this.id}.code`
-        this.html_elements.execution.id     = `${this.id}.execution` // TODO: check if this is kept after replacement
+        this.html_elements.execution.id     = `${this.id}.execution` // TODO: as such element is a placeholder which is then replaced, consider another specific id annotation ?
         this.html_elements.buttons.CE.id    = `${this.id}.buttons.CE`
         this.html_elements.buttons.copy_to_clipboard.id = `${this.id}.buttons.copy_to_clipboard`
     }
@@ -1298,6 +1300,8 @@ class CodeSection extends CodeSection_HTMLElement {
 
         let set_execution_content = (execution_content) => {
             // switch loading animation to execution content
+            // TODO: if not div-placeholder, consider recycling the existing CS element (and thus, preserve ids)
+            //       might require to implement a specific replacement mecanisme for CS
             this.html_elements.execution.replaceWith(execution_content)
             this.html_elements.execution = execution_content
         }
@@ -1330,19 +1334,18 @@ class CodeSection extends CodeSection_HTMLElement {
                 let regex = new RegExp('# Compilation provided by Compiler Explorer at https://godbolt.org/\n\n(# Compiler exited with result code (-?\\d+))')
                 let regex_result = regex.exec(result)
 
-                if (regex_result === null || regex_result.length != 3) {
+                if (regex_result === null || regex_result.length != 3)
                     return {
                         value : result,
                         error : 'unknown',
                         return_code : -1
                     }
-                }
-                
-                return {
-                    value : result.substring(regex_result[0].length - regex_result[1].length), // trim off header
-                    error : undefined,
-                    return_code : regex_result[2]
-                }
+                else
+                    return {
+                        value : result.substring(regex_result[0].length - regex_result[1].length), // trim off header
+                        error : undefined,
+                        return_code : regex_result[2]
+                    }
             })
             .then((result) => {
 
@@ -1383,7 +1386,7 @@ class CodeSection extends CodeSection_HTMLElement {
                 }
                 _this.language = utility.get_url_extension(_this.#_url)
                 _this.code = code
-                // this.html_elements.panels.left.toggle_loading_animation = false
+                this.html_elements.panels.left.toggle_loading_animation = false
             }
         })
     }
