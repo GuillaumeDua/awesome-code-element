@@ -480,17 +480,11 @@ class utility {
                     on_error(`RemoteCodeSection: bad request status ${xhr.status}`)
                     return;
                 }
-
-                // TEST: emulate latency in resource acquisition
-                console.info('[fake] loading ...');
-                setTimeout(function(){
-                    console.info('[fake] loaded !');
-                    on_success(xhr.responseText)
-                }, 1500);
+                on_success(xhr.responseText)
             };
             xhr.send();
     }
-    static make_incremental_counter_generator = function *(){
+    static make_incremental_counter_generator = function*(){
         let i = 0;
         while (true) { yield i++; }
     }
@@ -1370,6 +1364,9 @@ class CodeSection extends CodeSection_HTMLElement {
     }
     set url(value) {
         this.html_elements.panels.left.toggle_loading_animation = true
+        if (this.toggle_execution)
+            this.html_elements.panels.right.toggle_loading_animation = true
+
         this.#_url = value
 
         let _this = this
