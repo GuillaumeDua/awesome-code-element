@@ -55,6 +55,7 @@
 // TODO: Global option: force fallback language to ... [smthg]
 // TODO: per-codeSection CE configuration (local override global)
 // TODO: toggle technical info/warning logs
+// TODO: hide details in a `details` namespace
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -705,6 +706,69 @@ class SendToGodboltButton extends HTMLButtonElement {
 }
 customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton, {extends: 'button'});
 
+class LoadingAnimation {
+    static #cache = (function(){
+    // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
+        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/resources/images/loading_animation.svg'
+        let value = document.createElement('img');
+        value.src = loading_animation_fallback_url
+        utility.apply_css(value, {
+            contain             : 'strict',
+            border              : '1px solid var(--primary-color)',
+            borderRadius        : '5px',
+            width               : '100%',
+            display             : 'none' // hidden by default
+        })
+        return value
+    })()
+    static get element() {
+        return LoadingAnimation.#cache.cloneNode()
+    }
+
+    static inject_into({owner, target_or_accessor }) {
+        LoadingAnimation.#inject_toggle_loading_animation({owner, target_or_accessor })
+        LoadingAnimation.#inject_animate_loading_while({owner})
+    }
+
+    static #inject_toggle_loading_animation({owner, target_or_accessor }){
+    // injects `owner.toggle_loading_animation`
+    // target_or_accessor:
+    //  if          parameterless function, must return the target (preserving access after potential dereferencement)
+    //  otherwise,  the target itself
+
+        let loading_animation_element = owner.appendChild(LoadingAnimation.element)
+        Object.defineProperty(owner, 'toggle_loading_animation', {
+            set: function(value){
+
+                let target = (() => {
+                    return target_or_accessor instanceof Function
+                        ? target_or_accessor()
+                        : target_or_accessor
+                })();
+
+                target.style.display                    = Boolean(value) ? 'none' : 'flex'
+                loading_animation_element.style.display = Boolean(value) ? 'flex' : 'none'
+            },
+            get: function(){
+                return Boolean(loading_animation_element.style.display !== 'none')
+            }
+        })
+    }
+    static #inject_animate_loading_while({owner}){
+    // injects `owner.animate_loading_while`
+        owner.animate_loading_while = (task) => {
+            this.html_elements.panels.right.toggle_loading_animation = true
+            let task_result = task()
+            if (task_result instanceof Promise)
+                return task_result.then(() => {
+                    // TODO: test throw/errors
+                    this.html_elements.panels.right.toggle_loading_animation = false
+                })
+            this.html_elements.panels.right.toggle_loading_animation = false
+        }
+    }
+}
+
 // WIP
 // TODO: private/hidden
 // TODO: flex-resizer between the two panels ?
@@ -809,25 +873,6 @@ class CodeSection_HTMLElement extends HTMLElement {
             'min-height': '50px'
         })
 
-        // loading animation
-        let add_toggle_loading_animation = function({owner, target_or_accessor }){
-        // target accessor preserve access after potential replacement
-            let loading_animation_element = owner.appendChild(CodeSection_HTMLElement.loading_animation.cloneNode())
-                loading_animation_element.style.display = 'none'
-            Object.defineProperty(owner, 'toggle_loading_animation', {
-                set: function(value){
-                    let target = (() => {
-                        return target_or_accessor instanceof Function
-                            ? target_or_accessor()
-                            : target_or_accessor
-                    })();
-
-                    target.style.display                    = Boolean(value) ? 'none' : 'flex'
-                    loading_animation_element.style.display = Boolean(value) ? 'flex' : 'none'
-                },
-            })
-        }
-
         // left panel : code content
         const {
             panel: left_panel,
@@ -837,7 +882,7 @@ class CodeSection_HTMLElement extends HTMLElement {
         this.html_elements.panels.left  = left_panel
         this.html_elements.code         = left_panel_elements.code
         this.html_elements.buttons      = left_panel_elements.buttons
-        add_toggle_loading_animation({
+        LoadingAnimation.inject_into({
             owner:  this.html_elements.panels.left,
             target_or_accessor: this.html_elements.code
         })
@@ -853,7 +898,7 @@ class CodeSection_HTMLElement extends HTMLElement {
 
         this.html_elements.panels.right      = right_panel
         this.html_elements.execution         = right_panel_elements.execution
-        add_toggle_loading_animation({
+        LoadingAnimation.inject_into({
             owner:  this.html_elements.panels.right,
             target_or_accessor: () => { return this.html_elements.execution }
         })
@@ -939,20 +984,6 @@ class CodeSection_HTMLElement extends HTMLElement {
             }
         }
     }
-    static loading_animation = (function(){
-        // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
-        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/resources/images/loading_animation.svg'
-        let loading_animation = document.createElement('img');
-            loading_animation.src = loading_animation_fallback_url
-        utility.apply_css(loading_animation, {
-            contain             : 'strict',
-            border              : '1px solid var(--primary-color)',
-            borderRadius        : '5px',
-            width               : '100%',
-            display             : 'none' // hidden by default
-        })
-        return loading_animation
-    })()
 
     // html-related events
     on_resize() {
