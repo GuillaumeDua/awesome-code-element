@@ -490,6 +490,10 @@ class utility {
             };
             xhr.send();
     }
+    static make_incremental_counter_generator = function *(){
+        let i = 0;
+        while (true) { yield i++; }
+    }
 }
 class log_facility {
     
@@ -775,6 +779,11 @@ class LoadingAnimation {
 class CodeSection_HTMLElement extends HTMLElement {
 // HTML layout/barebone for CodeSection
 
+    static #id_generator = (() => {
+        let counter = utility.make_incremental_counter_generator()
+        return () => { return `cs_${counter.next().value}` }
+    })()
+
     #_parameters = { // temporary storage for possibly constructor-provided arguments
         style:{}
     }
@@ -851,7 +860,6 @@ class CodeSection_HTMLElement extends HTMLElement {
         },
         code: undefined,
         execution: undefined,
-        loading_animation: undefined,
         buttons: {
             CE: undefined,
             copy_to_clipboard: undefined
@@ -879,9 +887,9 @@ class CodeSection_HTMLElement extends HTMLElement {
             elements: left_panel_elements
         } = this.#make_HTML_left_panel()
 
-        this.html_elements.panels.left  = left_panel
-        this.html_elements.code         = left_panel_elements.code
-        this.html_elements.buttons      = left_panel_elements.buttons
+        this.html_elements.panels.left      = left_panel
+        this.html_elements.code             = left_panel_elements.code
+        this.html_elements.buttons          = left_panel_elements.buttons
         LoadingAnimation.inject_into({
             owner:  this.html_elements.panels.left,
             target_or_accessor: this.html_elements.code
@@ -918,9 +926,12 @@ class CodeSection_HTMLElement extends HTMLElement {
         }
         set_panel_style(this.html_elements.panels.left)
         set_panel_style(this.html_elements.panels.right)
+
+        this.#initialize_ids()
     }
     #make_HTML_left_panel() {
         let left_panel = document.createElement('pre');
+            left_panel.name
             left_panel.style.overflow = 'auto'
 
         let code_element = document.createElement('code');
@@ -972,6 +983,15 @@ class CodeSection_HTMLElement extends HTMLElement {
                 execution: execution_element
             }
         }
+    }
+    #initialize_ids() {
+        this.id = CodeSection_HTMLElement.#id_generator()
+        this.html_elements.panels.left.id   = `${this.id}.panels.left`
+        this.html_elements.panels.right.id  = `${this.id}.panels.right`
+        this.html_elements.code.id          = `${this.id}.code`
+        this.html_elements.execution.id     = `${this.id}.execution` // TODO: check if this is kept after replacement
+        this.html_elements.buttons.CE.id    = `${this.id}.buttons.CE`
+        this.html_elements.buttons.copy_to_clipboard.id = `${this.id}.buttons.copy_to_clipboard`
     }
 
     // html-related events
@@ -1363,7 +1383,7 @@ class CodeSection extends CodeSection_HTMLElement {
                 }
                 _this.language = utility.get_url_extension(_this.#_url)
                 _this.code = code
-                this.html_elements.panels.left.toggle_loading_animation = false
+                // this.html_elements.panels.left.toggle_loading_animation = false
             }
         })
     }
