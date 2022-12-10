@@ -467,7 +467,7 @@ class utility {
             return undefined
         }
     }
-    static fetch_resource(url, { on_error, on_success}) {
+    static fetch_resource(url, { on_error, on_success }) {
 
         let xhr = new XMLHttpRequest();
             xhr.open('GET', url);
@@ -536,9 +536,11 @@ class log_facility {
         ) 
     }
 }
-log_facility.disable(['log', 'debug', 'trace'])
-console.info(`log_facility: channels enabled: [${log_facility.enabled}], disabled: [${log_facility.disabled}]`)
-
+{   // development settings
+    if (location.hostname !== 'localhost')
+        log_facility.disable(['log', 'debug', 'trace'])
+    console.info(`log_facility: channels enabled: [${log_facility.enabled}], disabled: [${log_facility.disabled}]`)
+}
 // ============
 // HTMLElements
 
@@ -730,23 +732,21 @@ class LoadingAnimation {
         LoadingAnimation.#inject_animate_loading_while({owner})
     }
 
-    static #inject_toggle_loading_animation({owner, target_or_accessor }){
-    // injects `owner.toggle_loading_animation`
-    // target_or_accessor:
-    //  if          parameterless function, must return the target (preserving access after potential dereferencement)
-    //  otherwise,  the target itself
+    static #inject_toggle_loading_animation({
+        owner,              // injects `owner.toggle_loading_animation`
+        target_or_accessor  // target, or a parameterless function that returns the target (preserving access after potential dereferencement)
+    }){
+        const loading_animation_element = owner.appendChild(LoadingAnimation.element)
+        const target_accessor = () => {
+            return target_or_accessor instanceof Function
+                ? target_or_accessor()
+                : target_or_accessor
+        }
+        const target_visible_display = target_accessor().style.display || 'flex'
 
-        let loading_animation_element = owner.appendChild(LoadingAnimation.element)
         Object.defineProperty(owner, 'toggle_loading_animation', {
             set: function(value){
-
-                let target = (() => {
-                    return target_or_accessor instanceof Function
-                        ? target_or_accessor()
-                        : target_or_accessor
-                })();
-
-                target.style.display                    = Boolean(value) ? 'none' : 'flex'
+                target_accessor().style.display         = Boolean(value) ? 'none' : target_visible_display
                 loading_animation_element.style.display = Boolean(value) ? 'flex' : 'none'
             },
             get: function(){
@@ -927,7 +927,8 @@ class CodeSection_HTMLElement extends HTMLElement {
         utility.apply_css(code_element, {
             width:      'auto',
             height:     '100%',
-            boxSizing:  'border-box'
+            boxSizing:  'border-box',
+            display:    'block'
         })
         code_element = left_panel.appendChild(code_element)
 
@@ -1347,12 +1348,14 @@ class CodeSection extends CodeSection_HTMLElement {
     set url(value) {
     // TODO: loading animation ?
 
+        this.html_elements.panels.left.toggle_loading_animation = true
         this.#_url = value
 
         let _this = this
-        utility.fetch_resource(this.#_url, { 
+        utility.fetch_resource(this.#_url, {
             on_error: (error) => {
                 _this.on_error(`RemoteCodeSection: network Error ${error}`)
+                this.html_elements.panels.left.toggle_loading_animation = false
             },
             on_success: (code) => {
                 if (!code) {
@@ -1360,6 +1363,7 @@ class CodeSection extends CodeSection_HTMLElement {
                 }
                 _this.language = utility.get_url_extension(_this.#_url)
                 _this.code = code
+                this.html_elements.panels.left.toggle_loading_animation = false
             }
         })
     }
