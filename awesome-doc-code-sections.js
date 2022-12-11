@@ -56,6 +56,7 @@
 // TODO: per-codeSection CE configuration (local override global)
 // TODO: toggle technical info/warning logs
 // TODO: hide details in a `details` namespace
+// TODO: throw new Error(...)
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -754,11 +755,18 @@ class LoadingAnimation {
             }
         })
     }
-    static #inject_animate_loading_while({owner}){
+    static async #inject_animate_loading_while({owner}){
     // injects `owner.animate_loading_while`
         owner.animate_loading_while = (task) => {
             owner.toggle_loading_animation = true
-            let task_result = task()
+            let task_result = undefined
+            try {
+                task_result = task()
+            }
+            catch (error){
+                owner.toggle_loading_animation = false
+                throw error
+            }
             if (task_result instanceof Promise)
                 return task_result.then(() => {
                     // TODO: test throw/errors
@@ -1281,7 +1289,12 @@ class CodeSection extends CodeSection_HTMLElement {
 
         if (this._toggle_execution) {
             this.html_elements.panels.right.style.display = 'flex'
-            this.html_elements.panels.right.animate_loading_while(this.#fetch_execution.bind(this))
+            try {
+                this.html_elements.panels.right.animate_loading_while(this.#fetch_execution.bind(this))
+            }
+            catch(error) {
+                console.error(error)
+            }
         }
         else {
             this.html_elements.panels.right.style.display = 'none'
@@ -1302,9 +1315,9 @@ class CodeSection extends CodeSection_HTMLElement {
 
         if (!this.is_executable) {
 
-            let error = `CodeSection:fetch_execution: not executable. No known valid configuration for language [${this.language}]`
+            let error_content = `CodeSection:fetch_execution: not executable. No known valid configuration for language [${this.language}]`
             let error_element = document.createElement('pre')
-                error_element.textContent = error
+                error_element.textContent = error_content
             utility.apply_css(error_element, {
                 color: 'red',
                 border: '1px solid red',
@@ -1314,7 +1327,7 @@ class CodeSection extends CodeSection_HTMLElement {
                 overflow: 'auto'
             })
             set_execution_content(error_element)
-            throw error
+            throw new Error(error_content)
         }
 
         // right panel: replace with result
@@ -1363,6 +1376,8 @@ class CodeSection extends CodeSection_HTMLElement {
         return this.#_url
     }
     set url(value) {
+    // TODO: Cancel or wait for pending resource acquisition
+    //  issue: if `url` is set twice (in a short period of time), we have a race condition
         this.html_elements.panels.left.toggle_loading_animation = true
         if (this.toggle_execution)
             this.html_elements.panels.right.toggle_loading_animation = true
