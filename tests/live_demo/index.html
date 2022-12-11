@@ -159,21 +159,18 @@
             function toggle_small() {
     
                 let r = document.querySelector(':root');
-                let rs = getComputedStyle(r);
-                let content_max_width = rs.getPropertyValue('--content-maxwidth');
-    
-                r.style.setProperty('--content-maxwidth', (is_small ? 1050 : 500) + 'px');
+
                 is_small = !is_small
+                if (is_small)
+                    r.style.setProperty('width', '500px' );
+                else
+                    document.querySelector(':root').style.removeProperty('width')
             }
         </script>
 
         <!-- demo component -->
         <script type="text/javascript">
 
-let apply_css = (element, styles) => {
-    for (const property in styles)
-        element.style[property] = styles[property];
-}
 let inject_field_proxy = (owner, property_name, { getter_payload, setter_payload } = {}) => {
 // generate a proxy to a value's field, injecting optional payload
     
@@ -237,7 +234,7 @@ class CodeSection_demo extends CodeSection {
 
         // view proxies
         let options_container = document.createElement('div')
-        apply_css(options_container, {
+        utility.apply_css(options_container, {
             flexDirection: 'column',
             display: 'flex',
         })
@@ -288,7 +285,7 @@ class CodeSection_demo extends CodeSection {
         let printable_name = property_name.replaceAll(/[\-|\_]/g, ' ')
         // html
         let sub_container = document.createElement('div')
-        apply_css(sub_container, {
+        utility.apply_css(sub_container, {
             flex: '0 0 fit-content',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
@@ -323,7 +320,7 @@ class CodeSection_demo extends CodeSection {
     #make_language_view() {
 
         let sub_container = document.createElement('div')
-        apply_css(sub_container, {
+        utility.apply_css(sub_container, {
             display: 'flex',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
@@ -362,7 +359,7 @@ class CodeSection_demo extends CodeSection {
     #make_url_view() {
 
         let sub_container = document.createElement('div')
-        apply_css(sub_container, {
+        utility.apply_css(sub_container, {
             display: 'flex',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
