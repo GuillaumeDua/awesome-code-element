@@ -543,7 +543,6 @@ class log_facility {
 // ============
 // HTMLElements
 
-// TODO: encapsulation
 // TODO: should be replaced by dynamic CSS at some point
 awesome_doc_code_sections.resize_observer = new ResizeObserver(entries => {
 
@@ -777,8 +776,6 @@ class LoadingAnimation {
     }
 }
 
-// WIP
-// TODO: private/hidden
 // TODO: flex-resizer between the two panels ?
 class CodeSection_HTMLElement extends HTMLElement {
 // HTML layout/barebone for CodeSection
@@ -1034,12 +1031,12 @@ class CodeSection_HTMLElement extends HTMLElement {
         this.#initialize_HTML()
     }
     
-    static get_code_hljs_language(code_tag) {
+    static get_hljs_language(code_tag) {
         if (code_tag === undefined || code_tag.tagName !== 'CODE')
             console.error(`awesome-doc-code-sections.js:CodeSection_HTMLElement::get_code_hljs_language(): bad input`)
 
         let result = code_tag.classList.toString().match(/language-(\w+)/, '')
-        return result ? result[1] : undefined// first capture group
+        return result ? result[1] : undefined // first capture group
     }
 
     on_critical_internal_error(error = "") {
@@ -1063,24 +1060,22 @@ class CodeSection_HTMLElement extends HTMLElement {
         this.replaceWith(error_element)
     }
 }
-
-// TODO: better encapsulation (private '_.*' variables)
 // TODO: code loading policy/behavior - as function : default is textContent, but can be remote using an url, or another rich text area for instance
 class CodeSection extends CodeSection_HTMLElement {
 
     // --------------------------------
     // accessors
     get code() {
-        return this._toggle_parsing
-            ? this._code.to_display
-            : this._code.raw
+        return this.#_toggle_parsing
+            ? this.#_code.to_display
+            : this.#_code.raw
     }
     set code(value) {
 
         if (value instanceof ParsedCode)
-            this._code = value
+            this.#_code = value
         else if (typeof value === 'string')
-            this._code = new ParsedCode(value, this.language)
+            this.#_code = new ParsedCode(value, this.language)
         else throw 'SimpleCodeSection: set code: invalid input argument type'
 
         this.#view_update_code()
@@ -1095,18 +1090,18 @@ class CodeSection extends CodeSection_HTMLElement {
         this.toggle_execution = this.toggle_execution
     }
     
-    _language = undefined
+    #_language = undefined
     toggle_language_detection = true
     get #is_valid_language() {
-        return hljs.getLanguage(this._language) !== undefined
+        return hljs.getLanguage(this.#_language) !== undefined
     }
     get language() {
 
         if (this.#is_valid_language)
-            return this._language
+            return this.#_language
         if (this.html_elements.code) {
             console.info('CodeSection:language : invalid language, attempting a detection as fallback')
-            let detected_language = CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code)
+            let detected_language = CodeSection_HTMLElement.get_hljs_language(this.html_elements.code)
             return detected_language === 'undefined' ? undefined : detected_language
         }
         return undefined
@@ -1118,9 +1113,9 @@ class CodeSection extends CodeSection_HTMLElement {
 
         console.info(`CodeSection: set language to [${value}]`)
 
-        this._language = (value || '').replace('language-', '')
-        this.setAttribute('language', this._language)
-        this._code.ce_options = awesome_doc_code_sections.configuration.CE.get(this._language)
+        this.#_language = (value || '').replace('language-', '')
+        this.setAttribute('language', this.#_language)
+        this.#_code.ce_options = awesome_doc_code_sections.configuration.CE.get(this.#_language)
 
         if (!update_view)
             return
@@ -1135,7 +1130,7 @@ class CodeSection extends CodeSection_HTMLElement {
             if (this.toggle_language_detection)
                 return hljs.highlightAuto(this.html_elements.code.textContent)
             else
-                return hljs.highlightAuto(this.html_elements.code.textContent, [ this._language ])
+                return hljs.highlightAuto(this.html_elements.code.textContent, [ this.#_language ])
         })()
 
         if (hljs_result.language === undefined && hljs_result.secondBest)
@@ -1147,7 +1142,7 @@ class CodeSection extends CodeSection_HTMLElement {
     // fallback, cannot provide language as a parameter
         hljs.highlightElement(this.html_elements.code)
         return {
-            language: CodeSection_HTMLElement.get_code_hljs_language(this.html_elements.code),
+            language: CodeSection_HTMLElement.get_hljs_language(this.html_elements.code),
             relevance: 10 // max
         }
     }
@@ -1174,11 +1169,11 @@ class CodeSection extends CodeSection_HTMLElement {
         // clear existing hljs-related classList items
         this.html_elements.code.classList = [...this.html_elements.code.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
         this.html_elements.code.classList.add(`hljs`)
-        this.html_elements.code.classList.add(`language-${this._language}`)
+        this.html_elements.code.classList.add(`language-${this.#_language}`)
 
         // CE button visibility
         // Note that resize observer can still toggle `display: block|none`
-        this.html_elements.buttons.CE.style.visibility = Boolean(this.#is_valid_language && awesome_doc_code_sections.configuration.CE.has(this._language))
+        this.html_elements.buttons.CE.style.visibility = Boolean(this.#is_valid_language && awesome_doc_code_sections.configuration.CE.has(this.#_language))
             ? 'visible'
             : 'hidden'
 
@@ -1229,13 +1224,13 @@ class CodeSection extends CodeSection_HTMLElement {
         console.debug(`CodeSection: initializing with parameters [${JSON.stringify(this.#_parameters, null, 3)}]` )
 
         // defered initialiation
-        this._language                  = this.#_parameters.language
+        this.#_language                  = this.#_parameters.language
         this.toggle_language_detection  = !this.#is_valid_language
 
         if (this.#_parameters.url)  // remote code
             this.url = this.#_parameters.url
         else                        // local code
-            this._code = new ParsedCode(this.#_parameters.code, this.language)  // only update code, not its view
+            this.#_code = new ParsedCode(this.#_parameters.code, this.language)  // only update code, not its view
 
         this.toggle_parsing             = this.#_parameters.toggle_parsing      // will update the code view
         this.toggle_execution           = this.#_parameters.toggle_execution
@@ -1245,49 +1240,49 @@ class CodeSection extends CodeSection_HTMLElement {
 
     // --------------------------------
     // core logic : parsing
-    _code = new ParsedCode()
-    _toggle_parsing = false
+    #_code = new ParsedCode()
+    #_toggle_parsing = false
     set toggle_parsing(value) {
 
-        if (this._toggle_parsing == value)
+        if (this.#_toggle_parsing == value)
             return
 
-        this._toggle_parsing = value
-        if (!this._toggle_parsing) {
+        this.#_toggle_parsing = value
+        if (!this.#_toggle_parsing) {
             this.#view_update_code()
             return
         }
 
-        try             { this.code = new ParsedCode(this._code.raw, this._language) } // code setter will updates the view
+        try             { this.code = new ParsedCode(this.#_code.raw, this.#_language) } // code setter will updates the view
         catch (error)   { this.on_critical_internal_error(error); return }
     }
     get toggle_parsing() {
-        return this._toggle_parsing
+        return this.#_toggle_parsing
     }
 
     // --------------------------------
     // core logic : execution
     get ce_options() {
-        return this._code.ce_options
+        return this.#_code.ce_options
     }
     get ce_code() {
-        return this._code.to_execute || this.code
+        return this.#_code.to_execute || this.code
     }
     get is_executable() {
-        return Boolean(this._code.ce_options)
+        return Boolean(this.#_code.ce_options)
     }
     get executable_code() {
         if (!this.is_executable)
             throw 'CodeSection:get executable_code: not executable.'
-        return this.toggle_parsing ? this._code.to_execute : this._code.raw
+        return this.toggle_parsing ? this.#_code.to_execute : this.#_code.raw
     }
 
-    _toggle_execution = false
+    #_toggle_execution = false
     set toggle_execution(value) {
 
-        this._toggle_execution = value
+        this.#_toggle_execution = value
 
-        if (this._toggle_execution) {
+        if (this.#_toggle_execution) {
             this.html_elements.panels.right.style.display = 'flex'
             try {
                 this.html_elements.panels.right.animate_loading_while(this.#fetch_execution.bind(this))
@@ -1301,7 +1296,7 @@ class CodeSection extends CodeSection_HTMLElement {
         }
     }
     get toggle_execution() {
-        return this._toggle_execution
+        return this.#_toggle_execution
     }
     #fetch_execution() {
 
@@ -1331,7 +1326,7 @@ class CodeSection extends CodeSection_HTMLElement {
         }
 
         // right panel: replace with result
-        return ce_API.fetch_execution_result(this._code.ce_options, this.executable_code)
+        return ce_API.fetch_execution_result(this.#_code.ce_options, this.executable_code)
             .catch((error) => {
                 this.on_critical_internal_error(`CodeSection:fetch_execution: ce_API.fetch_execution_result: failed:\n\t[${error}]`)
             })
@@ -1408,8 +1403,8 @@ class CodeSection extends CodeSection_HTMLElement {
         // restore a stable status
         this.toggle_parsing = false
         this.toggle_execution = false
-        this._code = ''
-        this._language = undefined
+        this.#_code = ''
+        this.#_language = undefined
 
         // show error
         this.code = error
@@ -1445,8 +1440,6 @@ class CodeSection extends CodeSection_HTMLElement {
     }
 }
 customElements.define(CodeSection.HTMLElement_name, CodeSection);
-
-// /WIP
 
 class ThemeSelector {
 // For themes, see https://cdnjs.com/libraries/highlight.js
@@ -1715,7 +1708,7 @@ awesome_doc_code_sections.initialize = function() {
     })
 }
 
-// TODO: module
+// TODO: module (+(sub)components encapsulation)
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export
 // export { awesome_doc_code_sections }
 // import adcs from '/path/to/awesome-doc-code-sections.js'
