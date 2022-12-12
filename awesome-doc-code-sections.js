@@ -23,6 +23,7 @@
 // awesome-doc-code-sections
 //
 //  Brief:  Standalone HTML element to represents a code section. Executable, highlighted & dynamically modifiable
+//          Lightweight, out-of-the-box, Compiler-Explorer integration in websites & documentations
 //          Doxygen + doxygen-awesome-css + highlightjs == <3 (awesome-doc-code-sections)
 //          Note that neither `Doxygen` nor `doxygen-awesome-css` are mandatory dependencies
 //
