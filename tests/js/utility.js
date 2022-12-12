@@ -34,13 +34,13 @@ class test_utility_global_behavior_modifiers {
         return value
     })()
     static get toggle_slow_fetch_resource() {
-        return global_behavior_modifiers.#original_fetch_resource !== utility.fetch_resource
+        return test_utility.global_behavior_modifiers.#original_fetch_resource !== utility.fetch_resource
     }
     static set toggle_slow_fetch_resource(value) {
-        value = value ?? !global_behavior_modifiers.toggle_slow_fetch_resource
+        value = value ?? !test_utility.global_behavior_modifiers.toggle_slow_fetch_resource
         utility.fetch_resource = (value
-            ? global_behavior_modifiers.#slow_fetch_resource
-            : global_behavior_modifiers.#original_fetch_resource
+            ? test_utility.global_behavior_modifiers.#slow_fetch_resource
+            : test_utility.global_behavior_modifiers.#original_fetch_resource
         );
     }
     static #slow_fetch_resource(url, { on_error, on_success }){
@@ -57,9 +57,9 @@ class test_utility_global_behavior_modifiers {
                 }
 
                 // TEST: emulate latency in resource acquisition
-                console.info('[global_behavior_modifiers.#slow_fetch_resource] Fake loading ...');
+                console.info('[test_utility.global_behavior_modifiers.#slow_fetch_resource] Fake loading ...');
                 setTimeout(function(){
-                    console.info('[global_behavior_modifiers.#slow_fetch_resource] Fake loading done');
+                    console.info('[test_utility.global_behavior_modifiers.#slow_fetch_resource] Fake loading done');
                     on_success(xhr.responseText)
                 }, 1500);
             };
@@ -69,14 +69,14 @@ class test_utility_global_behavior_modifiers {
     // toggle 'stylished'
     static #_toggle_style = false
     static get toggle_style() {
-        return global_behavior_modifiers.#_toggle_style
+        return test_utility.global_behavior_modifiers.#_toggle_style
     }
     static set toggle_style(value) {
 
         const stylished_classname = 'stylished'
 
-        global_behavior_modifiers.#_toggle_style = value ?? !global_behavior_modifiers.#_toggle_style
-        let apply_toggle_style = global_behavior_modifiers.#_toggle_style
+        test_utility.global_behavior_modifiers.#_toggle_style = value ?? !test_utility.global_behavior_modifiers.#_toggle_style
+        let apply_toggle_style = test_utility.global_behavior_modifiers.#_toggle_style
             ? function (elements) { elements.addClass   (`${stylished_classname}`)}
             : function (elements) { elements.removeClass(`${stylished_classname}`)}
 
@@ -87,14 +87,14 @@ class test_utility_global_behavior_modifiers {
     // toggle small page width
     static #_toggle_small = false
     static get toggle_small() {
-        return global_behavior_modifiers.#_toggle_small
+        return test_utility.global_behavior_modifiers.#_toggle_small
     }
     static set toggle_small(value) {
 
         let r = document.querySelector(':root');
 
-        global_behavior_modifiers.#_toggle_small = value ?? !global_behavior_modifiers.#_toggle_small
-        if (global_behavior_modifiers.#_toggle_small)
+        test_utility.global_behavior_modifiers.#_toggle_small = value ?? !test_utility.global_behavior_modifiers.#_toggle_small
+        if (test_utility.global_behavior_modifiers.#_toggle_small)
             r.style.setProperty('width', '500px' );
         else
             document.querySelector(':root').style.removeProperty('width')
