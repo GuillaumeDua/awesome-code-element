@@ -59,7 +59,8 @@
 // TODO: hide details in a `details` namespace
 // TODO: throw new Error(...)
 // use ?? vs ||
-// TODO: execution -> pre.code rather than a new CS
+// TODO: execution -> pre.code rather than a new CS (+copy-to-cpliboard button)
+// TODO: buttons: bound to CS left-panel, not the element itself ?
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -818,6 +819,7 @@ class CodeSection_HTMLElement extends HTMLElement {
             }
         }
         catch (error) {
+            console.log(test_utility.inject_field_proxy)
             console.error(`${error}`)
             this.on_critical_internal_error(error)
         }

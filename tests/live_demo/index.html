@@ -105,10 +105,13 @@
     
         <!-- awesome-doc-code-sections -->
         <!-- <link id='code_theme_stylesheet' rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/tokyo-night-light.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" /> -->
-        <link id='code_theme_stylesheet' rel="stylesheet" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <link id='code_theme_stylesheet' rel="stylesheet" crossorigin="anonymous" referrerpolicy="no-referrer" /> <!-- TODO: not mandatory ? -->
         <script type="text/javascript" src="/awesome-doc-code-sections.js"></script>
         <script type="text/javascript" src="/awesome-doc-code-sections_dark-mode.js"></script>
     
+        <!-- CS Tests utility scripts -->
+        <script type="text/javascript" src="/tests/js/utility.js"></script>
+
         <!-- hljs, awesome-doc setup -->
         <!-- <script type="module">
             import adcs from "./awesome-doc-code-sections.js"
@@ -138,83 +141,10 @@
             ])
             awesome_doc_code_sections.initialize(); // initialize all features
         </script>
-    
-        <!-- Style alterations -->
-        <!-- TODO: test utility -->
-        <script type="text/javascript">
-            let is_stylished = false
-            function toggle_style() {
-    
-                const stylished_classname = 'stylished'
-    
-                let apply_toggle_style = is_stylished
-                    ? function (elements) { elements.removeClass(`${stylished_classname}`)}
-                    : function (elements) { elements.addClass   (`${stylished_classname}`)}
-                is_stylished = !is_stylished
-    
-                let elements = $('body').find('code, div.fragment, pre.fragment, div.contents')
-                apply_toggle_style(elements)
-            }
-    
-            let is_small = false
-            function toggle_small() {
-    
-                let r = document.querySelector(':root');
-
-                is_small = !is_small
-                if (is_small)
-                    r.style.setProperty('width', '500px' );
-                else
-                    document.querySelector(':root').style.removeProperty('width')
-            }
-        </script>
 
         <!-- demo component -->
         <script type="text/javascript">
-
-let inject_field_proxy = (owner, property_name, { getter_payload, setter_payload } = {}) => {
-// generate a proxy to a value's field, injecting optional payload
-    
-    var _owner = owner
-    var storage = _owner[property_name] // unused if the field custom getter or setter
-
-    let js_parser_sucks = (function(){
-        var old_getter = _owner.__lookupGetter__(property_name)
-        var old_setter = _owner.__lookupSetter__(property_name)
-
-        var getter = function(){
-            let result = old_getter ? old_getter.call(_owner) : storage
-            // notify get with value
-            if (getter_payload)
-                getter_payload(result)
-            return result
-        };
-        var setter = function(newValue){
-            if (old_setter)
-                old_setter.call(_owner, newValue)
-            else
-                storage = newValue
-            // notify set with value
-            if (setter_payload)
-                setter_payload(old_getter ? old_getter.call(_owner) : storage)
-        };
-
-        Object.defineProperty(_owner, property_name, {
-            get: getter,
-            set: setter
-        });
-
-        console.log
-
-    })();
-}
-let element_shake_effect_for = (element, duration) => {
-    element.classList.add('shake')
-    window.setTimeout(() => {
-        element.classList.remove('shake')
-    }, duration)
-}
-
+// TODO: extract into a standalone JS file
 class CodeSection_demo extends CodeSection {
     constructor() {
         super()
@@ -299,7 +229,7 @@ class CodeSection_demo extends CodeSection {
         let label = sub_container.appendChild(document.createElement('label'))
             label.textContent = ` ${printable_name}`
 
-        inject_field_proxy(this, property_name, {
+        test_utility.inject_field_proxy(this, property_name, {
             getter_payload : undefined,
             setter_payload : (value) => {
                 checkbox.checked = value
@@ -347,7 +277,7 @@ class CodeSection_demo extends CodeSection {
             }, 300)
         })
 
-        inject_field_proxy(this, 'language', {
+        test_utility.inject_field_proxy(this, 'language', {
             getter_payload : () => {
             },
             setter_payload : (value) => {
@@ -382,7 +312,7 @@ class CodeSection_demo extends CodeSection {
                 this.url = arg.target.value
         })
 
-        inject_field_proxy(this, 'url', {
+        test_utility.inject_field_proxy(this, 'url', {
             getter_payload : () => {
                 console.log(`called : get`)
             },
@@ -397,45 +327,11 @@ class CodeSection_demo extends CodeSection {
 
 }
 customElements.define('code-section-demo', CodeSection_demo);
-
-class global_behavior_modifiers {
-
-    static #original_fetch_resource = utility.fetch_resource
-    static get toggle_slow_fetch_resource() {
-        return global_behavior_modifiers.#original_fetch_resource !== utility.fetch_resource
-    }
-    static set toggle_slow_fetch_resource(value) {
-        utility.fetch_resource = value ? global_behavior_modifiers.#slow_fetch_resource : global_behavior_modifiers.#original_fetch_resource
-    }
-    static #slow_fetch_resource(url, { on_error, on_success }){
-        let xhr = new XMLHttpRequest();
-            xhr.open('GET', url);
-            xhr.onerror = function() {
-                on_error(`RemoteCodeSection: network Error`)
-            };
-            xhr.onload = function() {
-
-                if (xhr.status != 200) {
-                    on_error(`RemoteCodeSection: bad request status ${xhr.status}`)
-                    return;
-                }
-
-                // TEST: emulate latency in resource acquisition
-                console.info('[fake] loading ...');
-                setTimeout(function(){
-                    console.info('[fake] loaded !');
-                    on_success(xhr.responseText)
-                }, 1500);
-            };
-            xhr.send();
-    }
-}
         </script>
     </head>
 <body>
 
-    <button onclick="toggle_style()">Toggle style</button>
-    <button onclick="toggle_small()">Toggle small</button>
+    <test-utility-toolbar></test-utility-toolbar>
 
     <!-- code-section : only text content
     <code-section id="scs_1">

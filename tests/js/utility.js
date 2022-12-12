@@ -2,13 +2,19 @@
 class global_behavior_modifiers {
 // class-as-namespace
 
+    static toggle_action = undefined
+
     // slow fetch resource (emulates slow network)
     static #original_fetch_resource = utility.fetch_resource
     static get toggle_slow_fetch_resource() {
         return global_behavior_modifiers.#original_fetch_resource !== utility.fetch_resource
     }
     static set toggle_slow_fetch_resource(value) {
-        utility.fetch_resource = value ? global_behavior_modifiers.#slow_fetch_resource : global_behavior_modifiers.#original_fetch_resource
+        value = value ?? !global_behavior_modifiers.toggle_slow_fetch_resource
+        utility.fetch_resource = (value
+            ? global_behavior_modifiers.#slow_fetch_resource
+            : global_behavior_modifiers.#original_fetch_resource
+        );
     }
     static #slow_fetch_resource(url, { on_error, on_success }){
         let xhr = new XMLHttpRequest();
@@ -24,9 +30,9 @@ class global_behavior_modifiers {
                 }
 
                 // TEST: emulate latency in resource acquisition
-                console.info('[fake] loading ...');
+                console.info('[global_behavior_modifiers.#slow_fetch_resource] Fake loading ...');
                 setTimeout(function(){
-                    console.info('[fake] loaded !');
+                    console.info('[global_behavior_modifiers.#slow_fetch_resource] Fake loading done');
                     on_success(xhr.responseText)
                 }, 1500);
             };
@@ -42,7 +48,7 @@ class global_behavior_modifiers {
 
         const stylished_classname = 'stylished'
 
-        global_behavior_modifiers.#_toggle_style = value
+        global_behavior_modifiers.#_toggle_style = value ?? !global_behavior_modifiers.#_toggle_style
         let apply_toggle_style = global_behavior_modifiers.#_toggle_style
             ? function (elements) { elements.addClass   (`${stylished_classname}`)}
             : function (elements) { elements.removeClass(`${stylished_classname}`)}
@@ -60,10 +66,94 @@ class global_behavior_modifiers {
 
         let r = document.querySelector(':root');
 
-        global_behavior_modifiers.#_toggle_small = value
+        global_behavior_modifiers.#_toggle_small = value ?? !global_behavior_modifiers.#_toggle_small
         if (global_behavior_modifiers.#_toggle_small)
             r.style.setProperty('width', '500px' );
         else
             document.querySelector(':root').style.removeProperty('width')
     }
 }
+class test_utility {
+// class-as-namespace
+
+    static inject_field_proxy(owner, property_name, { getter_payload, setter_payload } = {}) {
+    // generate a proxy to a value's field, injecting optional payload
+        
+        var _owner = owner
+        var storage = _owner[property_name] // unused if the field custom getter or setter
+    
+        let js_parser_sucks = (function(){
+            var old_getter = _owner.__lookupGetter__(property_name)
+            var old_setter = _owner.__lookupSetter__(property_name)
+    
+            var getter = function(){
+                let result = old_getter ? old_getter.call(_owner) : storage
+                // notify get with value
+                if (getter_payload)
+                    getter_payload(result)
+                return result
+            };
+            var setter = function(newValue){
+                if (old_setter)
+                    old_setter.call(_owner, newValue)
+                else
+                    storage = newValue
+                // notify set with value
+                if (setter_payload)
+                    setter_payload(old_getter ? old_getter.call(_owner) : storage)
+            };
+    
+            Object.defineProperty(_owner, property_name, {
+                get: getter,
+                set: setter
+            });
+    
+            console.log
+    
+        })();
+    }
+    static element_shake_effect_for(element, duration) {
+        element.classList.add('shake')
+        window.setTimeout(() => {
+            element.classList.remove('shake')
+        }, duration)
+    }
+}
+test_utility.global_behavior_modifiers = global_behavior_modifiers
+
+// test utility toolbar
+class test_utility_toolbar extends HTMLElement {
+    static HTMLElement_name = 'test-utility-toolbar'
+
+    constructor() {
+        super()
+    }
+
+    connectedCallback(){
+
+        // TODO: use checkbox + label instead to show active value
+        let generate_toggle_button = (name) => {
+            let value = document.createElement('button')
+                value.id = `button_${name}`
+                value.textContent = `${name}`
+                value.addEventListener('click', () => {
+                    test_utility.global_behavior_modifiers[name] = test_utility.global_behavior_modifiers.toggle_action
+                })
+            return value
+        }
+
+        this.id = 'test_utility_toolbar'
+        utility.apply_css(this, {
+            display : 'block',
+            border  : '1px solid var(--primary-color)',
+            width   : 'fit-content',
+            margin  : 'auto',
+            padding : '5px'
+        })
+
+        this.appendChild(generate_toggle_button('toggle_style'))
+        this.appendChild(generate_toggle_button('toggle_small'))
+        this.appendChild(generate_toggle_button('toggle_slow_fetch_resource'))
+    }
+}
+customElements.define(test_utility_toolbar.HTMLElement_name, test_utility_toolbar);
