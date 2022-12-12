@@ -127,11 +127,11 @@ SOFTWARE.
         <!-- jquery -->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     
-        <!-- awesome-doc-code-sections -->
+        <!-- awesome-code-element -->
         <!-- <link id='code_theme_stylesheet' rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/tokyo-night-light.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" /> -->
         <link id='code_theme_stylesheet' rel="stylesheet" crossorigin="anonymous" referrerpolicy="no-referrer" /> <!-- TODO: not mandatory ? -->
-        <script type="text/javascript" src="/awesome-doc-code-sections.js"></script>
-        <script type="text/javascript" src="/awesome-doc-code-sections_dark-mode.js"></script>
+        <script type="text/javascript" src="/awesome-code-element.js"></script>
+        <script type="text/javascript" src="/awesome-code-element_dark-mode.js"></script>
     
         <!-- CS Tests utility scripts -->
         <script type="text/javascript" src="/tests/js/utility.js"></script>
@@ -140,7 +140,7 @@ SOFTWARE.
 
         <!-- hljs, awesome-doc configuration  -->
         <!-- <script type="module">
-            import adcs from "./awesome-doc-code-sections.js"
+            import adcs from "./awesome-code-element.js"
             adcs.initialize();
             adcs.ThemeSelector.initialize();
         </script> -->
@@ -240,16 +240,16 @@ return i;
         <li>
             <h3>code-section : parsing</h3>
             <code-section toggle_parsing="true">
-        THIS IS REMOVED // @awesome-doc-code-sections::skip::line
+        THIS IS REMOVED // @awesome-code-element::skip::line
 #include &lt;iostream&gt;
 auto main() -> int {    
-                        // @awesome-doc-code-sections::show::block::begin
+                        // @awesome-code-element::show::block::begin
 auto i = 42; // test ----------------------------------------
 std::cout &lt;&lt; &quot;some console output&quot;;
 return i;
-                        // @awesome-doc-code-sections::show::block::end
+                        // @awesome-code-element::show::block::end
 }                       
-        THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
+        THIS IS REMOVED TOO // @awesome-code-element::skip::line
             </code-section>
         </li>
 
@@ -257,14 +257,14 @@ return i;
             <h3>code-section : language + parsing - column presentation</h3>
 
             <code-section id="scs_4_column" style="flex-direction: column">
-        THIS IS REMOVED // @awesome-doc-code-sections::skip::line
+        THIS IS REMOVED // @awesome-code-element::skip::line
 auto main() -> int {    
-                        // @awesome-doc-code-sections::show::block::begin
+                        // @awesome-code-element::show::block::begin
 auto i = 42; // test
 return i;
-                        // @awesome-doc-code-sections::show::block::end
+                        // @awesome-code-element::show::block::end
 }                       
-        THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
+        THIS IS REMOVED TOO // @awesome-code-element::skip::line
             </code-section>
         </li>
     </ul>
@@ -272,14 +272,14 @@ return i;
     <h2>Live demo</h2>
     <!-- TODO: select various pre-defined scenaris -->
     <code-section-demo>
-        THIS IS REMOVED // @awesome-doc-code-sections::skip::line
+        THIS IS REMOVED // @awesome-code-element::skip::line
 auto main() -> int {    
-                        // @awesome-doc-code-sections::show::block::begin
+                        // @awesome-code-element::show::block::begin
 auto i = 42; // test
 return i;
-                        // @awesome-doc-code-sections::show::block::end
+                        // @awesome-code-element::show::block::end
 }                       
-        THIS IS REMOVED TOO // @awesome-doc-code-sections::skip::line
+        THIS IS REMOVED TOO // @awesome-code-element::skip::line
     </code-section-demo>
 
 </body>

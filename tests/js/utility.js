@@ -21,6 +21,56 @@
 // SOFTWARE.
 
 // details
+
+class test_utility {
+// class-as-namespace
+
+    static inject_field_proxy(owner, property_name, { getter_payload, setter_payload } = {}) {
+    // generate a proxy to a value's field, injecting optional payload
+        
+        var _owner = owner
+        var storage = _owner[property_name] // unused if the field custom getter or setter
+    
+        let js_parser_sucks = (function(){
+            var old_getter = _owner.__lookupGetter__(property_name)
+            var old_setter = _owner.__lookupSetter__(property_name)
+    
+            var getter = function(){
+                let result = old_getter ? old_getter.call(_owner) : storage
+                // notify get with value
+                if (getter_payload)
+                    getter_payload(result)
+                return result
+            };
+            var setter = function(newValue){
+                if (old_setter)
+                    old_setter.call(_owner, newValue)
+                else
+                    storage = newValue
+                // notify set with value
+                if (setter_payload)
+                    setter_payload(old_getter ? old_getter.call(_owner) : storage)
+            };
+    
+            Object.defineProperty(_owner, property_name, {
+                get: getter,
+                set: setter
+            });
+    
+            console.log
+    
+        })();
+    }
+    static element_shake_effect_for(element, duration) {
+        element.classList.add('shake')
+        window.setTimeout(() => {
+            element.classList.remove('shake')
+        }, duration)
+    }
+
+    static HTMLElements = {}
+}
+
 class test_utility_global_behavior_modifiers {
 // class-as-namespace
 
@@ -137,55 +187,6 @@ class test_utility_toolbar extends HTMLElement {
 }
 customElements.define(test_utility_toolbar.HTMLElement_name, test_utility_toolbar);
 
-// public component
-class test_utility {
-// class-as-namespace
-
-    static inject_field_proxy(owner, property_name, { getter_payload, setter_payload } = {}) {
-    // generate a proxy to a value's field, injecting optional payload
-        
-        var _owner = owner
-        var storage = _owner[property_name] // unused if the field custom getter or setter
-    
-        let js_parser_sucks = (function(){
-            var old_getter = _owner.__lookupGetter__(property_name)
-            var old_setter = _owner.__lookupSetter__(property_name)
-    
-            var getter = function(){
-                let result = old_getter ? old_getter.call(_owner) : storage
-                // notify get with value
-                if (getter_payload)
-                    getter_payload(result)
-                return result
-            };
-            var setter = function(newValue){
-                if (old_setter)
-                    old_setter.call(_owner, newValue)
-                else
-                    storage = newValue
-                // notify set with value
-                if (setter_payload)
-                    setter_payload(old_getter ? old_getter.call(_owner) : storage)
-            };
-    
-            Object.defineProperty(_owner, property_name, {
-                get: getter,
-                set: setter
-            });
-    
-            console.log
-    
-        })();
-    }
-    static element_shake_effect_for(element, duration) {
-        element.classList.add('shake')
-        window.setTimeout(() => {
-            element.classList.remove('shake')
-        }, duration)
-    }
-
-    static HTMLElements = {}
-}
 test_utility.global_behavior_modifiers = test_utility_global_behavior_modifiers
 test_utility.HTMLElements.toolbar = test_utility_toolbar
 

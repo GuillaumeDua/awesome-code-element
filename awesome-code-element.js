@@ -20,11 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// awesome-doc-code-sections
+// awesome-code-element
 //
 //  Brief:  Standalone HTML element to represents a code section. Executable, highlighted & dynamically modifiable
 //          Lightweight, out-of-the-box, Compiler-Explorer integration in websites & documentations
-//          Doxygen + doxygen-awesome-css + highlightjs == <3 (awesome-doc-code-sections)
+//          Doxygen + doxygen-awesome-css + highlightjs == <3 (awesome-code-element)
 //          Note that neither `Doxygen` nor `doxygen-awesome-css` are mandatory dependencies
 //
 // Code sections, with extra features :
@@ -65,9 +65,9 @@
 // ----------------------------------------------------------------------------------------------------------------------------
 
 if (typeof hljs === 'undefined')
-    console.error('awesome-doc-code-sections.js: depends on highlightjs, which is missing')
+    console.error('awesome-code-element.js: depends on highlightjs, which is missing')
 if (typeof jQuery === 'undefined')
-    console.error('awesome-doc-code-sections.js: depends on jQuery, which is missing')
+    console.error('awesome-code-element.js: depends on jQuery, which is missing')
 
 class transformed_map extends Map {
 // Similar to `Map`, with non-mandatory translation for key, mapped
@@ -158,9 +158,9 @@ var awesome_doc_code_sections = {
 }
 
 class ParsedCode {
-// TODO: @awesome-doc-code-sections::keep : keep tag anyway as comment (for documentation purpose)
+// TODO: @awesome-code-element::keep : keep tag anyway as comment (for documentation purpose)
 
-// @awesome-doc-code-sections::CE={
+// @awesome-code-element::CE={
 //  "language"            : "c++",
 //  "compiler_id"         : "clang1400",
 //  "compilation_options" : "-O2 -std=c++20",
@@ -172,14 +172,14 @@ class ParsedCode {
 //  ],
 //  "add_in_doc_execution" : true
 //  }
-// @awesome-doc-code-sections::skip::block::begin,end : range to [skip] (no parsing, removed from documentation & execution)
-// @awesome-doc-code-sections::skip::line             : line  to [skip]
-// @awesome-doc-code-sections::show::block::begin,end : range to [show] (documentation side only. The rest is still part of the execution code)
+// @awesome-code-element::skip::block::begin,end : range to [skip] (no parsing, removed from documentation & execution)
+// @awesome-code-element::skip::line             : line  to [skip]
+// @awesome-code-element::show::block::begin,end : range to [show] (documentation side only. The rest is still part of the execution code)
 //                                                      if there is at least one occurence, the rest is by default hidden
-// @awesome-doc-code-sections::show::line             : line  to [show]
+// @awesome-code-element::show::line             : line  to [show]
 //                                                      if there is at least one occurence, the rest is by default hidden
 
-    static tag = '// @awesome-doc-code-sections'
+    static tag = '// @awesome-code-element'
 
     raw = undefined
     to_display = undefined
@@ -209,7 +209,7 @@ class ParsedCode {
         let regexp = new RegExp(`^\\s*?${ParsedCode.tag}::CE=({(.*?\n\\s*//.*?)+}\n?)`, 'gm')
         let matches = [...this.raw.matchAll(regexp)] // expect exactly 1 match
         if (matches.length > 1)
-            console.error(`awesome-doc-code-sections.js:ParsedCode::constructor: multiples CE configurations`)
+            console.error(`awesome-code-element.js:ParsedCode::constructor: multiples CE configurations`)
 
         matches.map((match) => {
             let result = match[1].replaceAll(
@@ -288,7 +288,7 @@ class remote_resources_cache {
         }
         catch (error) {
             console.error(
-                "awesome-doc-code-sections.js:remote_resources_cache: error\n" +
+                "awesome-code-element.js:remote_resources_cache: error\n" +
                 "\t" + error
             )
         }
@@ -332,7 +332,7 @@ class ce_API {
         }
         catch (error) {
             console.error(
-                "awesome-doc-code-sections.js:ce_API: godbolt API exception (fetch_languages)\n" +
+                "awesome-code-element.js:ce_API: godbolt API exception (fetch_languages)\n" +
                 "\t" + error
             )
         }
@@ -352,7 +352,7 @@ class ce_API {
         }
         catch (error) {
             console.error(
-                "awesome-doc-code-sections.js:ce_API: godbolt API exception (fetch_compilers)\n" +
+                "awesome-code-element.js:ce_API: godbolt API exception (fetch_compilers)\n" +
                 "\t" + error
             )
         }
@@ -371,7 +371,7 @@ class ce_API {
     // https://godbolt.org/api/compiler/${compiler_id}/compile
 
         if (ce_options.compiler_id === undefined)
-            throw new Error('awesome-doc-code-sections.js::ce_API::fetch_execution_result: invalid argument, missing .compiler_id')
+            throw new Error('awesome-code-element.js::ce_API::fetch_execution_result: invalid argument, missing .compiler_id')
 
         // POST /api/compiler/<compiler-id>/compile endpoint is not working with remote header-files in `#include`s PP directions
         // https://github.com/compiler-explorer/compiler-explorer/issues/4190
@@ -558,7 +558,7 @@ awesome_doc_code_sections.resize_observer = new ResizeObserver(entries => {
 class CopyToClipboardButton extends HTMLButtonElement {
 // Copy text context of this previousSibling HTMLelement
 
-    static HTMLElement_name = 'awesome-doc-code-sections_el_copy-to-clipboard-button'
+    static HTMLElement_name = 'awesome-code-element_el_copy-to-clipboard-button'
     static title            = "Copy to clipboard"
     static copyIcon         = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`
     static successIcon      = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`
@@ -586,10 +586,10 @@ class CopyToClipboardButton extends HTMLButtonElement {
             let text = this.previousSibling.textContent
             navigator.clipboard.writeText(text).then(
                 function() {
-                    console.info('awesome-doc-code-sections.js:CopyToClipboardButton: success');
+                    console.info('awesome-code-element.js:CopyToClipboardButton: success');
                 },
                 function(error) {
-                    console.error(`awesome-doc-code-sections.js:CopyToClipboardButton: failed: ${error}`);
+                    console.error(`awesome-code-element.js:CopyToClipboardButton: failed: ${error}`);
                 }
             );
             window.setTimeout(() => {
@@ -603,7 +603,7 @@ customElements.define(CopyToClipboardButton.HTMLElement_name, CopyToClipboardBut
 
 class SendToGodboltButton extends HTMLButtonElement {
 
-    static HTMLElement_name = 'awesome-doc-code-sections_el_send-to-godbolt-button'
+    static HTMLElement_name = 'awesome-code-element_el_send-to-godbolt-button'
     static title            = 'Try this on godbolt.org (compiler-explorer)'
     static icon             = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32"><switch><g><path d="M58.6 46.5c-.3-.5-.3-1.2 0-1.7.3-.6.7-1.3 1-2 .2-.5-.1-1-.7-1h-5.8c-.6 0-1.2.3-1.4.8-.7 1.1-1.6 2.2-2.6 3.2-3.7 3.7-8.6 5.7-13.9 5.7-5.3 0-10.2-2-13.9-5.7-3.8-3.7-5.8-8.6-5.8-13.9s2-10.2 5.8-13.9c3.7-3.7 8.6-5.7 13.9-5.7 5.3 0 10.2 2 13.9 5.7 1 1 1.9 2.1 2.6 3.2.3.5.9.8 1.4.8h5.8c.5 0 .9-.5.7-1-.3-.7-.6-1.3-1-2-.3-.5-.3-1.2 0-1.7l1.9-3.5c.4-.7.3-1.5-.3-2.1l-4.9-4.9c-.6-.6-1.4-.7-2.1-.3l-3.6 2c-.5.3-1.2.3-1.7 0-1.7-.9-3.5-1.7-5.4-2.2-.6-.2-1-.6-1.2-1.2l-1.1-3.9C40.1.5 39.5 0 38.7 0h-6.9C31 0 30.2.5 30 1.3l-1.1 3.9c-.2.6-.6 1-1.2 1.2-1.9.6-3.6 1.3-5.3 2.2-.5.3-1.2.3-1.7 0l-3.6-2c-.7-.4-1.5-.3-2.1.3l-4.9 4.9c-.6.6-.7 1.4-.3 2.1l2 3.6c.3.5.3 1.2 0 1.7-.9 1.7-1.7 3.5-2.2 5.3-.2.6-.6 1-1.2 1.2l-3.9 1.1c-.7.2-1.3.9-1.3 1.7v6.9c0 .8.5 1.5 1.3 1.7l3.9 1.1c.6.2 1 .6 1.2 1.2.5 1.9 1.3 3.6 2.2 5.3.3.6.3 1.2 0 1.7l-2 3.6c-.4.7-.3 1.5.3 2.1L15 57c.6.6 1.4.7 2.1.3l3.6-2c.6-.3 1.2-.3 1.7 0 1.7.9 3.5 1.7 5.3 2.2.6.2 1 .6 1.2 1.2l1.1 3.9c.2.7.9 1.3 1.7 1.3h6.9c.8 0 1.5-.5 1.7-1.3l1.1-3.9c.2-.6.6-1 1.2-1.2 1.9-.6 3.6-1.3 5.4-2.2.5-.3 1.2-.3 1.7 0l3.6 2c.7.4 1.5.3 2.1-.3l4.9-4.9c.6-.6.7-1.4.3-2.1l-2-3.5z" fill="#67c52a"/><path d="M23.5 37.7v4.4h23.8v-4.4H23.5zm0-7.8v4.4h19.6v-4.4H23.5zm0-7.9v4.4h23.8V22H23.5z" fill="#3c3c3f"/></g></switch></svg>`;
     static successIcon      = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`
@@ -646,7 +646,7 @@ class SendToGodboltButton extends HTMLButtonElement {
 
                     let configuration = awesome_doc_code_sections.configuration.CE.get(codeSectionElement.language)
                     if (configuration === undefined)
-                        throw new Error(`awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: missing configuration for language [${codeSectionElement.language}]`)
+                        throw new Error(`awesome-code-element.js:SendToGodboltButton::onClickSend: missing configuration for language [${codeSectionElement.language}]`)
                     return configuration
                 },
                 ce_options : function() {
@@ -663,7 +663,7 @@ class SendToGodboltButton extends HTMLButtonElement {
                 code : function() {
                     let result = codeSectionElement.ce_code || codeSectionElement.code
                     if (result === undefined)
-                        throw new Error(`awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: missing code`)
+                        throw new Error(`awesome-code-element.js:SendToGodboltButton::onClickSend: missing code`)
                     return result
                 }
             }
@@ -675,8 +675,8 @@ class SendToGodboltButton extends HTMLButtonElement {
 
         if (codeSectionElement === undefined
         ||  codeSectionElement.tagName.match(`\w+${CodeSection.HTMLElement_name.toUpperCase()}`) === '')
-            throw new Error('awesome-doc-code-sections.js: SendToGodboltButton.onClickSend: ill-formed element: unexpected parent.parent element (must be a CodeSection)')
-        console.info('awesome-doc-code-sections.js: SendToGodboltButton.onClickSend: sending request ...')
+            throw new Error('awesome-code-element.js: SendToGodboltButton.onClickSend: ill-formed element: unexpected parent.parent element (must be a CodeSection)')
+        console.info('awesome-code-element.js: SendToGodboltButton.onClickSend: sending request ...')
 
         let accessor = SendToGodboltButton.#make_user_options_accessor(codeSectionElement)
 
@@ -713,7 +713,7 @@ customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton,
 class LoadingAnimation {
     static #cache = (function(){
     // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
-        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/resources/images/loading_animation.svg'
+        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/resources/images/loading_animation.svg'
         let value = document.createElement('img');
         value.src = loading_animation_fallback_url
         utility.apply_css(value, {
@@ -1021,7 +1021,7 @@ class CodeSection_HTMLElement extends HTMLElement {
         )   ? auto_hide_elements
             : no_auto_hide_elements
 
-        // let elements = $(this).find('button[is^=awesome-doc-code-sections_el_]')
+        // let elements = $(this).find('button[is^=awesome-code-element_el_]')
         functor(this, [ this.html_elements.buttons.CE, this.html_elements.buttons.copy_to_clipboard ])
     }
 
@@ -1037,7 +1037,7 @@ class CodeSection_HTMLElement extends HTMLElement {
     
     static get_hljs_language(code_tag) {
         if (code_tag === undefined || code_tag.tagName !== 'CODE')
-            console.error(`awesome-doc-code-sections.js:CodeSection_HTMLElement::get_code_hljs_language(): bad input`)
+            console.error(`awesome-code-element.js:CodeSection_HTMLElement::get_code_hljs_language(): bad input`)
 
         let result = code_tag.classList.toString().match(/language-(\w+)/, '')
         return result ? result[1] : undefined // first capture group
@@ -1046,7 +1046,7 @@ class CodeSection_HTMLElement extends HTMLElement {
     on_critical_internal_error(error = "") {
 
         console.error(
-            `awesome-doc-code-sections.js:CodeSection_HTMLElement: on_critical_internal_error : fallback rendering
+            `awesome-code-element.js:CodeSection_HTMLElement: on_critical_internal_error : fallback rendering
             ${error}`
         )
 
@@ -1054,7 +1054,7 @@ class CodeSection_HTMLElement extends HTMLElement {
             return
 
         let error_element = document.createElement('pre')
-            error_element.textContent = error || `awesome-doc-code-sections:CodeSection_HTMLElement: unknown error`
+            error_element.textContent = error || `awesome-code-element:CodeSection_HTMLElement: unknown error`
         utility.apply_css(error_element, {
             color: "red",
             border : "2px solid red"
@@ -1463,7 +1463,7 @@ class ThemeSelector {
 // Note that an HTML placeholder for stylesheet is necessary/mandatory
 //   <link id='code_theme_stylesheet' rel="stylesheet" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-    static HTMLElement_name = 'awesome-doc-code-sections_theme-selector'
+    static HTMLElement_name = 'awesome-code-element_theme-selector'
     static url_base = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/'
     static url_ext = '.min.css'
     static dark_or_light_placeholder = '{dark_or_light}'
@@ -1486,7 +1486,7 @@ class ThemeSelector {
         var style_placeholder = document.getElementById(ThemeSelector.stylesheet_HTML_placeholder_id)
         if (style_placeholder === undefined || style_placeholder === null)
             console.error(
-                `awesome-doc-code-sections.js:ThemeSelector : missing stylesheet HTML placeholder\n
+                `awesome-code-element.js:ThemeSelector : missing stylesheet HTML placeholder\n
                 <link id="${ThemeSelector.stylesheet_HTML_placeholder_id}" rel="stylesheet"/>`
             )
     }
@@ -1494,21 +1494,21 @@ class ThemeSelector {
 
         let onOptionSelectedChange = function() {
             let selected_option = $(this).find('option:selected')
-            console.info('awesome-doc-code-sections.js:ThemeSelector : switching to ' + selected_option.text())
+            console.info('awesome-code-element.js:ThemeSelector : switching to ' + selected_option.text())
 
             let html_node = document.getElementsByTagName('html')[0];
 
             let theme_color = (html_node.classList.contains('dark-mode') ? 'dark' : 'light')
             let new_stylesheet_url = ThemeSelector.BuildUrl(selected_option.text())
                 .replace(ThemeSelector.dark_or_light_placeholder, theme_color)
-            console.info('awesome-doc-code-sections.js:ThemeSelector : switching to stylesheet : ' + new_stylesheet_url)
+            console.info('awesome-code-element.js:ThemeSelector : switching to stylesheet : ' + new_stylesheet_url)
             document.getElementById('code_theme_stylesheet').href = new_stylesheet_url
 
             hljs.highlightAll()
         }
 
         $(document).ready(function() {
-            console.info('awesome-doc-code-sections.js:ThemeSelector : initializing themes selector ...')
+            console.info('awesome-code-element.js:ThemeSelector : initializing themes selector ...')
 
             ThemeSelector.check_stylesheet_HTML_placeholder()
 
@@ -1543,7 +1543,7 @@ const highlightjs_stylesheet_href_mutationObserver = new MutationObserver((mutat
         if (mutation.oldValue === code_stylesheet.href ||
             code_stylesheet.href === window.location.href)
             return
-        console.info(`awesome-doc-code-sections.js:onHighlightjsHrefChange: Switching highlighthjs stylesheet \nfrom : ${mutation.oldValue} '\n to   : ${code_stylesheet.href}`)
+        console.info(`awesome-code-element.js:onHighlightjsHrefChange: Switching highlighthjs stylesheet \nfrom : ${mutation.oldValue} '\n to   : ${code_stylesheet.href}`)
 
         hljs.highlightAll();
     })
@@ -1583,7 +1583,7 @@ awesome_doc_code_sections.initialize_doxygenCodeSections = function() {
     let doc_ref_links = new Map(); // preserve clickable documentation reference links
 
     var place_holders = $('body').find('div[class=doxygen-awesome-fragment-wrapper]');
-    console.info(`awesome-doc-code-sections.js:initialize_doxygenCodeSections : replacing ${place_holders.length} elements ...`)
+    console.info(`awesome-code-element.js:initialize_doxygenCodeSections : replacing ${place_holders.length} elements ...`)
     place_holders.each((index, value) => {
 
         let lines = $(value).find('div[class=fragment] div[class=line]')
@@ -1601,7 +1601,7 @@ awesome_doc_code_sections.initialize_doxygenCodeSections = function() {
     })
 
     var place_holders = $('body').find('div[class=fragment]')
-    console.info(`awesome-doc-code-sections.js:initialize_doxygenCodeSections : replacing ${place_holders.length} elements ...`)
+    console.info(`awesome-code-element.js:initialize_doxygenCodeSections : replacing ${place_holders.length} elements ...`)
     place_holders.each((index, value) => {
 
         let lines = $(value).find('div[class=line]')
@@ -1624,7 +1624,7 @@ awesome_doc_code_sections.initialize_doxygenCodeSections = function() {
         console.debug(">>>>>>> " + values + " => " + keys)
     })
 
-    var place_holders = $('body').find('awesome-doc-code-sections_code-section pre code') // span or text
+    var place_holders = $('body').find('awesome-code-element_code-section pre code') // span or text
     place_holders.filter(function() {
         return $(this).text().replace(/toto/g, '<a href=".">toto</a>');
       })
@@ -1633,7 +1633,7 @@ awesome_doc_code_sections.initialize_PreCodeHTMLElements = function() {
 
     $('body').find('pre code').each((index, value) => { // filter
 
-        if ($(value).parent().parent().prop('nodeName').toLowerCase().startsWith("awesome-doc-code-sections_"))
+        if ($(value).parent().parent().prop('nodeName').toLowerCase().startsWith("awesome-code-element_"))
             return
 
         let existing_node = $(value).parent()
@@ -1671,13 +1671,13 @@ awesome_doc_code_sections.initialize = function() {
     $(function() {
         $(document).ready(function() {
 
-            console.info('awesome-doc-code-sections.js:initialize ...')
+            console.info('awesome-code-element.js:initialize ...')
 
             if (awesome_doc_code_sections.options.toggle_dark_mode) {
                 if (undefined === awesome_doc_code_sections.ToggleDarkMode)
                     console.error(
-                        'awesome-doc-code-sections.js:initialize: options toggle_dark_mode set to true, but awesome_doc_code_sections.ToggleDarkMode is undefined\n' +
-                        'Did you forget to include awesome-doc-code-sections_dark-mode.js ?'
+                        'awesome-code-element.js:initialize: options toggle_dark_mode set to true, but awesome_doc_code_sections.ToggleDarkMode is undefined\n' +
+                        'Did you forget to include awesome-code-element_dark-mode.js ?'
                     )
                 else
                     awesome_doc_code_sections.ToggleDarkMode.initialize()
@@ -1688,7 +1688,7 @@ awesome_doc_code_sections.initialize = function() {
             let ReplaceHTMLPlaceholders = (translation) => {
 
                 let elements = $('body').find(translation.query)
-                console.info(`awesome-doc-code-sections.js:ReplaceHTMLPlaceholders(${translation.type.name}) : replacing ${elements.length} element(s) ...`)
+                console.info(`awesome-code-element.js:ReplaceHTMLPlaceholders(${translation.type.name}) : replacing ${elements.length} element(s) ...`)
                 elements.each((index, element) => {
                     let translated_element = translation.translate(element)
                     if (translated_element)
@@ -1700,12 +1700,12 @@ awesome_doc_code_sections.initialize = function() {
             ].forEach(html_component => ReplaceHTMLPlaceholders(html_component.PlaceholdersTranslation))
 
             if (awesome_doc_code_sections.options.doxygen_awesome_css_compatibility === true) {
-                console.info(`awesome-doc-code-sections.js:initialize: doxygen-awesome-css compatiblity ...`)
+                console.info(`awesome-code-element.js:initialize: doxygen-awesome-css compatiblity ...`)
                 awesome_doc_code_sections.initialize_doxygenCodeSections()
             }
 
             if (awesome_doc_code_sections.options.pre_code_compatibility) {
-                console.info(`awesome-doc-code-sections.js:initialize: existing pre-code compatiblity ...`)
+                console.info(`awesome-code-element.js:initialize: existing pre-code compatiblity ...`)
                 awesome_doc_code_sections.initialize_PreCodeHTMLElements();
             }
         })
@@ -1715,4 +1715,4 @@ awesome_doc_code_sections.initialize = function() {
 // TODO: module (+(sub)components encapsulation)
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export
 // export { awesome_doc_code_sections }
-// import adcs from '/path/to/awesome-doc-code-sections.js'
+// import adcs from '/path/to/awesome-code-element.js'
