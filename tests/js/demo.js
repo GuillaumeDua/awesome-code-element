@@ -4,6 +4,7 @@ if (CodeSection === undefined)
 if (test_utility === undefined)
     throw new Error('CodeSection_demo: missing mandatory dependency [test_utility]')
 
+// TODO: add stylesheet switch
 class CodeSection_demo extends CodeSection {
     constructor() {
         super()

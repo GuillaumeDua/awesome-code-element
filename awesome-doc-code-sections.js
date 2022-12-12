@@ -58,7 +58,6 @@
 // TODO: per-codeSection CE configuration (local override global)
 // TODO: toggle technical info/warning logs
 // TODO: hide details in a `details` namespace
-// TODO: throw new Error(...)
 // use ?? vs ||
 // TODO: execution -> pre.code rather than a new CS (+copy-to-cpliboard button)
 // TODO: buttons: bound to CS left-panel, not the element itself ?
@@ -132,7 +131,7 @@ class ce_configuration_manager extends transformed_map {
             },
             mapped_translator : (mapped) => {
                 if (!mapped || !mapped.compiler_id)
-                    throw `ce_configuration: missing mandatory field '.compiler_id' in configuration ${mapped}`
+                    throw new Error(`ce_configuration: missing mandatory field '.compiler_id' in configuration ${mapped}`)
                 return mapped
             }
         })
@@ -372,7 +371,7 @@ class ce_API {
     // https://godbolt.org/api/compiler/${compiler_id}/compile
 
         if (ce_options.compiler_id === undefined)
-            throw 'awesome-doc-code-sections.js::ce_API::fetch_execution_result: invalid argument, missing .compiler_id'
+            throw new Error('awesome-doc-code-sections.js::ce_API::fetch_execution_result: invalid argument, missing .compiler_id')
 
         // POST /api/compiler/<compiler-id>/compile endpoint is not working with remote header-files in `#include`s PP directions
         // https://github.com/compiler-explorer/compiler-explorer/issues/4190
@@ -647,7 +646,7 @@ class SendToGodboltButton extends HTMLButtonElement {
 
                     let configuration = awesome_doc_code_sections.configuration.CE.get(codeSectionElement.language)
                     if (configuration === undefined)
-                        throw `awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: missing configuration for language [${codeSectionElement.language}]`
+                        throw new Error(`awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: missing configuration for language [${codeSectionElement.language}]`)
                     return configuration
                 },
                 ce_options : function() {
@@ -664,7 +663,7 @@ class SendToGodboltButton extends HTMLButtonElement {
                 code : function() {
                     let result = codeSectionElement.ce_code || codeSectionElement.code
                     if (result === undefined)
-                        throw `awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: missing code`
+                        throw new Error(`awesome-doc-code-sections.js:SendToGodboltButton::onClickSend: missing code`)
                     return result
                 }
             }
@@ -676,7 +675,7 @@ class SendToGodboltButton extends HTMLButtonElement {
 
         if (codeSectionElement === undefined
         ||  codeSectionElement.tagName.match(`\w+${CodeSection.HTMLElement_name.toUpperCase()}`) === '')
-            throw 'awesome-doc-code-sections.js: SendToGodboltButton.onClickSend: ill-formed element: unexpected parent.parent element (must be a CodeSection)'
+            throw new Error('awesome-doc-code-sections.js: SendToGodboltButton.onClickSend: ill-formed element: unexpected parent.parent element (must be a CodeSection)')
         console.info('awesome-doc-code-sections.js: SendToGodboltButton.onClickSend: sending request ...')
 
         let accessor = SendToGodboltButton.#make_user_options_accessor(codeSectionElement)
@@ -769,11 +768,10 @@ class LoadingAnimation {
             }
             catch (error){
                 owner.toggle_loading_animation = false
-                throw error
+                throw (error instanceof Error ? error : new Error(error))
             }
             if (task_result instanceof Promise)
                 return task_result.then(() => {
-                    // TODO: test throw/errors
                     owner.toggle_loading_animation = false
                 })
             owner.toggle_loading_animation = false
@@ -875,7 +873,7 @@ class CodeSection_HTMLElement extends HTMLElement {
     #initialize_HTML() {
 
         if (!this.isConnected)
-            throw 'CodeSection_HTMLElement:#initialize_HTML: not connected yet '
+            throw new Error('CodeSection_HTMLElement:#initialize_HTML: not connected yet')
 
         this.innerHTML = ""
         // this element
@@ -1082,7 +1080,7 @@ class CodeSection extends CodeSection_HTMLElement {
             this.#_code = value
         else if (typeof value === 'string')
             this.#_code = new ParsedCode(value, this.language)
-        else throw 'SimpleCodeSection: set code: invalid input argument type'
+        else throw new Error('SimpleCodeSection: set code: invalid input argument type')
 
         this.#view_update_code()
     }
@@ -1221,7 +1219,7 @@ class CodeSection extends CodeSection_HTMLElement {
         // post-condition: valid code content
         let is_valid = (this.#_parameters.code || this.#_parameters.url)
         if (is_valid)
-            this.acquire_parameters = () => { throw 'CodeSection.acquire_parameters: already called' }
+            this.acquire_parameters = () => { throw new Error('CodeSection.acquire_parameters: already called') }
         return is_valid
     }
     initialize() {
@@ -1241,7 +1239,7 @@ class CodeSection extends CodeSection_HTMLElement {
         this.toggle_parsing             = this.#_parameters.toggle_parsing      // will update the code view
         this.toggle_execution           = this.#_parameters.toggle_execution
 
-        this.initialize = () => { throw 'CodeSection.initialize: already called' }
+        this.initialize = () => { throw new Error('CodeSection.initialize: already called') }
     }
 
     // --------------------------------
@@ -1279,7 +1277,7 @@ class CodeSection extends CodeSection_HTMLElement {
     }
     get executable_code() {
         if (!this.is_executable)
-            throw 'CodeSection:get executable_code: not executable.'
+            throw new Error('CodeSection:get executable_code: not executable.')
         return this.toggle_parsing ? this.#_code.to_execute : this.#_code.raw
     }
 
