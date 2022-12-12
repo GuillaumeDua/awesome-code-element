@@ -20,13 +20,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-class global_behavior_modifiers {
+// details
+class test_utility_global_behavior_modifiers {
 // class-as-namespace
 
     static toggle_action = undefined
 
     // slow fetch resource (emulates slow network)
-    static #original_fetch_resource = utility.fetch_resource
+    static #original_fetch_resource = (() => {
+        let value = utility.fetch_resource
+        if (value === undefined)
+            throw new Error('test_utility.global_behavior_modifiers.toggle_slow_fetch_resource (initialization): missing utility.fetch_resource')
+        return value
+    })()
     static get toggle_slow_fetch_resource() {
         return global_behavior_modifiers.#original_fetch_resource !== utility.fetch_resource
     }
@@ -94,6 +100,44 @@ class global_behavior_modifiers {
             document.querySelector(':root').style.removeProperty('width')
     }
 }
+// UI element
+class test_utility_toolbar extends HTMLElement {
+    static HTMLElement_name = 'test-utility-toolbar'
+
+    constructor() {
+        super()
+    }
+
+    connectedCallback(){
+
+        // TODO: use checkbox + label instead to show active value
+        let generate_toggle_button = (name) => {
+            let value = document.createElement('button')
+                value.id = `button_${name}`
+                value.textContent = `${name}`
+                value.addEventListener('click', () => {
+                    test_utility.global_behavior_modifiers[name] = test_utility.global_behavior_modifiers.toggle_action
+                })
+            return value
+        }
+
+        this.id = 'test_utility_toolbar'
+        utility.apply_css(this, {
+            display : 'block',
+            border  : '1px solid var(--primary-color)',
+            width   : 'fit-content',
+            margin  : 'auto',
+            padding : '5px'
+        })
+
+        this.appendChild(generate_toggle_button('toggle_style'))
+        this.appendChild(generate_toggle_button('toggle_small'))
+        this.appendChild(generate_toggle_button('toggle_slow_fetch_resource'))
+    }
+}
+customElements.define(test_utility_toolbar.HTMLElement_name, test_utility_toolbar);
+
+// public component
 class test_utility {
 // class-as-namespace
 
@@ -139,42 +183,10 @@ class test_utility {
             element.classList.remove('shake')
         }, duration)
     }
+
+    static HTMLElements = {}
 }
-test_utility.global_behavior_modifiers = global_behavior_modifiers
+test_utility.global_behavior_modifiers = test_utility_global_behavior_modifiers
+test_utility.HTMLElements.toolbar = test_utility_toolbar
 
-// test utility toolbar
-class test_utility_toolbar extends HTMLElement {
-    static HTMLElement_name = 'test-utility-toolbar'
-
-    constructor() {
-        super()
-    }
-
-    connectedCallback(){
-
-        // TODO: use checkbox + label instead to show active value
-        let generate_toggle_button = (name) => {
-            let value = document.createElement('button')
-                value.id = `button_${name}`
-                value.textContent = `${name}`
-                value.addEventListener('click', () => {
-                    test_utility.global_behavior_modifiers[name] = test_utility.global_behavior_modifiers.toggle_action
-                })
-            return value
-        }
-
-        this.id = 'test_utility_toolbar'
-        utility.apply_css(this, {
-            display : 'block',
-            border  : '1px solid var(--primary-color)',
-            width   : 'fit-content',
-            margin  : 'auto',
-            padding : '5px'
-        })
-
-        this.appendChild(generate_toggle_button('toggle_style'))
-        this.appendChild(generate_toggle_button('toggle_small'))
-        this.appendChild(generate_toggle_button('toggle_slow_fetch_resource'))
-    }
-}
-customElements.define(test_utility_toolbar.HTMLElement_name, test_utility_toolbar);
+// TODO: rename `test_utility` -> ${project_name}.test_utility
