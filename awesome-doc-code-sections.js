@@ -22,22 +22,23 @@
 
 // awesome-doc-code-sections
 //
-//  Brief: Doxygen + doxygen-awesome-css + highlightjs == <3 (awesome-doc-code-sections)
-//         Note that doxygen-awesome-css is not a mandatory dependency
+//  Brief:  Standalone HTML element to represents a code section. Executable, highlighted & dynamically modifiable
+//          Doxygen + doxygen-awesome-css + highlightjs == <3 (awesome-doc-code-sections)
+//          Note that neither `Doxygen` nor `doxygen-awesome-css` are mandatory dependencies
 //
 // Code sections, with extra features :
 //  - load content from
-//      - remote url (js: RemoteCodeSection)
-//          such as (in index.md: <div class='awesome-doc-code-sections_remote-code-section' url='https://some/remote/path/to/file.cpp'></div> )
-//      - local inner HTML (js: CodeSection)
-//          awesome-doc-code-sections_code-section
+//      - JS constructor parameter
+//      - HTML
+//          - attribute `code` or `url` (for remote-located resource, such as <div class='code-section' url='https://some/remote/path/to/file.cpp'></div>)
+//          - inner TextContent
 //  - synthax-coloration provided by highlightjs,
 //      - theme selector
 //  - toggle dark/light theme
 //  - buttons :
 //      - send-to-godbolt
 //      - copy-to-clipboard
-//      - toggle light/dark mode
+//      - (doxygen-awesome-css compatibility) toggle light/dark mode
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -57,6 +58,8 @@
 // TODO: toggle technical info/warning logs
 // TODO: hide details in a `details` namespace
 // TODO: throw new Error(...)
+// use ?? vs ||
+// TODO: execution -> pre.code rather than a new CS
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
