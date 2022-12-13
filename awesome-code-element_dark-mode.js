@@ -30,6 +30,8 @@ if (typeof hljs === 'undefined')
 if (typeof AwesomeCodeElement === 'undefined')
     console.error('awesome-code-element_dark-mode.js: depends on awesome-code-element.js, which is missing')
 
+// TODO: AwesomeCodeElement.dark_mode.{...}
+
 // ============
 
 class ToggleDarkMode /*StaticObserver*/ {
@@ -110,7 +112,7 @@ class ToggleDarkMode /*StaticObserver*/ {
         ToggleDarkMode.enableDarkMode(ToggleDarkMode.darkModeEnabled)
     }
 }
-AwesomeCodeElement.ToggleDarkMode = ToggleDarkMode
+AwesomeCodeElement.API.ToggleDarkMode = ToggleDarkMode
 class ToggleDarkModeButton extends HTMLButtonElement {
 
     static HTMLElement_name                 = "awesome-code-element_toggle-dark-mode-button"
@@ -159,10 +161,10 @@ class ToggleDarkModeButton extends HTMLButtonElement {
     }
 }
 customElements.define(ToggleDarkModeButton.HTMLElement_name, ToggleDarkModeButton, {extends: 'button'});
-AwesomeCodeElement.HTML_elements.ToggleDarkModeButton  = ToggleDarkModeButton
+AwesomeCodeElement.details.HTMLElements.ToggleDarkModeButton  = ToggleDarkModeButton
     
 // light/dark theme switch
-AwesomeCodeElement.ThemeSelector.toggleDarkLightMode_onTheme = function(isDarkModeEnabled) {
+AwesomeCodeElement.API.HTMLElements.ThemeSelector.toggleDarkLightMode_onTheme = function(isDarkModeEnabled) {
     
     let code_stylesheet = document.getElementById(AwesomeCodeElement.ThemeSelector.stylesheet_HTML_placeholder_id);
     if (isDarkModeEnabled)
@@ -171,9 +173,9 @@ AwesomeCodeElement.ThemeSelector.toggleDarkLightMode_onTheme = function(isDarkMo
         code_stylesheet.href = code_stylesheet.href.replace('-dark', '-light')
 }
 // Toggle dark/light mode : doxygen-awesome-css & awesome-code-element inter-operability/compatibility
-AwesomeCodeElement.ToggleDarkMode.updateToggleIcons = function(isDarkModeEnabled) {
+AwesomeCodeElement.API.ToggleDarkMode.updateToggleIcons = function(isDarkModeEnabled) {
     
-    if (AwesomeCodeElement.options.doxygen_awesome_css_compatibility
+    if (AwesomeCodeElement.API.configuration.doxygen_awesome_css_compatibility
     &&  typeof DoxygenAwesomeDarkModeToggle !== 'undefined')
     {
         $("body").find("doxygen-awesome-dark-mode-toggle").each((index, value) => {

@@ -152,20 +152,20 @@ SOFTWARE.
                 languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plaintext']
             })
     
-            AwesomeCodeElement.options.configure({
-                doxygen_awesome_css_compatibility: true
+            AwesomeCodeElement.API.configure({
+                doxygen_awesome_css_compatibility: true,
+                CE : new AwesomeCodeElement.API.CE_ConfigurationManager([
+                    [
+                        'cpp',
+                        {
+                            language: 'c++',
+                            compiler_id: 'clang1500',
+                            default_options: '-O2 -std=c++20'
+                        }
+                    ]
+                ])
             })
-            AwesomeCodeElement.configuration.CE = new ce_configuration_manager([
-                [
-                    'cpp',
-                    {
-                        language: 'c++',
-                        compiler_id: 'clang1500',
-                        default_options: '-O2 -std=c++20'
-                    }
-                ]
-            ])
-            AwesomeCodeElement.initialize(); // initialize all features
+            AwesomeCodeElement.API.initialize(); // initialize all features
         </script>
     </head>
 <body>

@@ -60,9 +60,13 @@
 // use ?? vs ||
 // TODO: execution -> pre.code rather than a new CS (+copy-to-cpliboard button)
 // TODO: buttons: bound to CS left-panel, not the element itself ?
-// TODO: update error messages
+// TODO: check encapsulation/visibility
+// TODO: type = AwesomeCodeElement.details.${name} ?
+// TODO: update error messages -> ${classname}.name ?
+// TODO: named parameters
 
 // ----------------------------------------------------------------------------------------------------------------------------
+// export default AwesomeCodeElement
 
 if (typeof hljs === 'undefined')
     console.error('awesome-code-element.js: depends on highlightjs, which is missing')
@@ -124,7 +128,7 @@ AwesomeCodeElement.details.containers.transformed_map = class extends Map {
         return super.has(key)
     }
 }
-AwesomeCodeElement.API.ce_configuration_manager = class extends AwesomeCodeElement.details.transformed_map {
+AwesomeCodeElement.API.CE_ConfigurationManager = class extends AwesomeCodeElement.details.containers.transformed_map {
 // similar to a Map, but use `hljs.getLanguage(key)` as a key translator
     constructor(values) {
         super(values, {
@@ -150,7 +154,6 @@ AwesomeCodeElement.API.ce_configuration_manager = class extends AwesomeCodeEleme
         super.set(key, mapped)
     }
 }
-AwesomeCodeElement.API.configuration = { CE : new AwesomeCodeElement.API.ce_configuration_manager }
 // key   : language (name or alias. ex: C++, cpp, cc, c++ are equivalent)
 // value : {
 //      language,       // not mandatory, if same as key. Refers to https://godbolt.org/api/languages
@@ -158,7 +161,7 @@ AwesomeCodeElement.API.configuration = { CE : new AwesomeCodeElement.API.ce_conf
 //      default_options // not mandatory
 // }
 
-AwesomeCodeElement.details.ParsedCode = class {
+AwesomeCodeElement.details.ParsedCode = class ParsedCode {
 // TODO: @awesome-code-element::keep : keep tag anyway as comment (for documentation purpose)
 
 // @awesome-code-element::CE={
@@ -190,8 +193,8 @@ AwesomeCodeElement.details.ParsedCode = class {
     constructor(code_content, language) {
 
         // apply default configuration for given - non-mandatory - language
-        if (AwesomeCodeElement.configuration.CE.has(language))
-            this.ce_options = AwesomeCodeElement.configuration.CE.get(language)
+        if (AwesomeCodeElement.API.configuration.CE.has(language))
+            this.ce_options = AwesomeCodeElement.API.configuration.CE.get(language)
 
         if (!code_content || code_content.length === 0)
             return // default construction
@@ -304,18 +307,18 @@ AwesomeCodeElement.details.remote.resources_cache = class {
         return this.#remote_files.get(uri)
     }
 }
-AwesomeCodeElement.details.remote.ce_API = class {
+AwesomeCodeElement.details.remote.ce_API = class ce_API {
 // fetch CE API informations asynchronously
 
     static #static_initializer = (async function(){
         ce_API.#fetch_languages()
-        // ce_API.#fetch_compilers() // not used for now, disabled to save cache memory
+        // AwesomeCodeElement.details.remote.ce_API.#fetch_compilers() // not used for now, disabled to save cache memory
     })()
 
     // cache
     static languages = undefined
     static compilers = undefined
-    static #remote_files_cache = new remote_resources_cache()
+    static #remote_files_cache = new AwesomeCodeElement.details.remote.resources_cache()
 
     static async #fetch_languages() {
     // https://godbolt.org/api/languages
@@ -325,16 +328,13 @@ AwesomeCodeElement.details.remote.ce_API = class {
 
             let text = datas.split('\n')
             text.shift() // remove header
-            ce_API.languages = text.map((value) => {
+            AwesomeCodeElement.details.remote.ce_API.languages = text.map((value) => {
             // keep only ids
                 return value.slice(0, value.indexOf(' '))
             })
         }
         catch (error) {
-            console.error(
-                "awesome-code-element.js:ce_API: godbolt API exception (fetch_languages)\n" +
-                "\t" + error
-            )
+            console.error(`AwesomeCodeElement.details.remote.ce_API: godbolt API exception (fetch_languages)\n\t${error}`)
         }
     }
     static async #fetch_compilers() {
@@ -345,16 +345,13 @@ AwesomeCodeElement.details.remote.ce_API = class {
 
             let text = datas.split('\n')
             text.shift() // remove header
-            ce_API.languages = text.map((value) => {
+            AwesomeCodeElement.details.remote.ce_API.languages = text.map((value) => {
             // keep only ids
                 return value.slice(0, value.indexOf(' '))
             })
         }
         catch (error) {
-            console.error(
-                "awesome-code-element.js:ce_API: godbolt API exception (fetch_compilers)\n" +
-                "\t" + error
-            )
+            console.error(`AwesomeCodeElement.details.remote.ce_API: godbolt API exception (fetch_compilers)\n\t${error}`)
         }
     }
     static open_in_new_tab(request_data) {
@@ -378,7 +375,7 @@ AwesomeCodeElement.details.remote.ce_API = class {
         let matches = [...code.matchAll(/^\s*\#\s*include\s+[\"|\<](\w+\:\/\/.*?)[\"|\>]/gm)].reverse()
         let promises_map = matches.map(async function(match) {
 
-            let downloaded_file_content = await ce_API.#remote_files_cache.get(match[1])
+            let downloaded_file_content = await AwesomeCodeElement.details.remote.ce_API.#remote_files_cache.get(match[1])
             let match_0_token = match[0].replaceAll('\n', '')
             code = code.replace(match[0], `// download[${match_0_token}]::begin\n${downloaded_file_content}\n// download[${match_0_token}]::end`)
         })
@@ -425,9 +422,14 @@ AwesomeCodeElement.details.remote.ce_API = class {
     }
 }
 AwesomeCodeElement.details.utility = class {
-    static apply_css(element, styles) {
-        for (const property in styles)
-            element.style[property] = styles[property];
+    static unfold_into({target, properties = {}}) {
+        if (!target)
+            throw new Error('AwesomeCodeElement.details.utility: invalid argument [target]')
+        for (const property in properties)
+            target[property] = properties[property];
+    }
+    static apply_css(element, properties) {
+        AwesomeCodeElement.details.utility.unfold_into({target : element.style, properties })
     }
     static create_shadowroot_slot(element, when_childrens_attached) {
 
@@ -494,7 +496,7 @@ AwesomeCodeElement.details.utility = class {
         while (true) { yield i++; }
     }
 }
-class log_facility {
+AwesomeCodeElement.details.log_facility = class {
     
     static #default_channels = {
         debug:  console.debug,
@@ -518,44 +520,48 @@ class log_facility {
             name.forEach(value => log_facility.enable(value))
             return
         }
-        console[name] = log_facility.#default_channels[name]
+        console[name] = AwesomeCodeElement.details.log_facility.#default_channels[name]
     }
     static disable(name) {
         if (name instanceof Array) {
-            name.forEach(value => log_facility.disable(value))
+            name.forEach(value => AwesomeCodeElement.details.log_facility.disable(value))
             return
         }
-        console[name] = log_facility.#empty_function
+        console[name] = AwesomeCodeElement.details.log_facility.#empty_function
     }
 
     static get enabled() {
-        return Object.entries(log_facility.#default_channels).map(element => element[0]).filter(
-            element => !Boolean(console[element].is_explicitly_empty)
-        ) 
+        return Object.entries(AwesomeCodeElement.details.log_facility.#default_channels)
+            .map(element => element[0]).filter(
+                element => !Boolean(console[element].is_explicitly_empty)
+            ) 
     }
     static get disabled() {
-        return Object.entries(log_facility.#default_channels).map(element => element[0]).filter(
-            element => Boolean(console[element].is_explicitly_empty)
-        ) 
+        return Object.entries(AwesomeCodeElement.details.log_facility.#default_channels)
+            .map(element => element[0]).filter(
+                element => Boolean(console[element].is_explicitly_empty)
+            ) 
     }
 }
+
 {   // development settings
     if (location.hostname !== 'localhost')
-        log_facility.disable(['log', 'debug', 'trace'])
-    console.info(`log_facility: channels enabled: [${log_facility.enabled}], disabled: [${log_facility.disabled}]`)
+        AwesomeCodeElement.details.log_facility.disable(['log', 'debug', 'trace'])
+    console.info(`AwesomeCodeElement.details.log_facility: channels enabled: [${AwesomeCodeElement.details.log_facility.enabled}], disabled: [${AwesomeCodeElement.details.log_facility.disabled}]`)
 }
 // ============
 // HTMLElements
 
+AwesomeCodeElement.details.HTMLElements = {}
 // TODO: should be replaced by dynamic CSS at some point
-AwesomeCodeElement.resize_observer = new ResizeObserver(entries => {
+AwesomeCodeElement.details.HTMLElements.resize_observer = new ResizeObserver(entries => {
 
     for (let entry of entries) {
         entry.target.on_resize()
     }
 });
 
-class CopyToClipboardButton extends HTMLButtonElement {
+AwesomeCodeElement.details.HTMLElements.CopyToClipboardButton = class CopyToClipboardButton extends HTMLButtonElement {
 // Copy text context of this previousSibling HTMLelement
 
     static HTMLElement_name = 'awesome-code-element_el_copy-to-clipboard-button'
@@ -571,7 +577,7 @@ class CopyToClipboardButton extends HTMLButtonElement {
         this.title = CopyToClipboardButton.title
         this.innerHTML = CopyToClipboardButton.copyIcon
 
-        utility.apply_css(this, {
+        AwesomeCodeElement.details.utility.apply_css(this, {
             zIndex      : 2,
             position    : 'absolute',
             top         : '5px',
@@ -599,9 +605,11 @@ class CopyToClipboardButton extends HTMLButtonElement {
         })
     }
 }
-customElements.define(CopyToClipboardButton.HTMLElement_name, CopyToClipboardButton, {extends: 'button'});
-
-class SendToGodboltButton extends HTMLButtonElement {
+customElements.define(
+    AwesomeCodeElement.details.HTMLElements.CopyToClipboardButton.HTMLElement_name,
+    AwesomeCodeElement.details.HTMLElements.CopyToClipboardButton, {extends: 'button'}
+);
+AwesomeCodeElement.details.HTMLElements.SendToGodboltButton = class SendToGodboltButton extends HTMLButtonElement {
 
     static HTMLElement_name = 'awesome-code-element_el_send-to-godbolt-button'
     static title            = 'Try this on godbolt.org (compiler-explorer)'
@@ -616,7 +624,7 @@ class SendToGodboltButton extends HTMLButtonElement {
         this.title = SendToGodboltButton.title;
         this.innerHTML = SendToGodboltButton.icon;
 
-        utility.apply_css(this, {
+        AwesomeCodeElement.details.utility.apply_css(this, {
             zIndex      : 2,
             position    : 'absolute',
             top         : '5px',
@@ -644,7 +652,7 @@ class SendToGodboltButton extends HTMLButtonElement {
             return {
                 configuration : function() {
 
-                    let configuration = AwesomeCodeElement.configuration.CE.get(codeSectionElement.language)
+                    let configuration = AwesomeCodeElement.API.configuration.CE.get(codeSectionElement.language)
                     if (configuration === undefined)
                         throw new Error(`awesome-code-element.js:SendToGodboltButton::onClickSend: missing configuration for language [${codeSectionElement.language}]`)
                     return configuration
@@ -708,15 +716,18 @@ class SendToGodboltButton extends HTMLButtonElement {
         ce_API.open_in_new_tab(data)
     }
 }
-customElements.define(SendToGodboltButton.HTMLElement_name, SendToGodboltButton, {extends: 'button'});
-
-class LoadingAnimation {
+customElements.define(
+    AwesomeCodeElement.details.HTMLElements.SendToGodboltButton.HTMLElement_name,
+    AwesomeCodeElement.details.HTMLElements.SendToGodboltButton, {extends: 'button'}
+);
+AwesomeCodeElement.details.HTMLElements.LoadingAnimation = class LoadingAnimation {
+    
     static #cache = (function(){
     // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
         const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/resources/images/loading_animation.svg'
         let value = document.createElement('img');
         value.src = loading_animation_fallback_url
-        utility.apply_css(value, {
+        AwesomeCodeElement.details.utility.apply_css(value, {
             contain             : 'strict',
             border              : '1px solid var(--primary-color)',
             borderRadius        : '5px',
@@ -780,11 +791,11 @@ class LoadingAnimation {
 }
 
 // TODO: flex-resizer between the two panels ?
-class CodeSection_HTMLElement extends HTMLElement {
+AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSectionHTMLElement extends HTMLElement {
 // HTML layout/barebone for CodeSection
 
     static #id_generator = (() => {
-        let counter = utility.make_incremental_counter_generator()
+        let counter = AwesomeCodeElement.details.utility.make_incremental_counter_generator()
         return () => { return `cs_${counter.next().value}` }
     })()
 
@@ -795,36 +806,35 @@ class CodeSection_HTMLElement extends HTMLElement {
     // HTMLElement
     constructor(parameters) {
         super();
-        this.#_parameters = {
-            ...this.#_parameters,
-            ...(parameters || {})
-        };
+        AwesomeCodeElement.details.utility.unfold_into({
+            target: this.#_parameters,
+            properties: parameters || {}
+        })
     }
 
     connectedCallback() {
-        console.debug('CodeSection_HTMLElement: connectedCallback')
+        console.debug('CodeSectionHTMLElement: connectedCallback')
         try {
             if (!this.acquire_parameters(this.#_parameters)) {
-                console.debug('CodeSection_HTMLElement: create shadowroot slot')
+                console.debug('CodeSectionHTMLElement: create shadowroot slot')
                 let _this = this
-                this.shadowroot_accessor = utility.create_shadowroot_slot(
+                this.shadowroot_accessor = AwesomeCodeElement.details.utility.create_shadowroot_slot(
                     this,
                     function(){ _this.#shadow_root_callback() }
                 )
             }
             else {
-                console.debug('CodeSection_HTMLElement: no need for shadowroot slot')
+                console.debug('CodeSectionHTMLElement: no need for shadowroot slot')
                 this.initialize()
             }
         }
         catch (error) {
-            console.log(test_utility.inject_field_proxy)
             console.error(`${error}`)
             this.on_critical_internal_error(error)
         }
     }
     disconnectedCallback() {
-        AwesomeCodeElement.resize_observer.unobserve(this)
+        AwesomeCodeElement.details.HTMLElements.resize_observer.unobserve(this)
     }
     #shadow_root_callback() {
     // defered initialization
@@ -840,7 +850,6 @@ class CodeSection_HTMLElement extends HTMLElement {
             }
         })()
 
-        // utility.remove_shadowroot(this) // invalidates `this`
         this.shadowroot_accessor.remove()
         if (error) {
             console.error(_this)
@@ -873,11 +882,11 @@ class CodeSection_HTMLElement extends HTMLElement {
     #initialize_HTML() {
 
         if (!this.isConnected)
-            throw new Error('CodeSection_HTMLElement:#initialize_HTML: not connected yet')
+            throw new Error('CodeSectionHTMLElement:#initialize_HTML: not connected yet')
 
         this.innerHTML = ""
         // this element
-        utility.apply_css(this, {
+        AwesomeCodeElement.details.utility.apply_css(this, {
             display         : 'flex',
             flexDirection   : this.direction,
             alignItems      : 'stretch',
@@ -895,13 +904,13 @@ class CodeSection_HTMLElement extends HTMLElement {
         this.html_elements.panels.left      = left_panel
         this.html_elements.code             = left_panel_elements.code
         this.html_elements.buttons          = left_panel_elements.buttons
-        LoadingAnimation.inject_into({
+        AwesomeCodeElement.details.HTMLElements.LoadingAnimation.inject_into({
             owner:  this.html_elements.panels.left,
             target_or_accessor: this.html_elements.code
         })
         
         this.html_elements.panels.left  = this.appendChild(this.html_elements.panels.left)
-        AwesomeCodeElement.resize_observer.observe(this)
+        AwesomeCodeElement.details.HTMLElements.resize_observer.observe(this)
 
         // right panel : execution
         const { 
@@ -911,7 +920,7 @@ class CodeSection_HTMLElement extends HTMLElement {
 
         this.html_elements.panels.right      = right_panel
         this.html_elements.execution         = right_panel_elements.execution
-        LoadingAnimation.inject_into({
+        AwesomeCodeElement.details.HTMLElements.LoadingAnimation.inject_into({
             owner:  this.html_elements.panels.right,
             target_or_accessor: () => { return this.html_elements.execution }
         })
@@ -919,7 +928,7 @@ class CodeSection_HTMLElement extends HTMLElement {
 
         // panels : style (auto-resize, scroll-bar, etc.)
         let set_panel_style = (panel) => {
-            utility.apply_css(panel, {
+            AwesomeCodeElement.details.utility.apply_css(panel, {
                 flex:       '1 1 min-content',
                 overflow:   'auto',
                 position:   'relative',
@@ -940,7 +949,7 @@ class CodeSection_HTMLElement extends HTMLElement {
             left_panel.style.overflow = 'auto'
 
         let code_element = document.createElement('code');
-        utility.apply_css(code_element, {
+        AwesomeCodeElement.details.utility.apply_css(code_element, {
             width:      'auto',
             height:     '100%',
             boxSizing:  'border-box',
@@ -949,12 +958,12 @@ class CodeSection_HTMLElement extends HTMLElement {
         code_element = left_panel.appendChild(code_element)
 
         // buttons : copy-to-clipboard
-        let copy_button = new CopyToClipboardButton()
+        let copy_button = new AwesomeCodeElement.details.HTMLElements.CopyToClipboardButton()
             copy_button.style.zIndex = left_panel.style.zIndex + 1
             copy_button = left_panel.appendChild(copy_button)
 
-        let CE_button = new SendToGodboltButton
-        utility.apply_css(CE_button, {
+        let CE_button = new AwesomeCodeElement.details.HTMLElements.SendToGodboltButton
+        AwesomeCodeElement.details.utility.apply_css(CE_button, {
             zIndex : left_panel.style.zIndex + 1,
             display : 'none' // hidden by default
         })
@@ -974,7 +983,7 @@ class CodeSection_HTMLElement extends HTMLElement {
     #make_HTML_right_panel() {
         let right_panel = document.createElement('div')
 
-        utility.apply_css(right_panel, {
+        AwesomeCodeElement.details.utility.apply_css(right_panel, {
             display:    'none',
             alignItems: 'stretch',
             boxSizing:  'border-box'
@@ -990,7 +999,7 @@ class CodeSection_HTMLElement extends HTMLElement {
         }
     }
     #initialize_ids() {
-        this.id = CodeSection_HTMLElement.#id_generator()
+        this.id = CodeSectionHTMLElement.#id_generator()
         this.html_elements.panels.left.id   = `${this.id}.panels.left`
         this.html_elements.panels.right.id  = `${this.id}.panels.right`
         this.html_elements.code.id          = `${this.id}.code`
@@ -1016,8 +1025,8 @@ class CodeSection_HTMLElement extends HTMLElement {
 
         // cheaper than a proper AABB to check if code's content overlap with other elements
         let functor = (
-                AwesomeCodeElement.options.auto_hide_buttons
-            ||  utility.is_scrolling(this.html_elements.code).horizontally
+                AwesomeCodeElement.API.configuration.auto_hide_buttons
+            ||  AwesomeCodeElement.details.utility.is_scrolling(this.html_elements.code).horizontally
         )   ? auto_hide_elements
             : no_auto_hide_elements
 
@@ -1037,7 +1046,7 @@ class CodeSection_HTMLElement extends HTMLElement {
     
     static get_hljs_language(code_tag) {
         if (code_tag === undefined || code_tag.tagName !== 'CODE')
-            console.error(`awesome-code-element.js:CodeSection_HTMLElement::get_code_hljs_language(): bad input`)
+            throw new Error(`awesome-code-element.js:CodeSectionHTMLElement.get_code_hljs_language: bad input`)
 
         let result = code_tag.classList.toString().match(/language-(\w+)/, '')
         return result ? result[1] : undefined // first capture group
@@ -1045,17 +1054,14 @@ class CodeSection_HTMLElement extends HTMLElement {
 
     on_critical_internal_error(error = "") {
 
-        console.error(
-            `awesome-code-element.js:CodeSection_HTMLElement: on_critical_internal_error : fallback rendering
-            ${error}`
-        )
+        console.error(`awesome-code-element.js:CodeSectionHTMLElement.on_critical_internal_error : fallback rendering\n\t${error}`)
 
         if (!this.isConnected)
             return
 
         let error_element = document.createElement('pre')
-            error_element.textContent = error || `awesome-code-element:CodeSection_HTMLElement: unknown error`
-        utility.apply_css(error_element, {
+            error_element.textContent = error || `awesome-code-element:CodeSectionHTMLElement: unknown error`
+        AwesomeCodeElement.details.utility.apply_css(error_element, {
             color: "red",
             border : "2px solid red"
         })
@@ -1064,8 +1070,10 @@ class CodeSection_HTMLElement extends HTMLElement {
         this.replaceWith(error_element)
     }
 }
+
+AwesomeCodeElement.API.HTMLElements = {}
 // TODO: code loading policy/behavior - as function : default is textContent, but can be remote using an url, or another rich text area for instance
-class CodeSection extends CodeSection_HTMLElement {
+AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement {
 
     // --------------------------------
     // accessors
@@ -1076,10 +1084,10 @@ class CodeSection extends CodeSection_HTMLElement {
     }
     set code(value) {
 
-        if (value instanceof ParsedCode)
+        if (value instanceof AwesomeCodeElement.details.ParsedCode)
             this.#_code = value
         else if (typeof value === 'string')
-            this.#_code = new ParsedCode(value, this.language)
+            this.#_code = new AwesomeCodeElement.details.ParsedCode(value, this.language)
         else throw new Error('SimpleCodeSection: set code: invalid input argument type')
 
         this.#view_update_code()
@@ -1105,7 +1113,7 @@ class CodeSection extends CodeSection_HTMLElement {
             return this.#_language
         if (this.html_elements.code) {
             console.info('CodeSection:language : invalid language, attempting a detection as fallback')
-            let detected_language = CodeSection_HTMLElement.get_hljs_language(this.html_elements.code)
+            let detected_language = AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement.get_hljs_language(this.html_elements.code)
             return detected_language === 'undefined' ? undefined : detected_language
         }
         return undefined
@@ -1119,7 +1127,7 @@ class CodeSection extends CodeSection_HTMLElement {
 
         this.#_language = (value || '').replace('language-', '')
         this.setAttribute('language', this.#_language)
-        this.#_code.ce_options = AwesomeCodeElement.configuration.CE.get(this.#_language)
+        this.#_code.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.#_language)
 
         if (!update_view)
             return
@@ -1146,7 +1154,7 @@ class CodeSection extends CodeSection_HTMLElement {
     // fallback, cannot provide language as a parameter
         hljs.highlightElement(this.html_elements.code)
         return {
-            language: CodeSection_HTMLElement.get_hljs_language(this.html_elements.code),
+            language: AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement.get_hljs_language(this.html_elements.code),
             relevance: 10 // max
         }
     }
@@ -1177,7 +1185,7 @@ class CodeSection extends CodeSection_HTMLElement {
 
         // CE button visibility
         // Note that resize observer can still toggle `display: block|none`
-        this.html_elements.buttons.CE.style.visibility = Boolean(this.#is_valid_language && AwesomeCodeElement.configuration.CE.has(this.#_language))
+        this.html_elements.buttons.CE.style.visibility = Boolean(this.#is_valid_language && AwesomeCodeElement.API.configuration.CE.has(this.#_language))
             ? 'visible'
             : 'hidden'
 
@@ -1244,7 +1252,7 @@ class CodeSection extends CodeSection_HTMLElement {
 
     // --------------------------------
     // core logic : parsing
-    #_code = new ParsedCode()
+    #_code = new AwesomeCodeElement.details.ParsedCode()
     #_toggle_parsing = false
     set toggle_parsing(value) {
 
@@ -1317,7 +1325,7 @@ class CodeSection extends CodeSection_HTMLElement {
             let error_content = `CodeSection:fetch_execution: not executable. No known valid configuration for language [${this.language}]`
             let error_element = document.createElement('pre')
                 error_element.textContent = error_content
-            utility.apply_css(error_element, {
+            AwesomeCodeElement.details.utility.apply_css(error_element, {
                 color: 'red',
                 border: '1px solid red',
                 borderRadius : '5px',
@@ -1358,9 +1366,9 @@ class CodeSection extends CodeSection_HTMLElement {
                 let execution_content = new CodeSection({
                     code: result.value,
                     language: 'bash' // something plain
-                }) // or simple [pre>code] with CopyToClipboardButton ?
+                }) // TODO: simple [pre>code] with CopyToClipboardButton ?
                     execution_content.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
-                    utility.apply_css(execution_content, {
+                    AwesomeCodeElement.details.utility.apply_css(execution_content, {
                         borderTop : '2px solid ' + (result.return_code == -1 ? 'red' : 'green'),
                         width : '100%'
                     })
@@ -1384,7 +1392,7 @@ class CodeSection extends CodeSection_HTMLElement {
         this.#_url = value
 
         let _this = this
-        utility.fetch_resource(this.#_url, {
+        AwesomeCodeElement.details.utility.fetch_resource(this.#_url, {
             on_error: (error) => {
                 _this.on_error(`RemoteCodeSection: network Error ${error}`)
                 this.html_elements.panels.left.toggle_loading_animation = false
@@ -1393,7 +1401,7 @@ class CodeSection extends CodeSection_HTMLElement {
                 if (!code) {
                     _this.on_error('CodeSection: fetched invalid (possibly empty) remote code')
                 }
-                _this.language = utility.get_url_extension(_this.#_url)
+                _this.language = AwesomeCodeElement.details.utility.get_url_extension(_this.#_url)
                 _this.code = code
                 this.html_elements.panels.left.toggle_loading_animation = false
             }
@@ -1416,12 +1424,12 @@ class CodeSection extends CodeSection_HTMLElement {
     }
     set #error_view(value) {
         if (value)
-            utility.apply_css(this.html_elements.panels.left, {
+            AwesomeCodeElement.details.utility.apply_css(this.html_elements.panels.left, {
                 border: '1px solid red',
                 borderRadius : '5px',
             })
         else
-            utility.apply_css(this.html_elements.panels.left, {
+            AwesomeCodeElement.details.utility.apply_css(this.html_elements.panels.left, {
                 border: '',
                 borderRadius : '',
             })
@@ -1443,9 +1451,13 @@ class CodeSection extends CodeSection_HTMLElement {
         }
     }
 }
-customElements.define(CodeSection.HTMLElement_name, CodeSection);
+customElements.define(
+    AwesomeCodeElement.API.HTMLElements.CodeSection.HTMLElement_name,
+    AwesomeCodeElement.API.HTMLElements.CodeSection
+);
 
-class ThemeSelector {
+AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector {
+// class-as-namespace    
 // For themes, see https://cdnjs.com/libraries/highlight.js
 // The default one is the first one
 //
@@ -1531,25 +1543,27 @@ class ThemeSelector {
             })
         })
     }
-}
-// Theme style switch
-const highlightjs_stylesheet_href_mutationObserver = new MutationObserver((mutationsList, observer) => {
 
-    mutationsList.forEach(mutation => {
-        if (mutation.attributeName !== 'href')
-            return;
+    // Theme style switch
+    // TODO: inject such stylesheet element (placeholder)
+    static highlightjs_stylesheet_href_mutationObserver = new MutationObserver((mutationsList, observer) => {
 
-        let code_stylesheet = document.getElementById('code_theme_stylesheet');
-        if (mutation.oldValue === code_stylesheet.href ||
-            code_stylesheet.href === window.location.href)
-            return
-        console.info(`awesome-code-element.js:onHighlightjsHrefChange: Switching highlighthjs stylesheet \nfrom : ${mutation.oldValue} '\n to   : ${code_stylesheet.href}`)
+        mutationsList.forEach(mutation => {
+            if (mutation.attributeName !== 'href')
+                return;
 
-        hljs.highlightAll();
+            let code_stylesheet = document.getElementById('code_theme_stylesheet');
+            if (mutation.oldValue === code_stylesheet.href ||
+                code_stylesheet.href === window.location.href)
+                return
+            console.info(`awesome-code-element.js:onHighlightjsHrefChange: Switching highlighthjs stylesheet \nfrom : ${mutation.oldValue} '\n to   : ${code_stylesheet.href}`)
+
+            hljs.highlightAll();
+        })
     })
-});
-highlightjs_stylesheet_href_mutationObserver.observe(
-    document.getElementById(ThemeSelector.stylesheet_HTML_placeholder_id),
+}
+AwesomeCodeElement.API.HTMLElements.ThemeSelector.highlightjs_stylesheet_href_mutationObserver.observe(
+    document.getElementById(AwesomeCodeElement.API.HTMLElements.ThemeSelector.stylesheet_HTML_placeholder_id),
     {
         attributes: true,
         attributeFilter: [ 'href' ],
@@ -1559,121 +1573,116 @@ highlightjs_stylesheet_href_mutationObserver.observe(
 
 // ============
 
-AwesomeCodeElement.HTML_elements = {}
-AwesomeCodeElement.HTML_elements.CopyToClipboardButton = CopyToClipboardButton
-AwesomeCodeElement.HTML_elements.SendToGodboltButton   = SendToGodboltButton
-AwesomeCodeElement.HTML_elements.CodeSection           = CodeSection
-AwesomeCodeElement.ThemeSelector = ThemeSelector
-
-// TODO: make sure that doxygen elements are also still clickable with pure doxygen (not doxygen-awesome-css)
-AwesomeCodeElement.initialize_doxygenCodeSections = function() {
-// Replace code-sections generated by doxygen (and possibly altered by doxygen-awesome-css)
-// like `<pre><code></code></pre>`,
-// or placeholders like `\include path/to/example.ext`
-
-    // DoxygenAwesomeFragmentCopyButton wraps code in
-    //  div[class="doxygen-awesome-fragment-wrapper"] div[class="fragment"] div[class="line"]
-    // otherwise, default is
-    //  div[class="fragment"] div[class="line"]
-
-    // clickable documentation elements are :
-    //  div[class="doxygen-awesome-fragment-wrapper"] div[class="fragment"] div[class="line"]
-    //      <a class="code" href="structcsl_1_1ag_1_1size.html">csl::ag::size&lt;A&gt;::value</a>
-
-    let doc_ref_links = new Map(); // preserve clickable documentation reference links
-
-    var place_holders = $('body').find('div[class=doxygen-awesome-fragment-wrapper]');
-    console.info(`awesome-code-element.js:initialize_doxygenCodeSections : replacing ${place_holders.length} elements ...`)
-    place_holders.each((index, value) => {
-
-        let lines = $(value).find('div[class=fragment] div[class=line]')
-
-        // WIP: keep doc ref links
-        let links = lines.find('a[class="code"]')
-        links.each((index, value) => {
-            doc_ref_links.set(value.textContent, value.href)
+AwesomeCodeElement.API.initializers = {
+    doxygenCodeSections : function() {
+        // Replace code-sections generated by doxygen (and possibly altered by doxygen-awesome-css)
+        // like `<pre><code></code></pre>`,
+        // or placeholders like `\include path/to/example.ext`
+        
+        // DoxygenAwesomeFragmentCopyButton wraps code in
+        //  div[class="doxygen-awesome-fragment-wrapper"] div[class="fragment"] div[class="line"]
+        // otherwise, default is
+        //  div[class="fragment"] div[class="line"]
+    
+        // clickable documentation elements are :
+        //  div[class="doxygen-awesome-fragment-wrapper"] div[class="fragment"] div[class="line"]
+        //      <a class="code" href="structcsl_1_1ag_1_1size.html">csl::ag::size&lt;A&gt;::value</a>
+    
+        let doc_ref_links = new Map(); // preserve clickable documentation reference links
+    
+        var place_holders = $('body').find('div[class=doxygen-awesome-fragment-wrapper]');
+        console.info(`awesome-code-element.js:initialize_doxygenCodeSections : replacing ${place_holders.length} elements ...`)
+        place_holders.each((index, value) => {
+    
+            let lines = $(value).find('div[class=fragment] div[class=line]')
+    
+            // WIP: keep doc ref links
+            let links = lines.find('a[class="code"]')
+            links.each((index, value) => {
+                doc_ref_links.set(value.textContent, value.href)
+            })
+            // /WIP
+    
+            let code = $.map(lines, function(value) { return value.textContent }).join('\n')
+            let node = new CodeSection(code, undefined);
+                $(value).replaceWith(node)
         })
-        // /WIP
-
-        let code = $.map(lines, function(value) { return value.textContent }).join('\n')
-        let node = new CodeSection(code, undefined);
-            $(value).replaceWith(node)
-    })
-
-    var place_holders = $('body').find('div[class=fragment]')
-    console.info(`awesome-code-element.js:initialize_doxygenCodeSections : replacing ${place_holders.length} elements ...`)
-    place_holders.each((index, value) => {
-
-        let lines = $(value).find('div[class=line]')
-
-        // WIP
-        let links = lines.find('a[class="code"]')
-        links.each((index, value) => {
-            doc_ref_links.set(value.textContent, value.href)
+    
+        var place_holders = $('body').find('div[class=fragment]')
+        console.info(`awesome-code-element.js:initialize_doxygenCodeSections : replacing ${place_holders.length} elements ...`)
+        place_holders.each((index, value) => {
+    
+            let lines = $(value).find('div[class=line]')
+    
+            // WIP
+            let links = lines.find('a[class="code"]')
+            links.each((index, value) => {
+                doc_ref_links.set(value.textContent, value.href)
+            })
+            // /WIP
+    
+            let code = $.map(lines, function(value) { return value.textContent }).join('\n')
+            let node = new CodeSection(code, undefined);
+                $(value).replaceWith(node)
         })
-        // /WIP
+    
+        // TODO: restore documentation reference links
+        doc_ref_links.forEach((values, keys) => {
+            // console.debug(">>>>>>> " + value.href + " => " + value.textContent)
+            console.debug(">>>>>>> " + values + " => " + keys)
+        })
+    
+        var place_holders = $('body').find('awesome-code-element_code-section pre code') // span or text
+        place_holders.filter(function() {
+            return $(this).text().replace(/toto/g, '<a href=".">toto</a>');
+            })
+    },
+    // TODO: make sure that doxygen elements are also still clickable with pure doxygen (not doxygen-awesome-css)
+    PreCodeHTMLElements : function() {
 
-        let code = $.map(lines, function(value) { return value.textContent }).join('\n')
-        let node = new CodeSection(code, undefined);
-            $(value).replaceWith(node)
-    })
+        $('body').find('pre code').each((index, value) => { // filter
 
-    // TODO: restore documentation reference links
-    doc_ref_links.forEach((values, keys) => {
-        // console.debug(">>>>>>> " + value.href + " => " + value.textContent)
-        console.debug(">>>>>>> " + values + " => " + keys)
-    })
+            if ($(value).parent().parent().prop('nodeName').toLowerCase().startsWith("awesome-code-element_"))
+                return
 
-    var place_holders = $('body').find('awesome-code-element_code-section pre code') // span or text
-    place_holders.filter(function() {
-        return $(this).text().replace(/toto/g, '<a href=".">toto</a>');
-      })
-}
-AwesomeCodeElement.initialize_PreCodeHTMLElements = function() {
+            let existing_node = $(value).parent()
 
-    $('body').find('pre code').each((index, value) => { // filter
+            let language = value.getAttribute('language')
+            let code = existing_node.text()
 
-        if ($(value).parent().parent().prop('nodeName').toLowerCase().startsWith("awesome-code-element_"))
-            return
+            let node = new CodeSection(code, language);
+                node.setAttribute('language', language)
+            existing_node.replaceWith(node);
+        })
 
-        let existing_node = $(value).parent()
-
-        let language = value.getAttribute('language')
-        let code = existing_node.text()
-
-        let node = new CodeSection(code, language);
-            node.setAttribute('language', language)
-        existing_node.replaceWith(node);
-    })
-
-    // TODO: same for only code elements ?
-}
-
-AwesomeCodeElement.options = new class{
-
-    doxygen_awesome_css_compatibility   = false
-    pre_code_compatibility              = false
-    auto_hide_buttons                   = false
-    toggle_dark_mode                    = (typeof DoxygenAwesomeDarkModeToggle !== 'undefined')
-
-    configure = function(obj) {
-        if (obj === undefined || obj === null)
-            return
-        this.doxygen_awesome_css_compatibility  = obj.doxygen_awesome_css_compatibility || this.doxygen_awesome_css_compatibility
-        this.pre_code_compatibility             = obj.pre_code_compatibility            || this.pre_code_compatibility
-        this.auto_hide_buttons                  = obj.auto_hide_buttons                 || this.auto_hide_buttons
-        this.toggle_dark_mode                   = obj.toggle_dark_mode                  || this.toggle_dark_mode
+        // TODO: same for only code elements ?
     }
-}()
+}
 
-AwesomeCodeElement.initialize = function() {
+AwesomeCodeElement.API.configuration = {
+    CE                                  : new AwesomeCodeElement.API.CE_ConfigurationManager,
+    doxygen_awesome_css_compatibility   : false,
+    pre_code_compatibility              : false,
+    auto_hide_buttons                   : false, // TODO: rename force_ or always_
+    toggle_dark_mode                    : (typeof DoxygenAwesomeDarkModeToggle !== 'undefined') // true by default if doxygen-awesome-css_dark-mode is detected
+}
+AwesomeCodeElement.API.configure = (arg) => {
+    if (!arg)
+        throw new Error('AwesomeCodeElement.API.configuration.configure: invalid argument')
+    AwesomeCodeElement.details.utility.unfold_into({
+        target : AwesomeCodeElement.API.configuration,
+        properties : arg
+    })
+}
+
+AwesomeCodeElement.API.initialize = () => {
    
     $(function() {
         $(document).ready(function() {
 
             console.info('awesome-code-element.js:initialize ...')
 
-            if (AwesomeCodeElement.options.toggle_dark_mode) {
+            if (AwesomeCodeElement.API.configuration.toggle_dark_mode) {
                 if (undefined === AwesomeCodeElement.ToggleDarkMode)
                     console.error(
                         'awesome-code-element.js:initialize: options toggle_dark_mode set to true, but awesome_doc_code_sections.ToggleDarkMode is undefined\n' +
@@ -1683,7 +1692,7 @@ AwesomeCodeElement.initialize = function() {
                     AwesomeCodeElement.ToggleDarkMode.initialize()
             }
 
-            AwesomeCodeElement.ThemeSelector.Initialize()
+            AwesomeCodeElement.API.HTMLElements.ThemeSelector.Initialize()
 
             let ReplaceHTMLPlaceholders = (translation) => {
 
@@ -1696,24 +1705,21 @@ AwesomeCodeElement.initialize = function() {
                 })
             }
             [   // replace placeholders with proper HTML elements
-                AwesomeCodeElement.HTML_elements.CodeSection
+                AwesomeCodeElement.API.HTMLElements.CodeSection
             ].forEach(html_component => ReplaceHTMLPlaceholders(html_component.PlaceholdersTranslation))
 
-            if (AwesomeCodeElement.options.doxygen_awesome_css_compatibility === true) {
+            if (AwesomeCodeElement.API.configuration.doxygen_awesome_css_compatibility === true) {
                 console.info(`awesome-code-element.js:initialize: doxygen-awesome-css compatiblity ...`)
-                AwesomeCodeElement.initialize_doxygenCodeSections()
+                AwesomeCodeElement.API.initializers.doxygenCodeSections()
             }
 
-            if (AwesomeCodeElement.options.pre_code_compatibility) {
+            if (AwesomeCodeElement.API.configuration.pre_code_compatibility) {
                 console.info(`awesome-code-element.js:initialize: existing pre-code compatiblity ...`)
-                AwesomeCodeElement.initialize_PreCodeHTMLElements();
+                AwesomeCodeElement.API.initializers.PreCodeHTMLElements
             }
         })
     })
 }
-
-
-export { default as AwesomeCodeElement } 
 
 // TODO: module (+(sub)components encapsulation)
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export

@@ -20,16 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// details
 // TODO: import dependencies as module
-if (AwesomeCodeElement.CodeSection === undefined)
+if (AwesomeCodeElement.API.HTMLElements.CodeSection === undefined)
     throw new Error('CodeSection_demo: missing mandatory dependency [AwesomeCodeElement.CodeSection]')
-if (AwesomeCodeElement.test_utility === undefined)
-    throw new Error('CodeSection_demo: missing mandatory dependency [AwesomeCodeElement.test_utility]')
+
+import test_utility from '/tests/js/modules/utility.js';
 
 // TODO: add stylesheet switch
 AwesomeCodeElement.demo = {}
-AwesomeCodeElement.demo = class extends CodeSection {
+AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.CodeSection {
 
     static HTMLElement_name = 'awesome-code-element_code-section_demo'
 
@@ -114,7 +113,7 @@ AwesomeCodeElement.demo = class extends CodeSection {
         let label = sub_container.appendChild(document.createElement('label'))
             label.textContent = ` ${printable_name}`
 
-        AwesomeCodeElement.test_utility.inject_field_proxy(this, property_name, {
+        test_utility.inject_field_proxy(this, property_name, {
             getter_payload : undefined,
             setter_payload : (value) => {
                 checkbox.checked = value
@@ -162,7 +161,7 @@ AwesomeCodeElement.demo = class extends CodeSection {
             }, 300)
         })
 
-        AwesomeCodeElement.test_utility.inject_field_proxy(this, 'language', {
+        test_utility.inject_field_proxy(this, 'language', {
             getter_payload : () => {
             },
             setter_payload : (value) => {
@@ -196,7 +195,7 @@ AwesomeCodeElement.demo = class extends CodeSection {
                 this.url = arg.target.value
         })
 
-        AwesomeCodeElement.test_utility.inject_field_proxy(this, 'url', {
+        test_utility.inject_field_proxy(this, 'url', {
             getter_payload : () => {
             },
             setter_payload : (value) => {

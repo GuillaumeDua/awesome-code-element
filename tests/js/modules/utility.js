@@ -79,7 +79,7 @@ AwesomeCodeElement.test_utility.global_behavior_modifiers = class {
 
     // slow fetch resource (emulates slow network)
     static #original_fetch_resource = (() => {
-        let value = utility.fetch_resource
+        let value = AwesomeCodeElement.details.utility.fetch_resource
         if (value === undefined)
             throw new Error('test_utility.global_behavior_modifiers.toggle_slow_fetch_resource (initialization): missing utility.fetch_resource')
         return value
@@ -174,7 +174,7 @@ AwesomeCodeElement.test_utility.HTMLElements.toolbar = class extends HTMLElement
         }
 
         this.id = 'test_utility_toolbar'
-        utility.apply_css(this, {
+        AwesomeCodeElement.details.utility.apply_css(this, {
             display : 'block',
             border  : '1px solid var(--primary-color)',
             width   : 'fit-content',
@@ -194,4 +194,4 @@ customElements.define(
 
 // module
 let test_utility = AwesomeCodeElement.test_utility
-export { test_utility };
+export default test_utility;
