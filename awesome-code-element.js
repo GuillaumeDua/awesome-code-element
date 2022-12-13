@@ -57,10 +57,10 @@
 // TODO: Global option: force fallback language to ... [smthg]
 // TODO: per-codeSection CE configuration (local override global)
 // TODO: toggle technical info/warning logs
-// TODO: hide details in a `details` namespace
 // use ?? vs ||
 // TODO: execution -> pre.code rather than a new CS (+copy-to-cpliboard button)
 // TODO: buttons: bound to CS left-panel, not the element itself ?
+// TODO: update error messages
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -69,7 +69,14 @@ if (typeof hljs === 'undefined')
 if (typeof jQuery === 'undefined')
     console.error('awesome-code-element.js: depends on jQuery, which is missing')
 
-class transformed_map extends Map {
+// WIP: restructuration
+AwesomeCodeElement = {
+    API : {},
+    details : {}
+}
+
+AwesomeCodeElement.details.containers = {}
+AwesomeCodeElement.details.containers.transformed_map = class extends Map {
 // Similar to `Map`, with non-mandatory translation for key, mapped
 // example: upper-case keys
 // value = new transformed_map(
@@ -117,8 +124,7 @@ class transformed_map extends Map {
         return super.has(key)
     }
 }
-
-class ce_configuration_manager extends transformed_map {
+AwesomeCodeElement.API.ce_configuration_manager = class extends AwesomeCodeElement.details.transformed_map {
 // similar to a Map, but use `hljs.getLanguage(key)` as a key translator
     constructor(values) {
         super(values, {
@@ -144,20 +150,15 @@ class ce_configuration_manager extends transformed_map {
         super.set(key, mapped)
     }
 }
+AwesomeCodeElement.API.configuration = { CE : new AwesomeCodeElement.API.ce_configuration_manager }
+// key   : language (name or alias. ex: C++, cpp, cc, c++ are equivalent)
+// value : {
+//      language,       // not mandatory, if same as key. Refers to https://godbolt.org/api/languages
+//      compiler_id,
+//      default_options // not mandatory
+// }
 
-var awesome_doc_code_sections = {
-    configuration : {
-        CE : new ce_configuration_manager
-        // key   : language (name or alias. ex: C++, cpp, cc, c++ are equivalent)
-        // value : {
-        //      language,       // not mandatory, if same as key. Refers to https://godbolt.org/api/languages
-        //      compiler_id,
-        //      default_options // not mandatory
-        // }
-    }
-}
-
-class ParsedCode {
+AwesomeCodeElement.details.ParsedCode = class {
 // TODO: @awesome-code-element::keep : keep tag anyway as comment (for documentation purpose)
 
 // @awesome-code-element::CE={
@@ -189,8 +190,8 @@ class ParsedCode {
     constructor(code_content, language) {
 
         // apply default configuration for given - non-mandatory - language
-        if (awesome_doc_code_sections.configuration.CE.has(language))
-            this.ce_options = awesome_doc_code_sections.configuration.CE.get(language)
+        if (AwesomeCodeElement.configuration.CE.has(language))
+            this.ce_options = AwesomeCodeElement.configuration.CE.get(language)
 
         if (!code_content || code_content.length === 0)
             return // default construction
@@ -275,9 +276,8 @@ class ParsedCode {
         }
     }
 }
-awesome_doc_code_sections.ParsedCode = ParsedCode
-
-class remote_resources_cache {
+AwesomeCodeElement.details.remote = {}
+AwesomeCodeElement.details.remote.resources_cache = class {
     #remote_files = new Map() // uri -> text
 
     static async #fetch_remote_file(uri) {
@@ -298,13 +298,13 @@ class remote_resources_cache {
         if (! this.#remote_files.has(uri)) {
             this.#remote_files.set(
                 uri,
-                await remote_resources_cache.#fetch_remote_file(uri)
+                await AwesomeCodeElement.details.remote.resources_cache.#fetch_remote_file(uri)
             )
         }
         return this.#remote_files.get(uri)
     }
 }
-class ce_API {
+AwesomeCodeElement.details.remote.ce_API = class {
 // fetch CE API informations asynchronously
 
     static #static_initializer = (async function(){
@@ -424,7 +424,7 @@ class ce_API {
         })
     }
 }
-class utility {
+AwesomeCodeElement.details.utility = class {
     static apply_css(element, styles) {
         for (const property in styles)
             element.style[property] = styles[property];
@@ -548,7 +548,7 @@ class log_facility {
 // HTMLElements
 
 // TODO: should be replaced by dynamic CSS at some point
-awesome_doc_code_sections.resize_observer = new ResizeObserver(entries => {
+AwesomeCodeElement.resize_observer = new ResizeObserver(entries => {
 
     for (let entry of entries) {
         entry.target.on_resize()
@@ -644,7 +644,7 @@ class SendToGodboltButton extends HTMLButtonElement {
             return {
                 configuration : function() {
 
-                    let configuration = awesome_doc_code_sections.configuration.CE.get(codeSectionElement.language)
+                    let configuration = AwesomeCodeElement.configuration.CE.get(codeSectionElement.language)
                     if (configuration === undefined)
                         throw new Error(`awesome-code-element.js:SendToGodboltButton::onClickSend: missing configuration for language [${codeSectionElement.language}]`)
                     return configuration
@@ -824,7 +824,7 @@ class CodeSection_HTMLElement extends HTMLElement {
         }
     }
     disconnectedCallback() {
-        awesome_doc_code_sections.resize_observer.unobserve(this)
+        AwesomeCodeElement.resize_observer.unobserve(this)
     }
     #shadow_root_callback() {
     // defered initialization
@@ -901,7 +901,7 @@ class CodeSection_HTMLElement extends HTMLElement {
         })
         
         this.html_elements.panels.left  = this.appendChild(this.html_elements.panels.left)
-        awesome_doc_code_sections.resize_observer.observe(this)
+        AwesomeCodeElement.resize_observer.observe(this)
 
         // right panel : execution
         const { 
@@ -1016,7 +1016,7 @@ class CodeSection_HTMLElement extends HTMLElement {
 
         // cheaper than a proper AABB to check if code's content overlap with other elements
         let functor = (
-                awesome_doc_code_sections.options.auto_hide_buttons
+                AwesomeCodeElement.options.auto_hide_buttons
             ||  utility.is_scrolling(this.html_elements.code).horizontally
         )   ? auto_hide_elements
             : no_auto_hide_elements
@@ -1119,7 +1119,7 @@ class CodeSection extends CodeSection_HTMLElement {
 
         this.#_language = (value || '').replace('language-', '')
         this.setAttribute('language', this.#_language)
-        this.#_code.ce_options = awesome_doc_code_sections.configuration.CE.get(this.#_language)
+        this.#_code.ce_options = AwesomeCodeElement.configuration.CE.get(this.#_language)
 
         if (!update_view)
             return
@@ -1177,7 +1177,7 @@ class CodeSection extends CodeSection_HTMLElement {
 
         // CE button visibility
         // Note that resize observer can still toggle `display: block|none`
-        this.html_elements.buttons.CE.style.visibility = Boolean(this.#is_valid_language && awesome_doc_code_sections.configuration.CE.has(this.#_language))
+        this.html_elements.buttons.CE.style.visibility = Boolean(this.#is_valid_language && AwesomeCodeElement.configuration.CE.has(this.#_language))
             ? 'visible'
             : 'hidden'
 
@@ -1559,14 +1559,14 @@ highlightjs_stylesheet_href_mutationObserver.observe(
 
 // ============
 
-awesome_doc_code_sections.HTML_elements = {}
-awesome_doc_code_sections.HTML_elements.CopyToClipboardButton = CopyToClipboardButton
-awesome_doc_code_sections.HTML_elements.SendToGodboltButton   = SendToGodboltButton
-awesome_doc_code_sections.HTML_elements.CodeSection           = CodeSection
-awesome_doc_code_sections.ThemeSelector = ThemeSelector
+AwesomeCodeElement.HTML_elements = {}
+AwesomeCodeElement.HTML_elements.CopyToClipboardButton = CopyToClipboardButton
+AwesomeCodeElement.HTML_elements.SendToGodboltButton   = SendToGodboltButton
+AwesomeCodeElement.HTML_elements.CodeSection           = CodeSection
+AwesomeCodeElement.ThemeSelector = ThemeSelector
 
 // TODO: make sure that doxygen elements are also still clickable with pure doxygen (not doxygen-awesome-css)
-awesome_doc_code_sections.initialize_doxygenCodeSections = function() {
+AwesomeCodeElement.initialize_doxygenCodeSections = function() {
 // Replace code-sections generated by doxygen (and possibly altered by doxygen-awesome-css)
 // like `<pre><code></code></pre>`,
 // or placeholders like `\include path/to/example.ext`
@@ -1629,7 +1629,7 @@ awesome_doc_code_sections.initialize_doxygenCodeSections = function() {
         return $(this).text().replace(/toto/g, '<a href=".">toto</a>');
       })
 }
-awesome_doc_code_sections.initialize_PreCodeHTMLElements = function() {
+AwesomeCodeElement.initialize_PreCodeHTMLElements = function() {
 
     $('body').find('pre code').each((index, value) => { // filter
 
@@ -1649,7 +1649,7 @@ awesome_doc_code_sections.initialize_PreCodeHTMLElements = function() {
     // TODO: same for only code elements ?
 }
 
-awesome_doc_code_sections.options = new class{
+AwesomeCodeElement.options = new class{
 
     doxygen_awesome_css_compatibility   = false
     pre_code_compatibility              = false
@@ -1666,24 +1666,24 @@ awesome_doc_code_sections.options = new class{
     }
 }()
 
-awesome_doc_code_sections.initialize = function() {
+AwesomeCodeElement.initialize = function() {
    
     $(function() {
         $(document).ready(function() {
 
             console.info('awesome-code-element.js:initialize ...')
 
-            if (awesome_doc_code_sections.options.toggle_dark_mode) {
-                if (undefined === awesome_doc_code_sections.ToggleDarkMode)
+            if (AwesomeCodeElement.options.toggle_dark_mode) {
+                if (undefined === AwesomeCodeElement.ToggleDarkMode)
                     console.error(
                         'awesome-code-element.js:initialize: options toggle_dark_mode set to true, but awesome_doc_code_sections.ToggleDarkMode is undefined\n' +
                         'Did you forget to include awesome-code-element_dark-mode.js ?'
                     )
                 else
-                    awesome_doc_code_sections.ToggleDarkMode.initialize()
+                    AwesomeCodeElement.ToggleDarkMode.initialize()
             }
 
-            awesome_doc_code_sections.ThemeSelector.Initialize()
+            AwesomeCodeElement.ThemeSelector.Initialize()
 
             let ReplaceHTMLPlaceholders = (translation) => {
 
@@ -1696,21 +1696,24 @@ awesome_doc_code_sections.initialize = function() {
                 })
             }
             [   // replace placeholders with proper HTML elements
-                awesome_doc_code_sections.HTML_elements.CodeSection
+                AwesomeCodeElement.HTML_elements.CodeSection
             ].forEach(html_component => ReplaceHTMLPlaceholders(html_component.PlaceholdersTranslation))
 
-            if (awesome_doc_code_sections.options.doxygen_awesome_css_compatibility === true) {
+            if (AwesomeCodeElement.options.doxygen_awesome_css_compatibility === true) {
                 console.info(`awesome-code-element.js:initialize: doxygen-awesome-css compatiblity ...`)
-                awesome_doc_code_sections.initialize_doxygenCodeSections()
+                AwesomeCodeElement.initialize_doxygenCodeSections()
             }
 
-            if (awesome_doc_code_sections.options.pre_code_compatibility) {
+            if (AwesomeCodeElement.options.pre_code_compatibility) {
                 console.info(`awesome-code-element.js:initialize: existing pre-code compatiblity ...`)
-                awesome_doc_code_sections.initialize_PreCodeHTMLElements();
+                AwesomeCodeElement.initialize_PreCodeHTMLElements();
             }
         })
     })
 }
+
+
+export { default as AwesomeCodeElement } 
 
 // TODO: module (+(sub)components encapsulation)
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export

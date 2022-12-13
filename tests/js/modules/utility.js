@@ -22,7 +22,10 @@
 
 // details
 
-class test_utility {
+if (AwesomeCodeElement === undefined)
+    throw new Error('CodeSection_demo: missing mandatory dependency [AwesomeCodeElement]')
+
+AwesomeCodeElement.test_utility = class {
 // class-as-namespace
 
     static inject_field_proxy(owner, property_name, { getter_payload, setter_payload } = {}) {
@@ -67,11 +70,9 @@ class test_utility {
             element.classList.remove('shake')
         }, duration)
     }
-
-    static HTMLElements = {}
 }
-
-class test_utility_global_behavior_modifiers {
+// global behavior modifiers
+AwesomeCodeElement.test_utility.global_behavior_modifiers = class {
 // class-as-namespace
 
     static toggle_action = undefined
@@ -151,8 +152,9 @@ class test_utility_global_behavior_modifiers {
     }
 }
 // UI element
-class test_utility_toolbar extends HTMLElement {
-    static HTMLElement_name = 'test-utility-toolbar'
+AwesomeCodeElement.test_utility.HTMLElements = {}
+AwesomeCodeElement.test_utility.HTMLElements.toolbar = class extends HTMLElement {
+    static HTMLElement_name = 'awesome_code_element_test-utility-toolbar'
 
     constructor() {
         super()
@@ -185,9 +187,11 @@ class test_utility_toolbar extends HTMLElement {
         this.appendChild(generate_toggle_button('toggle_slow_fetch_resource'))
     }
 }
-customElements.define(test_utility_toolbar.HTMLElement_name, test_utility_toolbar);
+customElements.define(
+    AwesomeCodeElement.test_utility.HTMLElements.toolbar.HTMLElement_name,
+    AwesomeCodeElement.test_utility.HTMLElements.toolbar
+);
 
-test_utility.global_behavior_modifiers = test_utility_global_behavior_modifiers
-test_utility.HTMLElements.toolbar = test_utility_toolbar
-
-// TODO: rename `test_utility` -> ${project_name}.test_utility
+// module
+let test_utility = AwesomeCodeElement.test_utility
+export { test_utility };

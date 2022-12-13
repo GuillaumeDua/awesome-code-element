@@ -1,11 +1,38 @@
+// MIT License
+//
+// Copyright (c) 2021-2022 Guillaume Dua "Guss"
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+// details
 // TODO: import dependencies as module
-if (CodeSection === undefined)
-    throw new Error('CodeSection_demo: missing mandatory dependency [CodeSection]')
-if (test_utility === undefined)
-    throw new Error('CodeSection_demo: missing mandatory dependency [test_utility]')
+if (AwesomeCodeElement.CodeSection === undefined)
+    throw new Error('CodeSection_demo: missing mandatory dependency [AwesomeCodeElement.CodeSection]')
+if (AwesomeCodeElement.test_utility === undefined)
+    throw new Error('CodeSection_demo: missing mandatory dependency [AwesomeCodeElement.test_utility]')
 
 // TODO: add stylesheet switch
-class CodeSection_demo extends CodeSection {
+AwesomeCodeElement.demo = {}
+AwesomeCodeElement.demo = class extends CodeSection {
+
+    static HTMLElement_name = 'awesome-code-element_code-section_demo'
+
     constructor() {
         super()
     }
@@ -87,7 +114,7 @@ class CodeSection_demo extends CodeSection {
         let label = sub_container.appendChild(document.createElement('label'))
             label.textContent = ` ${printable_name}`
 
-        test_utility.inject_field_proxy(this, property_name, {
+        AwesomeCodeElement.test_utility.inject_field_proxy(this, property_name, {
             getter_payload : undefined,
             setter_payload : (value) => {
                 checkbox.checked = value
@@ -135,7 +162,7 @@ class CodeSection_demo extends CodeSection {
             }, 300)
         })
 
-        test_utility.inject_field_proxy(this, 'language', {
+        AwesomeCodeElement.test_utility.inject_field_proxy(this, 'language', {
             getter_payload : () => {
             },
             setter_payload : (value) => {
@@ -169,7 +196,7 @@ class CodeSection_demo extends CodeSection {
                 this.url = arg.target.value
         })
 
-        test_utility.inject_field_proxy(this, 'url', {
+        AwesomeCodeElement.test_utility.inject_field_proxy(this, 'url', {
             getter_payload : () => {
             },
             setter_payload : (value) => {
@@ -180,4 +207,7 @@ class CodeSection_demo extends CodeSection {
         return sub_container
     }
 }
-customElements.define('code-section-demo', CodeSection_demo);
+customElements.define(AwesomeCodeElement.demo.HTMLElement_name, AwesomeCodeElement.demo);
+
+let demo = AwesomeCodeElement.demo
+export { demo }

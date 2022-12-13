@@ -27,7 +27,7 @@
 if (typeof hljs === 'undefined')
     console.error('awesome-code-element_dark-mode.js: depends on highlightjs, which is missing')
 
-if (typeof awesome_doc_code_sections === 'undefined')
+if (typeof AwesomeCodeElement === 'undefined')
     console.error('awesome-code-element_dark-mode.js: depends on awesome-code-element.js, which is missing')
 
 // ============
@@ -110,7 +110,7 @@ class ToggleDarkMode /*StaticObserver*/ {
         ToggleDarkMode.enableDarkMode(ToggleDarkMode.darkModeEnabled)
     }
 }
-awesome_doc_code_sections.ToggleDarkMode = ToggleDarkMode
+AwesomeCodeElement.ToggleDarkMode = ToggleDarkMode
 class ToggleDarkModeButton extends HTMLButtonElement {
 
     static HTMLElement_name                 = "awesome-code-element_toggle-dark-mode-button"
@@ -159,21 +159,21 @@ class ToggleDarkModeButton extends HTMLButtonElement {
     }
 }
 customElements.define(ToggleDarkModeButton.HTMLElement_name, ToggleDarkModeButton, {extends: 'button'});
-awesome_doc_code_sections.HTML_elements.ToggleDarkModeButton  = ToggleDarkModeButton
+AwesomeCodeElement.HTML_elements.ToggleDarkModeButton  = ToggleDarkModeButton
     
 // light/dark theme switch
-awesome_doc_code_sections.ThemeSelector.toggleDarkLightMode_onTheme = function(isDarkModeEnabled) {
+AwesomeCodeElement.ThemeSelector.toggleDarkLightMode_onTheme = function(isDarkModeEnabled) {
     
-    let code_stylesheet = document.getElementById(awesome_doc_code_sections.ThemeSelector.stylesheet_HTML_placeholder_id);
+    let code_stylesheet = document.getElementById(AwesomeCodeElement.ThemeSelector.stylesheet_HTML_placeholder_id);
     if (isDarkModeEnabled)
         code_stylesheet.href = code_stylesheet.href.replace('-light', '-dark')
     else
         code_stylesheet.href = code_stylesheet.href.replace('-dark', '-light')
 }
 // Toggle dark/light mode : doxygen-awesome-css & awesome-code-element inter-operability/compatibility
-awesome_doc_code_sections.ToggleDarkMode.updateToggleIcons = function(isDarkModeEnabled) {
+AwesomeCodeElement.ToggleDarkMode.updateToggleIcons = function(isDarkModeEnabled) {
     
-    if (awesome_doc_code_sections.options.doxygen_awesome_css_compatibility
+    if (AwesomeCodeElement.options.doxygen_awesome_css_compatibility
     &&  typeof DoxygenAwesomeDarkModeToggle !== 'undefined')
     {
         $("body").find("doxygen-awesome-dark-mode-toggle").each((index, value) => {
@@ -181,7 +181,7 @@ awesome_doc_code_sections.ToggleDarkMode.updateToggleIcons = function(isDarkMode
             value.updateIcon()
         })
         $("body").find('button[is="awesome-code-element_toggle-dark-mode-button"]').each((index, value) => {
-            awesome_doc_code_sections.ToggleDarkMode.darkModeEnabled = isDarkModeEnabled
+            AwesomeCodeElement.ToggleDarkMode.darkModeEnabled = isDarkModeEnabled
             value.updateIcon()
         })
     }
@@ -189,7 +189,7 @@ awesome_doc_code_sections.ToggleDarkMode.updateToggleIcons = function(isDarkMode
 
 // ============
 
-awesome_doc_code_sections.onHTMLClassChange_updateDarkLightMode = function(mutationsList, observer) {
+AwesomeCodeElement.onHTMLClassChange_updateDarkLightMode = function(mutationsList, observer) {
 // TODO: only last mutation matters ?
 
     mutationsList.forEach(mutation => {
@@ -208,11 +208,11 @@ awesome_doc_code_sections.onHTMLClassChange_updateDarkLightMode = function(mutat
 
         let isDarkModeEnabled = (html_node.className === 'dark-mode')
 
-        awesome_doc_code_sections.ThemeSelector.toggleDarkLightMode_onTheme(isDarkModeEnabled)
-        awesome_doc_code_sections.ToggleDarkMode.updateToggleIcons(isDarkModeEnabled)
+        AwesomeCodeElement.ThemeSelector.toggleDarkLightMode_onTheme(isDarkModeEnabled)
+        AwesomeCodeElement.ToggleDarkMode.updateToggleIcons(isDarkModeEnabled)
     })
 }
-const html_class_mutationObserver = new MutationObserver(awesome_doc_code_sections.onHTMLClassChange_updateDarkLightMode);
+const html_class_mutationObserver = new MutationObserver(AwesomeCodeElement.onHTMLClassChange_updateDarkLightMode);
 html_class_mutationObserver.observe(
     document.getElementsByTagName('html')[0],
     { 

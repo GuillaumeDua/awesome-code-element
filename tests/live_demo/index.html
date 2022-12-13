@@ -134,9 +134,9 @@ SOFTWARE.
         <script type="text/javascript" src="/awesome-code-element_dark-mode.js"></script>
     
         <!-- CS Tests utility scripts -->
-        <script type="text/javascript" src="/tests/js/utility.js"></script>
+        <script type="module" src="/tests/js/modules/utility.js"></script>
         <!-- CS demo component -->
-        <script type="text/javascript" src="/tests/js/demo.js"></script>
+        <script type="module" src="/tests/js/modules/demo.js"></script>
 
         <!-- hljs, awesome-doc configuration  -->
         <!-- <script type="module">
@@ -152,10 +152,10 @@ SOFTWARE.
                 languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plaintext']
             })
     
-            awesome_doc_code_sections.options.configure({
+            AwesomeCodeElement.options.configure({
                 doxygen_awesome_css_compatibility: true
             })
-            awesome_doc_code_sections.configuration.CE = new ce_configuration_manager([
+            AwesomeCodeElement.configuration.CE = new ce_configuration_manager([
                 [
                     'cpp',
                     {
@@ -165,12 +165,12 @@ SOFTWARE.
                     }
                 ]
             ])
-            awesome_doc_code_sections.initialize(); // initialize all features
+            AwesomeCodeElement.initialize(); // initialize all features
         </script>
     </head>
 <body>
 
-    <test-utility-toolbar></test-utility-toolbar>
+    <awesome_code_element_test-utility-toolbar></awesome_code_element_test-utility-toolbar>
 
     <!-- code-section : only text content
     <code-section id="scs_1">
