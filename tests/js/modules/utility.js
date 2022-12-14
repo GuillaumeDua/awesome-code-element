@@ -23,6 +23,9 @@
 // details
 
 import AwesomeCodeElement from '/awesome-code-element.js'
+import AwesomeCodeElement_DarkMode from '/awesome-code-element_dark-mode.js'
+
+console.log(AwesomeCodeElement_DarkMode)
 
 AwesomeCodeElement.test_utility = class {
 // class-as-namespace
