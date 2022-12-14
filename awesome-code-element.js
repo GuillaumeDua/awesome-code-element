@@ -66,14 +66,12 @@
 // TODO: named parameters
 
 // ----------------------------------------------------------------------------------------------------------------------------
-// export default AwesomeCodeElement
 
 if (typeof hljs === 'undefined')
     console.error('awesome-code-element.js: depends on highlightjs, which is missing')
 if (typeof jQuery === 'undefined')
     console.error('awesome-code-element.js: depends on jQuery, which is missing')
 
-// WIP: restructuration
 export const AwesomeCodeElement = {
     API : {
         configuration : {

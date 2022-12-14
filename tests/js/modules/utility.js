@@ -24,8 +24,8 @@
 
 import AwesomeCodeElement from '/awesome-code-element.js'
 import AwesomeCodeElement_DarkMode from '/awesome-code-element_dark-mode.js'
-
-console.log(AwesomeCodeElement_DarkMode)
+// TODO: add AwesomeCodeElement_DarkMode button,
+// TODO: add theme switcher
 
 AwesomeCodeElement.test_utility = class {
 // class-as-namespace
@@ -74,7 +74,7 @@ AwesomeCodeElement.test_utility = class {
     }
 }
 // global behavior modifiers
-AwesomeCodeElement.test_utility.global_behavior_modifiers = class {
+AwesomeCodeElement.test_utility.global_behavior_modifiers = class global_behavior_modifiers {
 // class-as-namespace
 
     static toggle_action = undefined
@@ -83,17 +83,17 @@ AwesomeCodeElement.test_utility.global_behavior_modifiers = class {
     static #original_fetch_resource = (() => {
         let value = AwesomeCodeElement.details.utility.fetch_resource
         if (value === undefined)
-            throw new Error('test_utility.global_behavior_modifiers.toggle_slow_fetch_resource (initialization): missing utility.fetch_resource')
+            throw new Error('AwesomeCodeElement.test_utility.global_behavior_modifiers.toggle_slow_fetch_resource (initialization): missing utility.fetch_resource')
         return value
     })()
     static get toggle_slow_fetch_resource() {
-        return test_utility.global_behavior_modifiers.#original_fetch_resource !== utility.fetch_resource
+        return global_behavior_modifiers.#original_fetch_resource !== AwesomeCodeElement.details.utility.fetch_resource
     }
     static set toggle_slow_fetch_resource(value) {
-        value = value ?? !test_utility.global_behavior_modifiers.toggle_slow_fetch_resource
-        utility.fetch_resource = (value
-            ? test_utility.global_behavior_modifiers.#slow_fetch_resource
-            : test_utility.global_behavior_modifiers.#original_fetch_resource
+        value = value ?? !global_behavior_modifiers.toggle_slow_fetch_resource
+        AwesomeCodeElement.details.utility.fetch_resource = (value
+            ? global_behavior_modifiers.#slow_fetch_resource
+            : global_behavior_modifiers.#original_fetch_resource
         );
     }
     static #slow_fetch_resource(url, { on_error, on_success }){
@@ -110,9 +110,9 @@ AwesomeCodeElement.test_utility.global_behavior_modifiers = class {
                 }
 
                 // TEST: emulate latency in resource acquisition
-                console.info('[test_utility.global_behavior_modifiers.#slow_fetch_resource] Fake loading ...');
+                console.info('[AwesomeCodeElement.test_utility.global_behavior_modifiers.#slow_fetch_resource] Fake loading ...');
                 setTimeout(function(){
-                    console.info('[test_utility.global_behavior_modifiers.#slow_fetch_resource] Fake loading done');
+                    console.info('[AwesomeCodeElement.test_utility.global_behavior_modifiers.#slow_fetch_resource] Fake loading done');
                     on_success(xhr.responseText)
                 }, 1500);
             };
@@ -122,14 +122,14 @@ AwesomeCodeElement.test_utility.global_behavior_modifiers = class {
     // toggle 'stylished'
     static #_toggle_style = false
     static get toggle_style() {
-        return test_utility.global_behavior_modifiers.#_toggle_style
+        return global_behavior_modifiers.#_toggle_style
     }
     static set toggle_style(value) {
 
         const stylished_classname = 'stylished'
 
-        test_utility.global_behavior_modifiers.#_toggle_style = value ?? !test_utility.global_behavior_modifiers.#_toggle_style
-        let apply_toggle_style = test_utility.global_behavior_modifiers.#_toggle_style
+        global_behavior_modifiers.#_toggle_style = value ?? !global_behavior_modifiers.#_toggle_style
+        let apply_toggle_style = global_behavior_modifiers.#_toggle_style
             ? function (elements) { elements.addClass   (`${stylished_classname}`)}
             : function (elements) { elements.removeClass(`${stylished_classname}`)}
 
@@ -140,14 +140,14 @@ AwesomeCodeElement.test_utility.global_behavior_modifiers = class {
     // toggle small page width
     static #_toggle_small = false
     static get toggle_small() {
-        return test_utility.global_behavior_modifiers.#_toggle_small
+        return global_behavior_modifiers.#_toggle_small
     }
     static set toggle_small(value) {
 
         let r = document.querySelector(':root');
 
-        test_utility.global_behavior_modifiers.#_toggle_small = value ?? !test_utility.global_behavior_modifiers.#_toggle_small
-        if (test_utility.global_behavior_modifiers.#_toggle_small)
+        global_behavior_modifiers.#_toggle_small = value ?? !global_behavior_modifiers.#_toggle_small
+        if (global_behavior_modifiers.#_toggle_small)
             r.style.setProperty('width', '500px' );
         else
             document.querySelector(':root').style.removeProperty('width')
@@ -155,7 +155,7 @@ AwesomeCodeElement.test_utility.global_behavior_modifiers = class {
 }
 // UI element
 AwesomeCodeElement.test_utility.HTMLElements = {}
-AwesomeCodeElement.test_utility.HTMLElements.toolbar = class extends HTMLElement {
+AwesomeCodeElement.test_utility.HTMLElements.toolbar = class test_utility extends HTMLElement {
     static HTMLElement_name = 'awesome_code_element_test-utility-toolbar'
 
     constructor() {
@@ -170,7 +170,7 @@ AwesomeCodeElement.test_utility.HTMLElements.toolbar = class extends HTMLElement
                 value.id = `button_${name}`
                 value.textContent = `${name}`
                 value.addEventListener('click', () => {
-                    test_utility.global_behavior_modifiers[name] = test_utility.global_behavior_modifiers.toggle_action
+                    AwesomeCodeElement.test_utility.global_behavior_modifiers[name] = AwesomeCodeElement.test_utility.global_behavior_modifiers.toggle_action
                 })
             return value
         }
@@ -181,6 +181,7 @@ AwesomeCodeElement.test_utility.HTMLElements.toolbar = class extends HTMLElement
             border  : '1px solid var(--primary-color)',
             width   : 'fit-content',
             margin  : 'auto',
+            marginBottom: '10px',
             padding : '5px'
         })
 
