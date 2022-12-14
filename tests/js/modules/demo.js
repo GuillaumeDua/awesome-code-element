@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// TODO: import dependencies as module
+import AwesomeCodeElement from '/awesome-code-element.js'
 if (AwesomeCodeElement.API.HTMLElements.CodeSection === undefined)
     throw new Error('CodeSection_demo: missing mandatory dependency [AwesomeCodeElement.CodeSection]')
 
@@ -29,7 +29,7 @@ import test_utility from '/tests/js/modules/utility.js';
 // TODO: add stylesheet switch
 AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.CodeSection {
 
-    static HTMLElement_name = 'code-section_demo'
+    static HTMLElement_name = 'code-section-demo'
 
     constructor() {
         super()
@@ -207,5 +207,4 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
 }
 customElements.define(AwesomeCodeElement.demo.HTMLElement_name, AwesomeCodeElement.demo);
 
-let demo = AwesomeCodeElement.demo
-export default demo
+export default AwesomeCodeElement.demo

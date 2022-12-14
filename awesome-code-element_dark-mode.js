@@ -27,8 +27,7 @@
 if (typeof hljs === 'undefined')
     console.error('awesome-code-element_dark-mode.js: depends on highlightjs, which is missing')
 
-if (typeof AwesomeCodeElement === 'undefined')
-    console.error('awesome-code-element_dark-mode.js: depends on awesome-code-element.js, which is missing')
+import AwesomeCodeElement from "./awesome-code-element.js"
 
 // TODO: AwesomeCodeElement.dark_mode.{...}
 
@@ -223,3 +222,5 @@ html_class_mutationObserver.observe(
         attributeOldValue: true
     }
 );
+
+export default AwesomeCodeElement;

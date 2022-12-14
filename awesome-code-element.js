@@ -74,10 +74,17 @@ if (typeof jQuery === 'undefined')
     console.error('awesome-code-element.js: depends on jQuery, which is missing')
 
 // WIP: restructuration
-AwesomeCodeElement = {
-    API : {},
+export const AwesomeCodeElement = {
+    API : {
+        configuration : {
+            CE : {}
+        }
+    },
     details : {}
 }
+
+// =======
+// details.containers
 
 AwesomeCodeElement.details.containers = {}
 AwesomeCodeElement.details.containers.transformed_map = class extends Map {
@@ -160,6 +167,28 @@ AwesomeCodeElement.API.CE_ConfigurationManager = class extends AwesomeCodeElemen
 //      compiler_id,
 //      default_options // not mandatory
 // }
+
+// =======
+// API.configuration
+
+AwesomeCodeElement.API.configuration = {
+    CE                                  : new AwesomeCodeElement.API.CE_ConfigurationManager,
+    doxygen_awesome_css_compatibility   : false,
+    pre_code_compatibility              : false,
+    auto_hide_buttons                   : false, // TODO: rename force_ or always_
+    toggle_dark_mode                    : (typeof DoxygenAwesomeDarkModeToggle !== 'undefined') // true by default if doxygen-awesome-css_dark-mode is detected
+}
+AwesomeCodeElement.API.configure = (arg) => {
+    if (!arg)
+        throw new Error('AwesomeCodeElement.API.configuration.configure: invalid argument')
+    AwesomeCodeElement.details.utility.unfold_into({
+        target : AwesomeCodeElement.API.configuration,
+        properties : arg
+    })
+}
+
+// =======
+// details
 
 AwesomeCodeElement.details.ParsedCode = class ParsedCode {
 // TODO: @awesome-code-element::keep : keep tag anyway as comment (for documentation purpose)
@@ -1658,23 +1687,6 @@ AwesomeCodeElement.API.initializers = {
         // TODO: same for only code elements ?
     }
 }
-
-AwesomeCodeElement.API.configuration = {
-    CE                                  : new AwesomeCodeElement.API.CE_ConfigurationManager,
-    doxygen_awesome_css_compatibility   : false,
-    pre_code_compatibility              : false,
-    auto_hide_buttons                   : false, // TODO: rename force_ or always_
-    toggle_dark_mode                    : (typeof DoxygenAwesomeDarkModeToggle !== 'undefined') // true by default if doxygen-awesome-css_dark-mode is detected
-}
-AwesomeCodeElement.API.configure = (arg) => {
-    if (!arg)
-        throw new Error('AwesomeCodeElement.API.configuration.configure: invalid argument')
-    AwesomeCodeElement.details.utility.unfold_into({
-        target : AwesomeCodeElement.API.configuration,
-        properties : arg
-    })
-}
-
 AwesomeCodeElement.API.initialize = () => {
    
     $(function() {
@@ -1720,6 +1732,8 @@ AwesomeCodeElement.API.initialize = () => {
         })
     })
 }
+
+export { AwesomeCodeElement as default }
 
 // TODO: module (+(sub)components encapsulation)
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export

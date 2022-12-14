@@ -22,8 +22,7 @@
 
 // details
 
-if (AwesomeCodeElement === undefined)
-    throw new Error('CodeSection_demo: missing mandatory dependency [AwesomeCodeElement]')
+import AwesomeCodeElement from '/awesome-code-element.js'
 
 AwesomeCodeElement.test_utility = class {
 // class-as-namespace
@@ -193,5 +192,4 @@ customElements.define(
 );
 
 // module
-let test_utility = AwesomeCodeElement.test_utility
-export default test_utility;
+export default AwesomeCodeElement.test_utility;
