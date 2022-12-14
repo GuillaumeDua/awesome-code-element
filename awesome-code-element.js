@@ -328,7 +328,7 @@ AwesomeCodeElement.details.remote.ce_API = class ce_API {
 
             let text = datas.split('\n')
             text.shift() // remove header
-            AwesomeCodeElement.details.remote.ce_API.languages = text.map((value) => {
+            ce_API.languages = text.map((value) => {
             // keep only ids
                 return value.slice(0, value.indexOf(' '))
             })
@@ -345,7 +345,7 @@ AwesomeCodeElement.details.remote.ce_API = class ce_API {
 
             let text = datas.split('\n')
             text.shift() // remove header
-            AwesomeCodeElement.details.remote.ce_API.languages = text.map((value) => {
+            ce_API.languages = text.map((value) => {
             // keep only ids
                 return value.slice(0, value.indexOf(' '))
             })
@@ -375,7 +375,7 @@ AwesomeCodeElement.details.remote.ce_API = class ce_API {
         let matches = [...code.matchAll(/^\s*\#\s*include\s+[\"|\<](\w+\:\/\/.*?)[\"|\>]/gm)].reverse()
         let promises_map = matches.map(async function(match) {
 
-            let downloaded_file_content = await AwesomeCodeElement.details.remote.ce_API.#remote_files_cache.get(match[1])
+            let downloaded_file_content = await ce_API.#remote_files_cache.get(match[1])
             let match_0_token = match[0].replaceAll('\n', '')
             code = code.replace(match[0], `// download[${match_0_token}]::begin\n${downloaded_file_content}\n// download[${match_0_token}]::end`)
         })
@@ -664,7 +664,7 @@ AwesomeCodeElement.details.HTMLElements.SendToGodboltButton = class SendToGodbol
                 // translate hljs into CE language
                 //      hljs    https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
                 //  vs. CE      https://godbolt.org/api/languages
-                    return ce_API.languages.includes(this.ce_options().language)
+                    return AwesomeCodeElement.details.remote.ce_API.languages.includes(this.ce_options().language)
                         ? this.ce_options().language
                         : this.configuration().language
                 },
@@ -713,7 +713,7 @@ AwesomeCodeElement.details.HTMLElements.SendToGodboltButton = class SendToGodbol
             }]
         };
         // CE /clientstate API
-        ce_API.open_in_new_tab(data)
+        AwesomeCodeElement.details.remote.ce_API.open_in_new_tab(data)
     }
 }
 customElements.define(
@@ -1242,7 +1242,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
         if (this.#_parameters.url)  // remote code
             this.url = this.#_parameters.url
         else                        // local code
-            this.#_code = new ParsedCode(this.#_parameters.code, this.language)  // only update code, not its view
+            this.#_code = new AwesomeCodeElement.details.ParsedCode(this.#_parameters.code, this.language)  // only update code, not its view
 
         this.toggle_parsing             = this.#_parameters.toggle_parsing      // will update the code view
         this.toggle_execution           = this.#_parameters.toggle_execution
@@ -1265,7 +1265,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
             return
         }
 
-        try             { this.code = new ParsedCode(this.#_code.raw, this.#_language) } // code setter will updates the view
+        try             { this.code = new AwesomeCodeElement.details.ParsedCode(this.#_code.raw, this.#_language) } // code setter will updates the view
         catch (error)   { this.on_critical_internal_error(error); return }
     }
     get toggle_parsing() {
@@ -1338,7 +1338,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
         }
 
         // right panel: replace with result
-        return ce_API.fetch_execution_result(this.#_code.ce_options, this.executable_code)
+        return AwesomeCodeElement.details.remote.ce_API.fetch_execution_result(this.#_code.ce_options, this.executable_code)
             .catch((error) => {
                 this.on_critical_internal_error(`CodeSection:fetch_execution: ce_API.fetch_execution_result: failed:\n\t[${error}]`)
             })

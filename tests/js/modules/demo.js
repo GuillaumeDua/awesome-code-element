@@ -27,10 +27,9 @@ if (AwesomeCodeElement.API.HTMLElements.CodeSection === undefined)
 import test_utility from '/tests/js/modules/utility.js';
 
 // TODO: add stylesheet switch
-AwesomeCodeElement.demo = {}
 AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.CodeSection {
 
-    static HTMLElement_name = 'awesome-code-element_code-section_demo'
+    static HTMLElement_name = 'code-section_demo'
 
     constructor() {
         super()
@@ -51,7 +50,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
 
         // view proxies
         let options_container = document.createElement('div')
-        utility.apply_css(options_container, {
+        AwesomeCodeElement.details.utility.apply_css(options_container, {
             flexDirection: 'column',
             display: 'flex',
         })
@@ -100,7 +99,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
         let printable_name = property_name.replaceAll(/[\-|\_]/g, ' ')
         // html
         let sub_container = document.createElement('div')
-        utility.apply_css(sub_container, {
+        AwesomeCodeElement.details.utility.apply_css(sub_container, {
             flex: '0 0 fit-content',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
@@ -135,7 +134,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
     #make_language_view() {
 
         let sub_container = document.createElement('div')
-        utility.apply_css(sub_container, {
+        AwesomeCodeElement.details.utility.apply_css(sub_container, {
             display: 'flex',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
@@ -146,7 +145,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
             input_field.type = "text"
             input_field.value = super.language
             input_field.title = 'clear to attempt a fallback autodetection'
-            utility.apply_css(input_field, {
+            AwesomeCodeElement.details.utility.apply_css(input_field, {
                 width: '100%',
                 marginLeft: '10px'
             })
@@ -174,7 +173,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
     #make_url_view() {
 
         let sub_container = document.createElement('div')
-        utility.apply_css(sub_container, {
+        AwesomeCodeElement.details.utility.apply_css(sub_container, {
             display: 'flex',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
@@ -185,7 +184,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
             input_field.type = "text"
             input_field.value = !super.url ? '' : super.url
             input_field.title = 'remote code location. Press <enter> to apply'
-                utility.apply_css(input_field, {
+            AwesomeCodeElement.details.utility.apply_css(input_field, {
                 width: '100%',
                 marginLeft: '10px'
             })
@@ -209,4 +208,4 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
 customElements.define(AwesomeCodeElement.demo.HTMLElement_name, AwesomeCodeElement.demo);
 
 let demo = AwesomeCodeElement.demo
-export { demo }
+export default demo
