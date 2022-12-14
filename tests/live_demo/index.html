@@ -121,15 +121,10 @@ SOFTWARE.
         <!-- highlight -->
         <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/languages/cpp.min.js" integrity="sha512-IAojhJDNJ4oC/Eui96KT2gmg2iwV2MsxTDs9CzqrrjNF8OdKV4MQE8H9fHbOXIsTaYZjLAVgtPOeyBNtD8LLEw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
-        <!-- default theme -->
-        <link id='code_theme_stylesheet' rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/tokyo-night-dark.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
         <!-- jquery -->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     
         <!-- awesome-code-element -->
-        <!-- <link id='code_theme_stylesheet' rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/tokyo-night-light.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" /> -->
-        <link id='code_theme_stylesheet' rel="stylesheet" crossorigin="anonymous" referrerpolicy="no-referrer" /> <!-- TODO: not mandatory ? -->
         <script type="module">
             import AwesomeCodeElement from "/awesome-code-element.js"
             // AwesomeCodeElement configuration
@@ -174,10 +169,12 @@ SOFTWARE.
     </head>
 <body>
 
-    <awesome_code_element_test-utility-toolbar></awesome_code_element_test-utility-toolbar>
+    <theme-selector>
+        <option value="tokyo-night"></option>
+        <option value="base16/google"></option>
+    </theme-selector>
 
-    <!-- TODO: theme selector -->
-    <!-- TODO: toggle dark-mode -->
+    <awesome_code_element_test-utility-toolbar></awesome_code_element_test-utility-toolbar>
 
     <!-- code-section : only text content
     <code-section id="scs_1">

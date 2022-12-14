@@ -165,7 +165,9 @@ customElements.define(
 // light/dark theme switch
 AwesomeCodeElement.API.HTMLElements.ThemeSelector.toggleDarkLightMode_onTheme = function(isDarkModeEnabled) {
     
-    let code_stylesheet = document.getElementById(AwesomeCodeElement.API.HTMLElements.ThemeSelector.stylesheet_HTML_placeholder_id);
+    let code_stylesheet = document.getElementById(AwesomeCodeElement.API.HTMLElements.ThemeSelector.stylesheet_element_id);
+    if (!code_stylesheet)
+        throw new Error('AwesomeCodeElement.API.HTMLElements.ThemeSelector.toggleDarkLightMode_onTheme: missing stylesheet\n\tDid you forget to call AwesomeCodeElement.API.initialize(); ?')
     if (isDarkModeEnabled)
         code_stylesheet.href = code_stylesheet.href.replace('-light', '-dark')
     else
@@ -207,7 +209,7 @@ AwesomeCodeElement.details.events.onHTMLClassChange_updateDarkLightMode = functi
         if (mutation.oldValue === html_node.className)
             return;
 
-        console.log('awesome-code-element_dark-mode.js:onHTMLClassChange: Switching theme from : ' + mutation.oldValue + ' to ' + html_node.className);
+        console.info(`awesome-code-element_dark-mode.js:onHTMLClassChange: Switching theme from: [${mutation.oldValue}] to [${html_node.className}]`);
 
         let isDarkModeEnabled = (html_node.className === 'dark-mode')
 

@@ -26,7 +26,6 @@ if (AwesomeCodeElement.API.HTMLElements.CodeSection === undefined)
 
 import test_utility from '/tests/js/modules/utility.js';
 
-// TODO: add stylesheet switch
 AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.CodeSection {
 
     static HTMLElement_name = 'code-section-demo'

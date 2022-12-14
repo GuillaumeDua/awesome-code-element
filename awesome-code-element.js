@@ -64,6 +64,7 @@
 // TODO: type = AwesomeCodeElement.details.${name} ?
 // TODO: update error messages -> ${classname}.name ?
 // TODO: named parameters
+// TODO: static -> const
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -171,6 +172,10 @@ AwesomeCodeElement.API.CE_ConfigurationManager = class extends AwesomeCodeElemen
 
 AwesomeCodeElement.API.configuration = {
     CE                                  : new AwesomeCodeElement.API.CE_ConfigurationManager,
+    hljs                                : {
+        version : '11.6.0',
+        theme   : 'tokyo-night'
+    },
     doxygen_awesome_css_compatibility   : false,
     pre_code_compatibility              : false,
     auto_hide_buttons                   : false, // TODO: rename force_ or always_
@@ -1483,120 +1488,221 @@ customElements.define(
     AwesomeCodeElement.API.HTMLElements.CodeSection
 );
 
-AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector {
-// class-as-namespace    
+AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends HTMLSelectElement {
 // For themes, see https://cdnjs.com/libraries/highlight.js
 // The default one is the first one
 //
-// Use theme name, without light or dark specification
-//
-// Example:
-//
-// <select class="code_theme_selector">
-//     <option class="code_theme_option" value="tokyo-night"></option>
-//     <option class="code_theme_option" value="base16/google"></option>
-// </select>
-//
-// Current limitation: not a dedicated HTMLElement
-//
-// Note that an HTML placeholder for stylesheet is necessary/mandatory
-//   <link id='code_theme_stylesheet' rel="stylesheet" crossorigin="anonymous" referrerpolicy="no-referrer" />
+// Use theme name, without light or dark specification. Example : `tokyo-night`
 
-    static HTMLElement_name = 'awesome-code-element_theme-selector'
-    static url_base = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/'
-    static url_ext = '.min.css'
-    static dark_or_light_placeholder = '{dark_or_light}'
-    static stylesheet_HTML_placeholder_id = 'code_theme_stylesheet'
+    static HTMLElement_name = 'theme-selector'
+    static stylesheet_element_id = 'code_theme_stylesheet'
 
-    static BuildUrl(arg) {
-        if (typeof arg !== 'string' && ! arg instanceof String) {
-            console.error('ThemeSelector.BuildUrl: invalid argument')
+    static #url_builder = {
+        base : `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/${AwesomeCodeElement.API.configuration.hljs.version}/styles/`,
+        ext : '.min.css',
+
+        build({ name, dark_or_light = 'light' }) {
+            if (typeof name !== 'string' && ! name instanceof String)
+                throw new Error('ThemeSelector.#url_builder.build : invalid argument [name]')
+            if (dark_or_light !== 'light' && dark_or_light !== 'dark')
+                throw new Error('ThemeSelector.#url_builder.build : invalid argument : [dark_or_light]')
+            return `${ThemeSelector.#url_builder.base}${name}-${dark_or_light}${ThemeSelector.#url_builder.ext}`
+        }
+    }
+
+    #parameters = undefined
+
+    constructor(parameters) {
+        super()
+        this.#parameters = parameters
+    }
+    connectedCallback() {
+
+        if (this.#parameters) {
+            this.#initialize()
             return
         }
-        return ThemeSelector.url_base
-            + arg + '-'
-            + ThemeSelector.dark_or_light_placeholder
-            + ThemeSelector.url_ext
-        ;
-    }
-
-    static check_stylesheet_HTML_placeholder() {
-
-        var style_placeholder = document.getElementById(ThemeSelector.stylesheet_HTML_placeholder_id)
-        if (style_placeholder === undefined || style_placeholder === null)
-            console.error(
-                `awesome-code-element.js:ThemeSelector : missing stylesheet HTML placeholder\n
-                <link id="${ThemeSelector.stylesheet_HTML_placeholder_id}" rel="stylesheet"/>`
+        try {
+            let _this = this
+            this.shadowroot_accessor = AwesomeCodeElement.details.utility.create_shadowroot_slot(
+                this,
+                function(){
+                    var options = $(_this).find('option');
+                        _this.#parameters = options.map((index, element) => {
+                            return element.getAttribute('value')
+                        }).toArray()
+                    _this.#initialize()
+                }
             )
+        }
+        catch (error) {
+            console.error(`${error}`)
+            throw error
+        }
     }
-    static Initialize = function() {
 
-        let onOptionSelectedChange = function() {
+    #initialize() {
+        console.log('ThemeSelector.Initialize : ')
+        console.log(this.#parameters)
+
+        let select_node = document.createElement('select')
+        this.#parameters.forEach(element => {
+            let option = document.createElement('option')
+                option.value = element
+                option.text  = element
+            select_node.appendChild(option)
+        })
+        select_node.onchange = function(){
+
             let selected_option = $(this).find('option:selected')
-            console.info('awesome-code-element.js:ThemeSelector : switching to ' + selected_option.text())
+            console.info(`AwesomeCodeElement.API.HTMLElements.ThemeSelector.onchange: switching to [${selected_option.text()}]`)
 
             let html_node = document.getElementsByTagName('html')[0];
-
             let theme_color = (html_node.classList.contains('dark-mode') ? 'dark' : 'light')
-            let new_stylesheet_url = ThemeSelector.BuildUrl(selected_option.text())
-                .replace(ThemeSelector.dark_or_light_placeholder, theme_color)
-            console.info('awesome-code-element.js:ThemeSelector : switching to stylesheet : ' + new_stylesheet_url)
+            let new_stylesheet_url = ThemeSelector.#url_builder.build({ name : selected_option.text(), dark_or_light : theme_color })
+
+            console.info(`AwesomeCodeElement.API.HTMLElements.ThemeSelector.onchange: loading stylesheet\n\t[${new_stylesheet_url}]`)
             document.getElementById('code_theme_stylesheet').href = new_stylesheet_url
 
             hljs.highlightAll()
         }
-
-        $(document).ready(function() {
-            console.info('awesome-code-element.js:ThemeSelector : initializing themes selector ...')
-
-            ThemeSelector.check_stylesheet_HTML_placeholder()
-
-            var options = $('body').find('select[class=code_theme_selector] option[class=code_theme_option]');
-            options.each((index, element) => {
-
-                let value = element.getAttribute('value')
-                if (element === undefined || element == null) {
-                    console.error('ThemeSelector: invalid argument')
-                    return
-                }
-
-                element.textContent = value
-            })
-
-            var selectors = $('body').find('select[class=code_theme_selector]');
-            selectors.each((index, element) => {
-                element.onchange = onOptionSelectedChange
-                element.onchange() // initialization
-            })
-        })
+        this.replaceWith(select_node)
     }
 
-    // Theme style switch
-    // TODO: inject such stylesheet element (placeholder)
-    static highlightjs_stylesheet_href_mutationObserver = new MutationObserver((mutationsList, observer) => {
+    static initialize() {
+        let stylesheet = document.createElement('link')
+            stylesheet.id           = ThemeSelector.stylesheet_element_id
+            stylesheet.rel          = 'stylesheet'
+            stylesheet.href         = ThemeSelector.#url_builder.build({
+                name: AwesomeCodeElement.API.configuration.hljs.theme,
+                dark_or_light : 'dark' // TODO: detect user-preferences
+            })
+            stylesheet.crossorigin  = "anonymous"
+            stylesheet.referrerpolicy = "no-referrer"
 
-        mutationsList.forEach(mutation => {
-            if (mutation.attributeName !== 'href')
-                return;
-
-            let code_stylesheet = document.getElementById('code_theme_stylesheet');
-            if (mutation.oldValue === code_stylesheet.href ||
-                code_stylesheet.href === window.location.href)
-                return
-            console.info(`awesome-code-element.js:onHighlightjsHrefChange: Switching highlighthjs stylesheet \nfrom : ${mutation.oldValue} '\n to   : ${code_stylesheet.href}`)
-
-            hljs.highlightAll();
-        })
-    })
+        document.head.appendChild(stylesheet)
+    }
 }
-AwesomeCodeElement.API.HTMLElements.ThemeSelector.highlightjs_stylesheet_href_mutationObserver.observe(
-    document.getElementById(AwesomeCodeElement.API.HTMLElements.ThemeSelector.stylesheet_HTML_placeholder_id),
-    {
-        attributes: true,
-        attributeFilter: [ 'href' ],
-        attributeOldValue: true
-    }
-)
+customElements.define(
+    AwesomeCodeElement.API.HTMLElements.ThemeSelector.HTMLElement_name,
+    AwesomeCodeElement.API.HTMLElements.ThemeSelector, { extends : 'select'}
+);
+
+// // TODO: generate placeholder rather than making it a pre-requisite
+// AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector {
+// // class-as-namespace    
+// // For themes, see https://cdnjs.com/libraries/highlight.js
+// // The default one is the first one
+// //
+// // Use theme name, without light or dark specification
+// //
+// // Example:
+// //
+// // <select class="code_theme_selector">
+// //     <option class="code_theme_option" value="tokyo-night"></option>
+// //     <option class="code_theme_option" value="base16/google"></option>
+// // </select>
+// //
+// // Current limitation: not a dedicated HTMLElement
+// //
+// // Note that an HTML placeholder for stylesheet is necessary/mandatory
+// //   <link id='code_theme_stylesheet' rel="stylesheet" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+//     static HTMLElement_name = 'awesome-code-element_theme-selector'
+//     static url_base = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/'
+//     static url_ext = '.min.css'
+//     static dark_or_light_placeholder = '{dark_or_light}'
+//     static stylesheet_HTML_placeholder_id = 'code_theme_stylesheet'
+
+//     static BuildUrl(arg) {
+//         if (typeof arg !== 'string' && ! arg instanceof String) {
+//             console.error('ThemeSelector.BuildUrl: invalid argument')
+//             return
+//         }
+//         return ThemeSelector.url_base
+//             + arg + '-'
+//             + ThemeSelector.dark_or_light_placeholder
+//             + ThemeSelector.url_ext
+//         ;
+//     }
+
+//     static check_stylesheet_HTML_placeholder() {
+
+//         var style_placeholder = document.getElementById(ThemeSelector.stylesheet_HTML_placeholder_id)
+//         if (style_placeholder === undefined || style_placeholder === null)
+//             console.error(
+//                 `awesome-code-element.js:ThemeSelector : missing stylesheet HTML placeholder\n
+//                 <link id="${ThemeSelector.stylesheet_HTML_placeholder_id}" rel="stylesheet"/>`
+//             )
+//     }
+//     static Initialize = function() {
+
+//         // let onOptionSelectedChange = function() {
+//         //     let selected_option = $(this).find('option:selected')
+//         //     console.info('awesome-code-element.js:ThemeSelector : switching to ' + selected_option.text())
+
+//         //     let html_node = document.getElementsByTagName('html')[0];
+
+//         //     let theme_color = (html_node.classList.contains('dark-mode') ? 'dark' : 'light')
+//         //     let new_stylesheet_url = ThemeSelector.BuildUrl(selected_option.text())
+//         //         .replace(ThemeSelector.dark_or_light_placeholder, theme_color)
+//         //     console.info('awesome-code-element.js:ThemeSelector : switching to stylesheet : ' + new_stylesheet_url)
+//         //     document.getElementById('code_theme_stylesheet').href = new_stylesheet_url
+
+//         //     hljs.highlightAll()
+//         // }
+
+//         // $(document).ready(function() {
+//         //     console.info('awesome-code-element.js:ThemeSelector : initializing themes selector ...')
+
+//         //     ThemeSelector.check_stylesheet_HTML_placeholder()
+
+//         //     var options = $('body').find('select[class=code_theme_selector] option[class=code_theme_option]');
+//         //     options.each((index, element) => {
+
+//         //         let value = element.getAttribute('value')
+//         //         if (element === undefined || element == null) {
+//         //             console.error('ThemeSelector: invalid argument')
+//         //             return
+//         //         }
+
+//         //         element.textContent = value
+//         //     })
+
+//         //     var selectors = $('body').find('select[class=code_theme_selector]');
+//         //     selectors.each((index, element) => {
+//         //         element.onchange = onOptionSelectedChange
+//         //         element.onchange() // initialization
+//         //     })
+//         // })
+//     }
+
+//     // Theme style switch
+//     // TODO: inject such stylesheet element (placeholder)
+//     static highlightjs_stylesheet_href_mutationObserver = new MutationObserver((mutationsList, observer) => {
+
+//         mutationsList.forEach(mutation => {
+//             if (mutation.attributeName !== 'href')
+//                 return;
+
+//             let code_stylesheet = document.getElementById('code_theme_stylesheet');
+//             if (mutation.oldValue === code_stylesheet.href ||
+//                 code_stylesheet.href === window.location.href)
+//                 return
+//             console.info(`awesome-code-element.js:onHighlightjsHrefChange: Switching highlighthjs stylesheet \nfrom : ${mutation.oldValue} '\n to   : ${code_stylesheet.href}`)
+
+//             hljs.highlightAll();
+//         })
+//     })
+// }
+// // AwesomeCodeElement.API.HTMLElements.ThemeSelector.highlightjs_stylesheet_href_mutationObserver.observe(
+// //     document.getElementById(AwesomeCodeElement.API.HTMLElements.ThemeSelector.stylesheet_HTML_placeholder_id),
+// //     {
+// //         attributes: true,
+// //         attributeFilter: [ 'href' ],
+// //         attributeOldValue: true
+// //     }
+// // )
 
 // ============
 
@@ -1702,7 +1808,7 @@ AwesomeCodeElement.API.initialize = () => {
                     AwesomeCodeElement.ToggleDarkMode.initialize()
             }
 
-            AwesomeCodeElement.API.HTMLElements.ThemeSelector.Initialize()
+            AwesomeCodeElement.API.HTMLElements.ThemeSelector.initialize()
 
             let ReplaceHTMLPlaceholders = (translation) => {
 

@@ -73,6 +73,8 @@ AwesomeCodeElement.test_utility = class {
         }, duration)
     }
 }
+
+// =========================
 // global behavior modifiers
 AwesomeCodeElement.test_utility.global_behavior_modifiers = class global_behavior_modifiers {
 // class-as-namespace
@@ -153,7 +155,10 @@ AwesomeCodeElement.test_utility.global_behavior_modifiers = class global_behavio
             document.querySelector(':root').style.removeProperty('width')
     }
 }
-// UI element
+
+// ===========
+// UI elements
+
 AwesomeCodeElement.test_utility.HTMLElements = {}
 AwesomeCodeElement.test_utility.HTMLElements.toolbar = class test_utility extends HTMLElement {
     static HTMLElement_name = 'awesome_code_element_test-utility-toolbar'
@@ -164,7 +169,7 @@ AwesomeCodeElement.test_utility.HTMLElements.toolbar = class test_utility extend
 
     connectedCallback(){
 
-        // TODO: use checkbox + label instead to show active value
+        // TODO: use checkbox + label instead to show active value (or emoji red/green light)
         let generate_toggle_button = (name) => {
             let value = document.createElement('button')
                 value.id = `button_${name}`
@@ -177,7 +182,7 @@ AwesomeCodeElement.test_utility.HTMLElements.toolbar = class test_utility extend
 
         this.id = 'test_utility_toolbar'
         AwesomeCodeElement.details.utility.apply_css(this, {
-            display : 'block',
+            display : 'flex',
             border  : '1px solid var(--primary-color)',
             width   : 'fit-content',
             margin  : 'auto',
@@ -188,8 +193,8 @@ AwesomeCodeElement.test_utility.HTMLElements.toolbar = class test_utility extend
         this.appendChild(generate_toggle_button('toggle_style'))
         this.appendChild(generate_toggle_button('toggle_small'))
         this.appendChild(generate_toggle_button('toggle_slow_fetch_resource'))
-        console.log(AwesomeCodeElement_DarkMode.details.HTMLElements)
         this.appendChild(new AwesomeCodeElement_DarkMode.details.HTMLElements.ToggleDarkMode())
+        this.appendChild(new AwesomeCodeElement.API.HTMLElements.ThemeSelector(['tokyo-night', 'base16/google']))
     }
 }
 customElements.define(
