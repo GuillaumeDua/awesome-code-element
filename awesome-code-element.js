@@ -174,7 +174,8 @@ AwesomeCodeElement.API.configuration = {
     CE                                  : new AwesomeCodeElement.API.CE_ConfigurationManager,
     hljs                                : {
         version : '11.6.0',
-        theme   : 'tokyo-night'
+        theme   : 'tokyo-night',
+        // TODO: dark or light (if not dark-mode)
     },
     doxygen_awesome_css_compatibility   : false,
     pre_code_compatibility              : false,
@@ -1567,6 +1568,13 @@ AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends 
             hljs.highlightAll()
         }
         this.replaceWith(select_node)
+    }
+
+    static get stylesheet() {
+        let code_stylesheet = document.getElementById(ThemeSelector.stylesheet_element_id);
+        if (!code_stylesheet)
+            throw new Error('AwesomeCodeElement.API.HTMLElements.ThemeSelector: missing stylesheet\n\tDid you forget to call AwesomeCodeElement.API.initialize(); ?')
+        return code_stylesheet
     }
 
     static initialize() {

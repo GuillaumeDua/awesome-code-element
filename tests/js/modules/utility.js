@@ -193,7 +193,7 @@ AwesomeCodeElement.test_utility.HTMLElements.toolbar = class test_utility extend
         this.appendChild(generate_toggle_button('toggle_style'))
         this.appendChild(generate_toggle_button('toggle_small'))
         this.appendChild(generate_toggle_button('toggle_slow_fetch_resource'))
-        this.appendChild(new AwesomeCodeElement_DarkMode.details.HTMLElements.ToggleDarkMode())
+        this.appendChild(new AwesomeCodeElement_DarkMode.details.HTMLElements.ToggleDarkModeButton())
         this.appendChild(new AwesomeCodeElement.API.HTMLElements.ThemeSelector(['tokyo-night', 'base16/google']))
     }
 }

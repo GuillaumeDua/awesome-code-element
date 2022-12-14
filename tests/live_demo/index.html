@@ -144,7 +144,10 @@ SOFTWARE.
             // AwesomeCodeElement: initialize all features
             AwesomeCodeElement.API.initialize();
         </script>
-        <script type="module" src="/awesome-code-element_dark-mode.js"></script>
+        <script type="module">
+            import AwesomeCodeElement from "/awesome-code-element_dark-mode.js"
+            AwesomeCodeElement.API.DarkMode.initialize()
+        </script>
     
         <!-- CS Tests utility scripts -->
         <script type="module" src="/tests/js/modules/utility.js"></script>
