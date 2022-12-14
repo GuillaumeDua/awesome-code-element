@@ -119,7 +119,7 @@ AwesomeCodeElement.details.HTMLElements.ToggleDarkMode = class ToggleDarkModeBut
     static title                            = "Toggle Light/Dark Mode"
 
     toggleMode() {
-        ToggleDarkMode.userPreference = !ToggleDarkMode.userPreference
+        AwesomeCodeElement.API.ToggleDarkMode.userPreference = !AwesomeCodeElement.API.ToggleDarkMode.userPreference
         this.updateIcon()
     }
 
@@ -151,7 +151,7 @@ AwesomeCodeElement.details.HTMLElements.ToggleDarkMode = class ToggleDarkModeBut
 
     updateIcon() {
 
-        this.innerHTML = ToggleDarkMode.darkModeEnabled
+        this.innerHTML = AwesomeCodeElement.API.ToggleDarkMode.darkModeEnabled
             ? ToggleDarkModeButton.darkModeIcon
             : ToggleDarkModeButton.lightModeIcon
         ;
@@ -165,7 +165,7 @@ customElements.define(
 // light/dark theme switch
 AwesomeCodeElement.API.HTMLElements.ThemeSelector.toggleDarkLightMode_onTheme = function(isDarkModeEnabled) {
     
-    let code_stylesheet = document.getElementById(AwesomeCodeElement.ThemeSelector.stylesheet_HTML_placeholder_id);
+    let code_stylesheet = document.getElementById(AwesomeCodeElement.API.HTMLElements.ThemeSelector.stylesheet_HTML_placeholder_id);
     if (isDarkModeEnabled)
         code_stylesheet.href = code_stylesheet.href.replace('-light', '-dark')
     else
@@ -191,7 +191,7 @@ AwesomeCodeElement.API.ToggleDarkMode.updateToggleIcons = function(isDarkModeEna
 // ============
 // MutationObserver
 
-AwesomeCodeElement.details.events = {}
+AwesomeCodeElement.details.events = class {}
 AwesomeCodeElement.details.events.onHTMLClassChange_updateDarkLightMode = function(mutationsList, observer) {
 // TODO: only last mutation matters ?
 
@@ -211,8 +211,8 @@ AwesomeCodeElement.details.events.onHTMLClassChange_updateDarkLightMode = functi
 
         let isDarkModeEnabled = (html_node.className === 'dark-mode')
 
-        AwesomeCodeElement.ThemeSelector.toggleDarkLightMode_onTheme(isDarkModeEnabled)
-        AwesomeCodeElement.ToggleDarkMode.updateToggleIcons(isDarkModeEnabled)
+        AwesomeCodeElement.API.HTMLElements.ThemeSelector.toggleDarkLightMode_onTheme(isDarkModeEnabled)
+        AwesomeCodeElement.API.ToggleDarkMode.updateToggleIcons(isDarkModeEnabled)
     })
 }
 const html_class_mutationObserver = new MutationObserver(AwesomeCodeElement.details.events.onHTMLClassChange_updateDarkLightMode);
