@@ -73,7 +73,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
         this.html_elements.code.addEventListener('click', () => {
             _this.html_elements.code.setAttribute('contentEditable', !_this.toggle_parsing)
             if (_this.toggle_parsing)
-                element_shake_effect_for(_this.html_elements.code, 500)
+            AwesomeCodeElement.test_utility.element_shake_effect_for(_this.html_elements.code, 500)
         })
         let delay_timer = null
         this.html_elements.code.addEventListener('keyup', function(event){
