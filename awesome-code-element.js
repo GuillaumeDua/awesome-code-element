@@ -1016,15 +1016,22 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
         }
     }
     #make_HTML_right_panel() {
-        let right_panel = document.createElement('div')
-
-        AwesomeCodeElement.details.utility.apply_css(right_panel, {
-            display:    'none',
-            alignItems: 'stretch',
-            boxSizing:  'border-box'
-        })
         // right panel: execution
-        let execution_element = document.createElement('div') // placeholder
+        let right_panel = document.createElement('pre')
+            AwesomeCodeElement.details.utility.apply_css(right_panel, {
+                display:    'none',
+                alignItems: 'stretch',
+                boxSizing:  'border-box'
+            })
+        let execution_element = document.createElement('code')
+            AwesomeCodeElement.details.utility.apply_css(execution_element, {
+                //display:    'flex', 'flex-direction' : 'column',
+                width:      '100%',
+                overflow:   'auto',
+                margin:     'inherit',
+                overflow:   'auto',
+                borderRadius:'5px'
+            })
             execution_element = right_panel.appendChild(execution_element)
         return { 
             panel: right_panel,
@@ -1347,29 +1354,45 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
     }
     #fetch_execution() {
 
-        let set_execution_content = (execution_content) => {
-            // switch loading animation to execution content
-            // TODO: if not div-placeholder, consider recycling the existing CS element (and thus, preserve ids)
-            //       might require to implement a specific replacement mecanisme for CS
-            this.html_elements.execution.replaceWith(execution_content)
-            this.html_elements.execution = execution_content
+        let set_execution_content = ({ is_fetch_success, content: { value, return_code } }) => {
+
+            // WIP: why does `this.html_elements.execution.style.display` becomes 'flex' here ???
+
+            if (!is_fetch_success) {
+                this.html_elements.execution.textContent = value
+                this.html_elements.execution.title = '[error] execution failed'
+                AwesomeCodeElement.details.utility.apply_css(this.html_elements.execution, {
+                    border: '2px solid red',
+                    color:  'red'
+                })
+                return
+            }
+
+            this.html_elements.execution.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
+            // force hljs bash language
+            this.html_elements.execution.innerHTML = hljs.highlightAuto(value, [ 'bash' ]).value
+            this.html_elements.execution.classList = 'hljs language-bash'
+            // automated hljs language
+            //  this.html_elements.execution.textContent = result.value
+            //  hljs.highlightElement(this.html_elements.execution)
+            AwesomeCodeElement.details.utility.apply_css(this.html_elements.execution, {
+                border: '',
+                borderTop : '2px solid ' + (return_code == -1 ? 'red' : 'green'),
+                color: ''
+            })
         }
 
         if (!this.is_executable) {
 
-            let error_content = `CodeSection:fetch_execution: not executable. No known valid configuration for language [${this.language}]`
-            let error_element = document.createElement('pre')
-                error_element.textContent = error_content
-            AwesomeCodeElement.details.utility.apply_css(error_element, {
-                color: 'red',
-                border: '1px solid red',
-                borderRadius : '5px',
-                margin:  '0px',
-                width : '100%',
-                overflow: 'auto'
+            let error = `CodeSection:fetch_execution: not executable. No known valid configuration for language [${this.language}]`
+            set_execution_content({
+                is_fetch_success : false,
+                content : {
+                    return_code: -1,
+                    value: error
+                }
             })
-            set_execution_content(error_element)
-            throw new Error(error_content)
+            throw new Error(error)
         }
 
         // right panel: replace with result
@@ -1397,31 +1420,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
                     }
             })
             .then((result) => {
-                
-                // let execution_content = new CodeSection({
-                //     code: result.value,
-                //     language: 'bash' // something plain
-                // })
-                let execution_content = document.createElement('pre')
-                    execution_content.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
-                    AwesomeCodeElement.details.utility.apply_css(execution_content, {
-                        borderTop : '2px solid ' + (result.return_code == -1 ? 'red' : 'green'),
-                        width : '100%',
-                        margin: 'inherit'
-                    })
-                let code = execution_content.appendChild(document.createElement('code'))
-                    // force hljs bash language
-                    code.innerHTML = hljs.highlightAuto(result.value, [ 'bash' ]).value
-                    code.classList = 'hljs language-bash'
-                    // automated hljs language
-                    //  code.textContent = result.value
-                    //  hljs.highlightElement(code)
-                    AwesomeCodeElement.details.utility.apply_css(code, {
-                        width: '100%',
-                        overflow: 'auto'
-                    })
-
-                set_execution_content(execution_content)
+                set_execution_content({ is_fetch_success : true, content : result })
             })
     }
 
@@ -1610,122 +1609,6 @@ customElements.define(
     AwesomeCodeElement.API.HTMLElements.ThemeSelector.HTMLElement_name,
     AwesomeCodeElement.API.HTMLElements.ThemeSelector, { extends : 'select'}
 );
-
-// // TODO: generate placeholder rather than making it a pre-requisite
-// AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector {
-// // class-as-namespace    
-// // For themes, see https://cdnjs.com/libraries/highlight.js
-// // The default one is the first one
-// //
-// // Use theme name, without light or dark specification
-// //
-// // Example:
-// //
-// // <select class="code_theme_selector">
-// //     <option class="code_theme_option" value="tokyo-night"></option>
-// //     <option class="code_theme_option" value="base16/google"></option>
-// // </select>
-// //
-// // Current limitation: not a dedicated HTMLElement
-// //
-// // Note that an HTML placeholder for stylesheet is necessary/mandatory
-// //   <link id='code_theme_stylesheet' rel="stylesheet" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-//     static HTMLElement_name = 'awesome-code-element_theme-selector'
-//     static url_base = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/'
-//     static url_ext = '.min.css'
-//     static dark_or_light_placeholder = '{dark_or_light}'
-//     static stylesheet_HTML_placeholder_id = 'code_theme_stylesheet'
-
-//     static BuildUrl(arg) {
-//         if (typeof arg !== 'string' && ! arg instanceof String) {
-//             console.error('ThemeSelector.BuildUrl: invalid argument')
-//             return
-//         }
-//         return ThemeSelector.url_base
-//             + arg + '-'
-//             + ThemeSelector.dark_or_light_placeholder
-//             + ThemeSelector.url_ext
-//         ;
-//     }
-
-//     static check_stylesheet_HTML_placeholder() {
-
-//         var style_placeholder = document.getElementById(ThemeSelector.stylesheet_HTML_placeholder_id)
-//         if (style_placeholder === undefined || style_placeholder === null)
-//             console.error(
-//                 `awesome-code-element.js:ThemeSelector : missing stylesheet HTML placeholder\n
-//                 <link id="${ThemeSelector.stylesheet_HTML_placeholder_id}" rel="stylesheet"/>`
-//             )
-//     }
-//     static Initialize = function() {
-
-//         // let onOptionSelectedChange = function() {
-//         //     let selected_option = $(this).find('option:selected')
-//         //     console.info('awesome-code-element.js:ThemeSelector : switching to ' + selected_option.text())
-
-//         //     let html_node = document.getElementsByTagName('html')[0];
-
-//         //     let theme_color = (html_node.classList.contains('dark-mode') ? 'dark' : 'light')
-//         //     let new_stylesheet_url = ThemeSelector.BuildUrl(selected_option.text())
-//         //         .replace(ThemeSelector.dark_or_light_placeholder, theme_color)
-//         //     console.info('awesome-code-element.js:ThemeSelector : switching to stylesheet : ' + new_stylesheet_url)
-//         //     document.getElementById('code_theme_stylesheet').href = new_stylesheet_url
-
-//         //     hljs.highlightAll()
-//         // }
-
-//         // $(document).ready(function() {
-//         //     console.info('awesome-code-element.js:ThemeSelector : initializing themes selector ...')
-
-//         //     ThemeSelector.check_stylesheet_HTML_placeholder()
-
-//         //     var options = $('body').find('select[class=code_theme_selector] option[class=code_theme_option]');
-//         //     options.each((index, element) => {
-
-//         //         let value = element.getAttribute('value')
-//         //         if (element === undefined || element == null) {
-//         //             console.error('ThemeSelector: invalid argument')
-//         //             return
-//         //         }
-
-//         //         element.textContent = value
-//         //     })
-
-//         //     var selectors = $('body').find('select[class=code_theme_selector]');
-//         //     selectors.each((index, element) => {
-//         //         element.onchange = onOptionSelectedChange
-//         //         element.onchange() // initialization
-//         //     })
-//         // })
-//     }
-
-//     // Theme style switch
-//     // TODO: inject such stylesheet element (placeholder)
-//     static highlightjs_stylesheet_href_mutationObserver = new MutationObserver((mutationsList, observer) => {
-
-//         mutationsList.forEach(mutation => {
-//             if (mutation.attributeName !== 'href')
-//                 return;
-
-//             let code_stylesheet = document.getElementById('code_theme_stylesheet');
-//             if (mutation.oldValue === code_stylesheet.href ||
-//                 code_stylesheet.href === window.location.href)
-//                 return
-//             console.info(`awesome-code-element.js:onHighlightjsHrefChange: Switching highlighthjs stylesheet \nfrom : ${mutation.oldValue} '\n to   : ${code_stylesheet.href}`)
-
-//             hljs.highlightAll();
-//         })
-//     })
-// }
-// // AwesomeCodeElement.API.HTMLElements.ThemeSelector.highlightjs_stylesheet_href_mutationObserver.observe(
-// //     document.getElementById(AwesomeCodeElement.API.HTMLElements.ThemeSelector.stylesheet_HTML_placeholder_id),
-// //     {
-// //         attributes: true,
-// //         attributeFilter: [ 'href' ],
-// //         attributeOldValue: true
-// //     }
-// // )
 
 // ============
 
