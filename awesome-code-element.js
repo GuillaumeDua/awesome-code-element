@@ -64,7 +64,9 @@
 // TODO: type = AwesomeCodeElement.details.${name} ?
 // TODO: update error messages -> ${classname}.name ?
 // TODO: named parameters
-// TODO: static -> const
+// TODO: static vs. const ?
+// TODO: element name consistency ?
+// TODO: alias awesome-code-element -> ace ?
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -1395,15 +1397,28 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
                     }
             })
             .then((result) => {
-
-                let execution_content = new CodeSection({
-                    code: result.value,
-                    language: 'bash' // something plain
-                }) // TODO: simple [pre>code] with CopyToClipboardButton ?
+                
+                // let execution_content = new CodeSection({
+                //     code: result.value,
+                //     language: 'bash' // something plain
+                // })
+                let execution_content = document.createElement('pre')
                     execution_content.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
                     AwesomeCodeElement.details.utility.apply_css(execution_content, {
                         borderTop : '2px solid ' + (result.return_code == -1 ? 'red' : 'green'),
-                        width : '100%'
+                        width : '100%',
+                        margin: 'inherit'
+                    })
+                let code = execution_content.appendChild(document.createElement('code'))
+                    // force hljs bash language
+                    code.innerHTML = hljs.highlightAuto(result.value, [ 'bash' ]).value
+                    code.classList = 'hljs language-bash'
+                    // automated hljs language
+                    //  code.textContent = result.value
+                    //  hljs.highlightElement(code)
+                    AwesomeCodeElement.details.utility.apply_css(code, {
+                        width: '100%',
+                        overflow: 'auto'
                     })
 
                 set_execution_content(execution_content)
