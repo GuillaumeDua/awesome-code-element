@@ -990,8 +990,16 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
             })
             AwesomeCodeElement.details.HTMLElements.resize_observer.observe(panel)
         }
-        set_on_resize_event({ panel: this.html_elements.panels.left, scrolling_element: this.html_elements.code, elements_to_hide: this.html_elements.panels.left.buttons })
-        set_on_resize_event({ panel: this.html_elements.panels.right, scrolling_element: this.html_elements.execution, elements_to_hide: this.html_elements.panels.right.buttons })
+        set_on_resize_event({
+            panel: this.html_elements.panels.left,
+            scrolling_element: this.html_elements.code,
+            elements_to_hide: this.html_elements.panels.left.buttons
+        })
+        set_on_resize_event({
+            panel: this.html_elements.panels.right,
+            scrolling_element: this.html_elements.execution,
+            elements_to_hide: this.html_elements.panels.right.buttons
+        })
 
         this.#initialize_ids()
     }
@@ -1077,24 +1085,16 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
     // html-related events
     static #make_event_on_resize_maybe_hide_elements({ owner, elements }) {
         let auto_hide_elements = (container, elements) => {
-
             elements.forEach((element) => { element.style.display = 'none' })
             container.onmouseover   = () => { elements.forEach((element) => { element.style.display = 'block' }) }
             container.onmouseout    = () => { elements.forEach((element) => element.style.display = 'none') }
         }
         let no_auto_hide_elements = (container, elements) => {
-
             elements.forEach((element) => { element.style.display = 'block' })
             container.onmouseout = null
             container.onmouseover = null
         }
-
         return () => {
-
-            console.log('>>>> DEBUG')
-            console.log(owner)
-            console.log(AwesomeCodeElement.details.utility.is_scrolling(owner).horizontally)
-
             // cheaper than a proper AABB to check if code's content overlap with other elements
             let functor = (
                     AwesomeCodeElement.API.configuration.auto_hide_buttons
