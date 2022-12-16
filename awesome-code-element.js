@@ -1376,7 +1376,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
             // automated hljs language
             //  this.html_elements.execution.textContent = result.value
             //  hljs.highlightElement(this.html_elements.execution)
-            
+
             AwesomeCodeElement.details.utility.apply_css(this.html_elements.execution, {
                 border: '',
                 borderTop : '2px solid ' + (return_code == -1 ? 'red' : 'green'),
@@ -1559,10 +1559,10 @@ AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends 
     }
 
     #initialize() {
-        console.log('ThemeSelector.Initialize : ')
-        console.log(this.#parameters)
 
         let select_node = document.createElement('select')
+            select_node.id = ThemeSelector.#id_generator()
+
         this.#parameters.forEach(element => {
             let option = document.createElement('option')
                 option.value = element
@@ -1586,6 +1586,10 @@ AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends 
         this.replaceWith(select_node)
     }
 
+    static #id_generator = (() => {
+        let counter = AwesomeCodeElement.details.utility.make_incremental_counter_generator()
+        return () => { return `theme_selector_${counter.next().value}` }
+    })()
     static get stylesheet() {
         let code_stylesheet = document.getElementById(ThemeSelector.stylesheet_element_id);
         if (!code_stylesheet)
@@ -1594,6 +1598,7 @@ AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends 
     }
 
     static initialize() {
+        // generates the stylesheet HTML element used to import CSS content
         let stylesheet = document.createElement('link')
             stylesheet.id           = ThemeSelector.stylesheet_element_id
             stylesheet.rel          = 'stylesheet'
@@ -1603,7 +1608,6 @@ AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends 
             })
             stylesheet.crossorigin  = "anonymous"
             stylesheet.referrerpolicy = "no-referrer"
-
         document.head.appendChild(stylesheet)
     }
 }
