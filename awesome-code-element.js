@@ -717,7 +717,7 @@ AwesomeCodeElement.details.HTMLElements.SendToGodboltButton = class SendToGodbol
         let codeSectionElement = this.parentElement.parentElement
 
         if (codeSectionElement === undefined
-        ||  codeSectionElement.tagName.match(`\w+${CodeSection.HTMLElement_name.toUpperCase()}`) === '')
+        ||  codeSectionElement.tagName.match(`\w+${AwesomeCodeElement.API.HTMLElements.CodeSection.HTMLElement_name.toUpperCase()}`) === '')
             throw new Error('awesome-code-element.js: SendToGodboltButton.onClickSend: ill-formed element: unexpected parent.parent element (must be a CodeSection)')
         console.info('awesome-code-element.js: SendToGodboltButton.onClickSend: sending request ...')
 
@@ -904,15 +904,20 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
     // html layout
     html_elements = {
         panels: {
-            left: undefined,
-            right: undefined
+            left: {
+                buttons: {
+                    CE: undefined,
+                    copy_to_clipboard: undefined
+                }
+            },
+            right: {
+                buttons: {
+                    copy_to_clipboard: undefined
+                }
+            }
         },
         code: undefined,
-        execution: undefined,
-        buttons: {
-            CE: undefined,
-            copy_to_clipboard: undefined
-        }
+        execution: undefined
     }
     #initialize_HTML() {
 
@@ -930,38 +935,38 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
             minHeight       : '50px'
         })
 
-        // left panel : code content
+        // left panel: code content
         const {
             panel: left_panel,
             elements: left_panel_elements
         } = this.#make_HTML_left_panel()
 
-        this.html_elements.panels.left      = left_panel
-        this.html_elements.code             = left_panel_elements.code
-        this.html_elements.buttons          = left_panel_elements.buttons
+        this.html_elements.code                 = left_panel_elements.code
+        this.html_elements.panels.left          = left_panel
+        this.html_elements.panels.left.buttons  = left_panel_elements.buttons
         AwesomeCodeElement.details.HTMLElements.LoadingAnimation.inject_into({
             owner:  this.html_elements.panels.left,
             target_or_accessor: this.html_elements.code
         })
-        
         this.html_elements.panels.left  = this.appendChild(this.html_elements.panels.left)
-        AwesomeCodeElement.details.HTMLElements.resize_observer.observe(this)
 
-        // right panel : execution
+        // right panel: execution
         const { 
             panel: right_panel,
             elements: right_panel_elements
         } = this.#make_HTML_right_panel()
 
-        this.html_elements.panels.right      = right_panel
-        this.html_elements.execution         = right_panel_elements.execution
+        this.html_elements.execution            = right_panel_elements.execution
+        this.html_elements.panels.right         = right_panel
+        this.html_elements.panels.right.buttons = right_panel_elements.buttons
+        
         AwesomeCodeElement.details.HTMLElements.LoadingAnimation.inject_into({
             owner:  this.html_elements.panels.right,
             target_or_accessor: () => { return this.html_elements.execution }
         })
         this.html_elements.panels.right      = this.appendChild(this.html_elements.panels.right)
 
-        // panels : style (auto-resize, scroll-bar, etc.)
+        // panels: style (auto-resize, scroll-bar, etc.)
         let set_panel_style = (panel) => {
             AwesomeCodeElement.details.utility.apply_css(panel, {
                 flex:       '1 1 min-content',
@@ -975,6 +980,18 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
         }
         set_panel_style(this.html_elements.panels.left)
         set_panel_style(this.html_elements.panels.right)
+        
+        // panels: add on_resize event
+        let set_on_resize_event = ({panel, scrolling_element, elements_to_hide}) => {
+            // left panel: resize event
+            panel.on_resize = CodeSectionHTMLElement.#make_event_on_resize_maybe_hide_elements({
+                owner: scrolling_element,
+                elements: Object.entries(elements_to_hide).map(element => element[1]) // structure-to-array
+            })
+            AwesomeCodeElement.details.HTMLElements.resize_observer.observe(panel)
+        }
+        set_on_resize_event({ panel: this.html_elements.panels.left, scrolling_element: this.html_elements.code, elements_to_hide: this.html_elements.panels.left.buttons })
+        set_on_resize_event({ panel: this.html_elements.panels.right, scrolling_element: this.html_elements.execution, elements_to_hide: this.html_elements.panels.right.buttons })
 
         this.#initialize_ids()
     }
@@ -1034,10 +1051,15 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
                 borderRadius:'5px'
             })
             execution_element = right_panel.appendChild(execution_element)
+        let copy_button = new AwesomeCodeElement.details.HTMLElements.CopyToClipboardButton()
+            copy_button = right_panel.appendChild(copy_button)
         return { 
             panel: right_panel,
             elements: {
-                execution: execution_element
+                execution: execution_element,
+                buttons: {
+                    copy_to_clipboard: copy_button
+                }
             }
         }
     }
@@ -1046,16 +1068,17 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
         this.html_elements.panels.left.id   = `${this.id}.panels.left`
         this.html_elements.panels.right.id  = `${this.id}.panels.right`
         this.html_elements.code.id          = `${this.id}.code`
-        this.html_elements.execution.id     = `${this.id}.execution` // TODO: as such element is a placeholder which is then replaced, consider another specific id annotation ?
-        this.html_elements.buttons.CE.id    = `${this.id}.buttons.CE`
-        this.html_elements.buttons.copy_to_clipboard.id = `${this.id}.buttons.copy_to_clipboard`
+        this.html_elements.execution.id     = `${this.id}.execution`
+        this.html_elements.panels.left.buttons.CE.id                    = `${this.id}.panels.left.buttons.CE`
+        this.html_elements.panels.left.buttons.copy_to_clipboard.id     = `${this.id}.panels.left.buttons.copy_to_clipboard`
+        this.html_elements.panels.right.buttons.copy_to_clipboard.id    = `${this.id}.panels.right.buttons.copy_to_clipboard`
     }
 
     // html-related events
-    on_resize() {
+    static #make_event_on_resize_maybe_hide_elements({ owner, elements }) {
         let auto_hide_elements = (container, elements) => {
 
-            elements.forEach((element) => element.style.display = 'none')
+            elements.forEach((element) => { element.style.display = 'none' })
             container.onmouseover   = () => { elements.forEach((element) => { element.style.display = 'block' }) }
             container.onmouseout    = () => { elements.forEach((element) => element.style.display = 'none') }
         }
@@ -1066,15 +1089,21 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
             container.onmouseover = null
         }
 
-        // cheaper than a proper AABB to check if code's content overlap with other elements
-        let functor = (
-                AwesomeCodeElement.API.configuration.auto_hide_buttons
-            ||  AwesomeCodeElement.details.utility.is_scrolling(this.html_elements.code).horizontally
-        )   ? auto_hide_elements
-            : no_auto_hide_elements
+        return () => {
 
-        // let elements = $(this).find('button[is^=awesome-code-element_el_]')
-        functor(this, [ this.html_elements.buttons.CE, this.html_elements.buttons.copy_to_clipboard ])
+            console.log('>>>> DEBUG')
+            console.log(owner)
+            console.log(AwesomeCodeElement.details.utility.is_scrolling(owner).horizontally)
+
+            // cheaper than a proper AABB to check if code's content overlap with other elements
+            let functor = (
+                    AwesomeCodeElement.API.configuration.auto_hide_buttons
+                ||  AwesomeCodeElement.details.utility.is_scrolling(owner).horizontally
+            )   ? auto_hide_elements
+                : no_auto_hide_elements
+
+            functor(owner, elements)
+        }
     }
 
     // initialization
@@ -1228,7 +1257,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
 
         // CE button visibility
         // Note that resize observer can still toggle `display: block|none`
-        this.html_elements.buttons.CE.style.visibility = Boolean(this.#is_valid_language && AwesomeCodeElement.API.configuration.CE.has(this.#_language))
+        this.html_elements.panels.left.buttons.CE.style.visibility = Boolean(this.#is_valid_language && AwesomeCodeElement.API.configuration.CE.has(this.#_language))
             ? 'visible'
             : 'hidden'
 
