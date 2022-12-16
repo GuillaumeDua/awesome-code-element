@@ -31,11 +31,18 @@ SOFTWARE.
             html.light-mode {
                 color-scheme: light;
                 --separator-color: #8e8e8e;
+                --default-text-color: darkslategray;
             }
             html.dark-mode {
                 color-scheme: dark;
                 --separator-color: #38393b;
+                --default-text-color: steelblue;
             }
+
+            label, button, select {
+                color: var(--default-text-color)
+            }
+
             :root {
                 --border-radius-small: 4px;
                 --border-radius-medium: 6px;
@@ -77,6 +84,7 @@ SOFTWARE.
             .shake {
                 display:inline-block
             }
+
         </style>
     
         <!-- highlight -->
@@ -106,8 +114,8 @@ SOFTWARE.
             AwesomeCodeElement.API.initialize();
         </script>
         <script type="module">
-            import AwesomeCodeElement from "/awesome-code-element_dark-mode.js"
-            AwesomeCodeElement.API.DarkMode.initialize()
+            // import AwesomeCodeElement from "/awesome-code-element_dark-mode.js"
+            // AwesomeCodeElement.API.DarkMode.initialize()
         </script>
     
         <!-- CS Tests utility scripts -->

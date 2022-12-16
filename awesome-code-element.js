@@ -176,8 +176,7 @@ AwesomeCodeElement.API.configuration = {
     CE                                  : new AwesomeCodeElement.API.CE_ConfigurationManager,
     hljs                                : {
         version : '11.6.0',
-        theme   : 'tokyo-night',
-        // TODO: dark or light (if not dark-mode)
+        theme   : 'tokyo-night'
     },
     doxygen_awesome_css_compatibility   : false,
     pre_code_compatibility              : false,
@@ -1543,16 +1542,27 @@ AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends 
     static HTMLElement_name = 'theme-selector'
     static stylesheet_element_id = 'code_theme_stylesheet'
 
-    static #url_builder = {
-        base : `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/${AwesomeCodeElement.API.configuration.hljs.version}/styles/`,
-        ext : '.min.css',
+    static #url_builder = class url_builder {
 
-        build({ name, dark_or_light = 'light' }) {
+        static #base = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/${AwesomeCodeElement.API.configuration.hljs.version}/styles/`
+        static #ext = '.min.css'
+        static #default_dark_or_light = (() => {
+            let prefersLightModeInDarkModeKey = "prefers-light-mode-in-dark-mode"
+            let prefersDarkModeInLightModeKey = "prefers-dark-mode-in-light-mode"
+
+            let system_preference = window.matchMedia('(prefers-color-scheme: dark)').matches
+            let is_dark_mode_prefered = !system_preference &&  localStorage.getItem(prefersDarkModeInLightModeKey)
+                ||  system_preference && !localStorage.getItem(prefersLightModeInDarkModeKey)
+            return is_dark_mode_prefered ? 'dark' : 'light'
+        })
+
+        static build({ name, dark_or_light = url_builder.#default_dark_or_light() }) {
             if (typeof name !== 'string' && ! name instanceof String)
                 throw new Error('ThemeSelector.#url_builder.build : invalid argument [name]')
             if (dark_or_light !== 'light' && dark_or_light !== 'dark')
                 throw new Error('ThemeSelector.#url_builder.build : invalid argument : [dark_or_light]')
-            return `${ThemeSelector.#url_builder.base}${name}-${dark_or_light}${ThemeSelector.#url_builder.ext}`
+
+            return `${url_builder.#base}${name}-${dark_or_light}${url_builder.#ext}`
         }
     }
 
