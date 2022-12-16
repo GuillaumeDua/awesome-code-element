@@ -1026,6 +1026,7 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
         let execution_element = document.createElement('code')
             AwesomeCodeElement.details.utility.apply_css(execution_element, {
                 //display:    'flex', 'flex-direction' : 'column',
+                display:    'block',
                 width:      '100%',
                 overflow:   'auto',
                 margin:     'inherit',
@@ -1356,8 +1357,6 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
 
         let set_execution_content = ({ is_fetch_success, content: { value, return_code } }) => {
 
-            // WIP: why does `this.html_elements.execution.style.display` becomes 'flex' here ???
-
             if (!is_fetch_success) {
                 this.html_elements.execution.textContent = value
                 this.html_elements.execution.title = '[error] execution failed'
@@ -1371,10 +1370,13 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
             this.html_elements.execution.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
             // force hljs bash language
             this.html_elements.execution.innerHTML = hljs.highlightAuto(value, [ 'bash' ]).value
-            this.html_elements.execution.classList = 'hljs language-bash'
+            this.html_elements.execution.classList = [...this.html_elements.code.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
+            this.html_elements.execution.classList.add(`hljs`)
+            this.html_elements.execution.classList.add(`language-bash`)
             // automated hljs language
             //  this.html_elements.execution.textContent = result.value
             //  hljs.highlightElement(this.html_elements.execution)
+            
             AwesomeCodeElement.details.utility.apply_css(this.html_elements.execution, {
                 border: '',
                 borderTop : '2px solid ' + (return_code == -1 ? 'red' : 'green'),
