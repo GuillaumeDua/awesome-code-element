@@ -1574,46 +1574,43 @@ AwesomeCodeElement.details.Theme = class ThemeUtility {
         // switch to default theme
         ThemeUtility.switch_theme_to(AwesomeCodeElement.API.configuration.hljs.default_theme)
     }
+    static get stylesheet() {
+        let code_stylesheet = document.getElementById(ThemeUtility.stylesheet_element_id);
+        if (!code_stylesheet)
+            throw new Error('AwesomeCodeElement.details.Theme: missing stylesheet\n\tDid you forget to call AwesomeCodeElement.API.initialize(); ?')
+        return code_stylesheet
+    }
 
     static switch_theme_to(theme_name) {
 
         let set_stylesheet_content = (content) => {
-            console.debug(`>>>>> AwesomeCodeElement.details.Theme: Setting a new stylesheet !!!`)
-            let stylesheet = document.getElementById(ThemeUtility.stylesheet_element_id)
-            if (!stylesheet)
-                throw new Error('AwesomeCodeElement.details.Theme: missing stylesheet.\n\tDid you forget to call AwesomeCodeElement.API.initialize() ?')
-            stylesheet.innerHTML = content
-            // hljs.highlightAll() // useless ?
+            ThemeUtility.stylesheet.innerHTML = content
         }
 
-        let fetch_stylesheet_content = ({ url, fallback }) => {
-            console.info(`AwesomeCodeElement.details.Theme: attempting to load stylesheet\n\t[${url}]`)
+        let try_to_load_stylesheet = ({ url, on_failure }) => {
+            console.info(`AwesomeCodeElement.details.Theme: loading stylesheet\n\t[${url}] ...`)
             fetch(url, { method: 'GET' })
                 .then(response => {
                     if (response.ok)
-                        set_stylesheet_content(response.text())
-                    else {
-                        console.info(`AwesomeCodeElement.details.Theme: cannot reach url:\n\t[${url}]\nattempting to reach fallback:\n\t[${fallback}]`)
-                        fetch(fallback, { method: 'GET' })
-                            .then(fallback_response => {
-                                if (fallback_response.ok)
-                                    set_stylesheet_content(fallback_response.text())
-                                else throw new Error('unreachable')
-                            })
-                            .catch(error => {
-                                console.error(`AwesomeCodeElement.details.Theme: unable to load theme fallback url [${fallback}]\n\tError: ${error}`)
-                            })
-                    }
+                        return response.text()
+                    throw new Error('unreachable')
                 })
+                .then(text => set_stylesheet_content(text))
                 .catch(error => {
-                    console.error(`AwesomeCodeElement.details.Theme: unable to load [${url}]\n\tError: ${error}`)
+                    let message = on_failure ? '' : `\nBut a fallback strategy is provided (wait for it ...)`
+                    let console_stream = on_failure ? console.info : console.error
+                        console_stream(`AwesomeCodeElement.details.Theme: unable to load\n\t[${url}]\n${error}${message}`)
+                    if (on_failure)
+                        on_failure()
                 })
             ;
         }
-
-        fetch_stylesheet_content({
+        try_to_load_stylesheet({
             url:        ThemeUtility.url_builder.build({ name : theme_name }),
-            fallback:   ThemeUtility.url_builder.build({ name : theme_name, dark_or_light: '' }) // theme that does not handle light/dark variants
+            on_failure: () => {
+                // theme that does not handle light/dark variants
+                try_to_load_stylesheet({ url : ThemeUtility.url_builder.build({ name : theme_name, dark_or_light: '' })})
+            }
         })
     }
 }
@@ -1679,12 +1676,6 @@ AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends 
         let counter = AwesomeCodeElement.details.utility.make_incremental_counter_generator()
         return () => { return `theme_selector_${counter.next().value}` }
     })()
-    static get stylesheet() {
-        let code_stylesheet = document.getElementById(ThemeSelector.stylesheet_element_id);
-        if (!code_stylesheet)
-            throw new Error('AwesomeCodeElement.API.HTMLElements.ThemeSelector: missing stylesheet\n\tDid you forget to call AwesomeCodeElement.API.initialize(); ?')
-        return code_stylesheet
-    }
 }
 customElements.define(
     AwesomeCodeElement.API.HTMLElements.ThemeSelector.HTMLElement_name,
