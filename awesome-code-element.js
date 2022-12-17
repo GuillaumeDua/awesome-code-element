@@ -66,8 +66,10 @@
 // TODO: named parameters
 // TODO: static vs. const ?
 // TODO: element name consistency ?
-// TODO: alias awesome-code-element -> ace ?
 // TODO: use arrow function: automatically captures the `this` value of the enclosing scope (rather than _this)
+// TODO: alias awesome-code-element -> ace ?
+// TODO: HTMLElements_name -> ace_${name}
+// TODO: check shadowroot-callbacks
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -849,18 +851,17 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
     }
 
     connectedCallback() {
-        console.debug('CodeSectionHTMLElement: connectedCallback')
+        console.debug('AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement: connectedCallback')
         try {
             if (!this.acquire_parameters(this.#_parameters)) {
-                console.debug('CodeSectionHTMLElement: create shadowroot slot')
-                let _this = this
+                console.debug('AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement: create shadowroot slot')
                 this.shadowroot_accessor = AwesomeCodeElement.details.utility.create_shadowroot_slot(
                     this,
-                    function(){ _this.#shadow_root_callback() }
+                    () => { this.#shadow_root_callback() }
                 )
             }
             else {
-                console.debug('CodeSectionHTMLElement: no need for shadowroot slot')
+                console.debug('AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement: no need for shadowroot slot')
                 this.initialize()
             }
         }
@@ -1196,7 +1197,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
         let value       = (typeof arg === "object" ? arg.value : arg)
         let update_view = (typeof arg === "object" ? arg.update_view : true)
 
-        console.info(`CodeSection: set language to [${value}]`)
+        console.info(`AwesomeCodeElement.API.HTMLElements.CodeSection: set language to [${value}]`)
 
         this.#_language = (value || '').replace('language-', '')
         this.setAttribute('language', this.#_language)
@@ -1306,7 +1307,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
     initialize() {
         super.initialize()
 
-        console.debug(`CodeSection: initializing with parameters [${JSON.stringify(this.#_parameters, null, 3)}]` )
+        console.debug(`AwesomeCodeElement.details.HTMLElements.CodeSection: initializing with parameters [${JSON.stringify(this.#_parameters, null, 3)}]` )
 
         // defered initialiation
         this.#_language                  = this.#_parameters.language
@@ -1535,6 +1536,7 @@ customElements.define(
     AwesomeCodeElement.API.HTMLElements.CodeSection
 );
 
+// TODO: check doxygen-awesome-css compatiblity
 AwesomeCodeElement.details.Theme = class Theme {
 // class-as-namespace
 
@@ -1677,8 +1679,6 @@ AwesomeCodeElement.details.Theme = class Theme {
             ;
         }
 
-        console.log(`>>>>> DEBUG: ${Theme.preferences.dark_or_light}`)
-
         let force_light_or_dark_mode = theme_name.search(/(-dark|-light)$/, '') !== -1
         try_to_load_stylesheet({
             theme_name: theme_name,
@@ -1725,7 +1725,7 @@ window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', ev
 })
 AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton = class ToggleDarkModeButton extends HTMLButtonElement {
 
-    static HTMLElement_name                 = "awesome-code-element_toggle-dark-mode-button"
+    static HTMLElement_name                 = "awesome-code-element-toggle-dark-mode-button"
     static title                            = "Toggle light/dark Mode"
     static lightModeIcon                    = `<svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#FCBF00"><rect fill="none" height="24" width="24"/><circle cx="12" cy="12" opacity=".3" r="3"/><path d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"/></svg>`
     static darkModeIcon                     = `<svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#FE9700"><rect fill="none" height="24" width="24"/><path d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27 C17.45,17.19,14.93,19,12,19c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z" opacity=".3"/><path d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"/></svg>`
@@ -1751,10 +1751,7 @@ AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton = class ToggleDarkModeB
     }
 
     updateIcon() {
-
-        console.debug(`>>>>> DEBUG: updateIcon : is_dark_mode ? ${AwesomeCodeElement.details.Theme.preferences.is_dark_mode}`)
-
-        // show light-mode icon if dark-mode is activated, and vice-versa
+    // show light-mode icon if dark-mode is activated, and vice-versa
         this.innerHTML = AwesomeCodeElement.details.Theme.preferences.is_dark_mode
             ? ToggleDarkModeButton.lightModeIcon
             : ToggleDarkModeButton.darkModeIcon
@@ -1787,17 +1784,11 @@ AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends 
             return
         }
         try {
-            let _this = this
-            this.shadowroot_accessor = AwesomeCodeElement.details.utility.create_shadowroot_slot(
-                this,
-                function(){
-                    var options = $(_this).find('option');
-                        _this.#parameters = options.map((index, element) => {
-                            return element.getAttribute('value')
-                        }).toArray()
-                    _this.#initialize()
-                }
-            )
+            var options = $(this).find('option');
+            this.#parameters = options.map((index, element) => {
+                return element.getAttribute('value')
+            }).toArray()
+            this.#initialize()
         }
         catch (error) {
             console.error(`${error}`)
@@ -1807,32 +1798,34 @@ AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends 
 
     #initialize() {
 
-        let select_node = document.createElement('select')
-            select_node.id = ThemeSelector.#id_generator()
+        this.setAttribute('is', ThemeSelector.HTMLElement_name)
+        this.id = ThemeSelector.#id_generator()
+        this.innerHTML = ""
 
         this.#parameters.forEach(element => {
             let option = document.createElement('option')
                 option.value = element
                 option.text  = element
-            select_node.appendChild(option)
+            this.appendChild(option)
         })
-        select_node.onchange = function(){
+        this.onchange = function(){
 
             let selected_option = $(this).find('option:selected')
             console.info(`AwesomeCodeElement.API.HTMLElements.ThemeSelector.onchange: switching to [${selected_option.text()}]`)
             AwesomeCodeElement.details.Theme.value = selected_option.text()
         }
-        this.replaceWith(select_node)
+
+        // this.selectedOptions
     }
 
     static #id_generator = (() => {
         let counter = AwesomeCodeElement.details.utility.make_incremental_counter_generator()
-        return () => { return `theme_selector_${counter.next().value}` }
+        return () => { return `${ThemeSelector.HTMLElement_name}-${counter.next().value}` }
     })()
 }
 customElements.define(
     AwesomeCodeElement.API.HTMLElements.ThemeSelector.HTMLElement_name,
-    AwesomeCodeElement.API.HTMLElements.ThemeSelector, { extends : 'select'}
+    AwesomeCodeElement.API.HTMLElements.ThemeSelector, { extends : 'select' }
 );
 
 // ============
