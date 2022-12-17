@@ -179,8 +179,9 @@ AwesomeCodeElement.API.configuration = {
     CE                                  : new AwesomeCodeElement.API.CE_ConfigurationManager,
     hljs                                : {
         version : '11.6.0', // TODO: automate hljs import (avoid dependencies mismatch)
-        // default_theme   : 'tokyo-night'
-        default_theme   : 'obsidian'
+        // default_theme:   If no theme-selector, then this is the default one.
+        //                  Otherwise, the first valid option of the first theme-selector is the default
+        default_theme   : 'tokyo-night'  //          supports dark/light variations
     },
     doxygen_awesome_css_compatibility   : false,
     pre_code_compatibility              : false,
@@ -190,6 +191,8 @@ AwesomeCodeElement.API.configuration = {
 AwesomeCodeElement.API.configure = (arg) => {
     if (!arg)
         throw new Error('AwesomeCodeElement.API.configuration.configure: invalid argument')
+
+    // TODO: recursive unfold
     AwesomeCodeElement.details.utility.unfold_into({
         target : AwesomeCodeElement.API.configuration,
         properties : arg
@@ -1602,6 +1605,19 @@ AwesomeCodeElement.details.Theme = class Theme {
         }
     }
 
+    static get default_theme() {
+        const theme_selector_default_option = (() => {
+            let candidate_option = $(document).find('select[is=theme-selector]')
+                .map((index, element) => { return element.options[0] })
+                .filter(value => Boolean(value))
+                [0]
+            return candidate_option ? candidate_option.value : undefined
+        })()
+        return Boolean(theme_selector_default_option)
+            ? theme_selector_default_option
+            : AwesomeCodeElement.API.configuration.hljs.default_theme
+    }
+
     static #stylesheet_element_id = 'code_theme_stylesheet'
     static initialize() {
         // generates the stylesheet HTML element used to import CSS content
@@ -1610,9 +1626,13 @@ AwesomeCodeElement.details.Theme = class Theme {
             stylesheet.id = Theme.#stylesheet_element_id
         document.head.appendChild(stylesheet)
 
-        // switch to default theme
-        Theme.value = AwesomeCodeElement.API.configuration.hljs.default_theme
-
+        // switch to default theme, if any
+        let default_theme_name = Theme.default_theme
+        if (default_theme_name) {
+            console.info(`AwesomeCodeElement.details.Theme.initialize: default theme name: [${default_theme_name}]`)
+            Theme.value = default_theme_name
+        }
+        // dark/light-mode preference
         Theme.preferences.is_dark_mode = Theme.preferences.is_dark_mode
 
         // avoid any redundant call
@@ -1646,13 +1666,19 @@ AwesomeCodeElement.details.Theme = class Theme {
     static set value(theme_name) {
 
         console.info(`AwesomeCodeElement.details.Theme: setting theme to [${theme_name}]`)
+        if (!theme_name) {
+            Theme.value.element.setAttribute('href', '')
+            Theme.value.element.setAttribute('theme_name', '')
+            Theme.value.element.setAttribute('theme_dark_or_light_suffix', '')
+            return
+        }
 
         let set_stylesheet_content = ({ url }) => {
             Theme.value.element.setAttribute('href', url)
 
             let theme_infos = Theme.url_builder.retrieve(url)
             Theme.value.element.setAttribute('theme_name', theme_infos.name)
-            Theme.value.element.setAttribute('theme_dark_or_light_suffix', theme_infos.dark_or_light_suffix || "")
+            Theme.value.element.setAttribute('theme_dark_or_light_suffix', theme_infos.dark_or_light_suffix || '')
 
             console.info(`AwesomeCodeElement.details.Theme: stylesheet successfully loaded\n\t[${url}]`)
         }
@@ -1814,8 +1840,7 @@ AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends 
             console.info(`AwesomeCodeElement.API.HTMLElements.ThemeSelector.onchange: switching to [${selected_option.text()}]`)
             AwesomeCodeElement.details.Theme.value = selected_option.text()
         }
-
-        // this.selectedOptions
+        this.onchange()
     }
 
     static #id_generator = (() => {
