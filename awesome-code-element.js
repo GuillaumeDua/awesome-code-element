@@ -1547,8 +1547,8 @@ AwesomeCodeElement.details.Theme = class Theme {
             return window.matchMedia('(prefers-color-scheme: dark)').matches
         }
         static get is_dark_mode() {
-            return !ThemePreferences.system_prefers_dark_mode &&  localStorage.getItem(ThemePreferences.#prefersDarkModeInLightModeKey)
-                ||  ThemePreferences.system_prefers_dark_mode && !localStorage.getItem(ThemePreferences.#prefersLightModeInDarkModeKey)
+            return Boolean(!ThemePreferences.system_prefers_dark_mode &&  localStorage.getItem(ThemePreferences.#prefersDarkModeInLightModeKey)
+                ||  ThemePreferences.system_prefers_dark_mode && !localStorage.getItem(ThemePreferences.#prefersLightModeInDarkModeKey))
         }
         static set is_dark_mode(value) {
             if (!value) {
@@ -1693,23 +1693,36 @@ AwesomeCodeElement.details.Theme = class Theme {
         })
     }
 
-    // light/dark theme switch
-    static get ToggleDarkMode() {
-        return Theme.value.dark_or_light_suffix === '-dark'
-    }
-    static set ToggleDarkMode(value) {
+    static set is_dark_mode(value) {
 
-        console.debug(`DEBUG: ToggleDarkMode to ${value}`)
-
-        Theme.preferences.is_dark_mode = !Theme.preferences.is_dark_mode
+        Theme.preferences.is_dark_mode = value
 
         if (!Theme.value.support_dark_or_light_mode) {
             console.info(`Theme.ToggleDarkMode: theme does not supports dark/light mode, aborting.`)
             return
         }
+        if ((value  && Theme.value.dark_or_light_suffix === '-dark')
+        ||  (!value && Theme.value.dark_or_light_suffix === '-light')) {
+            console.info(`Theme.ToggleDarkMode: theme already has the right dark/light mode, aborting.`)
+            return
+        }
         Theme.value = Theme.url_builder.toggle_dark_mode(Theme.value.fullname)
     }
+    static ToggleDarkMode() {
+        Theme.is_dark_mode = !Theme.preferences.is_dark_mode
+    }
 }
+// Events: monitor system preference changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+    $(document).find(`button[is=${AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton.HTMLElement_name}]`)
+        .each((index, element) => { element.updateIcon() })
+    AwesomeCodeElement.details.Theme.is_dark_mode = event.matches
+})
+window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', event => {
+    $(document).find(`button[is=${AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton.HTMLElement_name}]`)
+        .each((index, element) => { element.updateIcon() })
+    AwesomeCodeElement.details.Theme.is_dark_mode = !event.matches
+})
 AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton = class ToggleDarkModeButton extends HTMLButtonElement {
 
     static HTMLElement_name                 = "awesome-code-element_toggle-dark-mode-button"
@@ -1724,26 +1737,20 @@ AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton = class ToggleDarkModeB
         this.setAttribute('is', ToggleDarkModeButton.HTMLElement_name)
         this.title = ToggleDarkModeButton.title
         this.addEventListener('click', this.#on_click);
-        this.#updateIcon()
+        this.updateIcon()
 
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-            this.#updateIcon()
-        })
-        window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', event => {
-            this.#updateIcon()
-        })
         document.addEventListener("visibilitychange", visibilityState => {
             if (document.visibilityState === 'visible') {
-                this.#updateIcon()
+                this.updateIcon()
             }
         });
     }
     #on_click(){
-        AwesomeCodeElement.details.Theme.ToggleDarkMode = true
-        this.#updateIcon()
+        AwesomeCodeElement.details.Theme.ToggleDarkMode()
+        this.updateIcon()
     }
 
-    #updateIcon() {
+    updateIcon() {
 
         console.debug(`>>>>> DEBUG: updateIcon : is_dark_mode ? ${AwesomeCodeElement.details.Theme.preferences.is_dark_mode}`)
 
