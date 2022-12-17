@@ -162,21 +162,6 @@ customElements.define(
     AwesomeCodeElement.details.HTMLElements.ToggleDarkModeButton, {extends: 'button'}
 );
     
-// light/dark theme switch
-Object.defineProperty(
-    AwesomeCodeElement.API.HTMLElements.ThemeSelector,
-    'toggleDarkModeOnTheme',
-    {
-        get: () => {
-            return AwesomeCodeElement.API.HTMLElements.ThemeSelector.stylesheet.href.indexOf('dark') !== -1
-        },
-        set: function(value){
-            let [ current, replacement ] = (value ? [ '-light', '-dark' ] : [ '-dark', '-light' ])
-            AwesomeCodeElement.API.HTMLElements.ThemeSelector.stylesheet.href = AwesomeCodeElement.API.HTMLElements.ThemeSelector.stylesheet.href.replace(current, replacement)
-        }
-    }
-)
-
 // Toggle dark/light mode : doxygen-awesome-css & awesome-code-element inter-operability/compatibility
 AwesomeCodeElement.API.DarkMode.updateToggleIcons = function() {
     
@@ -198,7 +183,6 @@ AwesomeCodeElement.API.DarkMode.updateToggleIcons = function() {
 AwesomeCodeElement.details.events = class {}
 AwesomeCodeElement.details.events.onHTMLClassChange_updateDarkLightMode = function(mutationsList, observer) {
 // TODO: only last mutation matters ?
-
     mutationsList.forEach(mutation => {
 
         if (mutation.attributeName !== 'class')
@@ -215,7 +199,7 @@ AwesomeCodeElement.details.events.onHTMLClassChange_updateDarkLightMode = functi
 
         let isDarkModeEnabled = (html_node.className === 'dark-mode')
 
-        AwesomeCodeElement.API.HTMLElements.ThemeSelector.toggleDarkModeOnTheme = isDarkModeEnabled
+        AwesomeCodeElement.details.Theme.ToggleDarkMode = isDarkModeEnabled
         AwesomeCodeElement.API.DarkMode.updateToggleIcons()
     })
 }
