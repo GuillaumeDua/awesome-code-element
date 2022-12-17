@@ -515,7 +515,7 @@ AwesomeCodeElement.details.utility = class {
         let xhr = new XMLHttpRequest();
             xhr.open('GET', url);
             xhr.onerror = function() {
-                on_error(`RemoteCodeSection: network Error`)
+                on_error(`AwesomeCodeElement.details.utility.fetch_resource: network Error`)
             };
             xhr.onload = function() {
 
@@ -1537,6 +1537,8 @@ customElements.define(
 
 AwesomeCodeElement.details.Theme = class Theme {
 // class-as-namespace
+
+    // TODO: refactor: preference
     static is_dark_mode = () => {
         let prefersLightModeInDarkModeKey = "prefers-light-mode-in-dark-mode"
         let prefersDarkModeInLightModeKey = "prefers-dark-mode-in-light-mode"
@@ -1566,64 +1568,81 @@ AwesomeCodeElement.details.Theme = class Theme {
             let matches = url.match(`${url_builder.#base}(.*?)(\-dark|\-light){0,1}${url_builder.#ext}`)
             return {
                 name: matches[1],
-                dark_or_light_prefix: matches[2]
+                dark_or_light_suffix: matches[2]
             }
+        }
+        static toggle_dark_mode(url) {
+            return url.replace(/\-dark|\-light/, (match) => {
+                return match === '-dark' ? '-light' : '-dark'
+            })
         }
     }
 
     static stylesheet_element_id = 'code_theme_stylesheet'
     static initialize() {
         // generates the stylesheet HTML element used to import CSS content
-        let stylesheet = document.createElement('style')
+        let stylesheet = document.createElement('link')
+            stylesheet.rel = "stylesheet"
             stylesheet.id = Theme.stylesheet_element_id
         document.head.appendChild(stylesheet)
 
         // switch to default theme
         Theme.value = AwesomeCodeElement.API.configuration.hljs.default_theme
     }
-    static get stylesheet() {
-        let code_stylesheet = document.getElementById(Theme.stylesheet_element_id);
-        if (!code_stylesheet)
-            throw new Error('AwesomeCodeElement.details.Theme: missing stylesheet\n\tDid you forget to call AwesomeCodeElement.API.initialize(); ?')
-        return code_stylesheet
-    }
-    static get stylesheet_url() {
-        return Theme.stylesheet.getAttribute('url')
-    }
     static get supports_dark_or_light_mode() {
         // Note: supports dark-mode by default (when not loaded yet)
-        return !Theme.stylesheet_url || Theme.url_builder.retrieve(Theme.stylesheet_url).dark_or_light_prefix
+        return !Theme.value.url || Theme.value.dark_or_light_suffix
     }
 
     // value
     static get value() {
-        return Theme.stylesheet.getAttribute('theme_name')
+
+        let element = document.getElementById(Theme.stylesheet_element_id);
+        if (!element)
+            throw new Error('AwesomeCodeElement.details.Theme: missing stylesheet\n\tDid you forget to call AwesomeCodeElement.API.initialize(); ?')
+
+        return {
+            url:                    element.getAttribute('href'),
+            name:                   element.getAttribute('theme_name'),
+            dark_or_light_suffix:   element.getAttribute('theme_dark_or_light_suffix'),
+            get ['support_dark_or_light_mode']() {
+                return Boolean(this.dark_or_light_suffix)
+            },
+            get ['fullname']() {
+                return `${this.name}${this.dark_or_light_suffix}`
+            },
+            element:                element
+        }
     }
     static set value(theme_name) {
 
         console.info(`AwesomeCodeElement.details.Theme: setting theme to [${theme_name}]`)
 
-        let set_stylesheet_content = ({ theme_name, url, content }) => {
-            Theme.stylesheet.innerHTML = content
-            Theme.stylesheet.setAttribute('url', url)
-            Theme.stylesheet.setAttribute('theme_name', theme_name)
+        let set_stylesheet_content = ({ url }) => {
+            Theme.value.element.setAttribute('href', url)
+
+            let theme_infos = Theme.url_builder.retrieve(url)
+            Theme.value.element.setAttribute('theme_name', theme_infos.name)
+            Theme.value.element.setAttribute('theme_dark_or_light_suffix', theme_infos.dark_or_light_suffix || "")
+
+            console.info(`AwesomeCodeElement.details.Theme: stylesheet loaded\n\t[${url}]`)
         }
 
         let try_to_load_stylesheet = ({ theme_name, dark_or_light, on_failure }) => {
 
             let url = Theme.url_builder.build({ name : theme_name, dark_or_light: dark_or_light })
-            console.info(`AwesomeCodeElement.details.Theme: loading stylesheet\n\t[${url}] ...`)
+            console.debug(`AwesomeCodeElement.details.Theme: loading stylesheet\n\t[${url}] ...`)
 
             fetch(url, { method: 'GET' })
                 .then(response => {
                     if (response.ok)
-                        return response.text()
+                        return response.ok
                     throw new Error('unreachable')
                 })
-                .then(text => set_stylesheet_content({ url: url, content: text}))
+                .then(() => set_stylesheet_content({ url: url }))
                 .catch(error => {
                     let message = on_failure ? `\nBut a fallback strategy is provided (wait for it ...)` : ''
-                    let console_stream = on_failure ? console.info : console.error
+                    let console_stream = on_failure ? console.debug : console.error
                         console_stream(`AwesomeCodeElement.details.Theme: unable to load\n\t[${url}]\n${error}${message}`)
                     if (on_failure)
                         on_failure()
@@ -1632,33 +1651,31 @@ AwesomeCodeElement.details.Theme = class Theme {
         }
 
         let force_light_or_dark_mode = theme_name.search(/(-dark|-light)$/, '') !== -1
-        let fallback_strategy = force_light_or_dark_mode ? undefined : () => {
-            // theme that does not handle light/dark variants
-            try_to_load_stylesheet({
-                theme_name: theme_name,
-                dark_or_light: '', // no dark/light prefix
-            })
-        }
         try_to_load_stylesheet({
             theme_name: theme_name,
-            dark_or_light: Theme.dark_or_light(),
-            on_failure: fallback_strategy
+            dark_or_light: force_light_or_dark_mode ? '' : Theme.dark_or_light(),
+            on_failure: force_light_or_dark_mode ? undefined : () => {
+                // handles themes that do not support light/dark variations
+                try_to_load_stylesheet({
+                    theme_name: theme_name,
+                    dark_or_light: '', // no dark/light prefix
+                })
+            }
         })
     }
 
     // light/dark theme switch
     static get ToggleDarkMode() {
-        return Theme.url_builder.retrieve(Theme.stylesheet_url).dark_or_light_prefix === '-dark'
+        return Theme.value.dark_or_light_suffix === '-dark'
     }
     static set ToggleDarkMode(value) {
 
-        console.debug(`>>>>>>>> ToggleDarkMode: ${Theme.supports_dark_or_light_mode}`)
+        console.debug(`>>>>>>>> ToggleDarkMode: ${Theme.value.support_dark_or_light_mode}`)
 
-        if (!Theme.supports_dark_or_light_mode)
+        if (!Theme.value.support_dark_or_light_mode)
             return
 
-        let [ current, replacement ] = (value ? [ '-light', '-dark' ] : [ '-dark', '-light' ])
-        Theme.value = Theme.value.replace(current, replacement)
+        Theme.value = Theme.url_builder.toggle_dark_mode(Theme.value.fullname)
     }
 }
 AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends HTMLSelectElement {
