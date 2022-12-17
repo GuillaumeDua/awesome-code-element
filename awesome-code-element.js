@@ -1538,31 +1538,53 @@ customElements.define(
 AwesomeCodeElement.details.Theme = class Theme {
 // class-as-namespace
 
-    // TODO: refactor: preference
-    static is_dark_mode = () => {
-        let prefersLightModeInDarkModeKey = "prefers-light-mode-in-dark-mode"
-        let prefersDarkModeInLightModeKey = "prefers-dark-mode-in-light-mode"
+    static preferences = class ThemePreferences {
 
-        let system_preference = window.matchMedia('(prefers-color-scheme: dark)').matches
-        return !system_preference &&  localStorage.getItem(prefersDarkModeInLightModeKey)
-            ||  system_preference && !localStorage.getItem(prefersLightModeInDarkModeKey)
-    };
-    static dark_or_light = () => {
-        return Theme.is_dark_mode ? 'dark' : 'light'
+        static #prefersLightModeInDarkModeKey = "prefers-light-mode-in-dark-mode"
+        static #prefersDarkModeInLightModeKey = "prefers-dark-mode-in-light-mode"
+
+        static get system_prefers_dark_mode(){
+            return window.matchMedia('(prefers-color-scheme: dark)').matches
+        }
+        static get is_dark_mode() {
+            return !ThemePreferences.system_prefers_dark_mode &&  localStorage.getItem(ThemePreferences.#prefersDarkModeInLightModeKey)
+                ||  ThemePreferences.system_prefers_dark_mode && !localStorage.getItem(ThemePreferences.#prefersLightModeInDarkModeKey)
+        }
+        static set is_dark_mode(value) {
+            if (!value) {
+                if (ThemePreferences.system_prefers_dark_mode)
+                    localStorage.setItem(ThemePreferences.#prefersLightModeInDarkModeKey, true)
+                else
+                    localStorage.removeItem(ThemePreferences.#prefersDarkModeInLightModeKey)
+                document.documentElement.classList.remove("dark-mode")
+                document.documentElement.classList.add("light-mode")
+            }
+            else {
+                if (!ThemePreferences.system_prefers_dark_mode)
+                    localStorage.setItem(ThemePreferences.#prefersDarkModeInLightModeKey, true)
+                else
+                    localStorage.removeItem(ThemePreferences.#prefersLightModeInDarkModeKey)
+                document.documentElement.classList.add("dark-mode")
+                document.documentElement.classList.remove("light-mode")
+            }
+        }
+        static get dark_or_light() {
+            return ThemePreferences.is_dark_mode ? 'dark' : 'light'
+        }
     }
-
     static url_builder = class url_builder {
 
         static #base = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/${AwesomeCodeElement.API.configuration.hljs.version}/styles/`
         static #ext = '.min.css'
 
-        static build({ name, dark_or_light = Theme.dark_or_light() }) {
+        static build({ name, dark_or_light = Theme.preferences.dark_or_light }) {
             if (typeof name !== 'string' && !(name instanceof String))
                 throw new Error('ThemeSelector.#url_builder.build : invalid argument [name]')
             if (dark_or_light && dark_or_light !== 'light' && dark_or_light !== 'dark')
                 throw new Error('ThemeSelector.#url_builder.build : invalid argument : [dark_or_light]')
 
-            return `${url_builder.#base}${name}${Boolean(dark_or_light) ? '-' : ''}${dark_or_light}${url_builder.#ext}`
+            dark_or_light = `${Boolean(dark_or_light) ? '-' : ''}${dark_or_light}`
+            return `${url_builder.#base}${name}${dark_or_light}${url_builder.#ext}`
         }
         static retrieve(url) {
             let matches = url.match(`${url_builder.#base}(.*?)(\-dark|\-light){0,1}${url_builder.#ext}`)
@@ -1578,16 +1600,21 @@ AwesomeCodeElement.details.Theme = class Theme {
         }
     }
 
-    static stylesheet_element_id = 'code_theme_stylesheet'
+    static #stylesheet_element_id = 'code_theme_stylesheet'
     static initialize() {
         // generates the stylesheet HTML element used to import CSS content
         let stylesheet = document.createElement('link')
             stylesheet.rel = "stylesheet"
-            stylesheet.id = Theme.stylesheet_element_id
+            stylesheet.id = Theme.#stylesheet_element_id
         document.head.appendChild(stylesheet)
 
         // switch to default theme
         Theme.value = AwesomeCodeElement.API.configuration.hljs.default_theme
+
+        Theme.preferences.is_dark_mode = Theme.preferences.is_dark_mode
+
+        // avoid any redundant call
+        Theme.initialize = () => { console.error('AwesomeCodeElement.details.Theme.initialize: can only be called once') }
     }
     static get supports_dark_or_light_mode() {
         // Note: supports dark-mode by default (when not loaded yet)
@@ -1597,7 +1624,7 @@ AwesomeCodeElement.details.Theme = class Theme {
     // value
     static get value() {
 
-        let element = document.getElementById(Theme.stylesheet_element_id);
+        let element = document.getElementById(Theme.#stylesheet_element_id);
         if (!element)
             throw new Error('AwesomeCodeElement.details.Theme: missing stylesheet\n\tDid you forget to call AwesomeCodeElement.API.initialize(); ?')
 
@@ -1605,13 +1632,13 @@ AwesomeCodeElement.details.Theme = class Theme {
             url:                    element.getAttribute('href'),
             name:                   element.getAttribute('theme_name'),
             dark_or_light_suffix:   element.getAttribute('theme_dark_or_light_suffix'),
+            element:                element,
             get ['support_dark_or_light_mode']() {
                 return Boolean(this.dark_or_light_suffix)
             },
             get ['fullname']() {
                 return `${this.name}${this.dark_or_light_suffix}`
-            },
-            element:                element
+            }
         }
     }
     static set value(theme_name) {
@@ -1625,7 +1652,7 @@ AwesomeCodeElement.details.Theme = class Theme {
             Theme.value.element.setAttribute('theme_name', theme_infos.name)
             Theme.value.element.setAttribute('theme_dark_or_light_suffix', theme_infos.dark_or_light_suffix || "")
 
-            console.info(`AwesomeCodeElement.details.Theme: stylesheet loaded\n\t[${url}]`)
+            console.info(`AwesomeCodeElement.details.Theme: stylesheet successfully loaded\n\t[${url}]`)
         }
 
         let try_to_load_stylesheet = ({ theme_name, dark_or_light, on_failure }) => {
@@ -1650,15 +1677,17 @@ AwesomeCodeElement.details.Theme = class Theme {
             ;
         }
 
+        console.log(`>>>>> DEBUG: ${Theme.preferences.dark_or_light}`)
+
         let force_light_or_dark_mode = theme_name.search(/(-dark|-light)$/, '') !== -1
         try_to_load_stylesheet({
             theme_name: theme_name,
-            dark_or_light: force_light_or_dark_mode ? '' : Theme.dark_or_light(),
+            dark_or_light: force_light_or_dark_mode ? '' : Theme.preferences.dark_or_light,
             on_failure: force_light_or_dark_mode ? undefined : () => {
                 // handles themes that do not support light/dark variations
                 try_to_load_stylesheet({
                     theme_name: theme_name,
-                    dark_or_light: '', // no dark/light prefix
+                    dark_or_light: '', // no dark/light suffix
                 })
             }
         })
@@ -1670,14 +1699,67 @@ AwesomeCodeElement.details.Theme = class Theme {
     }
     static set ToggleDarkMode(value) {
 
-        console.debug(`>>>>>>>> ToggleDarkMode: ${Theme.value.support_dark_or_light_mode}`)
+        console.debug(`DEBUG: ToggleDarkMode to ${value}`)
 
-        if (!Theme.value.support_dark_or_light_mode)
+        Theme.preferences.is_dark_mode = !Theme.preferences.is_dark_mode
+
+        if (!Theme.value.support_dark_or_light_mode) {
+            console.info(`Theme.ToggleDarkMode: theme does not supports dark/light mode, aborting.`)
             return
-
+        }
         Theme.value = Theme.url_builder.toggle_dark_mode(Theme.value.fullname)
     }
 }
+AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton = class ToggleDarkModeButton extends HTMLButtonElement {
+
+    static HTMLElement_name                 = "awesome-code-element_toggle-dark-mode-button"
+    static title                            = "Toggle light/dark Mode"
+    static lightModeIcon                    = `<svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#FCBF00"><rect fill="none" height="24" width="24"/><circle cx="12" cy="12" opacity=".3" r="3"/><path d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"/></svg>`
+    static darkModeIcon                     = `<svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#FE9700"><rect fill="none" height="24" width="24"/><path d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27 C17.45,17.19,14.93,19,12,19c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z" opacity=".3"/><path d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"/></svg>`
+
+    constructor() {
+        super()
+    }
+    connectedCallback() {
+        this.setAttribute('is', ToggleDarkModeButton.HTMLElement_name)
+        this.title = ToggleDarkModeButton.title
+        this.addEventListener('click', this.#on_click);
+        this.#updateIcon()
+
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            this.#updateIcon()
+        })
+        window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', event => {
+            this.#updateIcon()
+        })
+        document.addEventListener("visibilitychange", visibilityState => {
+            if (document.visibilityState === 'visible') {
+                this.#updateIcon()
+            }
+        });
+    }
+    #on_click(){
+        AwesomeCodeElement.details.Theme.ToggleDarkMode = true
+        this.#updateIcon()
+    }
+
+    #updateIcon() {
+
+        console.debug(`>>>>> DEBUG: updateIcon : is_dark_mode ? ${AwesomeCodeElement.details.Theme.preferences.is_dark_mode}`)
+
+        // show light-mode icon if dark-mode is activated, and vice-versa
+        this.innerHTML = AwesomeCodeElement.details.Theme.preferences.is_dark_mode
+            ? ToggleDarkModeButton.lightModeIcon
+            : ToggleDarkModeButton.darkModeIcon
+        ;
+    }
+}
+customElements.define(
+    AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton.HTMLElement_name,
+    AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton, {extends: 'button'}
+);
+
+
 AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends HTMLSelectElement {
 // For themes, see https://cdnjs.com/libraries/highlight.js
 // Note: The first one is the default

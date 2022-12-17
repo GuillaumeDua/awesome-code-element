@@ -88,6 +88,8 @@ AwesomeCodeElement.API.DarkMode = class DarkMode /*StaticObserver*/ {
     }
     static set userPreference(userPreference) {
 
+        console.debug('>>>>> DEBUG: DarkMode.userPreference : ' + userPreference)
+
         if (!userPreference) {
             if (DarkMode.systemPreference)
                 localStorage.setItem(DarkMode.prefersLightModeInDarkModeKey, true)
