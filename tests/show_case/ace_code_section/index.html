@@ -116,6 +116,13 @@ SOFTWARE.
     </head>
 <body>
 
+    <div style="border:1px solid var(--separator-color)">
+    <i>
+        <pre><h3>Note:</h3>currently, C++ trailing-return-type is considered as an illegale synthax by highlight-js
+See the issue <a href="https://github.com/highlightjs/highlight.js/issues/3673">here (highlight.js/issues/3673)</a></pre>
+    </i>
+    </div>
+
     <awesome_code_element_test-utility-toolbar></awesome_code_element_test-utility-toolbar>
 
 <ul>
@@ -131,22 +138,29 @@ SOFTWARE.
     </li>
 
     <li>
-    <h3>code-section : only text content</h3>
+    <h3>code-section : text content</h3>
     <code-section>
 auto main() -> int { return 42; }
     </code-section>
     </li>
 
     <li>
-    <h3>code-section : language + text content</h3>
+    <h3>code-section : text content (large)</h3>
     <code-section language="cpp">
-auto main() -> int { return 42; } // this is a pretty long comment, so it should triggers small-rendering behavior depending on your window size ...
+auto main() -> int { return 42; } // this is a pretty long comment, so it should triggers small-rendering behavior depending on your window size ... otherwise, why would such extra-long comment exists ? .................................................................................................................. ?
+    </code-section>
+    </li>
+
+    <li>
+    <h3>code-section : text content + language attribute</h3>
+    <code-section language="cpp">
+auto main() -> int { return 42; }
     </code-section>
     </li>
 
     <!-- TODO: language is not take into account -->
     <li>
-    <h3>code-section : language + code</h3>
+    <h3>code-section : language + code attributes</h3>
     <code-section language="cpp" code="auto main() -> int { return 42; }">
     </code-section>
     </li>

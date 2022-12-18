@@ -73,6 +73,7 @@
 // TODO: dark_or_light -> color_scheme
 // TODO: console.xxxx -> replace '\n\t' by ','-seperated arguments ?
 // TODO: remove useless funcs, class (if any)
+// TODO: awesome-code-element.js: sub-modules aggregator
 
 export { AwesomeCodeElement as default }
 
@@ -467,6 +468,7 @@ AwesomeCodeElement.details.remote.CE_API = class CE_API {
     }
 }
 AwesomeCodeElement.details.utility = class utility {
+// TODO: move to another module
     static unfold_into({target, properties = {}}) {
         if (!target)
             throw new Error(`AwesomeCodeElement.details.utility: invalid argument [target] with value [${target}]`)
@@ -1185,11 +1187,12 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
 // HTMLElements : API
 
 AwesomeCodeElement.API.HTMLElements = {}
-// TODO: code loading policy/behavior - as function : default is textContent, but can be remote using an url, or another rich text area for instance
 AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement {
+// TODO: code loading policy/behavior - as function : default is textContent, but can be remote using an url, or another rich text area for instance
 
     // --------------------------------
     // accessors
+
     get code() {
         return this.#_toggle_parsing
             ? this.#_code.to_display
@@ -1272,29 +1275,33 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
         }
     }
     #view_update_language(){
-        
-        let hljs_result = this.#view_update_language_hljs_highlightAuto()
-        if (!hljs_result.language || hljs_result.relevance < 3)
-            hljs_result = this.#view_update_language_hljs_highlightElement()
-        else
-            this.html_elements.code.innerHTML = hljs_result.value
 
-        if (hljs_result.relevance < 5)
-            console.warn(`CodeSection: ${hljs_result.relevance === 0 ? 'no' : 'poor'} language matching [${hljs_result.language}] (${hljs_result.relevance}/10). Maybe the code is too small ?`)
+        let update_code_classList = () => {
+            this.html_elements.code.classList = [...this.html_elements.code.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
+            this.html_elements.code.classList.add(`hljs`)
+            this.html_elements.code.classList.add(`language-${this.#_language}`)
+        }
 
         // retro-action: update language with view (hljs) detected one
-        if (this.toggle_language_detection) {
+        if (this.toggle_language_detection || !this.language) {
+            let hljs_result = this.#view_update_language_hljs_highlightAuto()
+            if (!hljs_result.language || hljs_result.relevance < 3)
+                hljs_result = this.#view_update_language_hljs_highlightElement()
+            else
+                this.html_elements.code.innerHTML = hljs_result.value
+
+            if (hljs_result.relevance < 5)
+                console.warn(`CodeSection: ${hljs_result.relevance === 0 ? 'no' : 'poor'} language matching [${hljs_result.language}] (${hljs_result.relevance}/10). Maybe the code is too small ?`)
             this.language = {
                 value: hljs_result.language,
                 update_view: false // no recursion here
             }
+            update_code_classList()
         }
-
-        // update classList
-        // clear existing hljs-related classList items
-        this.html_elements.code.classList = [...this.html_elements.code.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
-        this.html_elements.code.classList.add(`hljs`)
-        this.html_elements.code.classList.add(`language-${this.#_language}`)
+        else {
+            update_code_classList()
+            hljs.highlightElement(this.html_elements.code)
+        }
 
         // CE button visibility
         // Note that resize observer can still toggle `display: block|none`
@@ -1308,6 +1315,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
 
     // --------------------------------
     // construction/initialization
+
     constructor(parameters) {
         super(parameters)
     }
@@ -1373,6 +1381,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
 
     // --------------------------------
     // core logic : parsing
+
     #_code = new AwesomeCodeElement.details.ParsedCode()
     #_toggle_parsing = false
     set toggle_parsing(value) {
@@ -1395,6 +1404,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
 
     // --------------------------------
     // core logic : execution
+
     get ce_options() {
         return this.#_code.ce_options
     }
@@ -1504,7 +1514,9 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
             })
     }
 
+    // --------------------------------
     // core logic: acquire code policies
+
     #_url = undefined
     get url() {
         return this.#_url
