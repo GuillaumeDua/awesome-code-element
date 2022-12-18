@@ -471,7 +471,7 @@ AwesomeCodeElement.details.utility = class utility {
             // Map
             if (target[property]
             &&  target[property] instanceof Map && properties[property] instanceof Map) {
-                target[property] = new Map([...target[property], ...properties[property]])
+                properties[property].forEach((value, key) => target[property].set(key, value)); // no unfolding here but assign, to preserve
                 return
             }
             // object
