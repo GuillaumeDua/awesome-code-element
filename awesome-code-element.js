@@ -89,7 +89,7 @@ export const AwesomeCodeElement = {
     details : {}
 }
 
-// =======
+// ==================
 // details.containers
 
 AwesomeCodeElement.details.containers = {}
@@ -174,7 +174,7 @@ AwesomeCodeElement.API.CE_ConfigurationManager = class extends AwesomeCodeElemen
 //      default_options // not mandatory
 // }
 
-// =======
+// =================
 // API.configuration
 
 AwesomeCodeElement.API.configuration = {
@@ -201,8 +201,8 @@ AwesomeCodeElement.API.configure = (arg) => {
     })
 }
 
-// =======
-// details
+// ================
+// internal details
 
 AwesomeCodeElement.details.ParsedCode = class ParsedCode {
 // TODO: @awesome-code-element::keep : keep tag anyway as comment (for documentation purpose)
@@ -350,12 +350,12 @@ AwesomeCodeElement.details.remote.resources_cache = class {
         return this.#remote_files.get(uri)
     }
 }
-AwesomeCodeElement.details.remote.ce_API = class ce_API {
+AwesomeCodeElement.details.remote.CE_API = class CE_API {
 // fetch CE API informations asynchronously
 
     static #static_initializer = (async function(){
-        ce_API.#fetch_languages()
-        // AwesomeCodeElement.details.remote.ce_API.#fetch_compilers() // not used for now, disabled to save cache memory
+        CE_API.#fetch_languages()
+        // AwesomeCodeElement.details.remote.CE_API.#fetch_compilers() // not used for now, disabled to save cache memory
     })()
 
     // cache
@@ -371,13 +371,13 @@ AwesomeCodeElement.details.remote.ce_API = class ce_API {
 
             let text = datas.split('\n')
             text.shift() // remove header
-            ce_API.languages = text.map((value) => {
+            CE_API.languages = text.map((value) => {
             // keep only ids
                 return value.slice(0, value.indexOf(' '))
             })
         }
         catch (error) {
-            console.error(`AwesomeCodeElement.details.remote.ce_API: godbolt API exception (fetch_languages)\n\t${error}`)
+            console.error(`AwesomeCodeElement.details.remote.CE_API: godbolt API exception (fetch_languages)\n\t${error}`)
         }
     }
     static async #fetch_compilers() {
@@ -388,13 +388,13 @@ AwesomeCodeElement.details.remote.ce_API = class ce_API {
 
             let text = datas.split('\n')
             text.shift() // remove header
-            ce_API.languages = text.map((value) => {
+            CE_API.languages = text.map((value) => {
             // keep only ids
                 return value.slice(0, value.indexOf(' '))
             })
         }
         catch (error) {
-            console.error(`AwesomeCodeElement.details.remote.ce_API: godbolt API exception (fetch_compilers)\n\t${error}`)
+            console.error(`AwesomeCodeElement.details.remote.CE_API: godbolt API exception (fetch_compilers)\n\t${error}`)
         }
     }
     static open_in_new_tab(request_data) {
@@ -411,14 +411,14 @@ AwesomeCodeElement.details.remote.ce_API = class ce_API {
     // https://godbolt.org/api/compiler/${compiler_id}/compile
 
         if (ce_options.compiler_id === undefined)
-            throw new Error('awesome-code-element.js::ce_API::fetch_execution_result: invalid argument, missing .compiler_id')
+            throw new Error('awesome-code-element.js::CE_API::fetch_execution_result: invalid argument, missing .compiler_id')
 
         // POST /api/compiler/<compiler-id>/compile endpoint is not working with remote header-files in `#include`s PP directions
         // https://github.com/compiler-explorer/compiler-explorer/issues/4190
         let matches = [...code.matchAll(/^\s*\#\s*include\s+[\"|\<](\w+\:\/\/.*?)[\"|\>]/gm)].reverse()
         let promises_map = matches.map(async function(match) {
 
-            let downloaded_file_content = await ce_API.#remote_files_cache.get(match[1])
+            let downloaded_file_content = await CE_API.#remote_files_cache.get(match[1])
             let match_0_token = match[0].replaceAll('\n', '')
             code = code.replace(match[0], `// download[${match_0_token}]::begin\n${downloaded_file_content}\n// download[${match_0_token}]::end`)
         })
@@ -605,8 +605,9 @@ AwesomeCodeElement.details.log_facility = class {
         AwesomeCodeElement.details.log_facility.disable(['log', 'debug', 'trace'])
     console.info(`AwesomeCodeElement.details.log_facility: channels enabled: [${AwesomeCodeElement.details.log_facility.enabled}], disabled: [${AwesomeCodeElement.details.log_facility.disabled}]`)
 }
-// ============
-// HTMLElements
+
+// ======================
+// HTMLElements : details
 
 AwesomeCodeElement.details.HTMLElements = {}
 // TODO: should be replaced by dynamic CSS at some point
@@ -720,7 +721,7 @@ AwesomeCodeElement.details.HTMLElements.SendToGodboltButton = class SendToGodbol
                 // translate hljs into CE language
                 //      hljs    https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
                 //  vs. CE      https://godbolt.org/api/languages
-                    return AwesomeCodeElement.details.remote.ce_API.languages.includes(this.ce_options().language)
+                    return AwesomeCodeElement.details.remote.CE_API.languages.includes(this.ce_options().language)
                         ? this.ce_options().language
                         : this.configuration().language
                 },
@@ -769,7 +770,7 @@ AwesomeCodeElement.details.HTMLElements.SendToGodboltButton = class SendToGodbol
             }]
         };
         // CE /clientstate API
-        AwesomeCodeElement.details.remote.ce_API.open_in_new_tab(data)
+        AwesomeCodeElement.details.remote.CE_API.open_in_new_tab(data)
     }
 }
 customElements.define(
@@ -845,7 +846,6 @@ AwesomeCodeElement.details.HTMLElements.LoadingAnimation = class LoadingAnimatio
         }
     }
 }
-
 // TODO: flex-resizer between the two panels ?
 AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSectionHTMLElement extends HTMLElement {
 // HTML layout/barebone for CodeSection
@@ -1092,7 +1092,7 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
         }
     }
     #initialize_ids() {
-        this.id = CodeSectionHTMLElement.#id_generator()
+        this.id = this.id || CodeSectionHTMLElement.#id_generator()
         this.html_elements.panels.left.id   = `${this.id}.panels.left`
         this.html_elements.panels.right.id  = `${this.id}.panels.right`
         this.html_elements.code.id          = `${this.id}.code`
@@ -1162,6 +1162,9 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
         this.replaceWith(error_element)
     }
 }
+
+// ==================
+// HTMLElements : API
 
 AwesomeCodeElement.API.HTMLElements = {}
 // TODO: code loading policy/behavior - as function : default is textContent, but can be remote using an url, or another rich text area for instance
@@ -1309,8 +1312,16 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
         maybe_use_attribute('toggle_parsing')
         maybe_use_attribute('toggle_execution')
 
+        let cleanup_code = (value) => {
+            return value && value.replace(/^\s*/, '').replace(/\s*$/, '')
+        }
+
         // try to acquire local code
-        this.#_parameters.code = this.#_parameters.code || this.textContent || this.getAttribute('code') || ''
+        this.#_parameters.code = 
+                cleanup_code(this.#_parameters.code)
+            ||  cleanup_code(this.textContent)
+            ||  cleanup_code(this.getAttribute('code'))
+            ||  ''
         // otherwise, remote
         this.#_parameters.url = this.#_parameters.url || this.getAttribute('url') || ''
 
@@ -1447,9 +1458,9 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
         }
 
         // right panel: replace with result
-        return AwesomeCodeElement.details.remote.ce_API.fetch_execution_result(this.#_code.ce_options, this.executable_code)
+        return AwesomeCodeElement.details.remote.CE_API.fetch_execution_result(this.#_code.ce_options, this.executable_code)
             .catch((error) => {
-                this.on_critical_internal_error(`CodeSection:fetch_execution: ce_API.fetch_execution_result: failed:\n\t[${error}]`)
+                this.on_critical_internal_error(`CodeSection:fetch_execution: CE_API.fetch_execution_result: failed:\n\t[${error}]`)
             })
             .then((result) => {
 
@@ -1553,6 +1564,9 @@ customElements.define(
     AwesomeCodeElement.API.HTMLElements.CodeSection.HTMLElement_name,
     AwesomeCodeElement.API.HTMLElements.CodeSection
 );
+
+// =====
+// Theme
 
 // TODO: check doxygen-awesome-css compatiblity
 AwesomeCodeElement.details.Theme = class Theme {
@@ -1812,8 +1826,6 @@ customElements.define(
     AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton.HTMLElement_name,
     AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton, {extends: 'button'}
 );
-
-
 AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends HTMLSelectElement {
 // For themes, see https://cdnjs.com/libraries/highlight.js
 // Note: The first one is the default
@@ -1876,7 +1888,8 @@ customElements.define(
     AwesomeCodeElement.API.HTMLElements.ThemeSelector, { extends : 'select' }
 );
 
-// ============
+// ==============
+// Initialization
 
 AwesomeCodeElement.API.initializers = {
     doxygenCodeSections : function() {
