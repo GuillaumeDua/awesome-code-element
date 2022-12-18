@@ -72,6 +72,9 @@
 // TODO: check shadowroot-callbacks
 // TODO: dark_or_light -> color_scheme
 // TODO: console.xxxx -> replace '\n\t' by ','-seperated arguments ?
+// TODO: remove useless funcs, class (if any)
+
+export { AwesomeCodeElement as default }
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -80,7 +83,7 @@ if (typeof hljs === 'undefined')
 if (typeof jQuery === 'undefined')
     console.error('awesome-code-element.js: depends on jQuery, which is missing')
 
-export const AwesomeCodeElement = {
+const AwesomeCodeElement = {
     API : {
         configuration : {
             CE : {}
@@ -194,7 +197,6 @@ AwesomeCodeElement.API.configure = (arg) => {
     if (!arg)
         throw new Error('AwesomeCodeElement.API.configuration.configure: invalid argument')
 
-    // TODO: recursive unfold
     AwesomeCodeElement.details.utility.unfold_into({
         target : AwesomeCodeElement.API.configuration,
         properties : arg
@@ -550,6 +552,22 @@ AwesomeCodeElement.details.utility = class utility {
     static make_incremental_counter_generator = function*(){
         let i = 0;
         while (true) { yield i++; }
+    }
+    static include({ name, url }) {
+
+        let id = `ace-dependency_${name}`
+
+        let element = document.getElementById(`ace-dependency_${name}`)
+        if (element && element.src === url)
+            return
+
+        element = document.createElement('script');
+        element.src  = url;
+        element.type = 'text/javascript';
+        element.defer = true;
+        element.id = id
+        element.setAttribute('ace-dependecy-name', name)
+        return document.head.appendChild(element);
     }
 }
 AwesomeCodeElement.details.log_facility = class {
@@ -2021,10 +2039,3 @@ AwesomeCodeElement.API.initialize = () => {
         })
     })
 }
-
-export { AwesomeCodeElement as default }
-
-// TODO: module (+(sub)components encapsulation)
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export
-// export { awesome_doc_code_sections }
-// import adcs from '/path/to/awesome-code-element.js'

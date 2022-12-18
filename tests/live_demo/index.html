@@ -95,15 +95,14 @@ SOFTWARE.
     
         <!-- awesome-code-element -->
         <script type="module">
-            import AwesomeCodeElement from "/awesome-code-element.js"
-            // AwesomeCodeElement configuration
-            AwesomeCodeElement.API.configure({
+            import ace from "/awesome-code-element.js"
+            ace.API.configure({
                 doxygen_awesome_css_compatibility: true,
                 hljs : {
                     version         : '11.7.0',
                     default_theme   : 'obsidian' // unused, as there is a valid theme-selector. (Obsidian theme does not supports dark/light variations)
                 },
-                CE : new AwesomeCodeElement.API.CE_ConfigurationManager([
+                CE : new ace.API.CE_ConfigurationManager([
                     [
                         'cpp',
                         {
@@ -114,9 +113,8 @@ SOFTWARE.
                     ]
                 ])
             })
-            console.info(`demo/index.html: AwesomeCodeElement.API.configuration:`, AwesomeCodeElement.API.configuration)
-            // AwesomeCodeElement: initialize all features
-            AwesomeCodeElement.API.initialize();
+            console.info(`demo/index.html: ace.API.configuration:`, ace.API.configuration)
+            ace.API.initialize();
         </script>
     
         <!-- CS Tests utility scripts -->

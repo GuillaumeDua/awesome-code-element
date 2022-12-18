@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 import AwesomeCodeElement from '/awesome-code-element.js'
+console.log(AwesomeCodeElement)
 if (AwesomeCodeElement.API.HTMLElements.CodeSection === undefined)
     throw new Error('CodeSection_demo: missing mandatory dependency [AwesomeCodeElement.CodeSection]')
 
