@@ -71,6 +71,7 @@
 // TODO: HTMLElements_name -> ace_${name}
 // TODO: check shadowroot-callbacks
 // TODO: dark_or_light -> color_scheme
+// TODO: console.xxxx -> replace '\n\t' by ','-seperated arguments ?
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -182,7 +183,7 @@ AwesomeCodeElement.API.configuration = {
         version : '11.6.0', // TODO: automate hljs import (avoid dependencies mismatch)
         // default_theme:   If no theme-selector, then this is the default one.
         //                  Otherwise, the first valid option of the first theme-selector is the default
-        default_theme   : 'tokyo-night'  //          supports dark/light variations
+        default_theme   : 'tokyo-night'  // supports dark/light variations
     },
     doxygen_awesome_css_compatibility   : false,
     pre_code_compatibility              : false,
@@ -1681,6 +1682,14 @@ AwesomeCodeElement.details.Theme = class Theme {
     static set value(theme_name) {
 
         console.info(`AwesomeCodeElement.details.Theme: setting theme to [${theme_name}]`)
+
+        try {
+            if (Theme.value.name === theme_name) {
+                console.info(`AwesomeCodeElement.details.Theme: already loaded`)
+                return
+            }
+        } catch(error){}
+
         if (!theme_name) {
             Theme.value.element.setAttribute('href', '')
             Theme.value.element.setAttribute('theme_name', '')
@@ -1695,13 +1704,13 @@ AwesomeCodeElement.details.Theme = class Theme {
             Theme.value.element.setAttribute('theme_name', theme_infos.name)
             Theme.value.element.setAttribute('theme_dark_or_light_suffix', theme_infos.dark_or_light_suffix || '')
 
-            console.info(`AwesomeCodeElement.details.Theme: stylesheet successfully loaded\n\t[${url}]`)
+            console.info(`AwesomeCodeElement.details.Theme.set[value]: stylesheet successfully loaded\n\t[${url}]`)
         }
 
         let try_to_load_stylesheet = ({ theme_name, dark_or_light, on_failure }) => {
 
             let url = Theme.url_builder.build({ name : theme_name, dark_or_light: dark_or_light })
-            console.debug(`AwesomeCodeElement.details.Theme: loading stylesheet\n\t[${url}] ...`)
+            console.debug(`AwesomeCodeElement.details.Theme.set[value]: loading stylesheet\n\t[${url}] ...`)
 
             fetch(url, { method: 'GET' })
                 .then(response => {
@@ -1855,7 +1864,6 @@ AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends 
             console.info(`AwesomeCodeElement.API.HTMLElements.ThemeSelector.onchange: switching to [${selected_option.text()}]`)
             AwesomeCodeElement.details.Theme.value = selected_option.text()
         }
-        this.onchange()
     }
 
     static #id_generator = (() => {
