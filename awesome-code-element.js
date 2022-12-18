@@ -70,6 +70,7 @@
 // TODO: alias awesome-code-element -> ace ?
 // TODO: HTMLElements_name -> ace_${name}
 // TODO: check shadowroot-callbacks
+// TODO: dark_or_light -> color_scheme
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -462,12 +463,25 @@ AwesomeCodeElement.details.remote.ce_API = class ce_API {
         })
     }
 }
-AwesomeCodeElement.details.utility = class {
+AwesomeCodeElement.details.utility = class utility {
     static unfold_into({target, properties = {}}) {
         if (!target)
-            throw new Error('AwesomeCodeElement.details.utility: invalid argument [target]')
-        for (const property in properties)
+            throw new Error(`AwesomeCodeElement.details.utility: invalid argument [target] with value [${target}]`)
+        for (const property in properties) {
+            // Map
+            if (target[property]
+            &&  target[property] instanceof Map && properties[property] instanceof Map) {
+                target[property] = new Map([...target[property], ...properties[property]])
+                return
+            }
+            // object
+            if (target[property]
+            && typeof target[property] === 'object' && typeof properties[property] === 'object') {
+                utility.unfold_into({ target: target[property], properties : properties[property]})
+            }
+            // assign
             target[property] = properties[property];
+        }
     }
     static apply_css(element, properties) {
         AwesomeCodeElement.details.utility.unfold_into({target : element.style, properties })
@@ -1633,6 +1647,7 @@ AwesomeCodeElement.details.Theme = class Theme {
             Theme.value = default_theme_name
         }
         // dark/light-mode preference
+        console.info(`AwesomeCodeElement.details.Theme.initialize: color-scheme preference: [${Theme.preferences.dark_or_light}]`)
         Theme.preferences.is_dark_mode = Theme.preferences.is_dark_mode
 
         // avoid any redundant call
