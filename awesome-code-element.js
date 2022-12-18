@@ -1668,7 +1668,7 @@ AwesomeCodeElement.details.Theme = class Theme {
         const theme_selector_default_option = (() => {
             let candidate_option = $(document).find('select[is=theme-selector]')
                 .map((index, element) => { return element.options[0] })
-                .filter(value => Boolean(value))
+                .filter((index, element) => element && element.value)
                 [0]
             return candidate_option ? candidate_option.value : undefined
         })()

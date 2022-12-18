@@ -105,13 +105,19 @@ SOFTWARE.
         <script type="module" src="/tests/js/modules/demo.js"></script>
 
         <script type="text/javascript">
-
             // hljs configuration
             hljs.configure({
                 ignoreUnescapedHTML: true,
                 throwUnescapedHTML: false,
                 languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plaintext']
             })
+        </script>
+
+        <!-- Force stylisation by default on this showcase -->
+        <script>
+            window.onload = function() {
+                document.getElementById('button_toggle_style').click()
+            }
         </script>
     </head>
 <body>
