@@ -20,16 +20,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import AwesomeCodeElement from '/awesome-code-element.js'
+import ace from '/awesome-code-element.js'
 
-if (AwesomeCodeElement.API.HTMLElements.CodeSection === undefined)
-    throw new Error('CodeSection_demo: missing mandatory dependency [AwesomeCodeElement.CodeSection]')
+if (ace.API.HTMLElements.CodeSection === undefined)
+    throw new Error('CodeSection_demo: missing mandatory dependency [ace.CodeSection]')
 
-import test_utility from '/tests/js/modules/utility.js';
+import ace_test_utils from '/tests/js/modules/utils.js';
 
-AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.CodeSection {
+ace.showcase                = ace.showcase ?? {}
+ace.showcase.HTMLElements   = ace.showcase.HTMLElements ?? {}
+ace.showcase.HTMLElements.demo = class extends ace.API.HTMLElements.CodeSection {
 
-    static HTMLElement_name = 'code-section-demo'
+    static HTMLElement_name = 'ace-code-section-demo'
 
     constructor() {
         super()
@@ -50,7 +52,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
 
         // view proxies
         let options_container = document.createElement('div')
-        AwesomeCodeElement.details.utility.apply_css(options_container, {
+        ace.details.utility.apply_css(options_container, {
             flexDirection: 'column',
             display: 'flex',
         })
@@ -74,7 +76,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
         this.html_elements.code.addEventListener('click', () => {
             _this.html_elements.code.setAttribute('contentEditable', !_this.toggle_parsing)
             if (_this.toggle_parsing)
-            AwesomeCodeElement.test_utility.element_shake_effect_for(_this.html_elements.code, 500)
+                ace_test_utils.element_shake_effect_for(_this.html_elements.code, 500)
         })
         let delay_timer = null
         this.html_elements.code.addEventListener('keyup', function(event){
@@ -99,7 +101,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
         let printable_name = property_name.replaceAll(/[\-|\_]/g, ' ')
         // html
         let sub_container = document.createElement('div')
-        AwesomeCodeElement.details.utility.apply_css(sub_container, {
+        ace.details.utility.apply_css(sub_container, {
             flex: '0 0 fit-content',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
@@ -112,7 +114,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
         let label = sub_container.appendChild(document.createElement('label'))
             label.textContent = ` ${printable_name}`
 
-        test_utility.inject_field_proxy(this, property_name, {
+        ace_test_utils.inject_field_proxy(this, property_name, {
             getter_payload : undefined,
             setter_payload : (value) => {
                 checkbox.checked = value
@@ -134,7 +136,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
     #make_language_view() {
 
         let sub_container = document.createElement('div')
-        AwesomeCodeElement.details.utility.apply_css(sub_container, {
+        ace.details.utility.apply_css(sub_container, {
             display: 'flex',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
@@ -145,7 +147,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
             input_field.type = "text"
             input_field.value = super.language
             input_field.title = 'clear to attempt a fallback autodetection'
-            AwesomeCodeElement.details.utility.apply_css(input_field, {
+            ace.details.utility.apply_css(input_field, {
                 width: '100%',
                 marginLeft: '10px'
             })
@@ -160,7 +162,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
             }, 300)
         })
 
-        test_utility.inject_field_proxy(this, 'language', {
+        ace_test_utils.inject_field_proxy(this, 'language', {
             getter_payload : () => {
             },
             setter_payload : (value) => {
@@ -173,7 +175,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
     #make_url_view() {
 
         let sub_container = document.createElement('div')
-        AwesomeCodeElement.details.utility.apply_css(sub_container, {
+        ace.details.utility.apply_css(sub_container, {
             display: 'flex',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
@@ -184,7 +186,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
             input_field.type = "text"
             input_field.value = !super.url ? '' : super.url
             input_field.title = 'remote code location. Press <enter> to apply'
-            AwesomeCodeElement.details.utility.apply_css(input_field, {
+            ace.details.utility.apply_css(input_field, {
                 width: '100%',
                 marginLeft: '10px'
             })
@@ -194,7 +196,7 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
                 this.url = arg.target.value
         })
 
-        test_utility.inject_field_proxy(this, 'url', {
+        ace_test_utils.inject_field_proxy(this, 'url', {
             getter_payload : () => {
             },
             setter_payload : (value) => {
@@ -205,6 +207,9 @@ AwesomeCodeElement.demo = class extends AwesomeCodeElement.API.HTMLElements.Code
         return sub_container
     }
 }
-customElements.define(AwesomeCodeElement.demo.HTMLElement_name, AwesomeCodeElement.demo);
+customElements.define(
+    ace.showcase.HTMLElements.demo.HTMLElement_name,
+    ace.showcase.HTMLElements.demo
+);
 
-export default AwesomeCodeElement.demo
+export default ace.showcase.HTMLElements.demo

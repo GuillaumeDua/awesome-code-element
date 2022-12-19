@@ -117,9 +117,7 @@ SOFTWARE.
         </script>
     
         <!-- CS Tests utility scripts -->
-        <script type="module" src="/tests/js/modules/utility.js"></script>
-        <!-- CS demo component -->
-        <script type="module" src="/tests/js/modules/demo.js"></script>
+        <script type="module" src="/tests/js/modules/utils.js"></script>
 
         <script type="text/javascript">
             // hljs configuration
@@ -136,90 +134,10 @@ SOFTWARE.
                 document.getElementById('button_toggle_style').click()
             }
         </script>
-<!-- WIP: showcase element -->
-<script>
 
-// TODO: move to a dedicated module
-// TODO: refactor
+        <script type="module" src="/tests/js/modules/showcase.js"></script>
 
-let create_shadowroot_slot = function(element, when_childrens_attached) {
-
-    if (!element.shadowRoot)
-        element.attachShadow({ mode: 'open' });
-    element.shadowRoot.innerHTML = `<slot></slot>`;
-    const slot = element.shadowRoot.querySelector('slot');
-
-    let callback = (event) => {
-        const childrens = event.target.assignedElements();
-        when_childrens_attached(childrens)
-    }
-    slot.addEventListener('slotchange', callback, { once: true });
-    return { // accessor
-        remove: () => {
-            slot.removeEventListener('slotchange', callback);
-            element.shadowRoot.innerHTML = ""
-            element.outerHTML = element.outerHTML
-        }
-    }
-}
-ace = {
-    HTMLElements: {}
-}
-ace.HTMLElements.showcase = class HTMLShowCase extends HTMLElement {
-    static HTMLElement_name = 'ace-showcase'
-
-    constructor(){
-        super()
-    }
-    #shadow_root_accessor = undefined
-    connectedCallback() {
-
-        this.#shadow_root_accessor = create_shadowroot_slot(this, (elements) => {
-            if (elements.length !== 1)
-                throw new Error(`ace.HTMLElements.showcase: can only wrap exactly 1 element, ${elements.length} provided`)
-            // this.#shadow_root_accessor.remove()
-
-            this.#initialize(elements[0])
-        })
-    }
-
-    #initialize(element) {
-        let content_view = document.createElement('div')
-
-        let html_code_label = content_view.appendChild(document.createElement('h5'))
-            html_code_label.textContent = 'HTML code:'
-            html_code_label.className = 'trapezoid trapezoid-up'
-
-        let html_code_view = content_view.appendChild(document.createElement('pre'))
-            html_code_view.style.border       = '1px solid var(--separator-color)'
-            html_code_view.style.borderRadius = 'var(--border-radius-small)'
-            html_code_view.style.display    = 'block'
-            html_code_view.style.padding    = '1em'
-            html_code_view.style.margin     = '0'
-            html_code_view.style.overflow   = 'auto'
-            html_code_view.textContent      = element.outerHTML.replace('&gt;', '>').replace('&lt;', '<')
-            html_code_view.className        = 'hljs language-HTML'
-
-            hljs.highlightElement(html_code_view)
-
-        let cs_label = content_view.appendChild(document.createElement('h5'))
-            cs_label.style.marginTop = '1em'
-            cs_label.textContent = 'rendering:' // ace.API.HTMLElement.CS
-            cs_label.className = 'trapezoid trapezoid-up'
-        content_view.appendChild(element)
-
-        this.appendChild(content_view)
-    }
-
-}
-customElements.define(
-    ace.HTMLElements.showcase.HTMLElement_name,
-    ace.HTMLElements.showcase
-);
-
-</script>
-
-    </head>
+</head>
 <body>
 
     <div style="border:1px solid var(--separator-color)">
@@ -234,12 +152,12 @@ See the issue <a href="https://github.com/highlightjs/highlight.js/issues/3673">
 <ul>
     <li>
     <h3>code-section : empty (will wait for content), user-provided id</h3>
-    <ace-showcase>
-        <code-section id="my_custom_cs_id"></code-section>
-    </ace-showcase>
+    <ace-showcase-wrapper>
+        <!--<code-section id="my_custom_cs_id"></code-section>-->
+    </ace-showcase-wrapper>
     <button style="margin-top: 10px;" onclick="
         document.getElementById('my_custom_cs_id').textContent = document.getElementById('cs_0').code
-        this.style.visibility = 'hidden'
+        this.style.display = 'none'
         window.setTimeout(() => { // wait until the element is fully initialized
             document.getElementById('my_custom_cs_id').html_elements.code.classList.add('stylished')
         }, 500)
@@ -250,40 +168,40 @@ See the issue <a href="https://github.com/highlightjs/highlight.js/issues/3673">
 
     <li>
     <h3>code-section : text content</h3>
-    <ace-showcase>
-        <code-section>auto main() -> int { return 42; }</code-section>
-    </ace-showcase>
+    <ace-showcase-wrapper>
+        <!--<code-section>auto main() -> int { return 42; }</code-section>-->
+    </ace-showcase-wrapper>
     </li>
 
     <li>
     <h3>code-section : text content (large)</h3>
-    <ace-showcase>
-        <code-section language="cpp">
+    <ace-showcase-wrapper>
+        <!--<code-section language="cpp">
 auto main() -> int { return 42; } // this is a pretty long comment, so it should triggers small-rendering behavior depending on your window size ... otherwise, why would such extra-long comment exists ? .................................................................................................................. ?
-</code-section>
-    </ace-showcase>
+</code-section>-->
+    </ace-showcase-wrapper>
     </li>
 
     <li>
     <h3>code-section : text content + language attribute</h3>
-    <ace-showcase>
-        <code-section language="cpp">auto main() -> int { return 42; }</code-section>
-    </ace-showcase>
+    <ace-showcase-wrapper>
+        <!--<code-section language="cpp">auto main() -> int { return 42; }</code-section>-->
+    </ace-showcase-wrapper>
     </li>
 
     <!-- TODO: language is not take into account -->
     <li>
     <h3>code-section : language + code attributes</h3>
-    <ace-showcase>
-        <code-section language="cpp" code="auto main() -> int { return 42; }"></code-section>
-    </ace-showcase>
+    <ace-showcase-wrapper>
+        <!--<code-section language="cpp" code="auto main() -> int { return 42; }"></code-section>-->
+    </ace-showcase-wrapper>
     </li>
 
     <li>
     <h3>code-section : url (external code)</h3>
-    <ace-showcase>
-        <code-section url="/tests/resources/code_content/noexecute_show_block.cpp"></code-section>
-    </ace-showcase>
+    <ace-showcase-wrapper>
+        <!--<code-section url="/tests/resources/code_content/noexecute_show_block.cpp"></code-section>-->
+    </ace-showcase-wrapper>
     </li>
 
     <!-- <h3>Using attributes </h3>
@@ -291,51 +209,51 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
     <ul>
         <li>
             <h3>code-section : default</h3>
-            <code-section>
+            <!--<code-section>
 #include &lt;iostream&gt;
 auto main() -> int {
     auto i = 42;
     std::cout &lt;&lt; &quot;some console output&quot;;
 return i;
 }                       
-            </code-section>
+            </code-section>-->
         </li>
         <li>
             <h3>code-section : language</h3>
-            <code-section language="cpp">
+            <!--<code-section language="cpp">
 #include &lt;iostream&gt;
 auto main() -> int {
     auto i = 42;
     std::cout &lt;&lt; &quot;some console output&quot;;
 return i;
 }                       
-            </code-section>
+            </code-section>-->
         </li>
         <li>
             <h3>code-section : language, execution</h3>
-            <code-section language="cpp" toggle_execution="true">
+            <!--<code-section language="cpp" toggle_execution="true">
 #include &lt;iostream&gt;
 auto main() -> int {
     auto i = 42;
     std::cout &lt;&lt; &quot;some console output&quot;;
 return i;
 }                       
-            </code-section>
+            </code-section>-->
         </li>
         <li>
             <h3>code-section : language, execution, column orientation</h3>
-            <code-section language="cpp" toggle_execution="true" direction="column"> 
+            <!--<code-section language="cpp" toggle_execution="true" direction="column"> 
 #include &lt;iostream&gt;
 auto main() -> int {
     auto i = 42;
     std::cout &lt;&lt; &quot;some console output&quot;;
 return i;
 }                       
-            </code-section>
+            </code-section>-->
         </li>
         <li>
             <h3>code-section : parsing</h3>
-            <code-section toggle_parsing="true">
+            <!--<code-section toggle_parsing="true">
         THIS IS REMOVED // @awesome-code-element::skip::line
 #include &lt;iostream&gt;
 auto main() -> int {    
@@ -346,13 +264,13 @@ return i;
                         // @awesome-code-element::show::block::end
 }                       
         THIS IS REMOVED TOO // @awesome-code-element::skip::line
-            </code-section>
+            </code-section>-->
         </li>
 
         <li>
             <h3>code-section : language + parsing - column presentation</h3>
 
-            <code-section id="scs_4_column" style="flex-direction: column">
+            <!--<code-section id="scs_4_column" style="flex-direction: column">
         THIS IS REMOVED // @awesome-code-element::skip::line
 auto main() -> int {    
                         // @awesome-code-element::show::block::begin
@@ -361,7 +279,7 @@ return i;
                         // @awesome-code-element::show::block::end
 }                       
         THIS IS REMOVED TOO // @awesome-code-element::skip::line
-            </code-section>
+            </code-section>-->
         </li>
     </ul>
 -->

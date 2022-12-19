@@ -22,12 +22,10 @@
 
 // details
 
-import AwesomeCodeElement from '/awesome-code-element.js'
-// TODO: add theme switcher
+import ace from '/awesome-code-element.js'
 
-AwesomeCodeElement.test_utility = class {
+ace.test_utils = class {
 // class-as-namespace
-
     static inject_field_proxy(owner, property_name, { getter_payload, setter_payload } = {}) {
     // generate a proxy to a value's field, injecting optional payload
         
@@ -74,24 +72,23 @@ AwesomeCodeElement.test_utility = class {
 
 // =========================
 // global behavior modifiers
-AwesomeCodeElement.test_utility.global_behavior_modifiers = class global_behavior_modifiers {
+ace.test_utils.global_behavior_modifiers = class global_behavior_modifiers {
 // class-as-namespace
-
     static toggle_action = undefined
 
     // slow fetch resource (emulates slow network)
     static #original_fetch_resource = (() => {
-        let value = AwesomeCodeElement.details.utility.fetch_resource
+        let value = ace.details.utility.fetch_resource
         if (value === undefined)
-            throw new Error('AwesomeCodeElement.test_utility.global_behavior_modifiers.toggle_slow_fetch_resource (initialization): missing utility.fetch_resource')
+            throw new Error('ace.test_utils.global_behavior_modifiers.toggle_slow_fetch_resource (initialization): missing utility.fetch_resource')
         return value
     })()
     static get toggle_slow_fetch_resource() {
-        return global_behavior_modifiers.#original_fetch_resource !== AwesomeCodeElement.details.utility.fetch_resource
+        return global_behavior_modifiers.#original_fetch_resource !== ace.details.utility.fetch_resource
     }
     static set toggle_slow_fetch_resource(value) {
         value = value ?? !global_behavior_modifiers.toggle_slow_fetch_resource
-        AwesomeCodeElement.details.utility.fetch_resource = (value
+        ace.details.utility.fetch_resource = (value
             ? global_behavior_modifiers.#slow_fetch_resource
             : global_behavior_modifiers.#original_fetch_resource
         );
@@ -110,9 +107,9 @@ AwesomeCodeElement.test_utility.global_behavior_modifiers = class global_behavio
                 }
 
                 // TEST: emulate latency in resource acquisition
-                console.info('[AwesomeCodeElement.test_utility.global_behavior_modifiers.#slow_fetch_resource] Fake loading ...');
+                console.info('[ace.test_utils.global_behavior_modifiers.#slow_fetch_resource] Fake loading ...');
                 setTimeout(function(){
-                    console.info('[AwesomeCodeElement.test_utility.global_behavior_modifiers.#slow_fetch_resource] Fake loading done');
+                    console.info('[ace.test_utils.global_behavior_modifiers.#slow_fetch_resource] Fake loading done');
                     on_success(xhr.responseText)
                 }, 1500);
             };
@@ -157,8 +154,8 @@ AwesomeCodeElement.test_utility.global_behavior_modifiers = class global_behavio
 // ===========
 // UI elements
 
-AwesomeCodeElement.test_utility.HTMLElements = {}
-AwesomeCodeElement.test_utility.HTMLElements.toolbar = class test_utility extends HTMLElement {
+ace.test_utils.HTMLElements = {}
+ace.test_utils.HTMLElements.toolbar = class test_utils extends HTMLElement {
     static HTMLElement_name = 'awesome_code_element_test-utility-toolbar'
 
     constructor() {
@@ -173,13 +170,13 @@ AwesomeCodeElement.test_utility.HTMLElements.toolbar = class test_utility extend
                 value.id = `button_${name}`
                 value.textContent = `${name}`
                 value.addEventListener('click', () => {
-                    AwesomeCodeElement.test_utility.global_behavior_modifiers[name] = AwesomeCodeElement.test_utility.global_behavior_modifiers.toggle_action
+                    ace.test_utils.global_behavior_modifiers[name] = ace.test_utils.global_behavior_modifiers.toggle_action
                 })
             return value
         }
 
-        this.id = 'test_utility_toolbar'
-        AwesomeCodeElement.details.utility.apply_css(this, {
+        this.id = 'test_utils_toolbar'
+        ace.details.utility.apply_css(this, {
             display : 'flex',
             border  : '1px solid var(--primary-color)',
             width   : 'fit-content',
@@ -191,14 +188,14 @@ AwesomeCodeElement.test_utility.HTMLElements.toolbar = class test_utility extend
         this.appendChild(generate_toggle_button('toggle_style'))
         this.appendChild(generate_toggle_button('toggle_small'))
         this.appendChild(generate_toggle_button('toggle_slow_fetch_resource'))
-        this.appendChild(new AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton())
-        this.appendChild(new AwesomeCodeElement.API.HTMLElements.ThemeSelector(['tokyo-night', 'base16/google']))
+        this.appendChild(new ace.API.HTMLElements.ToggleDarkModeButton())
+        this.appendChild(new ace.API.HTMLElements.ThemeSelector(['tokyo-night', 'base16/google']))
     }
 }
 customElements.define(
-    AwesomeCodeElement.test_utility.HTMLElements.toolbar.HTMLElement_name,
-    AwesomeCodeElement.test_utility.HTMLElements.toolbar
+    ace.test_utils.HTMLElements.toolbar.HTMLElement_name,
+    ace.test_utils.HTMLElements.toolbar
 );
 
 // module
-export default AwesomeCodeElement.test_utility;
+export default ace.test_utils;
