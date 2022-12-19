@@ -139,6 +139,9 @@ SOFTWARE.
 <!-- WIP: showcase element -->
 <script>
 
+// TODO: move to a dedicated module
+// TODO: refactor
+
 let create_shadowroot_slot = function(element, when_childrens_attached) {
 
     if (!element.shadowRoot)
@@ -221,7 +224,7 @@ customElements.define(
 
     <div style="border:1px solid var(--separator-color)">
     <i>
-        <pre><h3>Note:</h3>currently, C++ trailing-return-type is considered as an illegale synthax by highlight-js
+        <pre style="overflow:auto"><h3>Note:</h3>currently, C++ trailing-return-type is considered as an illegale synthax by highlight-js
 See the issue <a href="https://github.com/highlightjs/highlight.js/issues/3673">here (highlight.js/issues/3673)</a></pre>
     </i>
     </div>
