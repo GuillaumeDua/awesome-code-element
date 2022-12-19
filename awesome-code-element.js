@@ -74,6 +74,7 @@
 // TODO: console.xxxx -> replace '\n\t' by ','-seperated arguments ?
 // TODO: remove useless funcs, class (if any)
 // TODO: awesome-code-element.js: sub-modules aggregator
+// TODO: style : px vs. em
 
 export { AwesomeCodeElement as default }
 
