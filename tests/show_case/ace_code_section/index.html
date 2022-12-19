@@ -109,7 +109,7 @@ SOFTWARE.
             hljs.configure({
                 ignoreUnescapedHTML: true,
                 throwUnescapedHTML: false,
-                languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plaintext']
+                languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plain-text', 'HTML']
             })
         </script>
 
@@ -119,6 +119,80 @@ SOFTWARE.
                 document.getElementById('button_toggle_style').click()
             }
         </script>
+<!-- WIP: showcase element -->
+<script>
+
+let create_shadowroot_slot = function(element, when_childrens_attached) {
+
+    if (!element.shadowRoot)
+        element.attachShadow({ mode: 'open' });
+    element.shadowRoot.innerHTML = `<slot></slot>`;
+    const slot = element.shadowRoot.querySelector('slot');
+
+    let callback = (event) => {
+        const childrens = event.target.assignedElements();
+        when_childrens_attached(childrens)
+    }
+    slot.addEventListener('slotchange', callback, { once: true });
+    return { // accessor
+        remove: () => {
+            slot.removeEventListener('slotchange', callback);
+            element.shadowRoot.innerHTML = ""
+            element.outerHTML = element.outerHTML
+        }
+    }
+}
+ace = {
+    HTMLElements: {}
+}
+ace.HTMLElements.showcase = class HTMLShowCase extends HTMLElement {
+    static HTMLElement_name = 'ace-showcase'
+
+    constructor(){
+        super()
+    }
+    #shadow_root_accessor = undefined
+    connectedCallback() {
+
+        this.#shadow_root_accessor = create_shadowroot_slot(this, (elements) => {
+            if (elements.length !== 1)
+                throw new Error(`ace.HTMLElements.showcase: can only wrap exactly 1 element, ${elements.length} provided`)
+            // this.#shadow_root_accessor.remove()
+
+            this.#initialize(elements[0].outerHTML)
+        })
+    }
+
+    #initialize(code_content) {
+        let content_view = document.createElement('div')
+            content_view.style.border       = '1px solid var(--separator-color)'
+            content_view.style.borderRadius = 'var(--border-radius-small)'
+        let html_code_display_button = document.createElement('button')
+            html_code_display_button.style.width = '100%'
+            html_code_display_button.innerHTML = "&#8693; Show HTML code"
+            html_code_display_button = content_view.appendChild(html_code_display_button)
+        let html_code_view = document.createElement('pre')
+            html_code_view.style.display = 'none'
+            html_code_view.textContent = code_content
+            html_code_view.className = 'hljs language-HTML'
+            hljs.highlightElement(html_code_view)
+            html_code_view = content_view.appendChild(html_code_view)
+
+        html_code_display_button.onclick = function() {
+            html_code_view.style.display = html_code_view.style.display === 'none' ? 'block' : 'none'
+        }
+
+        this.appendChild(content_view)
+    }
+
+}
+customElements.define(
+    ace.HTMLElements.showcase.HTMLElement_name,
+    ace.HTMLElements.showcase
+);
+
+</script>
+
     </head>
 <body>
 
@@ -134,8 +208,10 @@ See the issue <a href="https://github.com/highlightjs/highlight.js/issues/3673">
 <ul>
     <li>
     <h3>code-section : empty (will wait for content), user-provided id</h3>
+    <ace-showcase>
     <code-section id="my_custom_cs_id"></code-section>
-    <button onclick="
+    </ace-showcase>
+    <button style="margin-top: 10px;" onclick="
         document.getElementById('my_custom_cs_id').textContent = document.getElementById('cs_0').code
         this.style.visibility = 'hidden'
     ">
