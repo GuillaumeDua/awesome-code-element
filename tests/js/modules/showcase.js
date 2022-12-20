@@ -33,15 +33,20 @@ ace.showcase.HTMLElements.wrapper = class HTMLShowCase extends HTMLElement {
     #shadow_root_accessor = undefined
     connectedCallback() {
 
-        // shameful trick: pass inner code as comment
-        this.wrapped_HTML_code = this.innerHTML
-            .replace(/^\s*<!--/, '')
-            .replace(/\s*-->\s*$/, '')
-        this.innerHTML = this.wrapped_HTML_code
+        // merge all nested HTML comments
+        this.wrapped_HTML_code = [...this.childNodes]
+            .filter(element => element.nodeType === Node.COMMENT_NODE)
+            .map(element => element.textContent)
+            .toString()
+            .replace('&gt;', '>').replace('&lt;', '<')
+        
         this.#initialize()
     }
 
     #initialize() {
+
+        this.innerHTML = this.wrapped_HTML_code
+
         let content_view = document.createElement('div')
 
         let html_code_label = content_view.appendChild(document.createElement('h5'))
@@ -55,7 +60,7 @@ ace.showcase.HTMLElements.wrapper = class HTMLShowCase extends HTMLElement {
             html_code_view.style.padding    = '1em'
             html_code_view.style.margin     = '0'
             html_code_view.style.overflow   = 'auto'
-            html_code_view.textContent      = this.wrapped_HTML_code.replace('&gt;', '>').replace('&lt;', '<')
+            html_code_view.textContent      = this.wrapped_HTML_code
             html_code_view.className        = 'hljs language-HTML'
 
             hljs.highlightElement(html_code_view)
