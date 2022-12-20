@@ -470,6 +470,25 @@ AwesomeCodeElement.details.remote.CE_API = class CE_API {
 }
 AwesomeCodeElement.details.utility = class utility {
 // TODO: move to another module
+
+    static html_codec = class html_codec {
+        static entities = new Array(
+           [ '&gt;', '>' ],
+           [ '&lt;', '<' ],
+           [ '&amp;', '&' ],
+           [ '&quot;', '"' ]
+        )
+        static decode = (text) => {
+
+            html_codec.entities.forEach(([key, value]) => text = text.replaceAll(key, value))
+            return text
+        }
+        static encode = (text) => {
+            html_codec.entities.forEach(([value, key]) => text = text.replaceAll(key, value))
+            return text
+        }
+    }
+
     static unfold_into({target, properties = {}}) {
         if (!target)
             throw new Error(`AwesomeCodeElement.details.utility: invalid argument [target] with value [${target}]`)
@@ -1340,13 +1359,24 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
         maybe_use_attribute('toggle_execution')
 
         let cleanup_code = (value) => {
-            return value && value.replace(/^\s*/, '').replace(/\s*$/, '')
+            return value && value
+                // remove enclosing white-spaces
+                .replace(/^\s*/, '').replace(/\s*$/, '')
         }
+
+        // remove any interpretation of inner text
+        let textContent = [...this.childNodes]
+            .map(element => element.outerHTML ?? element.textContent)
+            .join('')
+        textContent = AwesomeCodeElement.details.utility.html_codec.decode(textContent)
+            // quick-fix
+            .replaceAll(/\<\/\w+\>/g, '')   // attempt to fix code previously interpreted as HTML.
+                                            // Typically, `#include <smthg>` directive produce #include <smthg> ... </smthg>
 
         // try to acquire local code
         this.#_parameters.code = 
                 cleanup_code(this.#_parameters.code)
-            ||  cleanup_code(this.textContent)
+            ||  cleanup_code(textContent)
             ||  cleanup_code(this.getAttribute('code'))
             ||  ''
         // otherwise, remote

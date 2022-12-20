@@ -34,19 +34,26 @@ ace.showcase.HTMLElements.wrapper = class HTMLShowCase extends HTMLElement {
     connectedCallback() {
 
         // merge all nested HTML comments
-        this.wrapped_HTML_code = [...this.childNodes]
+        let text_content = [...this.childNodes]
             .filter(element => element.nodeType === Node.COMMENT_NODE)
             .map(element => element.textContent)
-            .toString()
-            .replace('&gt;', '>').replace('&lt;', '<')
+            .join('')
         
+        this.wrapped_HTML_code = {
+            raw: text_content,
+            decoded: ace.details.utility.html_codec.decode(text_content),
+            encoded: ace.details.utility.html_codec.encode(text_content)
+        }
+
         this.#initialize()
     }
 
     #initialize() {
 
-        this.innerHTML = this.wrapped_HTML_code
+        // cleaned-up inner content
+        this.innerHTML = this.wrapped_HTML_code.decoded
 
+        // make the inner content eye-candy
         let content_view = document.createElement('div')
 
         let html_code_label = content_view.appendChild(document.createElement('h5'))
@@ -60,7 +67,7 @@ ace.showcase.HTMLElements.wrapper = class HTMLShowCase extends HTMLElement {
             html_code_view.style.padding    = '1em'
             html_code_view.style.margin     = '0'
             html_code_view.style.overflow   = 'auto'
-            html_code_view.textContent      = this.wrapped_HTML_code
+            html_code_view.textContent      = this.wrapped_HTML_code.raw
             html_code_view.className        = 'hljs language-HTML'
 
             hljs.highlightElement(html_code_view)
