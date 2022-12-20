@@ -30,7 +30,6 @@ ace.showcase.HTMLElements.wrapper = class HTMLShowCase extends HTMLElement {
     constructor(){
         super()
     }
-    #shadow_root_accessor = undefined
     connectedCallback() {
 
         // merge all nested HTML comments
@@ -38,7 +37,11 @@ ace.showcase.HTMLElements.wrapper = class HTMLShowCase extends HTMLElement {
             .filter(element => element.nodeType === Node.COMMENT_NODE)
             .map(element => element.textContent)
             .join('')
+                .replace(/^\s*/, '')
+                .replace(/\s*$/, '')
         
+        console.log(text_content)
+
         this.wrapped_HTML_code = {
             raw: text_content,
             decoded: ace.details.utility.html_codec.decode(text_content),
