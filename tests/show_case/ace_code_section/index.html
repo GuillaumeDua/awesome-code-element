@@ -137,7 +137,7 @@ SOFTWARE.
 
         <script type="module" src="/tests/js/modules/showcase.js"></script>
 
-</head>
+    </head>
 <body>
 
     <div style="border:1px solid var(--separator-color)">
@@ -204,87 +204,103 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
     </ace-showcase-wrapper>
     </li>
 
-    <!-- <h3>Using attributes </h3>
+    <li>
+        <h3>code-section : language, execution (compilation <b style="color:green">success</b>)</h3>
+<ace-showcase-wrapper><!--<code-section language="cpp" toggle_execution="true">
+#include <iostream>
+auto main() -> int {
+    auto i = 42;
+    std::cout << "some console output";
+    return i;
+}                       
+</code-section>--></ace-showcase-wrapper>
+    </li>
 
-    <ul>
-        <li>
-            <h3>code-section : default</h3>
-            <!--<code-section>
-#include &lt;iostream&gt;
+    <li>
+        <h3>code-section : language, execution (compilation <b style="color:red">error</b>)</h3>
+<ace-showcase-wrapper><!--<code-section language="cpp" toggle_execution="true">
+#include <iostream>
+auto main() -> int {
+    auto i = ; // invalid synthax: missing rhs value in assignement
+    std::cout << "some console output";
+    return i;
+}                       
+</code-section>--></ace-showcase-wrapper>
+    </li>
+
+    <li>
+        <h3>code-section : language, execution, column orientation</h3>
+<ace-showcase-wrapper><!--<code-section language="cpp" toggle_execution="true" direction="column"> 
+#include <iostream>
 auto main() -> int {
     auto i = 42;
-    std::cout &lt;&lt; &quot;some console output&quot;;
-return i;
+    std::cout << "some console output";
+    return i;
 }                       
-            </code-section>-->
-        </li>
-        <li>
-            <h3>code-section : language</h3>
-            <!--<code-section language="cpp">
-#include &lt;iostream&gt;
-auto main() -> int {
-    auto i = 42;
-    std::cout &lt;&lt; &quot;some console output&quot;;
-return i;
-}                       
-            </code-section>-->
-        </li>
-        <li>
-            <h3>code-section : language, execution</h3>
-            <!--<code-section language="cpp" toggle_execution="true">
-#include &lt;iostream&gt;
-auto main() -> int {
-    auto i = 42;
-    std::cout &lt;&lt; &quot;some console output&quot;;
-return i;
-}                       
-            </code-section>-->
-        </li>
-        <li>
-            <h3>code-section : language, execution, column orientation</h3>
-            <!--<code-section language="cpp" toggle_execution="true" direction="column"> 
-#include &lt;iostream&gt;
-auto main() -> int {
-    auto i = 42;
-    std::cout &lt;&lt; &quot;some console output&quot;;
-return i;
-}                       
-            </code-section>-->
-        </li>
-        <li>
-            <h3>code-section : parsing</h3>
-            <!--<code-section toggle_parsing="true">
-        THIS IS REMOVED // @awesome-code-element::skip::line
-#include &lt;iostream&gt;
+</code-section>--></ace-showcase-wrapper>
+
+<div style="border:1px solid var(--separator-color)">
+    <i>
+        <pre style="overflow:auto"><h4>Note:</h4>Alternatively, setting the style value <code>style="flex-direction: column"</code> also works</pre>
+    </i>
+</div>
+
+    </li>
+
+    <li>
+        <h3>code-section : parsing (render and/or execute only what is relevant for the audience)</h3>
+<ace-showcase-wrapper><!--<code-section toggle_parsing="true">
+    THIS IS REMOVED // @awesome-code-element::skip::line
+#include <iostream>
 auto main() -> int {    
-                        // @awesome-code-element::show::block::begin
+                    // @awesome-code-element::show::block::begin
 auto i = 42; // test ----------------------------------------
-std::cout &lt;&lt; &quot;some console output&quot;;
+std::cout << "some console output";
 return i;
-                        // @awesome-code-element::show::block::end
+                    // @awesome-code-element::show::block::end
 }                       
-        THIS IS REMOVED TOO // @awesome-code-element::skip::line
-            </code-section>-->
-        </li>
+    THIS IS REMOVED TOO // @awesome-code-element::skip::line
+</code-section>--></ace-showcase-wrapper>
+    </li>
 
-        <li>
-            <h3>code-section : language + parsing - column presentation</h3>
-
-            <!--<code-section id="scs_4_column" style="flex-direction: column">
-        THIS IS REMOVED // @awesome-code-element::skip::line
+    <li>
+        <h3>code-section : language + parsing + execution</h3>
+<ace-showcase-wrapper><!--<code-section toggle_parsing="true" toggle_execution="true">
+    THIS IS REMOVED // @awesome-code-element::skip::line
+#include <iostream>
 auto main() -> int {    
-                        // @awesome-code-element::show::block::begin
-auto i = 42; // test
+                    // @awesome-code-element::show::block::begin
+auto i = 42; // test ----------------------------------------
+std::cout << "some console output";
 return i;
-                        // @awesome-code-element::show::block::end
+                    // @awesome-code-element::show::block::end
 }                       
-        THIS IS REMOVED TOO // @awesome-code-element::skip::line
-            </code-section>-->
-        </li>
-    </ul>
--->
+    THIS IS REMOVED TOO // @awesome-code-element::skip::line
+</code-section>--></ace-showcase-wrapper>
+    </li>
 
-<ul>
+    <li>
+        <h3>code-section : mixing html entities and regular chars (&lt;, &gt;, &quot;, &amp;)</h3>
+    <ace-showcase-wrapper><!--<code-section>
+    #include <vector>
+    #include &lt;iostream&gt;
+    
+    auto main() -> int {
+    
+        auto i = 42;
+        auto b = 42 < 13 || 42 > 13;
+        
+        std::cout << &b < &i << i > b << (i >> b);
+        std::cin>>i;
+        std::cout<<"&<>42&";
+        std::cout<< '&lt;, &lt;, &quot;, &amp;'
+        std::cout &lt;&lt; &quot;some console output&quot;;
+    
+        return i <=> b;
+    }                       
+    </code-section> --></ace-showcase-wrapper>
+        </li>
+</ul>
 
 </body>
 </html>

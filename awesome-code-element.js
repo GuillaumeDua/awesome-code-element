@@ -75,6 +75,7 @@
 // TODO: remove useless funcs, class (if any)
 // TODO: awesome-code-element.js: sub-modules aggregator
 // TODO: style : px vs. em
+// TODO: default policies : language, toggle_execution, toggle_parsing, presentation, etc.
 
 export { AwesomeCodeElement as default }
 
