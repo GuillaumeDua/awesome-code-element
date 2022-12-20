@@ -97,12 +97,12 @@ ace.test_utils.global_behavior_modifiers = class global_behavior_modifiers {
         let xhr = new XMLHttpRequest();
             xhr.open('GET', url);
             xhr.onerror = function() {
-                on_error(`RemoteCodeSection: network Error`)
+                on_error(`CodeSection: network error`)
             };
             xhr.onload = function() {
 
                 if (xhr.status != 200) {
-                    on_error(`RemoteCodeSection: bad request status ${xhr.status}`)
+                    on_error(`CodeSection: bad request status ${xhr.status}`)
                     return;
                 }
 

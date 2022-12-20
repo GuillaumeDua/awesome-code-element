@@ -560,12 +560,12 @@ AwesomeCodeElement.details.utility = class utility {
         let xhr = new XMLHttpRequest();
             xhr.open('GET', url);
             xhr.onerror = function() {
-                on_error(`AwesomeCodeElement.details.utility.fetch_resource: network Error`)
+                on_error(`AwesomeCodeElement.details.utility.fetch_resource: network error`)
             };
             xhr.onload = function() {
 
                 if (xhr.status != 200) {
-                    on_error(`RemoteCodeSection: bad request status ${xhr.status}`)
+                    on_error(`AwesomeCodeElement.details.utility.fetch_resource: bad request status ${xhr.status}`)
                     return;
                 }
                 on_success(xhr.responseText)
@@ -1566,7 +1566,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         let _this = this
         AwesomeCodeElement.details.utility.fetch_resource(this.#_url, {
             on_error: (error) => {
-                _this.on_error(`RemoteCodeSection: network Error ${error}`)
+                _this.on_error(`CodeSection: network error: ${error}`)
                 this.html_elements.panels.left.toggle_loading_animation = false
             },
             on_success: (code) => {
