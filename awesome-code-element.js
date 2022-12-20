@@ -53,7 +53,7 @@
 //          https://stackoverflow.com/questions/74114767/highlightjs-how-to-create-custom-clickable-sequence-of-characters
 // TODO: hide warnings for undefined/fallback hljs language
 // TODO: soft errors (replace HTMLElement content with red error message, rather than stopping the process)
-// TODO: make Initialize_DivHTMLElements generic
+// TODO: make Initialize_DivHTML_elements generic
 // TODO: Global option: force fallback language to ... [smthg]
 // TODO: per-codeSection CE configuration (local override global)
 // TODO: toggle technical info/warning logs
@@ -68,7 +68,7 @@
 // TODO: element name consistency ?
 // TODO: use arrow function: automatically captures the `this` value of the enclosing scope (rather than _this)
 // TODO: alias awesome-code-element -> ace ?
-// TODO: HTMLElements_name -> ace_${name}
+// TODO: HTML_elements_name -> ace_${name}
 // TODO: check shadowroot-callbacks
 // TODO: dark_or_light -> color_scheme
 // TODO: console.xxxx -> replace '\n\t' by ','-seperated arguments ?
@@ -648,21 +648,22 @@ AwesomeCodeElement.details.log_facility = class {
 }
 
 // ======================
-// HTMLElements : details
+// HTML_elements : details
 
-AwesomeCodeElement.details.HTMLElements = {}
+AwesomeCodeElement.details.HTML_elements = {}
 // TODO: should be replaced by dynamic CSS at some point
-AwesomeCodeElement.details.HTMLElements.resize_observer = new ResizeObserver(entries => {
+AwesomeCodeElement.details.HTML_elements.resize_observer = new ResizeObserver(entries => {
 
     for (let entry of entries) {
         entry.target.on_resize()
     }
 });
 
-AwesomeCodeElement.details.HTMLElements.CopyToClipboardButton = class CopyToClipboardButton extends HTMLButtonElement {
+AwesomeCodeElement.details.HTML_elements.buttons = {}
+AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard = class CopyToClipboardButton extends HTMLButtonElement {
 // Copy text context of this previousSibling HTMLelement
 
-    static HTMLElement_name = 'awesome-code-element_el_copy-to-clipboard-button'
+    static HTMLElement_name = 'ace-button-copy-to-clipboard'
     static title            = "Copy to clipboard"
     static copyIcon         = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`
     static successIcon      = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`
@@ -704,12 +705,12 @@ AwesomeCodeElement.details.HTMLElements.CopyToClipboardButton = class CopyToClip
     }
 }
 customElements.define(
-    AwesomeCodeElement.details.HTMLElements.CopyToClipboardButton.HTMLElement_name,
-    AwesomeCodeElement.details.HTMLElements.CopyToClipboardButton, {extends: 'button'}
+    AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard.HTMLElement_name,
+    AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard, {extends: 'button'}
 );
-AwesomeCodeElement.details.HTMLElements.SendToGodboltButton = class SendToGodboltButton extends HTMLButtonElement {
+AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInGodboltButton extends HTMLButtonElement {
 
-    static HTMLElement_name = 'awesome-code-element_el_send-to-godbolt-button'
+    static HTMLElement_name = 'ace-button-send-to-godbolt'
     static title            = 'Try this on godbolt.org (compiler-explorer)'
     static icon             = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32"><switch><g><path d="M58.6 46.5c-.3-.5-.3-1.2 0-1.7.3-.6.7-1.3 1-2 .2-.5-.1-1-.7-1h-5.8c-.6 0-1.2.3-1.4.8-.7 1.1-1.6 2.2-2.6 3.2-3.7 3.7-8.6 5.7-13.9 5.7-5.3 0-10.2-2-13.9-5.7-3.8-3.7-5.8-8.6-5.8-13.9s2-10.2 5.8-13.9c3.7-3.7 8.6-5.7 13.9-5.7 5.3 0 10.2 2 13.9 5.7 1 1 1.9 2.1 2.6 3.2.3.5.9.8 1.4.8h5.8c.5 0 .9-.5.7-1-.3-.7-.6-1.3-1-2-.3-.5-.3-1.2 0-1.7l1.9-3.5c.4-.7.3-1.5-.3-2.1l-4.9-4.9c-.6-.6-1.4-.7-2.1-.3l-3.6 2c-.5.3-1.2.3-1.7 0-1.7-.9-3.5-1.7-5.4-2.2-.6-.2-1-.6-1.2-1.2l-1.1-3.9C40.1.5 39.5 0 38.7 0h-6.9C31 0 30.2.5 30 1.3l-1.1 3.9c-.2.6-.6 1-1.2 1.2-1.9.6-3.6 1.3-5.3 2.2-.5.3-1.2.3-1.7 0l-3.6-2c-.7-.4-1.5-.3-2.1.3l-4.9 4.9c-.6.6-.7 1.4-.3 2.1l2 3.6c.3.5.3 1.2 0 1.7-.9 1.7-1.7 3.5-2.2 5.3-.2.6-.6 1-1.2 1.2l-3.9 1.1c-.7.2-1.3.9-1.3 1.7v6.9c0 .8.5 1.5 1.3 1.7l3.9 1.1c.6.2 1 .6 1.2 1.2.5 1.9 1.3 3.6 2.2 5.3.3.6.3 1.2 0 1.7l-2 3.6c-.4.7-.3 1.5.3 2.1L15 57c.6.6 1.4.7 2.1.3l3.6-2c.6-.3 1.2-.3 1.7 0 1.7.9 3.5 1.7 5.3 2.2.6.2 1 .6 1.2 1.2l1.1 3.9c.2.7.9 1.3 1.7 1.3h6.9c.8 0 1.5-.5 1.7-1.3l1.1-3.9c.2-.6.6-1 1.2-1.2 1.9-.6 3.6-1.3 5.4-2.2.5-.3 1.2-.3 1.7 0l3.6 2c.7.4 1.5.3 2.1-.3l4.9-4.9c.6-.6.7-1.4.3-2.1l-2-3.5z" fill="#67c52a"/><path d="M23.5 37.7v4.4h23.8v-4.4H23.5zm0-7.8v4.4h19.6v-4.4H23.5zm0-7.9v4.4h23.8V22H23.5z" fill="#3c3c3f"/></g></switch></svg>`;
     static successIcon      = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`
@@ -717,10 +718,10 @@ AwesomeCodeElement.details.HTMLElements.SendToGodboltButton = class SendToGodbol
     constructor() {
 
         super();
-        this.setAttribute('is', SendToGodboltButton.HTMLElement_name)
+        this.setAttribute('is', ShowInGodboltButton.HTMLElement_name)
 
-        this.title = SendToGodboltButton.title;
-        this.innerHTML = SendToGodboltButton.icon;
+        this.title = ShowInGodboltButton.title;
+        this.innerHTML = ShowInGodboltButton.icon;
 
         AwesomeCodeElement.details.utility.apply_css(this, {
             zIndex      : 2,
@@ -732,13 +733,13 @@ AwesomeCodeElement.details.HTMLElements.SendToGodboltButton = class SendToGodbol
         this.addEventListener(
             'click',
             () => {
-                this.innerHTML = SendToGodboltButton.successIcon
+                this.innerHTML = ShowInGodboltButton.successIcon
                 this.style.fill = 'green'
 
                 this.onClickSend()
 
                 window.setTimeout(() => {
-                    this.innerHTML = SendToGodboltButton.icon
+                    this.innerHTML = ShowInGodboltButton.icon
                     this.style.fill = 'black'
                 }, 1000);
             }
@@ -752,7 +753,7 @@ AwesomeCodeElement.details.HTMLElements.SendToGodboltButton = class SendToGodbol
 
                     let configuration = AwesomeCodeElement.API.configuration.CE.get(codeSectionElement.language)
                     if (configuration === undefined)
-                        throw new Error(`awesome-code-element.js:SendToGodboltButton::onClickSend: missing configuration for language [${codeSectionElement.language}]`)
+                        throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: missing configuration for language [${codeSectionElement.language}]`)
                     return configuration
                 },
                 ce_options : function() {
@@ -769,7 +770,7 @@ AwesomeCodeElement.details.HTMLElements.SendToGodboltButton = class SendToGodbol
                 code : function() {
                     let result = codeSectionElement.ce_code || codeSectionElement.code
                     if (result === undefined)
-                        throw new Error(`awesome-code-element.js:SendToGodboltButton::onClickSend: missing code`)
+                        throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: missing code`)
                     return result
                 }
             }
@@ -780,11 +781,11 @@ AwesomeCodeElement.details.HTMLElements.SendToGodboltButton = class SendToGodbol
         let codeSectionElement = this.parentElement.parentElement
 
         if (codeSectionElement === undefined
-        ||  codeSectionElement.tagName.match(`\w+${AwesomeCodeElement.API.HTMLElements.CodeSection.HTMLElement_name.toUpperCase()}`) === '')
-            throw new Error('awesome-code-element.js: SendToGodboltButton.onClickSend: ill-formed element: unexpected parent.parent element (must be a CodeSection)')
-        console.info('awesome-code-element.js: SendToGodboltButton.onClickSend: sending request ...')
+        ||  codeSectionElement.tagName.match(`\w+${AwesomeCodeElement.API.HTML_elements.CodeSection.HTMLElement_name.toUpperCase()}`) === '')
+            throw new Error('awesome-code-element.js: ShowInGodboltButton.onClickSend: ill-formed element: unexpected parent.parent element (must be a CodeSection)')
+        console.info('awesome-code-element.js: ShowInGodboltButton.onClickSend: sending request ...')
 
-        let accessor = SendToGodboltButton.#make_user_options_accessor(codeSectionElement)
+        let accessor = ShowInGodboltButton.#make_user_options_accessor(codeSectionElement)
 
         // build request as JSon
         let data = {
@@ -815,10 +816,10 @@ AwesomeCodeElement.details.HTMLElements.SendToGodboltButton = class SendToGodbol
     }
 }
 customElements.define(
-    AwesomeCodeElement.details.HTMLElements.SendToGodboltButton.HTMLElement_name,
-    AwesomeCodeElement.details.HTMLElements.SendToGodboltButton, {extends: 'button'}
+    AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt.HTMLElement_name,
+    AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt, {extends: 'button'}
 );
-AwesomeCodeElement.details.HTMLElements.LoadingAnimation = class LoadingAnimation {
+AwesomeCodeElement.details.HTML_elements.LoadingAnimation = class LoadingAnimation {
     
     static #cache = (function(){
     // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
@@ -888,7 +889,7 @@ AwesomeCodeElement.details.HTMLElements.LoadingAnimation = class LoadingAnimatio
     }
 }
 // TODO: flex-resizer between the two panels ?
-AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSectionHTMLElement extends HTMLElement {
+AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSectionHTMLElement extends HTMLElement {
 // HTML layout/barebone for CodeSection
 
     static #id_generator = (() => {
@@ -910,17 +911,17 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
     }
 
     connectedCallback() {
-        console.debug('AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement: connectedCallback')
+        console.debug('AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement: connectedCallback')
         try {
             if (!this.acquire_parameters(this.#_parameters)) {
-                console.debug('AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement: create shadowroot slot')
+                console.debug('AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement: create shadowroot slot')
                 this.shadowroot_accessor = AwesomeCodeElement.details.utility.create_shadowroot_slot(
                     this,
                     () => { this.#shadow_root_callback() }
                 )
             }
             else {
-                console.debug('AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement: no need for shadowroot slot')
+                console.debug('AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement: no need for shadowroot slot')
                 this.initialize()
             }
         }
@@ -930,7 +931,7 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
         }
     }
     disconnectedCallback() {
-        AwesomeCodeElement.details.HTMLElements.resize_observer.unobserve(this)
+        AwesomeCodeElement.details.HTML_elements.resize_observer.unobserve(this)
     }
     #shadow_root_callback() {
     // defered initialization
@@ -1005,7 +1006,7 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
         this.html_elements.code                 = left_panel_elements.code
         this.html_elements.panels.left          = left_panel
         this.html_elements.panels.left.buttons  = left_panel_elements.buttons
-        AwesomeCodeElement.details.HTMLElements.LoadingAnimation.inject_into({
+        AwesomeCodeElement.details.HTML_elements.LoadingAnimation.inject_into({
             owner:  this.html_elements.panels.left,
             target_or_accessor: this.html_elements.code
         })
@@ -1021,7 +1022,7 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
         this.html_elements.panels.right         = right_panel
         this.html_elements.panels.right.buttons = right_panel_elements.buttons
         
-        AwesomeCodeElement.details.HTMLElements.LoadingAnimation.inject_into({
+        AwesomeCodeElement.details.HTML_elements.LoadingAnimation.inject_into({
             owner:  this.html_elements.panels.right,
             target_or_accessor: () => { return this.html_elements.execution }
         })
@@ -1049,7 +1050,7 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
                 owner: scrolling_element,
                 elements: Object.entries(elements_to_hide).map(element => element[1]) // structure-to-array
             })
-            AwesomeCodeElement.details.HTMLElements.resize_observer.observe(panel)
+            AwesomeCodeElement.details.HTML_elements.resize_observer.observe(panel)
         }
         set_on_resize_event({
             panel: this.html_elements.panels.left,
@@ -1079,11 +1080,11 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
         code_element = left_panel.appendChild(code_element)
 
         // buttons : copy-to-clipboard
-        let copy_button = new AwesomeCodeElement.details.HTMLElements.CopyToClipboardButton()
+        let copy_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
             copy_button.style.zIndex = left_panel.style.zIndex + 1
             copy_button = left_panel.appendChild(copy_button)
 
-        let CE_button = new AwesomeCodeElement.details.HTMLElements.SendToGodboltButton
+        let CE_button = new AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt()
         AwesomeCodeElement.details.utility.apply_css(CE_button, {
             zIndex : left_panel.style.zIndex + 1,
             display : 'none' // hidden by default
@@ -1120,7 +1121,7 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
                 borderRadius:'5px'
             })
             execution_element = right_panel.appendChild(execution_element)
-        let copy_button = new AwesomeCodeElement.details.HTMLElements.CopyToClipboardButton()
+        let copy_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
             copy_button = right_panel.appendChild(copy_button)
         return { 
             panel: right_panel,
@@ -1205,10 +1206,10 @@ AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement = class CodeSecti
 }
 
 // ==================
-// HTMLElements : API
+// HTML_elements : API
 
-AwesomeCodeElement.API.HTMLElements = {}
-AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement {
+AwesomeCodeElement.API.HTML_elements = {}
+AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement {
 // TODO: code loading policy/behavior - as function : default is textContent, but can be remote using an url, or another rich text area for instance
 
     // --------------------------------
@@ -1250,7 +1251,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
             return this.#_language
         if (this.html_elements.code) {
             console.info('CodeSection:language : invalid language, attempting a detection as fallback')
-            let detected_language = AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement.get_hljs_language(this.html_elements.code)
+            let detected_language = AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement.get_hljs_language(this.html_elements.code)
             return detected_language === 'undefined' ? undefined : detected_language
         }
         return undefined
@@ -1260,7 +1261,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
         let value       = (typeof arg === "object" ? arg.value : arg)
         let update_view = (typeof arg === "object" ? arg.update_view : true)
 
-        console.info(`AwesomeCodeElement.API.HTMLElements.CodeSection: set language to [${value}]`)
+        console.info(`AwesomeCodeElement.API.HTML_elements.CodeSection: set language to [${value}]`)
 
         this.#_language = (value || '').replace('language-', '')
         this.setAttribute('language', this.#_language)
@@ -1291,7 +1292,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
     // fallback, cannot provide language as a parameter
         hljs.highlightElement(this.html_elements.code)
         return {
-            language: AwesomeCodeElement.details.HTMLElements.CodeSectionHTMLElement.get_hljs_language(this.html_elements.code),
+            language: AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement.get_hljs_language(this.html_elements.code),
             relevance: 10 // max
         }
     }
@@ -1394,7 +1395,7 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
     initialize() {
         super.initialize()
 
-        console.debug(`AwesomeCodeElement.details.HTMLElements.CodeSection: initializing with parameters [${JSON.stringify(this.#_parameters, null, 3)}]` )
+        console.debug(`AwesomeCodeElement.details.HTML_elements.CodeSection: initializing with parameters [${JSON.stringify(this.#_parameters, null, 3)}]` )
 
         // defered initialiation
         this.#_language                  = this.#_parameters.language
@@ -1623,8 +1624,8 @@ AwesomeCodeElement.API.HTMLElements.CodeSection = class CodeSection extends Awes
     }
 }
 customElements.define(
-    AwesomeCodeElement.API.HTMLElements.CodeSection.HTMLElement_name,
-    AwesomeCodeElement.API.HTMLElements.CodeSection
+    AwesomeCodeElement.API.HTML_elements.CodeSection.HTMLElement_name,
+    AwesomeCodeElement.API.HTML_elements.CodeSection
 );
 
 // =====
@@ -1840,16 +1841,16 @@ AwesomeCodeElement.details.Theme = class Theme {
 }
 // Events: monitor system preference changes
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-    $(document).find(`button[is=${AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton.HTMLElement_name}]`)
+    $(document).find(`button[is=${AwesomeCodeElement.API.HTML_elements.ToggleDarkModeButton.HTMLElement_name}]`)
         .each((index, element) => { element.updateIcon() })
     AwesomeCodeElement.details.Theme.is_dark_mode = event.matches
 })
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', event => {
-    $(document).find(`button[is=${AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton.HTMLElement_name}]`)
+    $(document).find(`button[is=${AwesomeCodeElement.API.HTML_elements.ToggleDarkModeButton.HTMLElement_name}]`)
         .each((index, element) => { element.updateIcon() })
     AwesomeCodeElement.details.Theme.is_dark_mode = !event.matches
 })
-AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton = class ToggleDarkModeButton extends HTMLButtonElement {
+AwesomeCodeElement.API.HTML_elements.ToggleDarkModeButton = class ToggleDarkModeButton extends HTMLButtonElement {
 
     static HTMLElement_name                 = "awesome-code-element-toggle-dark-mode-button"
     static title                            = "Toggle light/dark Mode"
@@ -1885,10 +1886,10 @@ AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton = class ToggleDarkModeB
     }
 }
 customElements.define(
-    AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton.HTMLElement_name,
-    AwesomeCodeElement.API.HTMLElements.ToggleDarkModeButton, {extends: 'button'}
+    AwesomeCodeElement.API.HTML_elements.ToggleDarkModeButton.HTMLElement_name,
+    AwesomeCodeElement.API.HTML_elements.ToggleDarkModeButton, {extends: 'button'}
 );
-AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends HTMLSelectElement {
+AwesomeCodeElement.API.HTML_elements.ThemeSelector = class ThemeSelector extends HTMLSelectElement {
 // For themes, see https://cdnjs.com/libraries/highlight.js
 // Note: The first one is the default
 // Use theme name, without light or dark specification. Example : `tokyo-night`
@@ -1935,7 +1936,7 @@ AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends 
         this.onchange = function(){
 
             let selected_option = $(this).find('option:selected')
-            console.info(`AwesomeCodeElement.API.HTMLElements.ThemeSelector.onchange: switching to [${selected_option.text()}]`)
+            console.info(`AwesomeCodeElement.API.HTML_elements.ThemeSelector.onchange: switching to [${selected_option.text()}]`)
             AwesomeCodeElement.details.Theme.value = selected_option.text()
         }
     }
@@ -1946,8 +1947,8 @@ AwesomeCodeElement.API.HTMLElements.ThemeSelector = class ThemeSelector extends 
     })()
 }
 customElements.define(
-    AwesomeCodeElement.API.HTMLElements.ThemeSelector.HTMLElement_name,
-    AwesomeCodeElement.API.HTMLElements.ThemeSelector, { extends : 'select' }
+    AwesomeCodeElement.API.HTML_elements.ThemeSelector.HTMLElement_name,
+    AwesomeCodeElement.API.HTML_elements.ThemeSelector, { extends : 'select' }
 );
 
 // ==============
@@ -2018,7 +2019,7 @@ AwesomeCodeElement.API.initializers = {
             })
     },
     // TODO: make sure that doxygen elements are also still clickable with pure doxygen (not doxygen-awesome-css)
-    PreCodeHTMLElements : function() {
+    PreCodeHTML_elements : function() {
 
         $('body').find('pre code').each((index, value) => { // filter
 
@@ -2068,7 +2069,7 @@ AwesomeCodeElement.API.initialize = () => {
                 })
             }
             [   // replace placeholders with proper HTML elements
-                AwesomeCodeElement.API.HTMLElements.CodeSection
+                AwesomeCodeElement.API.HTML_elements.CodeSection
             ].forEach(html_component => ReplaceHTMLPlaceholders(html_component.PlaceholdersTranslation))
 
             if (AwesomeCodeElement.API.configuration.doxygen_awesome_css_compatibility === true) {
@@ -2078,7 +2079,7 @@ AwesomeCodeElement.API.initialize = () => {
 
             if (AwesomeCodeElement.API.configuration.pre_code_compatibility) {
                 console.info(`awesome-code-element.js:initialize: existing pre-code compatiblity ...`)
-                AwesomeCodeElement.API.initializers.PreCodeHTMLElements
+                AwesomeCodeElement.API.initializers.PreCodeHTML_elements
             }
         })
     })

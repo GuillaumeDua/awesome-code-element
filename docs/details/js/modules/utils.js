@@ -154,8 +154,8 @@ ace.test_utils.global_behavior_modifiers = class global_behavior_modifiers {
 // ===========
 // UI elements
 
-ace.test_utils.HTMLElements = {}
-ace.test_utils.HTMLElements.toolbar = class test_utils extends HTMLElement {
+ace.test_utils.HTML_elements = {}
+ace.test_utils.HTML_elements.toolbar = class test_utils extends HTMLElement {
     static HTMLElement_name = 'awesome_code_element_test-utility-toolbar'
 
     constructor() {
@@ -188,13 +188,13 @@ ace.test_utils.HTMLElements.toolbar = class test_utils extends HTMLElement {
         this.appendChild(generate_toggle_button('toggle_style'))
         this.appendChild(generate_toggle_button('toggle_small'))
         this.appendChild(generate_toggle_button('toggle_slow_fetch_resource'))
-        this.appendChild(new ace.API.HTMLElements.ToggleDarkModeButton())
-        this.appendChild(new ace.API.HTMLElements.ThemeSelector(['tokyo-night', 'base16/google']))
+        this.appendChild(new ace.API.HTML_elements.ToggleDarkModeButton())
+        this.appendChild(new ace.API.HTML_elements.ThemeSelector(['tokyo-night', 'base16/google']))
     }
 }
 customElements.define(
-    ace.test_utils.HTMLElements.toolbar.HTMLElement_name,
-    ace.test_utils.HTMLElements.toolbar
+    ace.test_utils.HTML_elements.toolbar.HTMLElement_name,
+    ace.test_utils.HTML_elements.toolbar
 );
 
 // module

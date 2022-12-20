@@ -95,8 +95,6 @@ Even though, users might prefer to wait for such API response, and only once rec
 
 ## Theme selector
 
-(API DESIGN: BREAKING CHANGE INCOMING)
-
 Users can experiment which theme they prefer using [highlightjs.org static demo](https://highlightjs.org/static/demo/).
 
 Such stylesheets are imported from [cndjs](https://cdnjs.com/libraries/highlight.js), so the following pattern must match a valid url : `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/${theme_name}.js`, where `${theme_name}` is a valid theme name.
@@ -105,9 +103,9 @@ Such stylesheets are imported from [cndjs](https://cdnjs.com/libraries/highlight
 
 ```html
 <!-- The default one is the first one -->
-<select class="code_theme_selector">
-    <option class="code_theme_option" value="tokyo-night"></option>
-    <option class="code_theme_option" value="base16/google"></option>
+<select is="theme-selector">
+    <option value="tokyo-night"></option>
+    <option value="base16/google"></option>
 </select>
 ```
 

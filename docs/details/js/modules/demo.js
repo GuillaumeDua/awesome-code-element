@@ -22,14 +22,14 @@
 
 import ace from '/awesome-code-element.js'
 
-if (ace.API.HTMLElements.CodeSection === undefined)
+if (ace.API.HTML_elements.CodeSection === undefined)
     throw new Error('CodeSection_demo: missing mandatory dependency [ace.CodeSection]')
 
-import ace_test_utils from '/tests/js/modules/utils.js';
+import ace_test_utils from '/docs/details/js/modules/utils.js';
 
-ace.showcase                = ace.showcase ?? {}
-ace.showcase.HTMLElements   = ace.showcase.HTMLElements ?? {}
-ace.showcase.HTMLElements.demo = class extends ace.API.HTMLElements.CodeSection {
+ace.showcase                    = ace.showcase ?? {}
+ace.showcase.HTML_elements      = ace.showcase.HTML_elements ?? {}
+ace.showcase.HTML_elements.demo = class extends ace.API.HTML_elements.CodeSection {
 
     static HTMLElement_name = 'ace-code-section-demo'
 
@@ -208,8 +208,8 @@ ace.showcase.HTMLElements.demo = class extends ace.API.HTMLElements.CodeSection 
     }
 }
 customElements.define(
-    ace.showcase.HTMLElements.demo.HTMLElement_name,
-    ace.showcase.HTMLElements.demo
+    ace.showcase.HTML_elements.demo.HTMLElement_name,
+    ace.showcase.HTML_elements.demo
 );
 
-export default ace.showcase.HTMLElements.demo
+export default ace.showcase.HTML_elements.demo

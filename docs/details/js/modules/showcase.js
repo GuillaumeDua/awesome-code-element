@@ -22,9 +22,9 @@
 
 import ace from '/awesome-code-element.js'
 
-ace.showcase                = ace.showcase ?? {}
-ace.showcase.HTMLElements   = ace.showcase.HTMLElements ?? {}
-ace.showcase.HTMLElements.wrapper = class HTMLShowCase extends HTMLElement {
+ace.showcase                        = ace.showcase ?? {}
+ace.showcase.HTML_elements          = ace.showcase.HTML_elements ?? {}
+ace.showcase.HTML_elements.wrapper  = class HTMLShowCase extends HTMLElement {
     static HTMLElement_name = 'ace-showcase-wrapper'
 
     constructor(){
@@ -39,8 +39,6 @@ ace.showcase.HTMLElements.wrapper = class HTMLShowCase extends HTMLElement {
             .join('')
                 .replace(/^\s*/, '')
                 .replace(/\s*$/, '')
-        
-        console.log(text_content)
 
         this.wrapped_HTML_code = {
             raw: text_content,
@@ -85,8 +83,8 @@ ace.showcase.HTMLElements.wrapper = class HTMLShowCase extends HTMLElement {
 
 }
 customElements.define(
-    ace.showcase.HTMLElements.wrapper.HTMLElement_name,
-    ace.showcase.HTMLElements.wrapper
+    ace.showcase.HTML_elements.wrapper.HTMLElement_name,
+    ace.showcase.HTML_elements.wrapper
 );
 
-export default ace.showcase.HTMLElements.wrapper
+export default ace.showcase.HTML_elements.wrapper
