@@ -56,13 +56,13 @@ ace.showcase.HTMLElements.demo = class extends ace.API.HTMLElements.CodeSection 
             flexDirection: 'column',
             display: 'flex',
         })
-            // two-way binding ...
-            options_container.appendChild(this.#make_boolean_field_view('toggle_parsing'))
-            options_container.appendChild(this.#make_boolean_field_view('toggle_execution'))
-            options_container.appendChild(this.#make_boolean_field_view('toggle_language_detection'))
-            options_container.appendChild(this.#make_boolean_field_view('switch_style_direction'))
-            options_container.appendChild(this.#make_language_view())
-            options_container.appendChild(this.#make_url_view())
+        // two-way binding ...
+        options_container.appendChild(this.#make_boolean_field_view('toggle_parsing'))
+        options_container.appendChild(this.#make_boolean_field_view('toggle_execution'))
+        options_container.appendChild(this.#make_boolean_field_view('toggle_language_detection'))
+        options_container.appendChild(this.#make_boolean_field_view('switch_style_direction'))
+        options_container.appendChild(this.#make_language_view())
+        options_container.appendChild(this.#make_url_view())
 
         this.prepend(options_container)
 
