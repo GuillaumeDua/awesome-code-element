@@ -198,9 +198,16 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
     </li>
 
     <li>
-    <h3>code-section : url (external code)</h3>
+    <h3>code-section : url (external code) (network: <b style="color:green">reachable</b>)</h3>
     <ace-showcase-wrapper>
-        <!--<code-section url="/tests/resources/code_content/noexecute_show_block.cpp"></code-section>-->
+        <!--<code-section url="/docs/details/resources/code_content/noexecute_show_block.cpp"></code-section>-->
+    </ace-showcase-wrapper>
+    </li>
+
+    <li>
+    <h3>code-section : url (external code) (network: <b style="color:red">unreachable</b>)</h3>
+    <ace-showcase-wrapper>
+        <!--<code-section url="/DOES_NOT_EXISTS"></code-section>-->
     </ace-showcase-wrapper>
     </li>
 
@@ -300,10 +307,6 @@ auto main() -> int {
 }                       
 </code-section> --></ace-showcase-wrapper>
     </li>
-
-
-    <!-- TODO: url (reachable, unreachable)-->
-    <code-section url="http://localhost:8001/docs/details/resources/code_content/noexecute_show_block.cpp"></code-section>
 
 </ul>
 
