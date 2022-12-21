@@ -93,6 +93,28 @@ Internally, it creates a `shadow-root` slot, which associated with an event list
 The main scenario for such usage is defered initialization, for instance when polling some code from an API.  
 Even though, users might prefer to wait for such API response, and only once received then create the `CodeSection` element and attach it to the DOM.
 
+## Toggle dark/light mode
+
+```html
+<button is="awesome-doc-code-sections_toggle-dark-mode-button"></button>
+```
+
+## Theme selector
+
+Users can experiment which theme they prefer using [highlightjs.org static demo](https://highlightjs.org/static/demo/).
+
+Such stylesheets are imported from [cndjs](https://cdnjs.com/libraries/highlight.js), so the following pattern must match a valid url : `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/${theme_name}.js`, where `${theme_name}` is a valid theme name.
+
+> Note that the first option is the default one here.
+
+```html
+<!-- The default one is the first one -->
+<select is="theme-selector">
+    <option value="tokyo-night"></option>
+    <option value="base16/google"></option>
+</select>
+```
+
 ---
 
 ## Special thanks

@@ -1,0 +1,156 @@
+<!--
+MIT License
+
+Copyright (c) 2021-2022 Guillaume Dua "Guss"
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <style>
+            /* Note: style for demo purpose only, see "toggle_style" button */
+            html.light-mode {
+                color-scheme: light;
+                --separator-color: #8e8e8e;
+                --default-text-color: darkslategray;
+            }
+            html.dark-mode {
+                color-scheme: dark;
+                --separator-color: #38393b;
+                --default-text-color: steelblue;
+            }
+
+            label, button, select {
+                color: var(--default-text-color)
+            }
+
+            :root {
+                --border-radius-small: 4px;
+                --border-radius-medium: 6px;
+                --border-radius-large: 8px;
+                --spacing-small: 5px;
+                --spacing-medium: 10px;
+                --spacing-large: 16px;
+                --content-maxwidth: 1050px;
+            }
+            code.stylished {
+                border-radius: var(--border-radius-small);
+                border: 1px solid var(--separator-color);
+                overflow: hidden;
+            }
+            div.contents.stylished {
+                max-width: var(--content-maxwidth);
+                margin: calc(var(--spacing-medium) + .2em) auto var(--spacing-medium) auto;
+            }
+
+            h1,h2,h3,h4,h5,h6 {
+                color: var(--default-text-color);
+            }
+
+            .trapezoid {
+
+                margin: 0;
+                height: 0;
+                margin-bottom: 20px;
+                width: fit-content;
+                color: var(--default-text-color);
+            }
+            .trapezoid-up {
+                margin: 0;
+                border-bottom-color: var(--separator-color);
+                border-left-color: transparent;
+                border-right-color: transparent;
+                border-bottom: 15px solid var(--separator-color);
+                border-left: 20px solid transparent;
+                border-right: 20px solid transparent;
+            }
+        </style>
+    
+        <!-- highlight -->
+        <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/languages/cpp.min.js" integrity="sha512-IAojhJDNJ4oC/Eui96KT2gmg2iwV2MsxTDs9CzqrrjNF8OdKV4MQE8H9fHbOXIsTaYZjLAVgtPOeyBNtD8LLEw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+        <!-- jquery -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    
+        <!-- awesome-code-element -->
+        <script type="module">
+            import ace from "/awesome-code-element.js"
+
+            ace.API.configure({
+                doxygen_awesome_css_compatibility: true,
+                hljs : {
+                    version         : '11.7.0',
+                    default_theme   : 'obsidian' // unused, as there is a valid theme-selector. (Obsidian theme does not supports dark/light variations)
+                },
+                CE : new ace.API.CE_ConfigurationManager([
+                    [
+                        'cpp',
+                        {
+                            language: 'c++',
+                            compiler_id: 'clang1500',
+                            default_options: '-O2 -std=c++20'
+                        }
+                    ]
+                ])
+            })
+            console.info(`demo/index.html: ace.API.configuration:`, ace.API.configuration)
+            ace.API.initialize();
+        </script>
+    
+        <!-- CS Tests utility scripts -->
+        <script type="module" src="/docs/details/js/modules/utils.js"></script>
+
+        <script type="text/javascript">
+            // hljs configuration
+            hljs.configure({
+                ignoreUnescapedHTML: true,
+                throwUnescapedHTML: false,
+                languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plain-text', 'HTML']
+            })
+        </script>
+
+        <script type="module" src="/docs/details/js/modules/showcase.js"></script>
+
+    </head>
+<body>
+
+<ul>
+    <li>
+        <h3>Theme selector (default: first option)</h3>
+<ace-showcase-wrapper><!--
+<select is="theme-selector">
+    <option value="tokyo-night"></option>
+    <option value="base16/google"></option>
+</select>
+--></ace-showcase-wrapper>
+    </li>
+
+    <li>
+        <h3>Toggle dark/light button (default: user/system preference)</h3>
+<ace-showcase-wrapper><!--
+<button is="awesome-code-element-toggle-dark-mode-button" style="width:100px;"></button>
+--></ace-showcase-wrapper>
+    </li>
+</ul>
+
+</body>
+</html>
