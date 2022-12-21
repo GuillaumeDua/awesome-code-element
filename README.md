@@ -7,7 +7,13 @@ Originaly created to ease the documentation creation process of [CppShelf](https
 
 ---
 
-![](https://raw.githubusercontent.com/GuillaumeDua/awesome-doc-code-sections/main/docs/images/simple_test_output.JPG)
+- [Showcase](https://guillaumedua.github.io/awesome-code-element/showcase/ace_code_section/)
+- [Live demo](https://guillaumedua.github.io/awesome-code-element/showcase/live_demo/)
+
+---
+
+<!-- TODO: iframe to live demo here ?    -->
+<!-- TODO: iframe showcase subset here ? -->
 
 ## Content
 
