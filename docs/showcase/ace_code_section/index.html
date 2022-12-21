@@ -1,0 +1,314 @@
+<!--
+MIT License
+
+Copyright (c) 2021-2022 Guillaume Dua "Guss"
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <style>
+            /* Note: style for demo purpose only, see "toggle_style" button */
+            html.light-mode {
+                color-scheme: light;
+                --separator-color: #8e8e8e;
+                --default-text-color: darkslategray;
+            }
+            html.dark-mode {
+                color-scheme: dark;
+                --separator-color: #38393b;
+                --default-text-color: steelblue;
+            }
+
+            label, button, select {
+                color: var(--default-text-color)
+            }
+
+            :root {
+                --border-radius-small: 4px;
+                --border-radius-medium: 6px;
+                --border-radius-large: 8px;
+                --spacing-small: 5px;
+                --spacing-medium: 10px;
+                --spacing-large: 16px;
+                --content-maxwidth: 1050px;
+            }
+            code-section.stylished>pre {
+                border-radius: var(--border-radius-small);
+                border: 1px solid var(--separator-color);
+                overflow: hidden;
+            }
+            div.contents.stylished {
+                max-width: var(--content-maxwidth);
+                margin: calc(var(--spacing-medium) + .2em) auto var(--spacing-medium) auto;
+            }
+
+            h1,h2,h3,h4,h5,h6 {
+                color: var(--default-text-color);
+            }
+
+            .trapezoid {
+
+                margin: 0;
+                height: 0;
+                margin-bottom: 20px;
+                width: fit-content;
+                color: var(--default-text-color);
+            }
+            .trapezoid-up {
+                margin: 0;
+                border-bottom-color: var(--separator-color);
+                border-left-color: transparent;
+                border-right-color: transparent;
+                border-bottom: 15px solid var(--separator-color);
+                border-left: 20px solid transparent;
+                border-right: 20px solid transparent;
+            }
+        </style>
+    
+        <!-- highlight -->
+        <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/languages/cpp.min.js" integrity="sha512-IAojhJDNJ4oC/Eui96KT2gmg2iwV2MsxTDs9CzqrrjNF8OdKV4MQE8H9fHbOXIsTaYZjLAVgtPOeyBNtD8LLEw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+        <!-- jquery -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    
+        <!-- awesome-code-element -->
+        <script type="module">
+            import ace from "/awesome-code-element.js"
+
+            ace.API.configure({
+                doxygen_awesome_css_compatibility: true,
+                hljs : {
+                    version         : '11.7.0',
+                    default_theme   : 'obsidian' // unused, as there is a valid theme-selector. (Obsidian theme does not supports dark/light variations)
+                },
+                CE : new ace.API.CE_ConfigurationManager([
+                    [
+                        'cpp',
+                        {
+                            language: 'c++',
+                            compiler_id: 'clang1500',
+                            default_options: '-O2 -std=c++20'
+                        }
+                    ]
+                ])
+            })
+            console.info(`demo/index.html: ace.API.configuration:`, ace.API.configuration)
+            ace.API.initialize();
+        </script>
+    
+        <!-- CS Tests utils scripts -->
+        <script type="module" src="/docs/details/js/modules/utils.js"></script>
+
+        <script type="text/javascript">
+            // hljs configuration
+            hljs.configure({
+                ignoreUnescapedHTML: true,
+                throwUnescapedHTML: false,
+                languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plain-text', 'HTML']
+            })
+        </script>
+
+        <!-- Force stylisation by default on this showcase -->
+        <script>
+            window.onload = function() {
+                document.getElementById('button_toggle_style').click()
+            }
+        </script>
+
+        <script type="module" src="/docs/details/js/modules/showcase.js"></script>
+
+    </head>
+<body>
+
+    <div style="border:1px solid var(--separator-color)">
+    <i>
+        <pre style="overflow:auto"><h3>Note:</h3>currently, C++ trailing-return-type is considered as an illegale synthax by highlight-js
+See the issue <a href="https://github.com/highlightjs/highlight.js/issues/3673">here (highlight.js/issues/3673)</a></pre>
+    </i>
+    </div>
+
+    <awesome_code_element_test-utility-toolbar></awesome_code_element_test-utility-toolbar>
+
+<ul>
+    <li>
+    <h3>code-section : empty (will wait for content), user-provided id</h3>
+    <ace-showcase-wrapper>
+        <!--<code-section id="my_custom_cs_id"></code-section>-->
+    </ace-showcase-wrapper>
+    <button style="margin-top: 10px;" onclick="
+        document.getElementById('my_custom_cs_id').textContent = document.getElementById('cs_0').code
+        this.style.display = 'none'
+        window.setTimeout(() => { // wait until the element is fully initialized
+            document.getElementById('my_custom_cs_id').html_elements.code.classList.add('stylished')
+        }, 500)
+    ">
+        Load content, trigger defered initialization
+    </button>
+    </li>
+
+    <li>
+    <h3>code-section : text content</h3>
+    <ace-showcase-wrapper>
+        <!--<code-section>auto main() -> int { return 42; }</code-section>-->
+    </ace-showcase-wrapper>
+    </li>
+
+    <li>
+    <h3>code-section : text content (large)</h3>
+    <ace-showcase-wrapper>
+        <!--<code-section language="cpp">
+auto main() -> int { return 42; } // this is a pretty long comment, so it should triggers small-rendering behavior depending on your window size ... otherwise, why would such extra-long comment exists ? .................................................................................................................. ?
+</code-section>-->
+    </ace-showcase-wrapper>
+    </li>
+
+    <li>
+    <h3>code-section : text content + language attribute</h3>
+    <ace-showcase-wrapper>
+        <!--<code-section language="cpp">auto main() -> int { return 42; }</code-section>-->
+    </ace-showcase-wrapper>
+    </li>
+
+    <!-- TODO: language is not take into account -->
+    <li>
+    <h3>code-section : language + code attributes</h3>
+    <ace-showcase-wrapper>
+        <!--<code-section language="cpp" code="auto main() -> int { return 42; }"></code-section>-->
+    </ace-showcase-wrapper>
+    </li>
+
+    <li>
+    <h3>code-section : url (external code) (network: <b style="color:green">reachable</b>)</h3>
+    <ace-showcase-wrapper>
+        <!--<code-section url="/docs/details/resources/code_content/noexecute_show_block.cpp"></code-section>-->
+    </ace-showcase-wrapper>
+    </li>
+
+    <li>
+    <h3>code-section : url (external code) (network: <b style="color:red">unreachable</b>)</h3>
+    <ace-showcase-wrapper>
+        <!--<code-section url="/DOES_NOT_EXISTS"></code-section>-->
+    </ace-showcase-wrapper>
+    </li>
+
+    <li>
+        <h3>code-section : language, execution (compilation <b style="color:green">success</b>)</h3>
+<ace-showcase-wrapper><!--<code-section language="cpp" toggle_execution="true">
+#include <iostream>
+auto main() -> int {
+    auto i = 42;
+    std::cout << "some console output";
+    return i;
+}                       
+</code-section>--></ace-showcase-wrapper>
+    </li>
+
+    <li>
+        <h3>code-section : language, execution (compilation <b style="color:red">error</b>)</h3>
+<ace-showcase-wrapper><!--<code-section language="cpp" toggle_execution="true">
+#include <iostream>
+auto main() -> int {
+    auto i = ; // invalid synthax: missing rhs value in assignement
+    std::cout << "some console output";
+    return i;
+}                       
+</code-section>--></ace-showcase-wrapper>
+    </li>
+
+    <li>
+        <h3>code-section : language, execution, column orientation</h3>
+<ace-showcase-wrapper><!--<code-section language="cpp" toggle_execution="true" direction="column"> 
+#include <iostream>
+auto main() -> int {
+    auto i = 42;
+    std::cout << "some console output";
+    return i;
+}                       
+</code-section>--></ace-showcase-wrapper>
+
+<div style="border:1px solid var(--separator-color)">
+    <i>
+        <pre style="overflow:auto"><h4>Note:</h4>Alternatively, setting the style value <code>style="flex-direction: column"</code> also works</pre>
+    </i>
+</div>
+
+    </li>
+
+    <li>
+        <h3>code-section : parsing (render and/or execute only what is relevant for the audience)</h3>
+<ace-showcase-wrapper><!--<code-section toggle_parsing="true">
+    THIS IS REMOVED // @awesome-code-element::skip::line
+#include <iostream>
+auto main() -> int {    
+                    // @awesome-code-element::show::block::begin
+auto i = 42; // test ----------------------------------------
+std::cout << "some console output";
+return i;
+                    // @awesome-code-element::show::block::end
+}                       
+    THIS IS REMOVED TOO // @awesome-code-element::skip::line
+</code-section>--></ace-showcase-wrapper>
+    </li>
+
+    <li>
+        <h3>code-section : language + parsing + execution</h3>
+<ace-showcase-wrapper><!--<code-section toggle_parsing="true" toggle_execution="true">
+    THIS IS REMOVED // @awesome-code-element::skip::line
+#include <iostream>
+auto main() -> int {    
+                    // @awesome-code-element::show::block::begin
+auto i = 42; // test ----------------------------------------
+std::cout << "some console output";
+return i;
+                    // @awesome-code-element::show::block::end
+}                       
+    THIS IS REMOVED TOO // @awesome-code-element::skip::line
+</code-section>--></ace-showcase-wrapper>
+    </li>
+
+    <li>
+        <h3>code-section : mixing html entities and regular chars (&lt;, &gt;, &quot;, &amp;)</h3>
+<ace-showcase-wrapper><!--<code-section>
+#include <vector>
+#include &lt;iostream&gt;
+
+auto main() -> int {
+
+    auto i = 42;
+    auto b = 42 < 13 || 42 > 13;
+    
+    std::cout << &b < &i << i > b << (i >> b);
+    std::cin>>i;
+    std::cout<<"&<>42&";
+    std::cout<< '&lt;, &lt;, &quot;, &amp;'
+    std::cout &lt;&lt; &quot;some console output&quot;;
+
+    return i <=> b;
+}                       
+</code-section> --></ace-showcase-wrapper>
+    </li>
+
+</ul>
+
+</body>
+</html>
