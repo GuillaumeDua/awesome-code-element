@@ -32,8 +32,10 @@ jobs:
 
       - name: Generates host page (README)
         run: |
-          cp awesome-code-element.js docs/
-          cp README.md docs/
+          mkdir -p docs/
+          cp awesome-code-element.js  docs/
+          cp documentation/           docs/
+          cp README.md                docs/
 
       - name: Deploy 🚀 
         uses: JamesIves/github-pages-deploy-action@v4.3.3

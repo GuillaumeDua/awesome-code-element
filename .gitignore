@@ -2,7 +2,7 @@
 tests/*/loading_animation.gif
 
 # docs
-docs/output
+documentation/output
 
 # Others
 local
