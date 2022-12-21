@@ -34,7 +34,7 @@ jobs:
         run: |
           mkdir -p docs/
           cp awesome-code-element.js  docs/
-          cp -a documentation/        docs/
+          cp -a documentation         docs/
           cp README.md                docs/
 
       - name: Deploy 🚀 
