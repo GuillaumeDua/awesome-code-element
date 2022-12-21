@@ -1,0 +1,155 @@
+<!--
+MIT License
+
+Copyright (c) 2021-2022 Guillaume Dua "Guss"
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <style>
+            /* Note: style for demo purpose only, see "toggle_style" button */
+            html.light-mode {
+                color-scheme: light;
+                --separator-color: #8e8e8e;
+                --default-text-color: darkslategray;
+            }
+            html.dark-mode {
+                color-scheme: dark;
+                --separator-color: #38393b;
+                --default-text-color: steelblue;
+            }
+
+            label, button, select {
+                color: var(--default-text-color)
+            }
+
+            :root {
+                --border-radius-small: 4px;
+                --border-radius-medium: 6px;
+                --border-radius-large: 8px;
+                --spacing-small: 5px;
+                --spacing-medium: 10px;
+                --spacing-large: 16px;
+                --content-maxwidth: 1050px;
+            }
+            ace-code-section-demo.stylished>pre, code-section.stylished>pre {
+                border-radius: var(--border-radius-small);
+                border: 1px solid var(--separator-color);
+                overflow: hidden;
+            }
+            div.contents.stylished {
+                max-width: var(--content-maxwidth);
+                margin: calc(var(--spacing-medium) + .2em) auto var(--spacing-medium) auto;
+            }
+
+            @-webkit-keyframes shake {
+                0%  { -webkit-transform: translate(2px, 1px) rotate(0deg); } 
+                10% { -webkit-transform: translate(-1px, -2px) rotate(-1deg); }
+                20% { -webkit-transform: translate(-3px, 0px) rotate(1deg); }
+                30% { -webkit-transform: translate(0px, 2px) rotate(0deg); }
+                40% { -webkit-transform: translate(1px, -1px) rotate(1deg); }
+                50% { -webkit-transform: translate(-1px, 2px) rotate(-1deg); }
+                60% { -webkit-transform: translate(-3px, 1px) rotate(0deg); }
+                70% { -webkit-transform: translate(2px, 1px) rotate(-1deg); }
+                80% { -webkit-transform: translate(-1px, -1px) rotate(1deg); }
+                90% { -webkit-transform: translate(2px, 2px) rotate(0deg); }
+                100% { -webkit-transform: translate(1px, -2px) rotate(-1deg); }
+            }
+            .shake:hover {
+                -webkit-animation-name: shake;
+                -webkit-animation-duration: 0.5s;
+                -webkit-transform-origin:50% 50%;
+                -webkit-animation-iteration-count: infinite;
+            }
+            .shake {
+                display:inline-block
+            }
+
+        </style>
+    
+        <!-- highlight -->
+        <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/languages/cpp.min.js" integrity="sha512-IAojhJDNJ4oC/Eui96KT2gmg2iwV2MsxTDs9CzqrrjNF8OdKV4MQE8H9fHbOXIsTaYZjLAVgtPOeyBNtD8LLEw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+        <!-- jquery -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    
+        <!-- awesome-code-element -->
+        <script type="module">
+            import ace from "/awesome-code-element.js"
+            ace.API.configure({
+                doxygen_awesome_css_compatibility: true,
+                hljs : {
+                    version         : '11.7.0',
+                    default_theme   : 'obsidian' // unused, as there is a valid theme-selector. (Obsidian theme does not supports dark/light variations)
+                },
+                CE : new ace.API.CE_ConfigurationManager([
+                    [
+                        'cpp',
+                        {
+                            language: 'c++',
+                            compiler_id: 'clang1500',
+                            default_options: '-O2 -std=c++20'
+                        }
+                    ]
+                ])
+            })
+            console.info(`demo/index.html: ace.API.configuration:`, ace.API.configuration)
+            ace.API.initialize();
+        </script>
+    
+        <!-- CS Tests utils scripts -->
+        <script type="module" src="/docs/details/js/modules/utils.js"></script>
+        <!-- CS demo component -->
+        <script type="module" src="/docs/details/js/modules/demo.js"></script>
+
+        <script type="text/javascript">
+
+            // hljs configuration
+            hljs.configure({
+                ignoreUnescapedHTML: true,
+                throwUnescapedHTML: false,
+                languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plaintext']
+            })
+        </script>
+    </head>
+<body>
+
+    <awesome_code_element_test-utility-toolbar></awesome_code_element_test-utility-toolbar>
+ 
+    <h2>Live demo</h2>
+    <!-- TODO: select various pre-defined scenaris -->
+    <ace-code-section-demo>
+        THIS IS REMOVED // @awesome-code-element::skip::line
+auto main() -> int {    
+                        // @awesome-code-element::show::block::begin
+auto i = 42; // test
+return i;
+                        // @awesome-code-element::show::block::end
+}                       
+        THIS IS REMOVED TOO // @awesome-code-element::skip::line
+    </ace-code-section-demo>
+
+    <!-- TODO: CS builder from current demo state -->
+
+</body>
+</html>
