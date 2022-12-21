@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import ace from '/awesome-code-element.js'
+import ace from '../../../awesome-code-element.js'
 
 ace.showcase                        = ace.showcase ?? {}
 ace.showcase.HTML_elements          = ace.showcase.HTML_elements ?? {}
