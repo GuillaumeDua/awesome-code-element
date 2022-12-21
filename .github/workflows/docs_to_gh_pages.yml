@@ -32,7 +32,6 @@ jobs:
 
       - name: Generates host page (README)
         run: |
-          mkdir -p docs/
           cp awesome-code-element.js  docs/
           cp -a documentation         docs/
           cp README.md                docs/
