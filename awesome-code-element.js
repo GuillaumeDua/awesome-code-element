@@ -76,6 +76,7 @@
 // TODO: awesome-code-element.js: sub-modules aggregator
 // TODO: style : px vs. em
 // TODO: default policies : language, toggle_execution, toggle_parsing, presentation, etc.
+// TODO: default stylesheet for CS + injection (+ remove utils.apply_css)
 
 export { AwesomeCodeElement as default }
 
