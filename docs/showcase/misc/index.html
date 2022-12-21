@@ -52,7 +52,7 @@ SOFTWARE.
                 --spacing-large: 16px;
                 --content-maxwidth: 1050px;
             }
-            ace-code-section-demo.stylished>pre, code-section.stylished>pre {
+            code.stylished {
                 border-radius: var(--border-radius-small);
                 border: 1px solid var(--separator-color);
                 overflow: hidden;
@@ -62,29 +62,27 @@ SOFTWARE.
                 margin: calc(var(--spacing-medium) + .2em) auto var(--spacing-medium) auto;
             }
 
-            @-webkit-keyframes shake {
-                0%  { -webkit-transform: translate(2px, 1px) rotate(0deg); } 
-                10% { -webkit-transform: translate(-1px, -2px) rotate(-1deg); }
-                20% { -webkit-transform: translate(-3px, 0px) rotate(1deg); }
-                30% { -webkit-transform: translate(0px, 2px) rotate(0deg); }
-                40% { -webkit-transform: translate(1px, -1px) rotate(1deg); }
-                50% { -webkit-transform: translate(-1px, 2px) rotate(-1deg); }
-                60% { -webkit-transform: translate(-3px, 1px) rotate(0deg); }
-                70% { -webkit-transform: translate(2px, 1px) rotate(-1deg); }
-                80% { -webkit-transform: translate(-1px, -1px) rotate(1deg); }
-                90% { -webkit-transform: translate(2px, 2px) rotate(0deg); }
-                100% { -webkit-transform: translate(1px, -2px) rotate(-1deg); }
-            }
-            .shake:hover {
-                -webkit-animation-name: shake;
-                -webkit-animation-duration: 0.5s;
-                -webkit-transform-origin:50% 50%;
-                -webkit-animation-iteration-count: infinite;
-            }
-            .shake {
-                display:inline-block
+            h1,h2,h3,h4,h5,h6 {
+                color: var(--default-text-color);
             }
 
+            .trapezoid {
+
+                margin: 0;
+                height: 0;
+                margin-bottom: 20px;
+                width: fit-content;
+                color: var(--default-text-color);
+            }
+            .trapezoid-up {
+                margin: 0;
+                border-bottom-color: var(--separator-color);
+                border-left-color: transparent;
+                border-right-color: transparent;
+                border-bottom: 15px solid var(--separator-color);
+                border-left: 20px solid transparent;
+                border-right: 20px solid transparent;
+            }
         </style>
     
         <!-- highlight -->
@@ -96,6 +94,7 @@ SOFTWARE.
         <!-- awesome-code-element -->
         <script type="module">
             import ace from "/awesome-code-element.js"
+
             ace.API.configure({
                 doxygen_awesome_css_compatibility: true,
                 hljs : {
@@ -117,39 +116,41 @@ SOFTWARE.
             ace.API.initialize();
         </script>
     
-        <!-- CS Tests utils scripts -->
-        <script type="module" src="/documentation/details/js/modules/utils.js"></script>
-        <!-- CS demo component -->
-        <script type="module" src="/documentation/details/js/modules/demo.js"></script>
+        <!-- CS Tests utility scripts -->
+        <script type="module" src="/docs/details/js/modules/utils.js"></script>
 
         <script type="text/javascript">
-
             // hljs configuration
             hljs.configure({
                 ignoreUnescapedHTML: true,
                 throwUnescapedHTML: false,
-                languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plaintext']
+                languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plain-text', 'HTML']
             })
         </script>
+
+        <script type="module" src="/docs/details/js/modules/showcase.js"></script>
+
     </head>
 <body>
 
-    <awesome_code_element_test-utility-toolbar></awesome_code_element_test-utility-toolbar>
- 
-    <h2>Live demo</h2>
-    <!-- TODO: select various pre-defined scenaris -->
-    <ace-code-section-demo>
-        THIS IS REMOVED // @awesome-code-element::skip::line
-auto main() -> int {    
-                        // @awesome-code-element::show::block::begin
-auto i = 42; // test
-return i;
-                        // @awesome-code-element::show::block::end
-}                       
-        THIS IS REMOVED TOO // @awesome-code-element::skip::line
-    </ace-code-section-demo>
+<ul>
+    <li>
+        <h3>Theme selector (default: first option)</h3>
+<ace-showcase-wrapper><!--
+<select is="theme-selector">
+    <option value="tokyo-night"></option>
+    <option value="base16/google"></option>
+</select>
+--></ace-showcase-wrapper>
+    </li>
 
-    <!-- TODO: CS builder from current demo state -->
+    <li>
+        <h3>Toggle dark/light button (default: user/system preference)</h3>
+<ace-showcase-wrapper><!--
+<button is="awesome-code-element-toggle-dark-mode-button" style="width:100px;"></button>
+--></ace-showcase-wrapper>
+    </li>
+</ul>
 
 </body>
 </html>

@@ -7,8 +7,8 @@ Originaly created to ease the documentation creation process of [CppShelf](https
 
 ---
 
-- [Showcase](https://guillaumedua.github.io/awesome-code-element/showcase/ace_code_section/)
-- [Live demo](https://guillaumedua.github.io/awesome-code-element/showcase/live_demo/)
+- [Showcase](https://guillaumedua.github.io/awesome-code-element/docs/showcase/ace_code_section/)
+- [Live demo](https://guillaumedua.github.io/awesome-code-element/docs/showcase/live_demo/)
 
 ---
 

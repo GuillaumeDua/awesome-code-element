@@ -25,7 +25,7 @@ import ace from '/awesome-code-element.js'
 if (ace.API.HTML_elements.CodeSection === undefined)
     throw new Error('CodeSection_demo: missing mandatory dependency [ace.CodeSection]')
 
-import ace_test_utils from '/documentation/details/js/modules/utils.js';
+import ace_test_utils from '/docs/details/js/modules/utils.js';
 
 ace.showcase                    = ace.showcase ?? {}
 ace.showcase.HTML_elements      = ace.showcase.HTML_elements ?? {}
