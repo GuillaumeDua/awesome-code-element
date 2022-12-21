@@ -22,7 +22,7 @@
 
 // details
 
-import ace from '/awesome-code-element.js'
+import ace from '../../../awesome-code-element.js'
 
 ace.test_utils = class {
 // class-as-namespace
