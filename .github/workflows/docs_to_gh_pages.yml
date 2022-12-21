@@ -32,7 +32,7 @@ jobs:
 
       - name: Generates host page (README)
         run: |
-          cp awesome-code-element.js /
+          cp awesome-code-element.js docs/
           cp README.md docs/
 
       - name: Deploy 🚀 
