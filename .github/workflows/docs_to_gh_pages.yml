@@ -33,8 +33,9 @@ jobs:
       - name: Generates host page (README)
         # replace symlink to awesome-code-element.js by the real file
         run: |
-          cp -f awesome-code-element.js  docs/
-          cp README.md                   docs/
+          rm docs/awesome-code-element.js
+          cp awesome-code-element.js  docs/
+          cp README.md                docs/
 
       - name: Deploy 🚀 
         uses: JamesIves/github-pages-deploy-action@v4.3.3
