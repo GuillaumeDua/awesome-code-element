@@ -1071,7 +1071,6 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
     }
     #make_HTML_left_panel() {
         let left_panel = document.createElement('pre');
-            left_panel.name
             left_panel.style.overflow = 'auto'
 
         let code_element = document.createElement('code');

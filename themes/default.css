@@ -1,11 +1,14 @@
 /* TODO: vars */
 
+/* or ace-code-section > [id^='.panels.left.buttons.copy_to_clipboard*'] */
+/* ,  ace-code-section > [id^='.panels.righ.buttons.copy_to_clipboard*'] */
 ace-button-copy-to-clipboard {
     z-index     : 2;
     position    : 'absolute';
     top         : '5px';
     right       : '5px';
 }
+/* or ace-code-section > [id^='.panels.left.buttons.CE*'] */
 ace-button-send-to-godbolt {
     z-index     : 2;
     position    : 'absolute';
@@ -32,6 +35,15 @@ ace-code-section {
 }
 
 /* WIP: panels */
+ace-code-section > [id^='.panels.*'] {
+    flex:       '1 1 min-content';
+    overflow:   'auto';
+    position:   'relative';
+    top:        0;
+    left:       0;
+    width:      '100%';
+    margin:     0
+}
 
 code-section > pre {
     border-radius: var(--border-radius-small);
