@@ -57,7 +57,7 @@
 // TODO: Global option: force fallback language to ... [smthg]
 // TODO: per-codeSection CE configuration (local override global)
 // TODO: toggle technical info/warning logs
-// use ?? vs ||
+// TODO: use ?? vs ||
 // TODO: execution -> pre.code rather than a new CS (+copy-to-cpliboard button)
 // TODO: buttons: bound to CS left-panel, not the element itself ?
 // TODO: check encapsulation/visibility
@@ -822,11 +822,14 @@ customElements.define(
 );
 AwesomeCodeElement.details.HTML_elements.LoadingAnimation = class LoadingAnimation {
     
+    static HTMLElement_name = 'ace-loading-animation'
+
     static #cache = (function(){
     // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
         const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/resources/images/loading_animation.svg'
         let value = document.createElement('img');
-        value.src = loading_animation_fallback_url
+            value.src = loading_animation_fallback_url
+            value.id = LoadingAnimation.HTMLElement_name
         AwesomeCodeElement.details.utility.apply_css(value, {
             contain             : 'strict',
             border              : '1px solid var(--primary-color)',
