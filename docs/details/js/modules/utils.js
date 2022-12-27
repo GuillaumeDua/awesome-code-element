@@ -130,7 +130,7 @@ ace.test_utils.global_behavior_modifiers = class global_behavior_modifiers {
             ? function (elements) { elements.addClass   (`${stylished_classname}`)}
             : function (elements) { elements.removeClass(`${stylished_classname}`)}
 
-        let elements = $('body').find('ace-code-section-demo, code-section')
+        let elements = $('body').find('ace-code-section-demo, ace-code-section')
         apply_toggle_style(elements)
     }
 
