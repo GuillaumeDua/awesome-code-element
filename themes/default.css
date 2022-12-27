@@ -1,52 +1,93 @@
 /* TODO: vars */
 
-/* or ace-code-section > [id^='.panels.left.buttons.copy_to_clipboard*'] */
-/* ,  ace-code-section > [id^='.panels.righ.buttons.copy_to_clipboard*'] */
-ace-button-copy-to-clipboard {
+/* [id^='*.panels.*.buttons.copy_to_clipboard'] */
+ace-code-section button[is='ace-button-copy-to-clipboard'] {
     z-index     : 2;
-    position    : 'absolute';
-    top         : '5px';
-    right       : '5px';
+    position    : absolute;
+    top         : 5px;
+    right       : 5px;
 }
-/* or ace-code-section > [id^='.panels.left.buttons.CE*'] */
-ace-button-send-to-godbolt {
+/* [id^='.panels.left.buttons.CE'] */
+ace-code-section button[is='ace-button-send-to-godbolt'] {
     z-index     : 2;
-    position    : 'absolute';
-    top         : '5px';
-    right       : '55px';
+    position    : absolute;
+    top         : 5px;
+    right       : 45px;
 }
-#ace-loading-animation {
-    contain             : 'strict';
-    border              : '1px solid var(--primary-color)';
-    border-radius       : '5px';
-    width               : '100%';
-    height              : '100%';
-    box-sizing          : 'border-box';
-    display             : 'none' /* hidden by default */
-}
+ace-code-section img#ace-loading-animation {
+    contain             : strict;
+    border              : 1px solid var(--primary-color);
+    border-radius       : 5px;
+    width               : 100%;
+    height              : 100%;
+    box-sizing          : border-box;
+    display             : none
+}   /* hidden by default */
 
+/* CS */
 ace-code-section {
-    display         : 'flex';
-    flex-direction  : 'row';
-    align-items     : 'stretch';
-    box-sizing      : 'border-box';
-    width           : '100%';
-    min-height      : '50px'
+    display         : flex;
+    flex-direction  : row;
+    align-items     : stretch;
+    box-sizing      : border-box;
+    width           : 100%;
+    min-height      : 50px
 }
+/* CS: panels : left, right */
+ace-code-section > [id*='.panels.'] {
+    flex:       1 1 content;
+    overflow:   auto;
+    position:   relative;
+    top:        0px;
+    left:       0px;
+    width:      100%;
+    margin:     0px;
 
-/* WIP: panels */
-ace-code-section > [id^='.panels.*'] {
-    flex:       '1 1 min-content';
-    overflow:   'auto';
-    position:   'relative';
-    top:        0;
-    left:       0;
-    width:      '100%';
-    margin:     0
-}
-
-code-section > pre {
+    /*stand-alone usage (not mandatory)*/
     border-radius: var(--border-radius-small);
     border: 1px solid var(--separator-color);
-    overflow: hidden;
 }
+ace-code-section > [id$='.panels.left'] {
+    width:      100%;
+    height:     100%;
+    box-sizing: border-box;
+}
+ace-code-section > [id$='.panels.left'] > [id$='.code'] {
+    width:      auto;
+    height:     100%;
+    box-sizing: border-box;
+    display:    block;
+}
+ace-code-section > [id$='.panels.left.buttons.CE'] {
+    z-index : 2;
+    display : none; /* hidden by default */
+}
+ace-code-section > [id$='.panels.right'] {
+    display:     flex;
+    align-items: stretch;
+    box-sizing:  border-box;
+}
+/* TODO: execution status + rule (red vs. green) */
+/* display:    flex; flex-direction : column; */
+ace-code-section > [id$='.panels.right'] > [id$='.execution'] {
+
+    display:        block;
+    width:          100%;
+    overflow:       auto;
+    margin:         inherit;
+    overflow:       auto;
+    border-radius:  5px
+}
+
+:root {
+    --border-radius-small: 4px;
+    --border-radius-medium: 6px;
+    --border-radius-large: 8px;
+    --spacing-small: 5px;
+    --spacing-medium: 10px;
+    --spacing-large: 16px;
+    --content-maxwidth: 1050px;
+}
+
+/* TODO: right-panel copy-to-clipboard does not hide anymore */
+/* TODO: wtf: good execution -> red color */
