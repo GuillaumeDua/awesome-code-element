@@ -86,6 +86,8 @@ SOFTWARE.
             }
         </style>
     
+        <style type="text/css" src="../../themes/default.css"></style>
+
         <!-- highlight -->
         <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/languages/cpp.min.js" integrity="sha512-IAojhJDNJ4oC/Eui96KT2gmg2iwV2MsxTDs9CzqrrjNF8OdKV4MQE8H9fHbOXIsTaYZjLAVgtPOeyBNtD8LLEw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
@@ -155,7 +157,7 @@ See the issue <a href="https://github.com/highlightjs/highlight.js/issues/3673">
     <li>
     <h3>code-section : empty (will wait for content), user-provided id</h3>
     <ace-showcase-wrapper>
-        <!--<code-section id="my_custom_cs_id"></code-section>-->
+        <!--<ace-code-section id="my_custom_cs_id"></ace-code-section>-->
     </ace-showcase-wrapper>
     <button style="margin-top: 10px;" onclick="
         document.getElementById('my_custom_cs_id').textContent = document.getElementById('cs_0').code
@@ -171,23 +173,23 @@ See the issue <a href="https://github.com/highlightjs/highlight.js/issues/3673">
     <li>
     <h3>code-section : text content</h3>
     <ace-showcase-wrapper>
-        <!--<code-section>auto main() -> int { return 42; }</code-section>-->
+        <!--<ace-code-section>auto main() -> int { return 42; }</ace-code-section>-->
     </ace-showcase-wrapper>
     </li>
 
     <li>
     <h3>code-section : text content (large)</h3>
     <ace-showcase-wrapper>
-        <!--<code-section language="cpp">
+        <!--<ace-code-section language="cpp">
 auto main() -> int { return 42; } // this is a pretty long comment, so it should triggers small-rendering behavior depending on your window size ... otherwise, why would such extra-long comment exists ? .................................................................................................................. ?
-</code-section>-->
+</ace-code-section>-->
     </ace-showcase-wrapper>
     </li>
 
     <li>
     <h3>code-section : text content + language attribute</h3>
     <ace-showcase-wrapper>
-        <!--<code-section language="cpp">auto main() -> int { return 42; }</code-section>-->
+        <!--<ace-code-section language="cpp">auto main() -> int { return 42; }</ace-code-section>-->
     </ace-showcase-wrapper>
     </li>
 
@@ -195,58 +197,58 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
     <li>
     <h3>code-section : language + code attributes</h3>
     <ace-showcase-wrapper>
-        <!--<code-section language="cpp" code="auto main() -> int { return 42; }"></code-section>-->
+        <!--<ace-code-section language="cpp" code="auto main() -> int { return 42; }"></ace-code-section>-->
     </ace-showcase-wrapper>
     </li>
 
     <li>
     <h3>code-section : url (external code) (network: <b style="color:green">reachable</b>)</h3>
     <ace-showcase-wrapper>
-        <!--<code-section url="../../details/resources/code_content/noexecute_show_block.cpp"></code-section>-->
+        <!--<ace-code-section url="../../details/resources/code_content/noexecute_show_block.cpp"></ace-code-section>-->
     </ace-showcase-wrapper>
     </li>
 
     <li>
     <h3>code-section : url (external code) (network: <b style="color:red">unreachable</b>)</h3>
     <ace-showcase-wrapper>
-        <!--<code-section url="/DOES_NOT_EXISTS"></code-section>-->
+        <!--<ace-code-section url="/DOES_NOT_EXISTS"></ace-code-section>-->
     </ace-showcase-wrapper>
     </li>
 
     <li>
         <h3>code-section : language, execution (compilation <b style="color:green">success</b>)</h3>
-<ace-showcase-wrapper><!--<code-section language="cpp" toggle_execution="true">
+<ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
 #include <iostream>
 auto main() -> int {
     auto i = 42;
     std::cout << "some console output";
     return i;
 }                       
-</code-section>--></ace-showcase-wrapper>
+</ace-code-section>--></ace-showcase-wrapper>
     </li>
 
     <li>
         <h3>code-section : language, execution (compilation <b style="color:red">error</b>)</h3>
-<ace-showcase-wrapper><!--<code-section language="cpp" toggle_execution="true">
+<ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
 #include <iostream>
 auto main() -> int {
     auto i = ; // invalid synthax: missing rhs value in assignement
     std::cout << "some console output";
     return i;
 }                       
-</code-section>--></ace-showcase-wrapper>
+</ace-code-section>--></ace-showcase-wrapper>
     </li>
 
     <li>
         <h3>code-section : language, execution, column orientation</h3>
-<ace-showcase-wrapper><!--<code-section language="cpp" toggle_execution="true" direction="column"> 
+<ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true" direction="column"> 
 #include <iostream>
 auto main() -> int {
     auto i = 42;
     std::cout << "some console output";
     return i;
 }                       
-</code-section>--></ace-showcase-wrapper>
+</ace-code-section>--></ace-showcase-wrapper>
 
 <div style="border:1px solid var(--separator-color)">
     <i>
@@ -258,7 +260,7 @@ auto main() -> int {
 
     <li>
         <h3>code-section : parsing (render and/or execute only what is relevant for the audience)</h3>
-<ace-showcase-wrapper><!--<code-section toggle_parsing="true">
+<ace-showcase-wrapper><!--<ace-code-section toggle_parsing="true">
     THIS IS REMOVED // @awesome-code-element::skip::line
 #include <iostream>
 auto main() -> int {    
@@ -269,12 +271,12 @@ return i;
                     // @awesome-code-element::show::block::end
 }                       
     THIS IS REMOVED TOO // @awesome-code-element::skip::line
-</code-section>--></ace-showcase-wrapper>
+</ace-code-section>--></ace-showcase-wrapper>
     </li>
 
     <li>
         <h3>code-section : language + parsing + execution</h3>
-<ace-showcase-wrapper><!--<code-section toggle_parsing="true" toggle_execution="true">
+<ace-showcase-wrapper><!--<ace-code-section toggle_parsing="true" toggle_execution="true">
     THIS IS REMOVED // @awesome-code-element::skip::line
 #include <iostream>
 auto main() -> int {    
@@ -285,12 +287,12 @@ return i;
                     // @awesome-code-element::show::block::end
 }                       
     THIS IS REMOVED TOO // @awesome-code-element::skip::line
-</code-section>--></ace-showcase-wrapper>
+</ace-code-section>--></ace-showcase-wrapper>
     </li>
 
     <li>
         <h3>code-section : mixing html entities and regular chars (&lt;, &gt;, &quot;, &amp;)</h3>
-<ace-showcase-wrapper><!--<code-section>
+<ace-showcase-wrapper><!--<ace-code-section>
 #include <vector>
 #include &lt;iostream&gt;
 
@@ -307,7 +309,7 @@ auto main() -> int {
 
     return i <=> b;
 }                       
-</code-section> --></ace-showcase-wrapper>
+</ace-code-section> --></ace-showcase-wrapper>
     </li>
 
 </ul>
