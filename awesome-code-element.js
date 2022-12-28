@@ -937,13 +937,18 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
     }
 
     // accessors
-    #allowed_directions = [ 'row', 'column' ]
+    // TODO: useless ? remove ?
+    static #allowed_directions = [ "", "row", "row-reverse", "column", "column-reverse", "initial", "inherit" ]
     set direction(value) {
-        // TODO: do not force a style value (use orientation attribute instead ?)
-        this.style.flexDirection = this.#allowed_directions.includes(value) ? value : this.#allowed_directions[0]
+    // convenient style accessor
+        if (!CodeSectionHTMLElement.#allowed_directions.includes(value)) {
+            console.error(`AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement:direction(set): invalid argument [${value}]`)
+            return
+        }
+        this.style.flexDirection = value === 'row' ? "" : value
     }
     get direction() {
-        return this.style.flexDirection || this.#allowed_directions[0]
+        return this.style.flexDirection || CodeSectionHTMLElement.#allowed_directions[0]
     }
 
     // html layout
@@ -1432,12 +1437,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             //  this.html_elements.execution.textContent = result.value
             //  hljs.highlightElement(this.html_elements.execution)
 
-            // TODO: status + style for such status
-            // AwesomeCodeElement.details.utility.apply_css(this.html_elements.execution, {
-            //     border: '',
-            //     borderTop : '2px solid ' + (return_code == -1 ? 'red' : 'green'),
-            //     color: ''
-            // })
+            // update status, used in CSS
             let status = return_code == -1 ? 'failure' : 'success'
             this.html_elements.execution.setAttribute('status', status)
         }
@@ -1532,16 +1532,11 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         this.#error_view = true
     }
     set #error_view(value) {
+    // CSS usage
         if (value)
-            AwesomeCodeElement.details.utility.apply_css(this.html_elements.panels.left, {
-                border: '1px solid red',
-                borderRadius : '5px',
-            })
+            this.html_elements.panels.left.setAttribute('status', 'error')
         else
-            AwesomeCodeElement.details.utility.apply_css(this.html_elements.panels.left, {
-                border: '',
-                borderRadius : '',
-            })
+            this.html_elements.panels.left.removeAttribute('status')
     }
 
     static HTMLElement_name = 'ace-code-section'

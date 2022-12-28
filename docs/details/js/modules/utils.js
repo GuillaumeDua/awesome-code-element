@@ -116,24 +116,6 @@ ace.test_utils.global_behavior_modifiers = class global_behavior_modifiers {
             xhr.send();
     }
 
-    // toggle 'stylished'
-    static #_toggle_style = false
-    static get toggle_style() {
-        return global_behavior_modifiers.#_toggle_style
-    }
-    static set toggle_style(value) {
-
-        const stylished_classname = 'stylished'
-
-        global_behavior_modifiers.#_toggle_style = value ?? !global_behavior_modifiers.#_toggle_style
-        let apply_toggle_style = global_behavior_modifiers.#_toggle_style
-            ? function (elements) { elements.addClass   (`${stylished_classname}`)}
-            : function (elements) { elements.removeClass(`${stylished_classname}`)}
-
-        let elements = $('body').find('ace-code-section-demo, ace-code-section')
-        apply_toggle_style(elements)
-    }
-
     // toggle small page width
     static #_toggle_small = false
     static get toggle_small() {
@@ -185,7 +167,6 @@ ace.test_utils.HTML_elements.toolbar = class test_utils extends HTMLElement {
             padding : '5px'
         })
 
-        this.appendChild(generate_toggle_button('toggle_style'))
         this.appendChild(generate_toggle_button('toggle_small'))
         this.appendChild(generate_toggle_button('toggle_slow_fetch_resource'))
         this.appendChild(new ace.API.HTML_elements.ToggleDarkModeButton())

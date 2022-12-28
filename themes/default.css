@@ -2,6 +2,7 @@
 /* TODO: is there a better way to reuse existing recipes ? */
 /*       otherwise, consider creating a script to generate a decoupled stylesheet for the sole purpose of ace-code-section-demo ?*/
 
+/* TODO: button visibility based on @media (max-width), rather than JS window listener */
 /* [id^='*.panels.*.buttons.copy_to_clipboard'] */
 ace-code-section        button[is='ace-button-copy-to-clipboard'],
 ace-code-section-demo   button[is='ace-button-copy-to-clipboard'] {
@@ -58,6 +59,10 @@ ace-code-section      > [id$='.panels.left'],
 ace-code-section-demo > [id$='.panels.left'] {
     width:      100%;
     box-sizing: border-box;
+}
+ace-code-section      > [id$='.panels.left'][status='error'],
+ace-code-section-demo > [id$='.panels.left'][status='error'] {
+    border: 1px solid red;
 }
 ace-code-section      > [id$='.panels.left'] > [id$='.code'],
 ace-code-section-demo > [id$='.panels.left'] > [id$='.code'] {
