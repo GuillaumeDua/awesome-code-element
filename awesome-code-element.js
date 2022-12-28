@@ -1564,11 +1564,35 @@ customElements.define(
 );
 
 // =====
+// Style
+
+AwesomeCodeElement.details.Style = class Style {
+// class-as-namespace, for structuring styles, not cosmetic themes
+
+    static #stylesheet_element_id = 'ace-stylesheet'
+    static initialize() {
+
+        if (document.getElementById(Style.#stylesheet_element_id)) {
+            console.info(`AwesomeCodeElement.details.Style.initialize: user provided`)
+            return;
+        }
+
+        console.info(`AwesomeCodeElement.details.Style.initialize: loading default`)
+
+        let stylesheet = document.createElement('link')
+            stylesheet.rel = "stylesheet"
+            stylesheet.id = Style.#stylesheet_element_id
+            stylesheet.href = '../../styles/default.css'
+        document.head.appendChild(stylesheet)
+    }
+}
+
+// =====
 // Theme
 
 // TODO: check doxygen-awesome-css compatiblity
 AwesomeCodeElement.details.Theme = class Theme {
-// class-as-namespace
+// class-as-namespace, for syntactic coloration and toggling dark/light mode
 
     static preferences = class ThemePreferences {
 
@@ -1991,6 +2015,7 @@ AwesomeCodeElement.API.initialize = () => {
                     AwesomeCodeElement.ToggleDarkMode.initialize()
             }
 
+            AwesomeCodeElement.details.Style.initialize()
             AwesomeCodeElement.details.Theme.initialize()
 
             let ReplaceHTMLPlaceholders = (translation) => {
