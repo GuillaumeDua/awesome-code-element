@@ -1433,11 +1433,13 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             //  hljs.highlightElement(this.html_elements.execution)
 
             // TODO: status + style for such status
-            AwesomeCodeElement.details.utility.apply_css(this.html_elements.execution, {
-                border: '',
-                borderTop : '2px solid ' + (return_code == -1 ? 'red' : 'green'),
-                color: ''
-            })
+            // AwesomeCodeElement.details.utility.apply_css(this.html_elements.execution, {
+            //     border: '',
+            //     borderTop : '2px solid ' + (return_code == -1 ? 'red' : 'green'),
+            //     color: ''
+            // })
+            let status = return_code == -1 ? 'failure' : 'success'
+            this.html_elements.execution.setAttribute('status', status)
         }
 
         if (!this.is_executable) {
@@ -1912,6 +1914,7 @@ customElements.define(
 
 // ==============
 // Initialization
+// TODO: cleanup, refactor
 
 AwesomeCodeElement.API.initializers = {
     doxygenCodeSections : function() {

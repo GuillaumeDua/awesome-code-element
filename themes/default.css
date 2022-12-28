@@ -77,6 +77,12 @@ ace-code-section-demo > [id$='.panels.right'] {
     align-items: stretch;
     box-sizing:  border-box;
 }
+ace-code-section      > [id$='.panels.right'], 
+ace-code-section-demo > [id$='.panels.right'] {
+    display:     flex;
+    align-items: stretch;
+    box-sizing:  border-box;
+}
 /* TODO: execution status + rule (red vs. green) */
 /* display:    flex; flex-direction : column; */
 ace-code-section      > [id$='.panels.right'] > [id$='.execution'],
@@ -87,7 +93,15 @@ ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'] {
     overflow:       auto;
     margin:         inherit;
     overflow:       auto;
-    border-radius:  5px
+    border-radius:  var(--border-radius-small)
+}
+ace-code-section      > [id$='.panels.right'] > [id$='.execution'][status='success'],
+ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'][status='success'] {
+    border-top: 2px solid green;
+}
+ace-code-section      > [id$='.panels.right'] > [id$='.execution'][status='failure'],
+ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'][status='failure'] {
+    border-top: 2px solid red;
 }
 
 :root {
