@@ -1,22 +1,37 @@
 /* TODO: vars */
 /* TODO: is there a better way to reuse existing recipes ? */
 /*       otherwise, consider creating a script to generate a decoupled stylesheet for the sole purpose of ace-code-section-demo ?*/
+/*
+    TODO: button visibility based on @media (max-width), rather than JS window listener
+          when `CS > code` is scrolling, then CS > buttons toggle display blokc/none
+*/
 
-/* TODO: button visibility based on @media (max-width), rather than JS window listener */
+:root {
+    --border-radius-small: 4px;
+    --border-radius-medium: 6px;
+    --border-radius-large: 8px;
+    --spacing-small: 5px;
+    --spacing-medium: 10px;
+    --spacing-large: 16px;
+    --content-maxwidth: 1050px;
+    --ace-cs-buttons-z-index: 2;
+}
+
+/* Buttons */
+ace-code-section        button[is^='ace-button-'],
+ace-code-section-demo   button[is^='ace-button-'] {
+    z-index     : var(--ace-cs-buttons-z-index);
+    position    : absolute;
+    top         : 5px;
+}
 /* [id^='*.panels.*.buttons.copy_to_clipboard'] */
 ace-code-section        button[is='ace-button-copy-to-clipboard'],
 ace-code-section-demo   button[is='ace-button-copy-to-clipboard'] {
-    z-index     : 2;
-    position    : absolute;
-    top         : 5px;
     right       : 5px;
 }
 /* [id^='.panels.left.buttons.CE'] */
 ace-code-section        button[is='ace-button-send-to-godbolt'],
 ace-code-section-demo   button[is='ace-button-send-to-godbolt']{
-    z-index     : 2;
-    position    : absolute;
-    top         : 5px;
     right       : 45px;
 }
 ace-code-section        img#ace-loading-animation,
@@ -107,16 +122,6 @@ ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'][status='succe
 ace-code-section      > [id$='.panels.right'] > [id$='.execution'][status='failure'],
 ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'][status='failure'] {
     border-top: 2px solid red;
-}
-
-:root {
-    --border-radius-small: 4px;
-    --border-radius-medium: 6px;
-    --border-radius-large: 8px;
-    --spacing-small: 5px;
-    --spacing-medium: 10px;
-    --spacing-large: 16px;
-    --content-maxwidth: 1050px;
 }
 
 /* TODO: right-panel copy-to-clipboard does not hide anymore */
