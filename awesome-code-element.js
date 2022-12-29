@@ -57,7 +57,7 @@
 // TODO: Global option: force fallback language to ... [smthg]
 // TODO: per-codeSection CE configuration (local override global)
 // TODO: toggle technical info/warning logs
-// use ?? vs ||
+// TODO: use ?? vs ||
 // TODO: execution -> pre.code rather than a new CS (+copy-to-cpliboard button)
 // TODO: buttons: bound to CS left-panel, not the element itself ?
 // TODO: check encapsulation/visibility
@@ -188,8 +188,8 @@ AwesomeCodeElement.API.configuration = {
     CE                                  : new AwesomeCodeElement.API.CE_ConfigurationManager,
     hljs                                : {
         version : '11.6.0', // TODO: automate hljs import (avoid dependencies mismatch)
-        // default_theme:   If no theme-selector, then this is the default one.
-        //                  Otherwise, the first valid option of the first theme-selector is the default
+        // default_theme:   If no ace-theme-selector, then this is the default one.
+        //                  Otherwise, the first valid option of the first ace-theme-selector is the default
         default_theme   : 'tokyo-night'  // supports dark/light variations
     },
     doxygen_awesome_css_compatibility   : false,
@@ -666,8 +666,8 @@ AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard = class CopyT
 
     static HTMLElement_name = 'ace-button-copy-to-clipboard'
     static title            = "Copy to clipboard"
-    static copyIcon         = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`
-    static successIcon      = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`
+    static copyIcon         = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="25" height="25"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`
+    static successIcon      = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="25" height="25"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`
     static successDuration  = 980
 
     constructor() {
@@ -676,13 +676,6 @@ AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard = class CopyT
 
         this.title = CopyToClipboardButton.title
         this.innerHTML = CopyToClipboardButton.copyIcon
-
-        AwesomeCodeElement.details.utility.apply_css(this, {
-            zIndex      : 2,
-            position    : 'absolute',
-            top         : '5px',
-            right       : '5px',
-        })
 
         this.addEventListener('click', function(){
 
@@ -713,8 +706,8 @@ AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInG
 
     static HTMLElement_name = 'ace-button-send-to-godbolt'
     static title            = 'Try this on godbolt.org (compiler-explorer)'
-    static icon             = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32"><switch><g><path d="M58.6 46.5c-.3-.5-.3-1.2 0-1.7.3-.6.7-1.3 1-2 .2-.5-.1-1-.7-1h-5.8c-.6 0-1.2.3-1.4.8-.7 1.1-1.6 2.2-2.6 3.2-3.7 3.7-8.6 5.7-13.9 5.7-5.3 0-10.2-2-13.9-5.7-3.8-3.7-5.8-8.6-5.8-13.9s2-10.2 5.8-13.9c3.7-3.7 8.6-5.7 13.9-5.7 5.3 0 10.2 2 13.9 5.7 1 1 1.9 2.1 2.6 3.2.3.5.9.8 1.4.8h5.8c.5 0 .9-.5.7-1-.3-.7-.6-1.3-1-2-.3-.5-.3-1.2 0-1.7l1.9-3.5c.4-.7.3-1.5-.3-2.1l-4.9-4.9c-.6-.6-1.4-.7-2.1-.3l-3.6 2c-.5.3-1.2.3-1.7 0-1.7-.9-3.5-1.7-5.4-2.2-.6-.2-1-.6-1.2-1.2l-1.1-3.9C40.1.5 39.5 0 38.7 0h-6.9C31 0 30.2.5 30 1.3l-1.1 3.9c-.2.6-.6 1-1.2 1.2-1.9.6-3.6 1.3-5.3 2.2-.5.3-1.2.3-1.7 0l-3.6-2c-.7-.4-1.5-.3-2.1.3l-4.9 4.9c-.6.6-.7 1.4-.3 2.1l2 3.6c.3.5.3 1.2 0 1.7-.9 1.7-1.7 3.5-2.2 5.3-.2.6-.6 1-1.2 1.2l-3.9 1.1c-.7.2-1.3.9-1.3 1.7v6.9c0 .8.5 1.5 1.3 1.7l3.9 1.1c.6.2 1 .6 1.2 1.2.5 1.9 1.3 3.6 2.2 5.3.3.6.3 1.2 0 1.7l-2 3.6c-.4.7-.3 1.5.3 2.1L15 57c.6.6 1.4.7 2.1.3l3.6-2c.6-.3 1.2-.3 1.7 0 1.7.9 3.5 1.7 5.3 2.2.6.2 1 .6 1.2 1.2l1.1 3.9c.2.7.9 1.3 1.7 1.3h6.9c.8 0 1.5-.5 1.7-1.3l1.1-3.9c.2-.6.6-1 1.2-1.2 1.9-.6 3.6-1.3 5.4-2.2.5-.3 1.2-.3 1.7 0l3.6 2c.7.4 1.5.3 2.1-.3l4.9-4.9c.6-.6.7-1.4.3-2.1l-2-3.5z" fill="#67c52a"/><path d="M23.5 37.7v4.4h23.8v-4.4H23.5zm0-7.8v4.4h19.6v-4.4H23.5zm0-7.9v4.4h23.8V22H23.5z" fill="#3c3c3f"/></g></switch></svg>`;
-    static successIcon      = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`
+    static icon             = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="25" height="25"><switch><g><path d="M58.6 46.5c-.3-.5-.3-1.2 0-1.7.3-.6.7-1.3 1-2 .2-.5-.1-1-.7-1h-5.8c-.6 0-1.2.3-1.4.8-.7 1.1-1.6 2.2-2.6 3.2-3.7 3.7-8.6 5.7-13.9 5.7-5.3 0-10.2-2-13.9-5.7-3.8-3.7-5.8-8.6-5.8-13.9s2-10.2 5.8-13.9c3.7-3.7 8.6-5.7 13.9-5.7 5.3 0 10.2 2 13.9 5.7 1 1 1.9 2.1 2.6 3.2.3.5.9.8 1.4.8h5.8c.5 0 .9-.5.7-1-.3-.7-.6-1.3-1-2-.3-.5-.3-1.2 0-1.7l1.9-3.5c.4-.7.3-1.5-.3-2.1l-4.9-4.9c-.6-.6-1.4-.7-2.1-.3l-3.6 2c-.5.3-1.2.3-1.7 0-1.7-.9-3.5-1.7-5.4-2.2-.6-.2-1-.6-1.2-1.2l-1.1-3.9C40.1.5 39.5 0 38.7 0h-6.9C31 0 30.2.5 30 1.3l-1.1 3.9c-.2.6-.6 1-1.2 1.2-1.9.6-3.6 1.3-5.3 2.2-.5.3-1.2.3-1.7 0l-3.6-2c-.7-.4-1.5-.3-2.1.3l-4.9 4.9c-.6.6-.7 1.4-.3 2.1l2 3.6c.3.5.3 1.2 0 1.7-.9 1.7-1.7 3.5-2.2 5.3-.2.6-.6 1-1.2 1.2l-3.9 1.1c-.7.2-1.3.9-1.3 1.7v6.9c0 .8.5 1.5 1.3 1.7l3.9 1.1c.6.2 1 .6 1.2 1.2.5 1.9 1.3 3.6 2.2 5.3.3.6.3 1.2 0 1.7l-2 3.6c-.4.7-.3 1.5.3 2.1L15 57c.6.6 1.4.7 2.1.3l3.6-2c.6-.3 1.2-.3 1.7 0 1.7.9 3.5 1.7 5.3 2.2.6.2 1 .6 1.2 1.2l1.1 3.9c.2.7.9 1.3 1.7 1.3h6.9c.8 0 1.5-.5 1.7-1.3l1.1-3.9c.2-.6.6-1 1.2-1.2 1.9-.6 3.6-1.3 5.4-2.2.5-.3 1.2-.3 1.7 0l3.6 2c.7.4 1.5.3 2.1-.3l4.9-4.9c.6-.6.7-1.4.3-2.1l-2-3.5z" fill="#67c52a"/><path d="M23.5 37.7v4.4h23.8v-4.4H23.5zm0-7.8v4.4h19.6v-4.4H23.5zm0-7.9v4.4h23.8V22H23.5z" fill="#3c3c3f"/></g></switch></svg>`;
+    static successIcon      = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="25" height="25"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`
 
     constructor() {
 
@@ -723,13 +716,6 @@ AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInG
 
         this.title = ShowInGodboltButton.title;
         this.innerHTML = ShowInGodboltButton.icon;
-
-        AwesomeCodeElement.details.utility.apply_css(this, {
-            zIndex      : 2,
-            position    : 'absolute',
-            top         : '5px',
-            right       : '55px',
-        })
 
         this.addEventListener(
             'click',
@@ -822,20 +808,14 @@ customElements.define(
 );
 AwesomeCodeElement.details.HTML_elements.LoadingAnimation = class LoadingAnimation {
     
+    static HTMLElement_name = 'ace-loading-animation'
+
     static #cache = (function(){
     // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
         const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/resources/images/loading_animation.svg'
         let value = document.createElement('img');
-        value.src = loading_animation_fallback_url
-        AwesomeCodeElement.details.utility.apply_css(value, {
-            contain             : 'strict',
-            border              : '1px solid var(--primary-color)',
-            borderRadius        : '5px',
-            width               : '100%',
-            height              : '100%',
-            boxSizing           : 'border-box',
-            display             : 'none' // hidden by default
-        })
+            value.src = loading_animation_fallback_url
+            value.id = LoadingAnimation.HTMLElement_name
         return value
     })()
     static get element() {
@@ -857,7 +837,8 @@ AwesomeCodeElement.details.HTML_elements.LoadingAnimation = class LoadingAnimati
                 ? target_or_accessor()
                 : target_or_accessor
         }
-        const target_visible_display = target_accessor().style.display || 'flex'
+
+        const target_visible_display = target_accessor().style.display
 
         Object.defineProperty(owner, 'toggle_loading_animation', {
             set: function(value){
@@ -956,12 +937,18 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
     }
 
     // accessors
-    #allowed_directions = [ 'row', 'column' ]
+    // TODO: useless ? remove ?
+    static #allowed_directions = [ "", "row", "row-reverse", "column", "column-reverse", "initial", "inherit" ]
     set direction(value) {
-        this.style.flexDirection = this.#allowed_directions.includes(value) ? value : this.#allowed_directions[0]
+    // convenient style accessor
+        if (!CodeSectionHTMLElement.#allowed_directions.includes(value)) {
+            console.error(`AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement:direction(set): invalid argument [${value}]`)
+            return
+        }
+        this.style.flexDirection = value === 'row' ? "" : value
     }
     get direction() {
-        return this.style.flexDirection || this.#allowed_directions[0]
+        return this.style.flexDirection || CodeSectionHTMLElement.#allowed_directions[0]
     }
 
     // html layout
@@ -988,15 +975,6 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
             throw new Error('CodeSectionHTMLElement:#initialize_HTML: not connected yet')
 
         this.innerHTML = ""
-        // this element
-        AwesomeCodeElement.details.utility.apply_css(this, {
-            display         : 'flex',
-            flexDirection   : this.direction,
-            alignItems      : 'stretch',
-            boxSizing       : 'border-box',
-            width           : '100%',
-            minHeight       : '50px'
-        })
 
         // left panel: code content
         const {
@@ -1029,21 +1007,6 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
         })
         this.html_elements.panels.right      = this.appendChild(this.html_elements.panels.right)
 
-        // panels: style (auto-resize, scroll-bar, etc.)
-        let set_panel_style = (panel) => {
-            AwesomeCodeElement.details.utility.apply_css(panel, {
-                flex:       '1 1 min-content',
-                overflow:   'auto',
-                position:   'relative',
-                top:        0,
-                left:       0,
-                width:      '100%',
-                margin:     0
-            })
-        }
-        set_panel_style(this.html_elements.panels.left)
-        set_panel_style(this.html_elements.panels.right)
-        
         // panels: add on_resize event
         let set_on_resize_event = ({panel, scrolling_element, elements_to_hide}) => {
             // left panel: resize event
@@ -1068,17 +1031,8 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
     }
     #make_HTML_left_panel() {
         let left_panel = document.createElement('pre');
-            left_panel.name
-            left_panel.style.overflow = 'auto'
-
         let code_element = document.createElement('code');
-        AwesomeCodeElement.details.utility.apply_css(code_element, {
-            width:      'auto',
-            height:     '100%',
-            boxSizing:  'border-box',
-            display:    'block'
-        })
-        code_element = left_panel.appendChild(code_element)
+            code_element = left_panel.appendChild(code_element)
 
         // buttons : copy-to-clipboard
         let copy_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
@@ -1086,11 +1040,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
             copy_button = left_panel.appendChild(copy_button)
 
         let CE_button = new AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt()
-        AwesomeCodeElement.details.utility.apply_css(CE_button, {
-            zIndex : left_panel.style.zIndex + 1,
-            display : 'none' // hidden by default
-        })
-        CE_button = left_panel.appendChild(CE_button)
+            CE_button = left_panel.appendChild(CE_button)
 
         return { 
             panel: left_panel,
@@ -1106,21 +1056,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
     #make_HTML_right_panel() {
         // right panel: execution
         let right_panel = document.createElement('pre')
-            AwesomeCodeElement.details.utility.apply_css(right_panel, {
-                display:    'none',
-                alignItems: 'stretch',
-                boxSizing:  'border-box'
-            })
         let execution_element = document.createElement('code')
-            AwesomeCodeElement.details.utility.apply_css(execution_element, {
-                //display:    'flex', 'flex-direction' : 'column',
-                display:    'block',
-                width:      '100%',
-                overflow:   'auto',
-                margin:     'inherit',
-                overflow:   'auto',
-                borderRadius:'5px'
-            })
             execution_element = right_panel.appendChild(execution_element)
         let copy_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
             copy_button = right_panel.appendChild(copy_button)
@@ -1196,6 +1132,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
 
         let error_element = document.createElement('pre')
             error_element.textContent = error || `awesome-code-element:CodeSectionHTMLElement: unknown error`
+        // TODO: status => error + CSS style for such status
         AwesomeCodeElement.details.utility.apply_css(error_element, {
             color: "red",
             border : "2px solid red"
@@ -1460,7 +1397,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         this.#_toggle_execution = value
 
         if (this.#_toggle_execution) {
-            this.html_elements.panels.right.style.display = 'flex'
+            this.html_elements.panels.right.style.display = ''
             try {
                 this.html_elements.panels.right.animate_loading_while(this.#fetch_execution.bind(this))
             }
@@ -1482,6 +1419,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             if (!is_fetch_success) {
                 this.html_elements.execution.textContent = value
                 this.html_elements.execution.title = '[error] execution failed'
+                // TODO: status => error + style for such status
                 AwesomeCodeElement.details.utility.apply_css(this.html_elements.execution, {
                     border: '2px solid red',
                     color:  'red'
@@ -1499,11 +1437,9 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             //  this.html_elements.execution.textContent = result.value
             //  hljs.highlightElement(this.html_elements.execution)
 
-            AwesomeCodeElement.details.utility.apply_css(this.html_elements.execution, {
-                border: '',
-                borderTop : '2px solid ' + (return_code == -1 ? 'red' : 'green'),
-                color: ''
-            })
+            // update status, used in CSS
+            let status = return_code == -1 ? 'failure' : 'success'
+            this.html_elements.execution.setAttribute('status', status)
         }
 
         if (!this.is_executable) {
@@ -1596,19 +1532,14 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         this.#error_view = true
     }
     set #error_view(value) {
+    // CSS usage
         if (value)
-            AwesomeCodeElement.details.utility.apply_css(this.html_elements.panels.left, {
-                border: '1px solid red',
-                borderRadius : '5px',
-            })
+            this.html_elements.panels.left.setAttribute('status', 'error')
         else
-            AwesomeCodeElement.details.utility.apply_css(this.html_elements.panels.left, {
-                border: '',
-                borderRadius : '',
-            })
+            this.html_elements.panels.left.removeAttribute('status')
     }
 
-    static HTMLElement_name = 'code-section'
+    static HTMLElement_name = 'ace-code-section'
     static PlaceholdersTranslation = {
         type : CodeSection,
         query : `div[class=${CodeSection.HTMLElement_name}]`,
@@ -1630,11 +1561,35 @@ customElements.define(
 );
 
 // =====
+// Style
+
+AwesomeCodeElement.details.Style = class Style {
+// class-as-namespace, for structuring styles, not cosmetic themes
+
+    static #stylesheet_element_id = 'ace-stylesheet'
+    static initialize() {
+
+        if (document.getElementById(Style.#stylesheet_element_id)) {
+            console.info(`AwesomeCodeElement.details.Style.initialize: user provided`)
+            return;
+        }
+
+        console.info(`AwesomeCodeElement.details.Style.initialize: loading default`)
+
+        let stylesheet = document.createElement('link')
+            stylesheet.rel = "stylesheet"
+            stylesheet.id = Style.#stylesheet_element_id
+            stylesheet.href = '../../styles/default.css'
+        document.head.appendChild(stylesheet)
+    }
+}
+
+// =====
 // Theme
 
 // TODO: check doxygen-awesome-css compatiblity
 AwesomeCodeElement.details.Theme = class Theme {
-// class-as-namespace
+// class-as-namespace, for syntactic coloration and toggling dark/light mode
 
     static preferences = class ThemePreferences {
 
@@ -1700,7 +1655,7 @@ AwesomeCodeElement.details.Theme = class Theme {
 
     static get default_theme() {
         const theme_selector_default_option = (() => {
-            let candidate_option = $(document).find('select[is=theme-selector]')
+            let candidate_option = $(document).find(`select[is=${AwesomeCodeElement.API.HTML_elements.ThemeSelector.HTMLElement_name}]`)
                 .map((index, element) => { return element.options[0] })
                 .filter((index, element) => element && element.value)
                 [0]
@@ -1853,7 +1808,7 @@ window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', ev
 })
 AwesomeCodeElement.API.HTML_elements.ToggleDarkModeButton = class ToggleDarkModeButton extends HTMLButtonElement {
 
-    static HTMLElement_name                 = "awesome-code-element-toggle-dark-mode-button"
+    static HTMLElement_name                 = "ace-toggle-dark-mode-button"
     static title                            = "Toggle light/dark Mode"
     static lightModeIcon                    = `<svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#FCBF00"><rect fill="none" height="24" width="24"/><circle cx="12" cy="12" opacity=".3" r="3"/><path d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"/></svg>`
     static darkModeIcon                     = `<svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#FE9700"><rect fill="none" height="24" width="24"/><path d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27 C17.45,17.19,14.93,19,12,19c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z" opacity=".3"/><path d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"/></svg>`
@@ -1895,7 +1850,7 @@ AwesomeCodeElement.API.HTML_elements.ThemeSelector = class ThemeSelector extends
 // Note: The first one is the default
 // Use theme name, without light or dark specification. Example : `tokyo-night`
 
-    static HTMLElement_name = 'theme-selector'
+    static HTMLElement_name = 'ace-theme-selector'
 
     #parameters = undefined
 
@@ -1954,6 +1909,7 @@ customElements.define(
 
 // ==============
 // Initialization
+// TODO: cleanup, refactor
 
 AwesomeCodeElement.API.initializers = {
     doxygenCodeSections : function() {
@@ -2057,6 +2013,7 @@ AwesomeCodeElement.API.initialize = () => {
                     AwesomeCodeElement.ToggleDarkMode.initialize()
             }
 
+            AwesomeCodeElement.details.Style.initialize()
             AwesomeCodeElement.details.Theme.initialize()
 
             let ReplaceHTMLPlaceholders = (translation) => {

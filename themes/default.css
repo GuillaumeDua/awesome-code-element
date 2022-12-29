@@ -1,0 +1,128 @@
+/* TODO: vars */
+/* TODO: is there a better way to reuse existing recipes ? */
+/*       otherwise, consider creating a script to generate a decoupled stylesheet for the sole purpose of ace-code-section-demo ?*/
+/*
+    TODO: button visibility based on @media (max-width), rather than JS window listener
+          when `CS > code` is scrolling, then CS > buttons toggle display blokc/none
+*/
+
+:root {
+    --border-radius-small: 4px;
+    --border-radius-medium: 6px;
+    --border-radius-large: 8px;
+    --spacing-small: 5px;
+    --spacing-medium: 10px;
+    --spacing-large: 16px;
+    --content-maxwidth: 1050px;
+    --ace-cs-buttons-z-index: 2;
+}
+
+/* Buttons */
+ace-code-section        button[is^='ace-button-'],
+ace-code-section-demo   button[is^='ace-button-'] {
+    z-index     : var(--ace-cs-buttons-z-index);
+    position    : absolute;
+    top         : 5px;
+}
+/* [id^='*.panels.*.buttons.copy_to_clipboard'] */
+ace-code-section        button[is='ace-button-copy-to-clipboard'],
+ace-code-section-demo   button[is='ace-button-copy-to-clipboard'] {
+    right       : 5px;
+}
+/* [id^='.panels.left.buttons.CE'] */
+ace-code-section        button[is='ace-button-send-to-godbolt'],
+ace-code-section-demo   button[is='ace-button-send-to-godbolt']{
+    right       : 45px;
+}
+ace-code-section        img#ace-loading-animation,
+ace-code-section-demo   img#ace-loading-animation{
+    contain             : strict;
+    border              : 1px solid var(--primary-color);
+    border-radius       : 5px;
+    width               : 100%;
+    height              : 100%;
+    box-sizing          : border-box;
+    display             : none
+}   /* hidden by default */
+
+/* CS */
+ace-code-section,
+ace-code-section-demo {
+    display         : flex;
+    flex-direction  : row;
+    align-items     : stretch;
+    box-sizing      : border-box;
+    width           : 100%;
+    min-height      : 50px
+}
+/* CS: panels : left, right */
+ace-code-section        > [id*='.panels.'],
+ace-code-section-demo   > [id*='.panels.'] {
+    flex:       1 1 content;
+    overflow:   auto;
+    position:   relative;
+    top:        0px;
+    left:       0px;
+    width:      100%;
+    margin:     0px;
+
+    /*stand-alone usage (not mandatory)*/
+    border-radius: var(--border-radius-small);
+    border: 1px solid var(--separator-color);
+}
+ace-code-section      > [id$='.panels.left'],
+ace-code-section-demo > [id$='.panels.left'] {
+    width:      100%;
+    box-sizing: border-box;
+}
+ace-code-section      > [id$='.panels.left'][status='error'],
+ace-code-section-demo > [id$='.panels.left'][status='error'] {
+    border: 1px solid red;
+}
+ace-code-section      > [id$='.panels.left'] > [id$='.code'],
+ace-code-section-demo > [id$='.panels.left'] > [id$='.code'] {
+    width:      auto;
+    height:     100%;
+    box-sizing: border-box;
+    display:    block;
+}
+ace-code-section        > [id$='.panels.left.buttons.CE'],
+ace-code-section-demo   > [id$='.panels.left.buttons.CE'] {
+    z-index : 2;
+    display : none; /* hidden by default */
+}
+ace-code-section      > [id$='.panels.right'], 
+ace-code-section-demo > [id$='.panels.right'] {
+    display:     flex;
+    align-items: stretch;
+    box-sizing:  border-box;
+}
+ace-code-section      > [id$='.panels.right'], 
+ace-code-section-demo > [id$='.panels.right'] {
+    display:     flex;
+    align-items: stretch;
+    box-sizing:  border-box;
+}
+/* TODO: execution status + rule (red vs. green) */
+/* display:    flex; flex-direction : column; */
+ace-code-section      > [id$='.panels.right'] > [id$='.execution'],
+ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'] {
+
+    display:        block;
+    width:          100%;
+    overflow:       auto;
+    margin:         inherit;
+    overflow:       auto;
+    border-radius:  var(--border-radius-small)
+}
+ace-code-section      > [id$='.panels.right'] > [id$='.execution'][status='success'],
+ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'][status='success'] {
+    border-top: 2px solid green;
+}
+ace-code-section      > [id$='.panels.right'] > [id$='.execution'][status='failure'],
+ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'][status='failure'] {
+    border-top: 2px solid red;
+}
+
+/* TODO: right-panel copy-to-clipboard does not hide anymore */
+/* TODO: wtf: good execution -> red color */
