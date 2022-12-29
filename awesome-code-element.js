@@ -75,8 +75,7 @@
 // TODO: remove useless funcs, class (if any)
 // TODO: awesome-code-element.js: sub-modules aggregator
 // TODO: style : px vs. em
-// TODO: default policies : language, toggle_execution, toggle_parsing, presentation, etc.
-// TODO: default stylesheet for CS + injection (+ remove utils.apply_css)
+// TODO: listener for CSS attribute change, properly calling setters ? (language, toggle_execution, toggle_parsing, orientation)
 
 export { AwesomeCodeElement as default }
 
@@ -1147,8 +1146,24 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
             border : "2px solid red"
         })
         this.innerHTML = ""
-        // this.childNodes.forEach((child) => { child.style.display = 'none' })
         this.replaceWith(error_element)
+    }
+
+    on_error(error) {
+    // soft (non-critical) error
+        console.error(`awesome-code-element.js:CodeSectionHTMLElement.on_error :${error}`)
+        this.toggle_error_view = true
+    }
+    set toggle_error_view(value) {
+        if (!this.isConnected
+        ||  !this.html_elements.panels
+        ||  !this.html_elements.panels.left
+        ) return
+    // CSS usage
+        if (value)
+            this.html_elements.panels.left.setAttribute('status', 'error')
+        else
+            this.html_elements.panels.left.removeAttribute('status')
     }
 }
 
@@ -1156,6 +1171,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
 // HTML_elements : API
 
 AwesomeCodeElement.API.HTML_elements = {}
+// TODO: error view: do not replace with <pre style='color:red; etc.'
 AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement {
 // TODO: code loading policy/behavior - as function : default is textContent, but can be remote using an url, or another rich text area for instance
 
@@ -1178,7 +1194,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         this.#view_update_code()
     }
     #view_update_code() {
-        this.#error_view = false // clear possibly existing errors
+        this.toggle_error_view = false // clear possibly existing errors
         // update view
         this.html_elements.code.textContent = this.code || ""
         // update view syle
@@ -1347,15 +1363,15 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         // defered initialiation
         this.#_language                 = this.#_parameters.language || AwesomeCodeElement.API.configuration.CodeSection.language
         this.toggle_language_detection  = !this.#is_valid_language
+        this.#_toggle_execution         = this.#_parameters.toggle_execution    || AwesomeCodeElement.API.configuration.CodeSection.toggle_execution
+        this.#_toggle_parsing           = this.#_parameters.toggle_parsing      || AwesomeCodeElement.API.configuration.CodeSection.toggle_parsing
 
         if (this.#_parameters.url)  // remote code
             this.url = this.#_parameters.url
         else                        // local code
             this.#_code = new AwesomeCodeElement.details.ParsedCode(this.#_parameters.code, this.language)  // only update code, not its view
 
-        // will update the code view
-        this.toggle_parsing             = this.#_parameters.toggle_parsing      || AwesomeCodeElement.API.configuration.CodeSection.toggle_parsing
-        this.toggle_execution           = this.#_parameters.toggle_execution    || AwesomeCodeElement.API.configuration.CodeSection.toggle_execution
+        this.#view_update_code()
 
         this.initialize = () => { throw new Error('CodeSection.initialize: already called') }
     }
@@ -1503,14 +1519,18 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
     }
     set url(value) {
     // TODO: Cancel or wait for pending resource acquisition
-    //  issue: if `url` is set twice (in a short period of time), we have a race condition
+    //  issue:  if `url` is set twice (in a short period of time), we have a race condition
+    //          can be fix with some internal stat management
         this.html_elements.panels.left.toggle_loading_animation = true
         if (this.toggle_execution)
             this.html_elements.panels.right.toggle_loading_animation = true
 
         this.#_url = value
 
-        let _this = this
+        let previous_execution_state = this.toggle_execution
+        this.toggle_execution = false // disabled while loading
+
+        let _this = this // TODO: useless
         AwesomeCodeElement.details.utility.fetch_resource(this.#_url, {
             on_error: (error) => {
                 _this.on_error(`CodeSection: network error: ${error}`)
@@ -1523,13 +1543,12 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
                 _this.language = AwesomeCodeElement.details.utility.get_url_extension(_this.#_url)
                 _this.code = code
                 this.html_elements.panels.left.toggle_loading_animation = false
+                this.toggle_execution = previous_execution_state // restore execution state
             }
         })
     }
 
     on_error(error) {
-    // soft (non-critical) error
-        error = error || 'CodeSection: unknown non-critical error'
 
         // restore a stable status
         this.toggle_parsing = false
@@ -1538,15 +1557,10 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         this.#_language = undefined
 
         // show error
+        error = error || 'CodeSection: unknown non-critical error'
         this.code = error
-        this.#error_view = true
-    }
-    set #error_view(value) {
-    // CSS usage
-        if (value)
-            this.html_elements.panels.left.setAttribute('status', 'error')
-        else
-            this.html_elements.panels.left.removeAttribute('status')
+
+        super.on_error(error)
     }
 
     static HTMLElement_name = 'ace-code-section'

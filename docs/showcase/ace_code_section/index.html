@@ -102,7 +102,7 @@ SOFTWARE.
                 CodeSection: {  // useless, for demo purpose
                     language        : undefined,
                     toggle_parsing  : true,
-                    toggle_execution: true,
+                    toggle_execution: false,
                     direction       : ''
                 },
                 CE: new ace.API.CE_ConfigurationManager([
@@ -204,18 +204,30 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
     </ace-showcase-wrapper>
     </li>
 
-    <li>
-    <h3>code-section : url (external code) (network: <b style="color:green">reachable</b>)</h3>
-    <ace-showcase-wrapper>
-        <!--<ace-code-section url="../../details/resources/code_content/noexecute_show_block.cpp"></ace-code-section>-->
-    </ace-showcase-wrapper>
-    </li>
 
     <li>
-    <h3>code-section : url (external code) (network: <b style="color:red">unreachable</b>)</h3>
-    <ace-showcase-wrapper>
-        <!--<ace-code-section url="/DOES_NOT_EXISTS"></ace-code-section>-->
-    </ace-showcase-wrapper>
+    <h3>code-section : url (external code)</h3>
+
+        <ul><li>
+        <h3>network: <b style="color:red">unreachable</b></h3>
+        <ace-showcase-wrapper>
+            <!--<ace-code-section url="/DOES_NOT_EXISTS"></ace-code-section>-->
+        </ace-showcase-wrapper>
+        </li></ul>
+
+        <ul><li>
+        <h3>network: <b style="color:green">reachable</b></h3>
+        <ace-showcase-wrapper>
+            <!--<ace-code-section url="../../details/resources/code_content/noexecute_show_block.cpp"></ace-code-section>-->
+        </ace-showcase-wrapper>
+        </li></ul>
+
+        <ul><li>
+        <h3>network: <b style="color:green">reachable</b>, immediatly executed</h3>
+        <ace-showcase-wrapper>
+            <!--<ace-code-section toggle_execution="true" url="../../details/resources/code_content/noexecute_show_block.cpp"></ace-code-section>-->
+        </ace-showcase-wrapper>
+        </li></ul>
     </li>
 
     <li>
@@ -298,7 +310,7 @@ return i;
 #include <vector>
 #include &lt;iostream&gt;
 
-auto main() -> int {
+int main() {
 
     auto i = 42;
     auto b = 42 < 13 || 42 > 13;
@@ -312,6 +324,17 @@ auto main() -> int {
     return i <=> b;
 }                       
 </ace-code-section> --></ace-showcase-wrapper>
+    </li>
+
+    <li>
+        <h3>code-section : critical <b style="color:red">error</b> (no recovery possible)</h3>
+        <div class="note">
+            <h4>&#9432; Note:</h4>
+            <pre>Such error is quite hard to illustrate with an example.
+Mostly likely scenari are either a critical network while calling the Compiler-Explorer API,
+or some input code used in conjunction with <code>toggle_parsing="true"</code>, which breaks the meta-data parser
+            </pre>
+        </div>
     </li>
 
 </ul>
