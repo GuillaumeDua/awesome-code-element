@@ -35,8 +35,8 @@ jobs:
         run: |
           rm docs/awesome-code-element.js
           cp awesome-code-element.js  docs/
-          rm -rf docs/themes
-          cp -a themes                docs/
+          rm -rf docs/styles
+          cp -a styles                docs/
           cp README.md                docs/
 
       - name: Deploy 🚀 
