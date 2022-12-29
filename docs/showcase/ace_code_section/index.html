@@ -32,20 +32,12 @@ SOFTWARE.
         <link rel="icon" type="image/x-icon" href="../../favicon.ico">
 
         <style>
-            /* Note: style for demo purpose only, see "toggle_style" button */
-            html.light-mode {
-                color-scheme: light;
-                --separator-color: #8e8e8e;
-                --default-text-color: darkslategray;
-            }
-            html.dark-mode {
-                color-scheme: dark;
-                --separator-color: #38393b;
-                --default-text-color: steelblue;
-            }
 
             label, button, select {
-                color: var(--default-text-color)
+                color:              var(--default-text-color);
+                border:             1px solid var(--separator-color);
+                border-radius:      var(--border-radius-small);
+                background-color:   var(--default-background-color);
             }
 
             h1,h2,h3,h4,h5,h6 {
@@ -72,7 +64,10 @@ SOFTWARE.
 
             /* TODO: icon */
             div.note {
-                border: 1px solid var(--separator-color)
+                color:              var(--default-text-color);
+                border:             1px solid var(--separator-color);
+                border-radius:      var(--border-radius-small);
+                background-color:   var(--default-background-color);
             }
             div.note > h4 {
                 margin-top:     0px;
@@ -252,11 +247,10 @@ auto main() -> int {
 }                       
 </ace-code-section>--></ace-showcase-wrapper>
 
-<div style="border:1px solid var(--separator-color)">
-    <i>
-        <pre style="overflow:auto"><h4>Note:</h4>Alternatively, setting the style value <code>style="flex-direction: column"</code> also works</pre>
-    </i>
-</div>
+    <div class="note">
+        <h4>&#9432; Note:</h4>
+        <pre>Alternatively, setting the style value <code>style="flex-direction: column"</code> also works</pre>
+    </div>
 
     </li>
 
