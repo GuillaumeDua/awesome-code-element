@@ -150,6 +150,13 @@ AwesomeCodeElement.details.containers.transformed_map = class extends Map {
 }
 AwesomeCodeElement.API.CE_ConfigurationManager = class extends AwesomeCodeElement.details.containers.transformed_map {
 // similar to a Map, but use `hljs.getLanguage(key)` as a key translator
+//
+// key   : language (name or alias. e.g: C++, cpp, cc, c++ are equivalent)
+// value : {
+//      language,       // not mandatory, if same as key. Refers to https://godbolt.org/api/languages
+//      compiler_id,    //     mandatory
+//      default_options // not mandatory
+// }
     constructor(values) {
         super(values, {
             key_translator: (key) => {
@@ -174,12 +181,6 @@ AwesomeCodeElement.API.CE_ConfigurationManager = class extends AwesomeCodeElemen
         super.set(key, mapped)
     }
 }
-// key   : language (name or alias. ex: C++, cpp, cc, c++ are equivalent)
-// value : {
-//      language,       // not mandatory, if same as key. Refers to https://godbolt.org/api/languages
-//      compiler_id,
-//      default_options // not mandatory
-// }
 
 // =================
 // API.configuration
