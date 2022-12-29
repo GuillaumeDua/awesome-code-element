@@ -90,7 +90,8 @@ if (typeof jQuery === 'undefined')
 const AwesomeCodeElement = {
     API : {
         configuration : {
-            CE : {}
+            CE : {},
+            CodeSection : {}
         }
     },
     details : {}
@@ -187,8 +188,15 @@ AwesomeCodeElement.API.CE_ConfigurationManager = class extends AwesomeCodeElemen
 
 AwesomeCodeElement.API.configuration = {
     CE                                  : new AwesomeCodeElement.API.CE_ConfigurationManager,
+    CodeSection                         : {
+    // can be overrided locally
+        language        : undefined,    // autodetect
+        toggle_parsing  : true,
+        toggle_execution: false,
+        direction       : ''            // default: row
+    },
     hljs                                : {
-        version : '11.6.0', // TODO: automate hljs import (avoid dependencies mismatch)
+        version : '11.7.0', // TODO: automate hljs import (avoid dependencies mismatch)
         // default_theme:   If no ace-theme-selector, then this is the default one.
         //                  Otherwise, the first valid option of the first ace-theme-selector is the default
         default_theme   : 'tokyo-night'  // supports dark/light variations
@@ -1112,7 +1120,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
         return true
     }
     initialize() {
-        this.direction = this.#_parameters.style.direction
+        this.direction = this.#_parameters.style.direction || AwesomeCodeElement.API.configuration.CodeSection.direction
         this.#initialize_HTML()
     }
     
@@ -1337,7 +1345,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         console.debug(`AwesomeCodeElement.details.HTML_elements.CodeSection: initializing with parameters [${JSON.stringify(this.#_parameters, null, 3)}]` )
 
         // defered initialiation
-        this.#_language                  = this.#_parameters.language
+        this.#_language                 = this.#_parameters.language || AwesomeCodeElement.API.configuration.CodeSection.language
         this.toggle_language_detection  = !this.#is_valid_language
 
         if (this.#_parameters.url)  // remote code
@@ -1345,8 +1353,9 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         else                        // local code
             this.#_code = new AwesomeCodeElement.details.ParsedCode(this.#_parameters.code, this.language)  // only update code, not its view
 
-        this.toggle_parsing             = this.#_parameters.toggle_parsing      // will update the code view
-        this.toggle_execution           = this.#_parameters.toggle_execution
+        // will update the code view
+        this.toggle_parsing             = this.#_parameters.toggle_parsing      || AwesomeCodeElement.API.configuration.CodeSection.toggle_parsing
+        this.toggle_execution           = this.#_parameters.toggle_execution    || AwesomeCodeElement.API.configuration.CodeSection.toggle_execution
 
         this.initialize = () => { throw new Error('CodeSection.initialize: already called') }
     }
@@ -1445,7 +1454,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
 
         if (!this.is_executable) {
 
-            let error = `CodeSection:fetch_execution: not executable. No known valid configuration for language [${this.language}]`
+            let error = `CodeSection:fetch_execution: not executable.\n\tNo known valid configuration for language [${this.language}]`
             set_execution_content({
                 is_fetch_success : false,
                 content : {

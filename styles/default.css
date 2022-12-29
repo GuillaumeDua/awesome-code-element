@@ -78,7 +78,7 @@ ace-code-section-demo {
 /* CS: panels : left, right */
 ace-code-section        > [id*='.panels.'],
 ace-code-section-demo   > [id*='.panels.'] {
-    flex:       1 1 content;
+    flex:       2 2 content;
     overflow:   auto;
     position:   relative;
     top:        0px;
@@ -113,12 +113,7 @@ ace-code-section-demo   > [id$='.panels.left.buttons.CE'] {
 }
 ace-code-section      > [id$='.panels.right'], 
 ace-code-section-demo > [id$='.panels.right'] {
-    display:     flex;
-    align-items: stretch;
-    box-sizing:  border-box;
-}
-ace-code-section      > [id$='.panels.right'], 
-ace-code-section-demo > [id$='.panels.right'] {
+    flex:       1 1 content;
     display:     flex;
     align-items: stretch;
     box-sizing:  border-box;
