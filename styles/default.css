@@ -65,9 +65,6 @@ ace-code-section-demo   img#ace-loading-animation{
     display             : none
 }   /* hidden by default */
 
-/* WIP: not visible when orientation is column */
-/* WIP: red error persist (demo) */
-
 /* CS */
 ace-code-section,
 ace-code-section-demo {
@@ -99,9 +96,17 @@ ace-code-section-demo > [id$='.panels.left'] {
     box-sizing: border-box;
 }
 ace-code-section      > [id$='.panels.left'][status='error'],
-ace-code-section-demo > [id$='.panels.left'][status='error'] {
+ace-code-section-demo > [id$='.panels.left'][status='error'],
+ace-code-section      > [id$='.panels.right'][status='error'],
+ace-code-section-demo > [id$='.panels.right'][status='error'] {
     border: 1px solid red;
+    color:red;
 }
+ace-code-section      > [id$='.panels.right'][status='error'] > [id$='.execution'],
+ace-code-section-demo > [id$='.panels.right'][status='error'] > [id$='.execution'] {
+    color:red;
+}
+
 ace-code-section      > [id$='.panels.left'] > [id$='.code'],
 ace-code-section-demo > [id$='.panels.left'] > [id$='.code'] {
     width:      auto;

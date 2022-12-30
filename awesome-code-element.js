@@ -1443,18 +1443,13 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         let set_execution_content = ({ is_fetch_success, content: { value, return_code } }) => {
 
             if (!is_fetch_success) {
+                this.html_elements.panels.right.setAttribute('status', 'error')
                 this.html_elements.execution.textContent = value
-                this.html_elements.execution.title = '[error] execution failed'
-                // TODO: status => error + style for such status
-                AwesomeCodeElement.details.utility.apply_css(this.html_elements.execution, {
-                    border: '2px solid red',
-                    color:  'red'
-                })
                 return
             }
 
             this.html_elements.execution.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
-            // force hljs bash language
+            // force hljs bash language (TODO: wrap into a dedicated function)
             this.html_elements.execution.innerHTML = hljs.highlightAuto(value, [ 'bash' ]).value
             this.html_elements.execution.classList = [...this.html_elements.code.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
             this.html_elements.execution.classList.add(`hljs`)
@@ -1467,6 +1462,10 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             let status = return_code == -1 ? 'failure' : 'success'
             this.html_elements.execution.setAttribute('status', status)
         }
+
+        // cleanup status
+        this.html_elements.panels.right.removeAttribute('status')
+        this.html_elements.execution.removeAttribute('status')
 
         if (!this.is_executable) {
 
