@@ -126,11 +126,9 @@ ace-code-section-demo > [id$='.panels.right'] {
     align-items: stretch;
     box-sizing:  border-box;
 }
-/* TODO: execution status + rule (red vs. green) */
 /* display:    flex; flex-direction : column; */
 ace-code-section      > [id$='.panels.right'] > [id$='.execution'],
 ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'] {
-
     display:        block;
     width:          100%;
     overflow:       auto;

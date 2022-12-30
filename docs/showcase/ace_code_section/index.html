@@ -68,6 +68,7 @@ SOFTWARE.
                 border:             1px solid var(--separator-color);
                 border-radius:      var(--border-radius-small);
                 background-color:   var(--default-background-color);
+                margin-top:         5px;
             }
             div.note > h4 {
                 margin-top:     0px;
@@ -152,7 +153,7 @@ SOFTWARE.
             document.getElementById('my_custom_cs_id').html_elements.code.classList.add('stylished')
         }, 500)
     ">
-        Load content, trigger defered initialization
+        <b style="color:green">Click me !</b> <i>(load content, trigger defered initialization)</i>
     </button>
     </li>
 
@@ -230,9 +231,11 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
         </li></ul>
     </li>
 
-    <!-- TODO: refactor ul/li/ul -->
     <li>
-        <h3>code-section : language, execution (compilation <b style="color:green">success</b>)</h3>
+        <h3>code-section : language, execution</h3>
+
+        <ul><li>
+        <h3>compilation <b style="color:green">success</b></h3>
 <ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
 #include <iostream>
 auto main() -> int {
@@ -241,12 +244,10 @@ auto main() -> int {
     return i;
 }                       
 </ace-code-section>--></ace-showcase-wrapper>
-    </li>
+        </li></ul>
 
-    <!-- TODO: error: No known valid configuration for language [...] -->
-
-    <li>
-        <h3>code-section : language, execution (compilation <b style="color:red">error</b>)</h3>
+        <ul><li>
+        <h3>compilation <b style="color:red">error</b></h3>
 <ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
 #include <iostream>
 auto main() -> int {
@@ -255,6 +256,29 @@ auto main() -> int {
     return i;
 }                       
 </ace-code-section>--></ace-showcase-wrapper>
+<div class="note">
+    <h4>&#9432; Note:</h4>
+    <pre>Relevant error status:
+    <b>JS:</b>  <code>cs_element.html_elements.execution.getAttribute('status') === 'failure'</code>
+    <b>CSS:</b> <code>ace-code-section > [id$='.panels.right'] > [id$='.execution'][status='failure']</code></pre>
+</div>
+        </li></ul>
+
+        <ul><li>
+<h3><b style="color:red">error</b> : missing configuration (c vs. cpp)</h3>
+<ace-showcase-wrapper><!--<ace-code-section language="c" toggle_execution="true">
+int main() {
+    return 42;
+}                       
+</ace-code-section>--></ace-showcase-wrapper>
+<div class="note">
+    <h4>&#9432; Note:</h4>
+    <pre>Relevant error status:
+    <b>JS:</b>  <code>cs_element.html_elements.panels.right.getAttribute('status') === 'error'</code>
+    <b>CSS:</b> <code>ace-code-section > [id$='.panels.right'][status='error']</code></pre>
+</div>
+        </li></ul>
+       
     </li>
 
     <li>
@@ -267,11 +291,10 @@ auto main() -> int {
     return i;
 }                       
 </ace-code-section>--></ace-showcase-wrapper>
-
-    <div class="note">
-        <h4>&#9432; Note:</h4>
-        <pre>Alternatively, setting the style value <code>style="flex-direction: column"</code> also works</pre>
-    </div>
+        <div class="note">
+            <h4>&#9432; Note:</h4>
+            <pre>Alternatively, setting the style value <code>style="flex-direction: column"</code> also works</pre>
+        </div>
 
     </li>
 
