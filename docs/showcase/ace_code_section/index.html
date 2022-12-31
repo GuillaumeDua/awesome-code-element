@@ -62,12 +62,12 @@ SOFTWARE.
                 border-right: 20px solid transparent;
             }
 
-            /* TODO: icon */
             div.note {
                 color:              var(--default-text-color);
                 border:             1px solid var(--separator-color);
                 border-radius:      var(--border-radius-small);
                 background-color:   var(--default-background-color);
+                margin-top:         5px;
             }
             div.note > h4 {
                 margin-top:     0px;
@@ -95,11 +95,17 @@ SOFTWARE.
 
             ace.API.configure({
                 doxygen_awesome_css_compatibility: true,
-                hljs : {
+                hljs: {         // useless, for demo purpose
                     version         : '11.7.0',
                     default_theme   : 'obsidian' // unused, as there is a valid theme-selector. (Obsidian theme does not supports dark/light variations)
                 },
-                CE : new ace.API.CE_ConfigurationManager([
+                CodeSection: {  // useless, for demo purpose
+                    language        : undefined,
+                    toggle_parsing  : true,
+                    toggle_execution: false,
+                    direction       : ''
+                },
+                CE: new ace.API.CE_ConfigurationManager([
                     [
                         'cpp',
                         {
@@ -146,7 +152,7 @@ SOFTWARE.
             document.getElementById('my_custom_cs_id').html_elements.code.classList.add('stylished')
         }, 500)
     ">
-        Load content, trigger defered initialization
+        <b style="color:green">Click me !</b> <i>(load content, trigger defered initialization)</i>
     </button>
     </li>
 
@@ -190,7 +196,6 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
     </ace-showcase-wrapper>
     </li>
 
-    <!-- TODO: language is not take into account -->
     <li>
     <h3>code-section : language + code attributes</h3>
     <ace-showcase-wrapper>
@@ -199,21 +204,35 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
     </li>
 
     <li>
-    <h3>code-section : url (external code) (network: <b style="color:green">reachable</b>)</h3>
-    <ace-showcase-wrapper>
-        <!--<ace-code-section url="../../details/resources/code_content/noexecute_show_block.cpp"></ace-code-section>-->
-    </ace-showcase-wrapper>
+    <h3>code-section : url (external code)</h3>
+
+        <ul><li>
+        <h3>network: <b style="color:red">unreachable</b></h3>
+        <ace-showcase-wrapper>
+            <!--<ace-code-section url="/DOES_NOT_EXISTS"></ace-code-section>-->
+        </ace-showcase-wrapper>
+        </li></ul>
+
+        <ul><li>
+        <h3>network: <b style="color:green">reachable</b></h3>
+        <ace-showcase-wrapper>
+            <!--<ace-code-section url="../../details/resources/code_content/noexecute_show_block.cpp"></ace-code-section>-->
+        </ace-showcase-wrapper>
+        </li></ul>
+
+        <ul><li>
+        <h3>network: <b style="color:green">reachable</b>, immediatly executed</h3>
+        <ace-showcase-wrapper>
+            <!--<ace-code-section toggle_execution="true" url="../../details/resources/code_content/noexecute_show_block.cpp"></ace-code-section>-->
+        </ace-showcase-wrapper>
+        </li></ul>
     </li>
 
     <li>
-    <h3>code-section : url (external code) (network: <b style="color:red">unreachable</b>)</h3>
-    <ace-showcase-wrapper>
-        <!--<ace-code-section url="/DOES_NOT_EXISTS"></ace-code-section>-->
-    </ace-showcase-wrapper>
-    </li>
+        <h3>code-section : language, execution</h3>
 
-    <li>
-        <h3>code-section : language, execution (compilation <b style="color:green">success</b>)</h3>
+        <ul><li>
+        <h3>compilation <b style="color:green">success</b></h3>
 <ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
 #include <iostream>
 auto main() -> int {
@@ -222,10 +241,10 @@ auto main() -> int {
     return i;
 }                       
 </ace-code-section>--></ace-showcase-wrapper>
-    </li>
+        </li></ul>
 
-    <li>
-        <h3>code-section : language, execution (compilation <b style="color:red">error</b>)</h3>
+        <ul><li>
+        <h3>compilation <b style="color:red">error</b></h3>
 <ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
 #include <iostream>
 auto main() -> int {
@@ -234,6 +253,29 @@ auto main() -> int {
     return i;
 }                       
 </ace-code-section>--></ace-showcase-wrapper>
+<div class="note">
+    <h4>&#9432; Note:</h4>
+    <pre>Relevant error status:
+    <b>JS:</b>  <code>cs_element.html_elements.execution.getAttribute('status') === 'failure'</code>
+    <b>CSS:</b> <code>ace-code-section > [id$='.panels.right'] > [id$='.execution'][status='failure']</code></pre>
+</div>
+        </li></ul>
+
+        <ul><li>
+<h3><b style="color:red">error</b> : missing configuration (c vs. cpp)</h3>
+<ace-showcase-wrapper><!--<ace-code-section language="c" toggle_execution="true">
+int main() {
+    return 42;
+}                       
+</ace-code-section>--></ace-showcase-wrapper>
+<div class="note">
+    <h4>&#9432; Note:</h4>
+    <pre>Relevant error status:
+    <b>JS:</b>  <code>cs_element.html_elements.panels.right.getAttribute('status') === 'error'</code>
+    <b>CSS:</b> <code>ace-code-section > [id$='.panels.right'][status='error']</code></pre>
+</div>
+        </li></ul>
+       
     </li>
 
     <li>
@@ -246,11 +288,10 @@ auto main() -> int {
     return i;
 }                       
 </ace-code-section>--></ace-showcase-wrapper>
-
-    <div class="note">
-        <h4>&#9432; Note:</h4>
-        <pre>Alternatively, setting the style value <code>style="flex-direction: column"</code> also works</pre>
-    </div>
+        <div class="note">
+            <h4>&#9432; Note:</h4>
+            <pre>Alternatively, setting the style value <code>style="flex-direction: column"</code> also works</pre>
+        </div>
 
     </li>
 
@@ -292,7 +333,7 @@ return i;
 #include <vector>
 #include &lt;iostream&gt;
 
-auto main() -> int {
+int main() {
 
     auto i = 42;
     auto b = 42 < 13 || 42 > 13;
@@ -306,6 +347,17 @@ auto main() -> int {
     return i <=> b;
 }                       
 </ace-code-section> --></ace-showcase-wrapper>
+    </li>
+
+    <li>
+        <h3>code-section : critical <b style="color:red">error</b> (no recovery possible)</h3>
+        <div class="note">
+            <h4>&#9432; Note:</h4>
+            <pre>Such error is quite hard to illustrate with an example.
+Mostly likely scenari are either a critical network while calling the Compiler-Explorer API,
+or some input code used in conjunction with <code>toggle_parsing="true"</code>, which breaks the meta-data parser
+            </pre>
+        </div>
     </li>
 
 </ul>
