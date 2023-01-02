@@ -1171,7 +1171,6 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
 // HTML_elements : API
 
 AwesomeCodeElement.API.HTML_elements = {}
-// TODO: error view: do not replace with <pre style='color:red; etc.'
 AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement {
 // TODO: code loading policy/behavior - as function : default is textContent, but can be remote using an url, or another rich text area for instance
 
@@ -1567,14 +1566,17 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         type : CodeSection,
         query : `div[class=${CodeSection.HTMLElement_name}]`,
         translate : (element) => {
-            // TODO: all attributes -> options
-            let language = element.getAttribute('language')
-            let code = element.textContent
-                        .replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
-            let node = new CodeSection(code, language);
-            if (language)
-                node.setAttribute('language', language)
-            return node
+            
+            let attributes = Array.from(element.attributes)
+                .filter(a => { return a.specified && a.nodeName !== 'class'; })
+
+            let args = {}
+            attributes.forEach((arg) => {
+                args[arg.nodeName] = arg.textContent
+            })
+            args.code = args.code || element.textContent.replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
+
+            return new CodeSection(args)
         }
     }
 }
@@ -1952,7 +1954,7 @@ AwesomeCodeElement.API.initializers = {
         let doc_ref_links = new Map(); // preserve clickable documentation reference links
     
         var place_holders = $('body').find('div[class=doxygen-awesome-fragment-wrapper]');
-        console.info(`awesome-code-element.js:initialize_doxygenCodeSections : replacing ${place_holders.length} elements ...`)
+        console.info(`awesome-code-element.js:initialize_doxygenCodeSections : replacing [${place_holders.length}] elements ...`)
         place_holders.each((index, value) => {
     
             let lines = $(value).find('div[class=fragment] div[class=line]')
@@ -1970,7 +1972,7 @@ AwesomeCodeElement.API.initializers = {
         })
     
         var place_holders = $('body').find('div[class=fragment]')
-        console.info(`awesome-code-element.js:initialize_doxygenCodeSections : replacing ${place_holders.length} elements ...`)
+        console.info(`awesome-code-element.js:initialize_doxygenCodeSections : replacing [${place_holders.length}] elements ...`)
         place_holders.each((index, value) => {
     
             let lines = $(value).find('div[class=line]')
