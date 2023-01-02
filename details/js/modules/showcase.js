@@ -32,6 +32,8 @@ ace.showcase.HTML_elements.wrapper  = class HTMLShowCase extends HTMLElement {
     }
     connectedCallback() {
 
+        // TODO: use AwesomeCodeElement.details.utility.html_node_content_to_code(element) instead ?
+
         // merge all nested HTML comments
         let text_content = [...this.childNodes]
             .filter(element => element.nodeType === Node.COMMENT_NODE)
