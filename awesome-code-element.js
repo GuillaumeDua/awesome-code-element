@@ -601,6 +601,21 @@ AwesomeCodeElement.details.utility = class utility {
         element.setAttribute('ace-dependecy-name', name)
         return document.head.appendChild(element);
     }
+    static html_node_content_to_code(element) {
+    // warning: costly
+        let value = element.innerHTML ?? "";
+        const convert = (element) => {
+            Array.from(element.children)
+                .forEach(child => {
+                    const tagname = child.localName
+                    value = value.replace(`</${tagname}>`, '');
+                    convert(child)
+                })
+        }
+        convert(element)
+        value = value.replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
+        return AwesomeCodeElement.details.utility.html_codec.decode(value)
+    }
 }
 AwesomeCodeElement.details.log_facility = class {
     
@@ -1566,15 +1581,18 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         type : CodeSection,
         query : `div[class=${CodeSection.HTMLElement_name}]`,
         translate : (element) => {
-            
+
+            // attributes
             let attributes = Array.from(element.attributes)
                 .filter(a => { return a.specified && a.nodeName !== 'class'; })
-
             let args = {}
-            attributes.forEach((arg) => {
-                args[arg.nodeName] = arg.textContent
+            attributes.forEach((attribute) => {
+                args[attribute.nodeName] = attribute.textContent
             })
-            args.code = args.code || element.textContent.replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
+
+            // code
+            let code = AwesomeCodeElement.details.utility.html_node_content_to_code(element)
+            args.code = args.code ?? code
 
             return new CodeSection(args)
         }
