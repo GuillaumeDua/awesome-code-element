@@ -3,6 +3,7 @@ tests/*/loading_animation.gif
 
 # docs
 docs/output
+docs/showcase/using_doxygen/output/
 
 # Others
 local
