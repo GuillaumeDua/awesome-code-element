@@ -8,6 +8,7 @@ Originaly created to ease the documentation creation process of [CppShelf](https
 ---
 
 - [Showcase : CS](https://guillaumedua.github.io/awesome-code-element/showcase/ace_code_section/)
+- [Showcase : CS *(using div placeholders)*](https://guillaumedua.github.io/awesome-code-element/showcase/html_divs_placeholders/)
 - [Showcase : misc](https://guillaumedua.github.io/awesome-code-element/showcase/misc/)
 - [Live demo](https://guillaumedua.github.io/awesome-code-element/showcase/live_demo/)
 
