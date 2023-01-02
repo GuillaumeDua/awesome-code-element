@@ -27,8 +27,6 @@ SOFTWARE.
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
 
-        <!-- <link id='ace-stylesheet' rel="stylesheet" href="../../styles/default.css"> -->
-
         <link rel="icon" type="image/x-icon" href="../../favicon.ico">
 
         <style>
@@ -94,17 +92,6 @@ SOFTWARE.
             import ace from "../../awesome-code-element.js"
 
             ace.API.configure({
-                doxygen_awesome_css_compatibility: true,
-                hljs: {         // useless, for demo purpose
-                    version         : '11.7.0',
-                    default_theme   : 'obsidian' // unused, as there is a valid theme-selector. (Obsidian theme does not supports dark/light variations)
-                },
-                CodeSection: {  // useless, for demo purpose
-                    language        : undefined,
-                    toggle_parsing  : true,
-                    toggle_execution: false,
-                    direction       : ''
-                },
                 CE: new ace.API.CE_ConfigurationManager([
                     [
                         'cpp',
@@ -116,7 +103,6 @@ SOFTWARE.
                     ]
                 ])
             })
-            console.info(`demo/index.html: ace.API.configuration:`, ace.API.configuration)
             ace.API.initialize();
         </script>
     
@@ -128,7 +114,7 @@ SOFTWARE.
             hljs.configure({
                 ignoreUnescapedHTML: true,
                 throwUnescapedHTML: false,
-                languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plain-text', 'HTML']
+                languages: ['cpp', 'c', 'bash', 'plain-text', 'HTML']
             })
         </script>
 
@@ -143,7 +129,7 @@ SOFTWARE.
     <li>
     <h3>code-section : empty (will wait for content), user-provided id</h3>
     <ace-showcase-wrapper>
-        <!--<ace-code-section id="my_custom_cs_id"></ace-code-section>-->
+        <!--<div class="ace-code-section" id="my_custom_cs_id"></div>-->
     </ace-showcase-wrapper>
     <button style="margin-top: 10px;" onclick="
         document.getElementById('my_custom_cs_id').textContent = document.getElementById('cs_0').code
@@ -168,14 +154,14 @@ In such case, a fallback detection strategy is then used, but is not likely to b
         <ul><li>
             <h3>code-section : text content (language detection <b style="color:red">failure</b>)</h3>
             <ace-showcase-wrapper>
-                <!--<ace-code-section>auto main() -> int { return 42; }</ace-code-section>-->
+                <!--<div class="ace-code-section">auto main() -> int { return 42; }</div>-->
             </ace-showcase-wrapper>
         </li></ul>
     
         <ul><li>
         <h3>code-section : text content (language detection <b style="color:green">success</b>)</h3>
         <ace-showcase-wrapper>
-            <!--<ace-code-section>int main() { return 42; }</ace-code-section>-->
+            <!--<div class="ace-code-section">int main() { return 42; }</div>-->
         </ace-showcase-wrapper>
         </li></ul>
     </li>
@@ -183,23 +169,23 @@ In such case, a fallback detection strategy is then used, but is not likely to b
     <li>
     <h3>code-section : text content (large)</h3>
     <ace-showcase-wrapper>
-        <!--<ace-code-section language="cpp">
+        <!--<div class="ace-code-section" language="cpp">
 auto main() -> int { return 42; } // this is a pretty long comment, so it should triggers small-rendering behavior, as well as horizontal-scrolling, depending on your window size ... otherwise, why would such extra-long comment exists ? .................................................................................................................. ?
-</ace-code-section>-->
+</div>-->
     </ace-showcase-wrapper>
     </li>
 
     <li>
     <h3>code-section : text content + language attribute</h3>
     <ace-showcase-wrapper>
-        <!--<ace-code-section language="cpp">auto main() -> int { return 42; }</ace-code-section>-->
+        <!--<div class="ace-code-section" language="cpp">auto main() -> int { return 42; }</div>-->
     </ace-showcase-wrapper>
     </li>
 
     <li>
     <h3>code-section : language + code attributes</h3>
     <ace-showcase-wrapper>
-        <!--<ace-code-section language="cpp" code="auto main() -> int { return 42; }"></ace-code-section>-->
+        <!--<div class="ace-code-section" language="cpp" code="auto main() -> int { return 42; }"></div>-->
     </ace-showcase-wrapper>
     </li>
 
@@ -209,21 +195,21 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
         <ul><li>
         <h3>network: <b style="color:red">unreachable</b></h3>
         <ace-showcase-wrapper>
-            <!--<ace-code-section url="/DOES_NOT_EXISTS"></ace-code-section>-->
+            <!--<div class="ace-code-section" url="/DOES_NOT_EXISTS"></div>-->
         </ace-showcase-wrapper>
         </li></ul>
 
         <ul><li>
         <h3>network: <b style="color:green">reachable</b></h3>
         <ace-showcase-wrapper>
-            <!--<ace-code-section url="../../details/resources/code_content/noexecute_show_block.cpp"></ace-code-section>-->
+            <!--<div class="ace-code-section" url="../../details/resources/code_content/noexecute_show_block.cpp"></div>-->
         </ace-showcase-wrapper>
         </li></ul>
 
         <ul><li>
         <h3>network: <b style="color:green">reachable</b>, immediatly executed</h3>
         <ace-showcase-wrapper>
-            <!--<ace-code-section toggle_execution="true" url="../../details/resources/code_content/noexecute_show_block.cpp"></ace-code-section>-->
+            <!--<div class="ace-code-section" toggle_execution="true" url="../../details/resources/code_content/noexecute_show_block.cpp"></div>-->
         </ace-showcase-wrapper>
         </li></ul>
     </li>
@@ -233,26 +219,26 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
 
         <ul><li>
         <h3>compilation <b style="color:green">success</b></h3>
-<ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
+<ace-showcase-wrapper><!--<div class="ace-code-section" language="cpp" toggle_execution="true">
 #include <iostream>
 auto main() -> int {
     auto i = 42;
     std::cout << "some console output";
     return i;
 }                       
-</ace-code-section>--></ace-showcase-wrapper>
+</div>--></ace-showcase-wrapper>
         </li></ul>
 
         <ul><li>
         <h3>compilation <b style="color:red">error</b></h3>
-<ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
+<ace-showcase-wrapper><!--<div class="ace-code-section" language="cpp" toggle_execution="true">
 #include <iostream>
 auto main() -> int {
     auto i = ; // invalid synthax: missing rhs value in assignement
     std::cout << "some console output";
     return i;
 }                       
-</ace-code-section>--></ace-showcase-wrapper>
+</div>--></ace-showcase-wrapper>
 <div class="note">
     <h4>&#9432; Note:</h4>
     <pre>Relevant error status:
@@ -263,11 +249,11 @@ auto main() -> int {
 
         <ul><li>
 <h3><b style="color:red">error</b> : missing configuration (c vs. cpp)</h3>
-<ace-showcase-wrapper><!--<ace-code-section language="c" toggle_execution="true">
+<ace-showcase-wrapper><!--<div class="ace-code-section" language="c" toggle_execution="true">
 int main() {
     return 42;
 }                       
-</ace-code-section>--></ace-showcase-wrapper>
+</div>--></ace-showcase-wrapper>
 <div class="note">
     <h4>&#9432; Note:</h4>
     <pre>Relevant error status:
@@ -280,14 +266,14 @@ int main() {
 
     <li>
         <h3>code-section : language, execution, column orientation</h3>
-<ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true" direction="column"> 
+<ace-showcase-wrapper><!--<div class="ace-code-section" language="cpp" toggle_execution="true" direction="column"> 
 #include <iostream>
 auto main() -> int {
     auto i = 42;
     std::cout << "some console output";
     return i;
 }                       
-</ace-code-section>--></ace-showcase-wrapper>
+</div>--></ace-showcase-wrapper>
         <div class="note">
             <h4>&#9432; Note:</h4>
             <pre>Alternatively, setting the style value <code>style="flex-direction: column"</code> also works</pre>
@@ -297,7 +283,7 @@ auto main() -> int {
 
     <li>
         <h3>code-section : parsing (render and/or execute only what is relevant for the audience)</h3>
-<ace-showcase-wrapper><!--<ace-code-section toggle_parsing="true">
+<ace-showcase-wrapper><!--<div class="ace-code-section" toggle_parsing="true">
     THIS IS REMOVED // @awesome-code-element::skip::line
 #include <iostream>
 auto main() -> int {    
@@ -308,12 +294,12 @@ return i;
                     // @awesome-code-element::show::block::end
 }                       
     THIS IS REMOVED TOO // @awesome-code-element::skip::line
-</ace-code-section>--></ace-showcase-wrapper>
+</div>--></ace-showcase-wrapper>
     </li>
 
     <li>
         <h3>code-section : language + parsing + execution</h3>
-<ace-showcase-wrapper><!--<ace-code-section toggle_parsing="true" toggle_execution="true">
+<ace-showcase-wrapper><!--<div class="ace-code-section" toggle_parsing="true" toggle_execution="true">
     THIS IS REMOVED // @awesome-code-element::skip::line
 #include <iostream>
 auto main() -> int {    
@@ -324,12 +310,12 @@ return i;
                     // @awesome-code-element::show::block::end
 }                       
     THIS IS REMOVED TOO // @awesome-code-element::skip::line
-</ace-code-section>--></ace-showcase-wrapper>
+</div>--></ace-showcase-wrapper>
     </li>
 
     <li>
         <h3>code-section : mixing html entities and regular chars (&lt;, &gt;, &quot;, &amp;)</h3>
-<ace-showcase-wrapper><!--<ace-code-section>
+<ace-showcase-wrapper><!--<div class="ace-code-section"
 #include <vector>
 #include &lt;iostream&gt;
 
@@ -346,7 +332,7 @@ int main() {
 
     return i <=> b;
 }                       
-</ace-code-section> --></ace-showcase-wrapper>
+</div> --></ace-showcase-wrapper>
     </li>
 
     <li>
