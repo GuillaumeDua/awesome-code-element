@@ -954,7 +954,8 @@ HTML_STYLESHEET               =
 
 # Awesome-code-element
 # ACE:
-HTML_EXTRA_FILES       += ./docs/awesome-code-element.js
+HTML_EXTRA_FILES       += ./awesome-code-element.js
+HTML_EXTRA_FILES       += ./styles/default.css
 
 HTML_COLORSTYLE_HUE    = 220
 HTML_COLORSTYLE_SAT    = 100
@@ -1474,7 +1475,7 @@ ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = NO # TODO : YES ?
 EXPAND_ONLY_PREDEF     = NO
 SEARCH_INCLUDES        = YES
-INCLUDE_PATH           = ./includes/ag
+INCLUDE_PATH           = 
 INCLUDE_FILE_PATTERNS  =
 
 # The PREDEFINED tag can be used to specify one or more macro names that are

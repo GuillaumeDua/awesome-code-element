@@ -89,7 +89,6 @@ if (typeof jQuery === 'undefined')
 const AwesomeCodeElement = {
     API : {
         configuration : {
-            description: {},
             CE : {},
             CodeSection : {}
         }
@@ -182,35 +181,11 @@ AwesomeCodeElement.API.CE_ConfigurationManager = class extends AwesomeCodeElemen
         super.set(key, mapped)
     }
 }
+
 // =================
 // API.configuration
 
 AwesomeCodeElement.API.configuration = {
-    description: {
-        version:    '1.0.0',
-        name:       'awesome-code-element.js',
-        path_prefix: ((name) => {
-        // quick-fix
-            const imported_modules = Array.from(document.querySelectorAll('script[type="module"]'));
-            let result = ""
-            const find_match = (value) => {
-                let match = value.match(`(:?[^\"\']*)${name}`)
-                if (match && match.length == 2)
-                    result = match[1]
-            }
-            imported_modules
-                .map(value => value.src)
-                .forEach(find_match)
-            if (result)
-                return result
-
-            imported_modules
-                .filter(value => !value.src)
-                .map(value => value.innerText)
-                .forEach(find_match)
-            return result
-        })('awesome-code-element.js')
-    },
     CE                                  : new AwesomeCodeElement.API.CE_ConfigurationManager,
     CodeSection                         : {
     // can be overrided locally
@@ -504,7 +479,7 @@ AwesomeCodeElement.details.remote.CE_API = class CE_API {
     }
 }
 AwesomeCodeElement.details.utility = class utility {
-// TODO: move to another module ?
+// TODO: move to another module
 
     static html_codec = class html_codec {
         static entities = new Array(
@@ -625,26 +600,6 @@ AwesomeCodeElement.details.utility = class utility {
         element.id = id
         element.setAttribute('ace-dependecy-name', name)
         return document.head.appendChild(element);
-    }
-    static get_imported_module_path(name) {
-        const imported_modules = Array.from(document.querySelectorAll('script[type="module"]'));
-        let result = ""
-        const find_match = (value) => {
-            let match = value.match(`(:?[^\"\']*)${name}`)
-            if (match && match.length == 2)
-                result = match[1]
-        }
-        imported_modules
-            .map(value => value.src)
-            .forEach(find_match)
-        if (result)
-            return result
-
-        imported_modules
-            .filter(value => !value.src)
-            .map(value => value.innerText)
-            .forEach(find_match)
-        return result
     }
     static html_node_content_to_code(element) {
     // warning: costly
@@ -1667,14 +1622,7 @@ AwesomeCodeElement.details.Style = class Style {
         let stylesheet = document.createElement('link')
             stylesheet.rel = "stylesheet"
             stylesheet.id = Style.#stylesheet_element_id
-            let root = (() => {
-                console.debug(AwesomeCodeElement.API.configuration)
-                let value = AwesomeCodeElement.API.configuration.description.path_prefix
-                value.replace(/\/$/, '')
-                return value
-            })()
-            stylesheet.href = `${root}/styles/default.css`
-            console.debug('>>>>>>>>>>>>> ' + stylesheet.href)
+            stylesheet.href = '../../styles/default.css'
         document.head.appendChild(stylesheet)
     }
 }
