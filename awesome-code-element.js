@@ -81,6 +81,9 @@ export { AwesomeCodeElement as default }
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
+// TODO: automated import
+//          jquery: do not import if compatibility with doxygen is enabled
+//                  otherwise, it will collides
 if (typeof hljs === 'undefined')
     console.error('awesome-code-element.js: depends on highlightjs, which is missing')
 if (typeof jQuery === 'undefined')
@@ -224,7 +227,7 @@ AwesomeCodeElement.API.configuration = {
         direction       : ''            // default: row
     },
     hljs                                : {
-        version : '11.7.0', // TODO: automate hljs import (avoid dependencies mismatch)
+        version : '11.7.0', // TODO: automated hljs import (avoid dependencies mismatch)
         // default_theme:   If no ace-theme-selector, then this is the default one.
         //                  Otherwise, the first valid option of the first ace-theme-selector is the default
         default_theme   : 'tokyo-night'  // supports dark/light variations
@@ -2053,7 +2056,8 @@ AwesomeCodeElement.API.initializers = {
     
             let lines = $(value).find('div[class=fragment] div[class=line]')
     
-            // WIP: keep doc ref links
+            // WIP: keep doc ref links,
+            //      or wrap with specific CS mode that does not alter content
             let links = lines.find('a[class="code"]')
             links.each((index, value) => {
                 doc_ref_links.set(value.textContent, value.href)
@@ -2061,7 +2065,7 @@ AwesomeCodeElement.API.initializers = {
             // /WIP
     
             let code = $.map(lines, function(value) { return value.textContent }).join('\n')
-            let node = new CodeSection(code, undefined);
+            let node = new AwesomeCodeElement.API.HTML_elements.CodeSection({ code: code });
                 $(value).replaceWith(node)
         })
     
@@ -2079,7 +2083,7 @@ AwesomeCodeElement.API.initializers = {
             // /WIP
     
             let code = $.map(lines, function(value) { return value.textContent }).join('\n')
-            let node = new CodeSection(code, undefined);
+            let node = new AwesomeCodeElement.API.HTML_elements.CodeSection({ code: code });
                 $(value).replaceWith(node)
         })
     
@@ -2107,8 +2111,8 @@ AwesomeCodeElement.API.initializers = {
             let language = value.getAttribute('language')
             let code = existing_node.text()
 
-            let node = new CodeSection(code, language);
-                node.setAttribute('language', language)
+            let node = new AwesomeCodeElement.API.HTML_elements.CodeSection({ code: code, language: language });
+                // node.setAttribute('language', language)
             existing_node.replaceWith(node);
         })
 
@@ -2121,19 +2125,6 @@ AwesomeCodeElement.API.initialize = () => {
         $(document).ready(function() {
 
             console.info('awesome-code-element.js:initialize ...')
-
-            if (AwesomeCodeElement.API.configuration.toggle_dark_mode) {
-                if (undefined === AwesomeCodeElement.ToggleDarkMode)
-                    console.error(
-                        'awesome-code-element.js:initialize: options toggle_dark_mode set to true, but awesome_doc_code_sections.ToggleDarkMode is undefined\n' +
-                        'Did you forget to include awesome-code-element_dark-mode.js ?'
-                    )
-                else
-                    AwesomeCodeElement.ToggleDarkMode.initialize()
-            }
-
-            AwesomeCodeElement.details.Style.initialize()
-            AwesomeCodeElement.details.Theme.initialize()
 
             let ReplaceHTMLPlaceholders = (translation) => {
 
@@ -2158,6 +2149,12 @@ AwesomeCodeElement.API.initialize = () => {
                 console.info(`awesome-code-element.js:initialize: existing pre-code compatiblity ...`)
                 AwesomeCodeElement.API.initializers.PreCodeHTML_elements
             }
+
+            if (AwesomeCodeElement.API.configuration.toggle_dark_mode)
+                AwesomeCodeElement.ToggleDarkMode.initialize()
+
+            AwesomeCodeElement.details.Style.initialize()
+            AwesomeCodeElement.details.Theme.initialize()
         })
     })
 }

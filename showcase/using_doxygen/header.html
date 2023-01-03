@@ -46,8 +46,8 @@
             languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plain-text', 'HTML']
         })
     </script>
-    <!-- jquery -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- jquery: do not include, it will collide with doxygen's one -->
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script> -->
     
     <!-- awesome-code-element -->
     <!-- TODO: ace path: path to deployed version -->
@@ -59,7 +59,7 @@
                 doxygen: true
             },
             hljs : {
-                version         : '11.7.0'
+                version: '11.7.0'
             },
             CE : new ace.API.CE_ConfigurationManager([
                 [
