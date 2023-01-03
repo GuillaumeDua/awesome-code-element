@@ -244,6 +244,11 @@ AwesomeCodeElement.API.configure = (arg) => {
     if (!arg)
         throw new Error('AwesomeCodeElement.API.configuration.configure: invalid argument')
 
+    if (arg.CE && arg.CE instanceof Map)
+        arg.CE = new AwesomeCodeElement.API.CE_ConfigurationManager([...arg.CE])
+    if (arg.CE && !(arg.CE instanceof AwesomeCodeElement.API.CE_ConfigurationManager))
+        throw new Error('AwesomeCodeElement.API.configure: invalid type for argument: [CE]')
+
     AwesomeCodeElement.details.utility.unfold_into({
         target : AwesomeCodeElement.API.configuration,
         properties : arg
@@ -537,18 +542,19 @@ AwesomeCodeElement.details.utility = class utility {
     static unfold_into({target, properties = {}}) {
         if (!target)
             throw new Error(`AwesomeCodeElement.details.utility: invalid argument [target] with value [${target}]`)
+
         for (const property in properties) {
             // Map
             if (target[property]
             &&  target[property] instanceof Map && properties[property] instanceof Map) {
                 properties[property].forEach((value, key) => target[property].set(key, value)); // no unfolding here but assign, to preserve
-                return
+                continue
             }
             // object
             if (target[property]
             && typeof target[property] === 'object' && typeof properties[property] === 'object') {
                 utility.unfold_into({ target: target[property], properties : properties[property]})
-                return
+                continue
             }
             // assign
             target[property] = properties[property];
@@ -660,6 +666,7 @@ AwesomeCodeElement.details.utility = class utility {
     static html_node_content_to_code(element) {
     // warning: costly
         let value = element.innerHTML ?? "";
+        value = value.replace('<br>', "\n")
         const convert = (element) => {
             Array.from(element.children)
                 .forEach(child => {
