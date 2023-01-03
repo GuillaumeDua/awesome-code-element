@@ -229,8 +229,11 @@ AwesomeCodeElement.API.configuration = {
         //                  Otherwise, the first valid option of the first ace-theme-selector is the default
         default_theme   : 'tokyo-night'  // supports dark/light variations
     },
-    doxygen_awesome_css_compatibility   : false,
-    pre_code_compatibility              : false,
+    compatibility                       : {
+        doxygen:                false,  // TODO: autodetect
+        doxygen_awesome_css:    false,  // TODO: autodetect
+        pre_code:               false
+    },
     auto_hide_buttons                   : false, // TODO: rename force_ or always_
     toggle_dark_mode                    : (typeof DoxygenAwesomeDarkModeToggle !== 'undefined') // true by default if doxygen-awesome-css_dark-mode is detected
 }
@@ -1676,6 +1679,7 @@ AwesomeCodeElement.details.Style = class Style {
                 // user-provided
                 if (AwesomeCodeElement.API.configuration.description.stylesheet_url)
                     return AwesomeCodeElement.API.configuration.description.stylesheet_url;
+
                 // local
                 let root = (() => {
                     console.debug(AwesomeCodeElement.API.configuration)
@@ -1684,7 +1688,13 @@ AwesomeCodeElement.details.Style = class Style {
                         throw new Error('AwesomeCodeElement.details.Style: invalid configuration for [AwesomeCodeElement.API.configuration.description.path_prefix]')
                     return value.replace(/\/$/, '')
                 })()
-                return `${root}/styles/default.css`
+
+                // doxygen
+                if (AwesomeCodeElement.API.configuration.compatibility.doxygen)
+                // assume plain hierarchy
+                    return `${root}/default.css`
+                else
+                    return `${root}/styles/default.css`
             })()
 
             console.info(`AwesomeCodeElement.details.Style.initialize: loading using url [${stylesheet.href}]`)
@@ -2139,12 +2149,12 @@ AwesomeCodeElement.API.initialize = () => {
                 AwesomeCodeElement.API.HTML_elements.CodeSection
             ].forEach(html_component => ReplaceHTMLPlaceholders(html_component.PlaceholdersTranslation))
 
-            if (AwesomeCodeElement.API.configuration.doxygen_awesome_css_compatibility === true) {
+            if (AwesomeCodeElement.API.configuration.compatibility.doxygen_awesome_css === true) {
                 console.info(`awesome-code-element.js:initialize: doxygen-awesome-css compatiblity ...`)
                 AwesomeCodeElement.API.initializers.doxygenCodeSections()
             }
 
-            if (AwesomeCodeElement.API.configuration.pre_code_compatibility) {
+            if (AwesomeCodeElement.API.configuration.compatibility.pre_code) {
                 console.info(`awesome-code-element.js:initialize: existing pre-code compatiblity ...`)
                 AwesomeCodeElement.API.initializers.PreCodeHTML_elements
             }
