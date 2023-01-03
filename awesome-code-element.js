@@ -190,7 +190,10 @@ AwesomeCodeElement.API.configuration = {
         version:    '1.0.0',
         name:       'awesome-code-element.js',
         path_prefix: ((name) => {
-        // quick-fix
+        // quick-fix.
+        // TODO:
+        //  local:      this function
+        //  otherwise:  path to deployed release
             const imported_modules = Array.from(document.querySelectorAll('script[type="module"]'));
             let result = ""
             const find_match = (value) => {
@@ -209,7 +212,8 @@ AwesomeCodeElement.API.configuration = {
                 .map(value => value.innerText)
                 .forEach(find_match)
             return result
-        })('awesome-code-element.js')
+        })('awesome-code-element.js'),
+        stylesheet_url: undefined // default: local
     },
     CE                                  : new AwesomeCodeElement.API.CE_ConfigurationManager,
     CodeSection                         : {
@@ -538,6 +542,7 @@ AwesomeCodeElement.details.utility = class utility {
             if (target[property]
             && typeof target[property] === 'object' && typeof properties[property] === 'object') {
                 utility.unfold_into({ target: target[property], properties : properties[property]})
+                return
             }
             // assign
             target[property] = properties[property];
@@ -1658,23 +1663,32 @@ AwesomeCodeElement.details.Style = class Style {
     static initialize() {
 
         if (document.getElementById(Style.#stylesheet_element_id)) {
-            console.info(`AwesomeCodeElement.details.Style.initialize: user provided`)
+            console.info(`AwesomeCodeElement.details.Style.initialize: user provided (valid element with id="${Style.#stylesheet_element_id}")`)
             return;
         }
 
-        console.info(`AwesomeCodeElement.details.Style.initialize: loading default`)
+        console.info(`AwesomeCodeElement.details.Style.initialize: automated loading ...`)
 
         let stylesheet = document.createElement('link')
             stylesheet.rel = "stylesheet"
             stylesheet.id = Style.#stylesheet_element_id
-            let root = (() => {
-                console.debug(AwesomeCodeElement.API.configuration)
-                let value = AwesomeCodeElement.API.configuration.description.path_prefix
-                value.replace(/\/$/, '')
-                return value
+            stylesheet.href = (() => {
+                // user-provided
+                if (AwesomeCodeElement.API.configuration.description.stylesheet_url)
+                    return AwesomeCodeElement.API.configuration.description.stylesheet_url;
+                // local
+                let root = (() => {
+                    console.debug(AwesomeCodeElement.API.configuration)
+                    let value = AwesomeCodeElement.API.configuration.description.path_prefix
+                    if (!value)
+                        throw new Error('AwesomeCodeElement.details.Style: invalid configuration for [AwesomeCodeElement.API.configuration.description.path_prefix]')
+                    return value.replace(/\/$/, '')
+                })()
+                return `${root}/styles/default.css`
             })()
-            stylesheet.href = `${root}/styles/default.css`
-            console.debug('>>>>>>>>>>>>> ' + stylesheet.href)
+
+            console.info(`AwesomeCodeElement.details.Style.initialize: loading using url [${stylesheet.href}]`)
+
         document.head.appendChild(stylesheet)
     }
 }
