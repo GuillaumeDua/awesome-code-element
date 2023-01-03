@@ -104,10 +104,10 @@ const AwesomeCodeElement = {
 // details.containers
 
 AwesomeCodeElement.details.containers = {}
-AwesomeCodeElement.details.containers.transformed_map = class extends Map {
+AwesomeCodeElement.details.containers.translation_map = class extends Map {
 // Similar to `Map`, with non-mandatory translation for key, mapped
 // example: upper-case keys
-// value = new transformed_map(
+// value = new translation_map(
 //     [ ['a', 42 ]],
 //     {
 //         key_translator: (key) => { return key.toUpperCase() }
@@ -152,7 +152,7 @@ AwesomeCodeElement.details.containers.transformed_map = class extends Map {
         return super.has(key)
     }
 }
-AwesomeCodeElement.API.CE_ConfigurationManager = class extends AwesomeCodeElement.details.containers.transformed_map {
+AwesomeCodeElement.API.CE_ConfigurationManager = class extends AwesomeCodeElement.details.containers.translation_map {
 // similar to a Map, but use `hljs.getLanguage(key)` as a key translator
 //
 // key   : language (name or alias. e.g: C++, cpp, cc, c++ are equivalent)
@@ -969,6 +969,13 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
             target: this.#_parameters,
             properties: parameters || {}
         })
+
+        // explicit, user-provided attributes
+        if (this.#_parameters.attributes) {
+            console.debug(`AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement: constructor: explicit attributes:`, this.#_parameters.attributes)
+            for (const property in this.#_parameters.attributes)
+                this.setAttribute(property, this.#_parameters.attributes[property])
+        }
     }
 
     connectedCallback() {
@@ -1379,12 +1386,10 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
 
         super.acquire_parameters(parameters)
 
-        if (parameters) {
-            this.#_parameters = { 
-                ...this.#_parameters,
-                ...parameters
-            }
-        }
+        AwesomeCodeElement.details.utility.unfold_into({
+            target: this.#_parameters,
+            properties: parameters || {}
+        })
 
         let maybe_use_attribute = (property_name) => {
             this.#_parameters[property_name] = this.#_parameters[property_name] || this.getAttribute(property_name) || undefined
@@ -1428,7 +1433,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
     initialize() {
         super.initialize()
 
-        console.debug(`AwesomeCodeElement.details.HTML_elements.CodeSection: initializing with parameters [${JSON.stringify(this.#_parameters, null, 3)}]` )
+        console.debug(`AwesomeCodeElement.details.HTML_elements.CodeSection: initializing with parameters:`, this.#_parameters)
 
         // defered initialiation
         this.#_language                 = this.#_parameters.language || AwesomeCodeElement.API.configuration.CodeSection.language
@@ -1639,12 +1644,13 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         translate : (element) => {
 
             // attributes
-            let attributes = Array.from(element.attributes)
-                .filter(a => { return a.specified && a.nodeName !== 'class'; })
-            let args = {}
-            attributes.forEach((attribute) => {
-                args[attribute.nodeName] = attribute.textContent
-            })
+            let args = { attributes : {} }
+            Array
+                .from(element.attributes)
+                .filter(a => { return a.specified }) // && a.nodeName !== 'class'; 
+                .forEach((attribute) => {
+                    args.attributes[attribute.nodeName] = attribute.textContent
+                })
 
             // code
             let code = AwesomeCodeElement.details.utility.html_node_content_to_code(element)
