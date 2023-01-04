@@ -44,7 +44,9 @@
 // ----------------------------------------------------------------------------------------------------------------------------
 
 // TODO: Documentation
-// TODO: compatibility with https://github.com/EnlighterJS/EnlighterJS instead of highlightjs
+// TODO: decoupled highlighter
+//  - highlightjs
+//  - https://github.com/EnlighterJS/EnlighterJS
 // TODO: compatibility with Marp
 //
 // TODO: test behavior without theme selector   (provide default behavior)
@@ -663,21 +665,37 @@ AwesomeCodeElement.details.utility = class utility {
             .forEach(find_match)
         return result
     }
+    // TODO: refactor
+    // Array
+    //    .from(temp0.childNodes)
+    //    .map(element => {
+    //        if (element.nodeName === '#text')
+    //           return element.textContent
+    //        if (element.tagName === 'BR')
+    //            return '\n'
+    //        return element.outerHTML // TODO: recursion
+    //    })
+    //    .join('\n')
     static html_node_content_to_code(element) {
-    // warning: costly
-        let value = element.innerHTML ?? "";
-        value = value.replace('<br>', "\n")
-        const convert = (element) => {
-            Array.from(element.children)
-                .forEach(child => {
-                    const tagname = child.localName
-                    value = value.replace(`</${tagname}>`, '');
-                    convert(child)
-                })
-        }
-        convert(element)
-        value = value.replace(/^\s+/g, '').replace(/\s+$/g, '') // remove enclosing empty lines
-        return AwesomeCodeElement.details.utility.html_codec.decode(value)
+        return Array
+            .from(element.childNodes)
+            .map(element => {
+                switch (element.nodeType) {
+                    case Node.TEXT_NODE:
+                        return element.textContent
+                    case Node.ELEMENT_NODE:
+                        if (element.nodeName === 'CODE'
+                        ||  element.nodeName === 'PRE')
+                            return utility.html_node_content_to_code(element)
+                        return `<${element.localName}>${utility.html_node_content_to_code(element)}`
+                    case Node.COMMENT_NODE:
+                    case Node.CDATA_SECTION_NODE:
+                    default:
+                        console.warn(`AwesomeCodeElement.details.utility: html_node_content_to_code: unhandled tags [comment, cdata]`)
+                        return ''                        
+                }
+            })
+            .join('')
     }
 }
 AwesomeCodeElement.details.log_facility = class {
@@ -1658,6 +1676,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
                 .forEach((attribute) => {
                     args.attributes[attribute.nodeName] = attribute.textContent
                 })
+
+            console.debug('>>>', element, element.innerHTML, element.innerText)
 
             // code
             let code = AwesomeCodeElement.details.utility.html_node_content_to_code(element)
