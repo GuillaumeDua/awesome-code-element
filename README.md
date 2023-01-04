@@ -16,6 +16,7 @@ Originaly created to ease the documentation creation process of [CppShelf](https
 
 <!-- TODO: iframe to live demo here ?    -->
 <!-- TODO: iframe showcase subset here ? -->
+<!-- TODO: integrate CS elements that best demonstrates standard usage -->
 
 ## Content
 
