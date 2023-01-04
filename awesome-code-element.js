@@ -665,18 +665,16 @@ AwesomeCodeElement.details.utility = class utility {
             .forEach(find_match)
         return result
     }
-    // TODO: refactor
-    // Array
-    //    .from(temp0.childNodes)
-    //    .map(element => {
-    //        if (element.nodeName === '#text')
-    //           return element.textContent
-    //        if (element.tagName === 'BR')
-    //            return '\n'
-    //        return element.outerHTML // TODO: recursion
-    //    })
-    //    .join('\n')
+    static is_valid_tagname(name) {
+        return !(document.createElement(name) instanceof HTMLUnknownElement)
+    }
     static html_node_content_to_code(element) {
+
+        if (AwesomeCodeElement.API.configuration.compatibility.doxygen
+        &&  element.children.length === 1
+        &&  element.children[0].className)
+            return element.textContent
+
         return Array
             .from(element.childNodes)
             .map(element => {
@@ -684,9 +682,10 @@ AwesomeCodeElement.details.utility = class utility {
                     case Node.TEXT_NODE:
                         return element.textContent
                     case Node.ELEMENT_NODE:
-                        if (element.nodeName === 'CODE'
-                        ||  element.nodeName === 'PRE')
+                        if (utility.is_valid_tagname(element.nodeName))
                             return utility.html_node_content_to_code(element)
+                        // invalid tagname are kept, to preserve include semantic.
+                        //  e.g: `<iostream>` in `#include <iostream>`
                         return `<${element.localName}>${utility.html_node_content_to_code(element)}`
                     case Node.COMMENT_NODE:
                     case Node.CDATA_SECTION_NODE:
@@ -1676,8 +1675,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
                 .forEach((attribute) => {
                     args.attributes[attribute.nodeName] = attribute.textContent
                 })
-
-            console.debug('>>>', element, element.innerHTML, element.innerText)
 
             // code
             let code = AwesomeCodeElement.details.utility.html_node_content_to_code(element)
