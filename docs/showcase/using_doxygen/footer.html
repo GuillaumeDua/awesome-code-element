@@ -7,13 +7,14 @@
 
     <div style="display:flex; float:left; height: 30px; align-content: flex-start; align-items: center;">
 
-      <button is="awesome-doc-code-sections_toggle-dark-mode-button" style="display: flex;"></button>
+      <button is="ace-toggle-dark-mode-button" title="Toggle light/dark Mode" style="display: flex;">
+      </button>
       <p style="display: flex; margin-left: 10px; "> Code theme : </p>
         <!-- https://cdnjs.com/libraries/highlight.js -->
         <!-- The default one is the first one -->
-      <select class="code_theme_selector" style="display: flex; margin-left: 10px; ">
-        <option class="code_theme_option" value="tokyo-night"></option>
-        <option class="code_theme_option" value="base16/google"></option>
+      <select is="ace-theme-selector" style="display: flex; margin-left: 10px; ">
+        <option value="tokyo-night"></option>
+        <option value="base16/google"></option>
       </select>
     </div>
 
