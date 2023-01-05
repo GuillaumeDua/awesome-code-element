@@ -73,6 +73,10 @@ ace-code-section-demo {
     align-items     : stretch;
     box-sizing      : border-box;
     width           : 100%;
+
+    font-family     : "Lucida Console", "Monaco", monospace;
+    font-size       : 14px;
+    line-height     : 1.3;
 }
 /* CS: panels : left, right */
 ace-code-section        > [id*='.panels.'],
