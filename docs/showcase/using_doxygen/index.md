@@ -1,6 +1,8 @@
 # This is an markdown index file
 
-Some code examples here :
+Some code examples here.
+
+*Note: plain Doxygen does not support light/dark-mode toggling*
 
 ---
 
