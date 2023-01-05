@@ -83,14 +83,6 @@ export { AwesomeCodeElement as default }
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
-// TODO: automated import
-//          jquery: do not import if compatibility with doxygen is enabled
-//                  otherwise, it will collides
-if (typeof hljs === 'undefined')
-    console.error('awesome-code-element.js: depends on highlightjs, which is missing')
-if (typeof jQuery === 'undefined')
-    console.error('awesome-code-element.js: depends on jQuery, which is missing')
-
 const AwesomeCodeElement = {
     API : {
         configuration : {
@@ -102,51 +94,84 @@ const AwesomeCodeElement = {
     details : {}
 }
 
-// ==============================
-// details.dependencies.detectors
+// ====================
+// details.dependencies
 
 AwesomeCodeElement.details.dependency_descriptor = class {
     constructor(args) {
         for (const property in args)
             this[property] = args[property]
+        
+        if (!this.name)
+            throw new Error('AwesomeCodeElement.details.dependency_descriptor: invalid input: missing mandatory parameter [name]')
+        if (!this.version_detector)
+            throw new Error('AwesomeCodeElement.details.dependency_descriptor: invalid input: missing mandatory parameter [version_detector]')
     }
 
-    name =              undefined
-    version_detector =  () => { return undefined }
-    url =               ""
-    is_mandatory =      false
+    name                = undefined
+    version_detector    = () => { return undefined }
+    url                 = ""
+    is_mandatory        = false
+    // TODO: configure ?
 }
+// TODO: remove hljs version from configuration, use this instead
 AwesomeCodeElement.details.dependency_manager = new class dependency_manager {
-// TODO: input: array of [ name, version_detector ]
-// TODO: IILE import missing dependencies
+// Note: as this is a module,
 
     constructor(args = []) {
         if (!(args instanceof Array))
             throw new Error('AwesomeCodeElement.details.dependency_manager: invalid input: expect Array of dependency_descriptor')
+        this.dependencies = {}
         args.forEach(element => {
-            this[element.name] = element
+            this.dependencies[element.name] = element
         })
-        console.log(this)
-        // if (this.is_mandatory && not detected && !this.url)
-        //     console.warn('AwesomeCodeElement.details.dependency_descriptor: invalid input: mandatory, but not dl url provided')
+    }
+
+    async load_missing_dependencies() {
+    // include missing mandatory dependencies asynchronously
+        console.info('AwesomeCodeElement.details.dependency_manager: loading missing dependencies (this can take some time...)')
+        let promises = Object.entries(this.dependencies)
+            .map(([key, value]) => value)
+            .filter(element => element.is_mandatory)
+            .map(async element => {
+                if (element.version_detector())
+                    return
+                const url = (element.url instanceof Function) ? element.url() : element.url
+                if (!url)
+                    throw new Error(`AwesomeCodeElement.details.dependency_manager: missing mandatory dependency [${element.name}], no fallback provided`)
+                return dependency_manager.include({name : element.name, url: url })
+            })
+        await Promise.all(promises)
     }
 
     static include({ name, url }) {
+        console.info(`AwesomeCodeElement.details.dependency_manager.include: including dependency [${name}]`, `using url [${url}]`)
 
         let id = `ace-dependency_${name}`
 
-        let element = document.getElementById(`ace-dependency_${name}`)
+        let element = document.getElementById(id)
         if (element && element.src === url)
             return
 
-        element = document.createElement('script');
+        element = document.createElement('script'); // TODO: link ?
         element.src  = url;
         element.type = 'text/javascript';
-        element.defer = true;
-        element.id = id
+        element.defer = false;
+        element.async = false;
+        element.id = id;
         element.setAttribute('ace-dependecy-name', name)
+        element = document.head.appendChild(element)
 
-        return document.head.appendChild(element);
+        return new Promise((resolve, reject) => {
+            element.addEventListener('error', () => {
+                reject(new Error(`AwesomeCodeElement.details.dependency_manager.include: failure: [${name}] using url [${url}]`))
+            })
+            element.addEventListener('load', () => {
+                element.is_loaded = true
+                console.info(`AwesomeCodeElement.details.dependency_manager.include: loaded: [${name}]`)
+                resolve(element)
+            })
+        })
     }
     static get_imported_module_path(name) {
         const imported_modules = Array.from(document.querySelectorAll('script[type="module"]'));
@@ -171,15 +196,16 @@ AwesomeCodeElement.details.dependency_manager = new class dependency_manager {
 }([
     new AwesomeCodeElement.details.dependency_descriptor({
         name:               'jquery',
-        version_detector:   function(){ return !jQuery ? undefined : jQuery.fn.jquery },
+        version_detector:   function(){ return (typeof jQuery !== "undefined") ? jQuery.fn.jquery : undefined },
+        url :               'https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js',
         is_mandatory:       true,
 
     }),
     new AwesomeCodeElement.details.dependency_descriptor({
         name:               'hljs',
-        version_detector:   function(){ !hljs ? undefined : hljs.versionString },
+        version_detector:   function(){ return (typeof hljs !== "undefined") ? hljs.versionString : undefined },
         is_mandatory:       true,
-
+        url:                'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js'
     }),
     // todo: doxygen-awesome-css
     new AwesomeCodeElement.details.dependency_descriptor({
@@ -193,6 +219,7 @@ AwesomeCodeElement.details.dependency_manager = new class dependency_manager {
         }
     })
 ])
+await AwesomeCodeElement.details.dependency_manager.load_missing_dependencies()
 
 // ==================
 // details.containers
@@ -1309,7 +1336,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
 
     on_error(error) {
     // soft (non-critical) error
-        console.error(`awesome-code-element.js:CodeSectionHTMLElement.on_error :${error}`)
+        console.error('awesome-code-element.js:CodeSectionHTMLElement.on_error:', error)
         this.toggle_error_view = true
     }
     set toggle_error_view(value) {
