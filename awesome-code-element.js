@@ -102,6 +102,98 @@ const AwesomeCodeElement = {
     details : {}
 }
 
+// ==============================
+// details.dependencies.detectors
+
+AwesomeCodeElement.details.dependency_descriptor = class {
+    constructor(args) {
+        for (const property in args)
+            this[property] = args[property]
+    }
+
+    name =              undefined
+    version_detector =  () => { return undefined }
+    url =               ""
+    is_mandatory =      false
+}
+AwesomeCodeElement.details.dependency_manager = new class dependency_manager {
+// TODO: input: array of [ name, version_detector ]
+// TODO: IILE import missing dependencies
+
+    constructor(args = []) {
+        if (!(args instanceof Array))
+            throw new Error('AwesomeCodeElement.details.dependency_manager: invalid input: expect Array of dependency_descriptor')
+        args.forEach(element => {
+            this[element.name] = element
+        })
+        console.log(this)
+        // if (this.is_mandatory && not detected && !this.url)
+        //     console.warn('AwesomeCodeElement.details.dependency_descriptor: invalid input: mandatory, but not dl url provided')
+    }
+
+    static include({ name, url }) {
+
+        let id = `ace-dependency_${name}`
+
+        let element = document.getElementById(`ace-dependency_${name}`)
+        if (element && element.src === url)
+            return
+
+        element = document.createElement('script');
+        element.src  = url;
+        element.type = 'text/javascript';
+        element.defer = true;
+        element.id = id
+        element.setAttribute('ace-dependecy-name', name)
+
+        return document.head.appendChild(element);
+    }
+    static get_imported_module_path(name) {
+        const imported_modules = Array.from(document.querySelectorAll('script[type="module"]'));
+        let result = ""
+        const find_match = (value) => {
+            let match = value.match(`(:?[^\"\']*)${name}`)
+            if (match && match.length == 2)
+                result = match[1]
+        }
+        imported_modules
+            .map(value => value.src)
+            .forEach(find_match)
+        if (result)
+            return result
+
+        imported_modules
+            .filter(value => !value.src)
+            .map(value => value.innerText)
+            .forEach(find_match)
+        return result
+    }
+}([
+    new AwesomeCodeElement.details.dependency_descriptor({
+        name:               'jquery',
+        version_detector:   function(){ return !jQuery ? undefined : jQuery.fn.jquery },
+        is_mandatory:       true,
+
+    }),
+    new AwesomeCodeElement.details.dependency_descriptor({
+        name:               'hljs',
+        version_detector:   function(){ !hljs ? undefined : hljs.versionString },
+        is_mandatory:       true,
+
+    }),
+    // todo: doxygen-awesome-css
+    new AwesomeCodeElement.details.dependency_descriptor({
+        name:               'doxygen',
+        is_mandatory:       false,
+        version_detector:   function(){
+            let result = document.querySelector('meta[name=generator][content^=Doxygen]')
+            if (!result)
+                return undefined
+            return result.getAttribute('content').replace('Doxygen ', '')
+        }
+    })
+])
+
 // ==================
 // details.containers
 
@@ -628,42 +720,6 @@ AwesomeCodeElement.details.utility = class utility {
     static make_incremental_counter_generator = function*(){
         let i = 0;
         while (true) { yield i++; }
-    }
-    static include({ name, url }) {
-
-        let id = `ace-dependency_${name}`
-
-        let element = document.getElementById(`ace-dependency_${name}`)
-        if (element && element.src === url)
-            return
-
-        element = document.createElement('script');
-        element.src  = url;
-        element.type = 'text/javascript';
-        element.defer = true;
-        element.id = id
-        element.setAttribute('ace-dependecy-name', name)
-        return document.head.appendChild(element);
-    }
-    static get_imported_module_path(name) {
-        const imported_modules = Array.from(document.querySelectorAll('script[type="module"]'));
-        let result = ""
-        const find_match = (value) => {
-            let match = value.match(`(:?[^\"\']*)${name}`)
-            if (match && match.length == 2)
-                result = match[1]
-        }
-        imported_modules
-            .map(value => value.src)
-            .forEach(find_match)
-        if (result)
-            return result
-
-        imported_modules
-            .filter(value => !value.src)
-            .map(value => value.innerText)
-            .forEach(find_match)
-        return result
     }
     static is_valid_tagname(name) {
         return !(document.createElement(name) instanceof HTMLUnknownElement)
