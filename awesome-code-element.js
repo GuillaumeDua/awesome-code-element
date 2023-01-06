@@ -112,17 +112,17 @@ AwesomeCodeElement.details.dependency_descriptor = class {
     version_detector    = () => { return undefined }
     url                 = ""
     is_mandatory        = false
-    // TODO: configure ?
+    // TODO: post-dl configure ?
 }
-// TODO: remove hljs version from configuration, use this instead
 AwesomeCodeElement.details.dependency_manager = new class dependency_manager {
-// Note: as this is a module,
+
+    dependencies = {}
 
     constructor(args = []) {
         if (!(args instanceof Array))
             throw new Error('AwesomeCodeElement.details.dependency_manager: invalid input: expect Array of dependency_descriptor')
-        this.dependencies = {}
         args.forEach(element => {
+            element.version = element.version_detector()
             this.dependencies[element.name] = element
         })
     }
@@ -348,7 +348,6 @@ AwesomeCodeElement.API.configuration = {
         direction       : ''            // default: row
     },
     hljs                                : {
-        version : '11.7.0', // TODO: automated hljs import (avoid dependencies mismatch)
         // default_theme:   If no ace-theme-selector, then this is the default one.
         //                  Otherwise, the first valid option of the first ace-theme-selector is the default
         default_theme   : 'tokyo-night'  // supports dark/light variations
@@ -1805,12 +1804,10 @@ AwesomeCodeElement.details.Style = class Style {
                     return value.replace(/\/$/, '')
                 })()
 
-                // doxygen
-                if (AwesomeCodeElement.API.configuration.compatibility.doxygen)
-                // assume plain hierarchy
-                    return `${root}/default.css`
-                else
-                    return `${root}/styles/default.css`
+                return AwesomeCodeElement.API.configuration.compatibility.doxygen
+                    ? `${root}/default.css` // doxygen: assuming plain hierarchy
+                    : `${root}/styles/default.css`
+                ;
             })()
 
             console.info(`AwesomeCodeElement.details.Style.initialize: loading using url [${stylesheet.href}]`)
@@ -1862,7 +1859,7 @@ AwesomeCodeElement.details.Theme = class Theme {
     }
     static url_builder = class url_builder {
 
-        static #base = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/${AwesomeCodeElement.API.configuration.hljs.version}/styles/`
+        static #base = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/${AwesomeCodeElement.details.dependency_manager.dependencies.hljs.version}/styles/`
         static #ext = '.min.css'
 
         static build({ name, dark_or_light = Theme.preferences.dark_or_light }) {
