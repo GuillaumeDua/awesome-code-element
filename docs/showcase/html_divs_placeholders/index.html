@@ -80,6 +80,10 @@ SOFTWARE.
             }
         </style>
     
+        <!--
+            ACE missing dependencies are loaded automatically here,
+            so users do not need to add extra script/link elements, such as :
+        -->
         <!-- highlight -->
         <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/languages/cpp.min.js" integrity="sha512-IAojhJDNJ4oC/Eui96KT2gmg2iwV2MsxTDs9CzqrrjNF8OdKV4MQE8H9fHbOXIsTaYZjLAVgtPOeyBNtD8LLEw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
         <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script> -->
@@ -104,12 +108,7 @@ SOFTWARE.
                 ])
             })
             ace.API.initialize();
-        </script>
-    
-        <!-- CS Tests utils scripts -->
-        <script type="module" src="../../details/js/modules/utils.js"></script>
 
-        <script type="text/javascript">
             // hljs configuration
             hljs.configure({
                 ignoreUnescapedHTML: true,
@@ -117,7 +116,9 @@ SOFTWARE.
                 languages: ['cpp', 'c', 'bash', 'plain-text', 'HTML']
             })
         </script>
-
+    
+        <!-- CS Tests utils scripts -->
+        <script type="module" src="../../details/js/modules/utils.js"></script>
         <script type="module" src="../../details/js/modules/showcase.js"></script>
 
     </head>

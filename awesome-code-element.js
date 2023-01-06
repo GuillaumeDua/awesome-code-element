@@ -139,7 +139,12 @@ AwesomeCodeElement.details.dependency_manager = new class dependency_manager {
                 const url = (element.url instanceof Function) ? element.url() : element.url
                 if (!url)
                     throw new Error(`AwesomeCodeElement.details.dependency_manager: missing mandatory dependency [${element.name}], no fallback provided`)
-                return dependency_manager.include({name : element.name, url: url })
+                return dependency_manager
+                    .include({name : element.name, url: url })
+                    .then(() => {
+                        // update version after loading
+                        element.version = element.version_detector()
+                    })
             })
         await Promise.all(promises)
     }
