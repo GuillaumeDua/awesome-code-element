@@ -214,6 +214,15 @@ AwesomeCodeElement.details.dependency_manager = new class dependency_manager {
     }),
     // todo: doxygen-awesome-css
     new AwesomeCodeElement.details.dependency_descriptor({
+        name:               'doxygen_awesome_css_dark_mode',
+        is_mandatory:       false,
+        version_detector:   function(){
+            return (typeof DoxygenAwesomeDarkModeToggle !== 'undefined')
+                ? "not_impl_yet"
+                : undefined
+        }
+    }),
+    new AwesomeCodeElement.details.dependency_descriptor({
         name:               'doxygen',
         is_mandatory:       false,
         version_detector:   function(){
@@ -358,12 +367,19 @@ AwesomeCodeElement.API.configuration = {
         default_theme   : 'tokyo-night'  // supports dark/light variations
     },
     compatibility                       : {
-        doxygen:                false,  // TODO: autodetect
+        doxygen:                Boolean(AwesomeCodeElement.details.dependency_manager.dependencies.doxygen.version),
         doxygen_awesome_css:    false,  // TODO: autodetect
         pre_code:               false
     },
     auto_hide_buttons                   : false, // TODO: rename force_ or always_
-    toggle_dark_mode                    : (typeof DoxygenAwesomeDarkModeToggle !== 'undefined') // true by default if doxygen-awesome-css_dark-mode is detected
+    force_dark_light_scheme             : (() => {
+        if (Boolean(AwesomeCodeElement.details.dependency_manager.dependencies.doxygen_awesome_css_dark_mode.version))
+            return 'dark'
+        if (Boolean(AwesomeCodeElement.details.dependency_manager.dependencies.doxygen.version))
+            return 'light' // assuming doxygen does not handle light/dark-mode by default
+        return undefined // auto-detect
+    })()
+    
 }
 AwesomeCodeElement.API.configure = (arg) => {
     if (!arg)
@@ -1904,12 +1920,16 @@ AwesomeCodeElement.details.Theme = class Theme {
     }
 
     static #stylesheet_element_id = 'code_theme_stylesheet'
-    static initialize() {
+    static initialize({force_dark_mode = undefined}) {
         // generates the stylesheet HTML element used to import CSS content
         let stylesheet = document.createElement('link')
             stylesheet.rel = "stylesheet"
             stylesheet.id = Theme.#stylesheet_element_id
         document.head.appendChild(stylesheet)
+
+        // dark/light-mode preference
+        console.info(`AwesomeCodeElement.details.Theme.initialize: color-scheme preference: [${Theme.preferences.dark_or_light}]`)
+        Theme.preferences.is_dark_mode = force_dark_mode ?? Theme.preferences.is_dark_mode
 
         // switch to default theme, if any
         let default_theme_name = Theme.default_theme
@@ -1917,9 +1937,6 @@ AwesomeCodeElement.details.Theme = class Theme {
             console.info(`AwesomeCodeElement.details.Theme.initialize: default theme name: [${default_theme_name}]`)
             Theme.value = default_theme_name
         }
-        // dark/light-mode preference
-        console.info(`AwesomeCodeElement.details.Theme.initialize: color-scheme preference: [${Theme.preferences.dark_or_light}]`)
-        Theme.preferences.is_dark_mode = Theme.preferences.is_dark_mode
 
         // avoid any redundant call
         Theme.initialize = () => { console.error('AwesomeCodeElement.details.Theme.initialize: can only be called once') }
@@ -1934,7 +1951,7 @@ AwesomeCodeElement.details.Theme = class Theme {
 
         let element = document.getElementById(Theme.#stylesheet_element_id);
         if (!element)
-            throw new Error('AwesomeCodeElement.details.Theme: missing stylesheet\n\tDid you forget to call AwesomeCodeElement.API.initialize(); ?')
+            throw new Error(`AwesomeCodeElement.details.Theme: missing stylesheet [${Theme.#stylesheet_element_id}]\n\tDid you forget to call AwesomeCodeElement.API.initialize(); ?`)
 
         return {
             url:                    element.getAttribute('href'),
@@ -2265,11 +2282,14 @@ AwesomeCodeElement.API.initialize = () => {
                 AwesomeCodeElement.API.initializers.PreCodeHTML_elements
             }
 
-            if (AwesomeCodeElement.API.configuration.toggle_dark_mode)
-                AwesomeCodeElement.ToggleDarkMode.initialize()
-
             AwesomeCodeElement.details.Style.initialize()
-            AwesomeCodeElement.details.Theme.initialize()
+            AwesomeCodeElement.details.Theme.initialize({ force_dark_mode: (() => {
+                switch (AwesomeCodeElement.API.configuration.force_dark_light_scheme) {
+                    case 'light':   return false;
+                    case 'dark':    return true;
+                    default:        return undefined
+                }
+            })() })
         })
     })
 }
