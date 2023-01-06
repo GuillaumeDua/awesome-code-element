@@ -315,7 +315,7 @@ return i;
 
     <li>
         <h3>code-section : mixing html entities and regular chars (&lt;, &gt;, &quot;, &amp;)</h3>
-<ace-showcase-wrapper><!--<div class="ace-code-section">
+<ace-showcase-wrapper><!--<div class="ace-code-section" language="cpp" toggle_execution="true">
 #include <vector>
 #include &lt;iostream&gt;
 
@@ -324,13 +324,13 @@ int main() {
     auto i = 42;
     auto b = 42 < 13 || 42 > 13;
     
-    std::cout << &b < &i << i > b << (i >> b);
+    std::cout << ((int*)&b < &i) << (i > b) << (i >> b);
     std::cin>>i;
-    std::cout<<"&<>42&";
-    std::cout<< '&lt;, &lt;, &quot;, &amp;'
-    std::cout &lt;&lt; &quot;some console output&quot;;
+    std::cout
+        <<"&<>42&"
+        &lt;< "'&lt;, &lt;, \&quot, &&amp;'&quot;;
 
-    return i <=> b;
+    return (i <=> (int)b) == 0;
 }
 </div> --></ace-showcase-wrapper>
     </li>
