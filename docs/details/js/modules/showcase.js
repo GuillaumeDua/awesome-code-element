@@ -20,7 +20,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import ace from '../../../awesome-code-element.js'
+// WARNING: INTERNAL USE FOR SHOWCASE ONLY.
+
+import ace from '../../../awesome-code-element/awesome-code-element.js'
 if (ace === undefined)
     throw new Error('docs/details/js/modules/utils.js: missing [ace]')
 
