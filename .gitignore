@@ -8,3 +8,5 @@ docs/showcase/using_doxygen/output/
 # Others
 local
 
+# minified
+*.min.*
