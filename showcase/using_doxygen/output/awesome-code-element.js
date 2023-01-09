@@ -233,6 +233,7 @@ AwesomeCodeElement.details.dependency_manager = new class dependency_manager {
         }
     })
 ])
+
 await AwesomeCodeElement.details.dependency_manager.load_missing_dependencies()
 
 // ==================
@@ -664,13 +665,14 @@ AwesomeCodeElement.details.utility = class utility {
 
     static html_codec = class html_codec {
         static entities = new Array(
+        //    [ '\\\\' , '\\'],
            [ '&gt;', '>' ],
            [ '&lt;', '<' ],
            [ '&amp;', '&' ],
-           [ '&quot;', '"' ]
+           [ '&quot;', '"' ],
+           [ '&#39;', '\'' ]
         )
         static decode = (text) => {
-
             html_codec.entities.forEach(([key, value]) => text = text.replaceAll(key, value))
             return text
         }
@@ -680,6 +682,13 @@ AwesomeCodeElement.details.utility = class utility {
         }
     }
 
+    static customElements_define_once(name, ...args) {
+        if (!!customElements.get(name)) {
+            console.warn(`AwesomeCodeElement.details.utility: AwesomeCodeElement.details.utility.customElements_define_once: [${name}] is already defined`)
+            return
+        }
+        customElements.define(name, ...args);
+    }
     static unfold_into({target, properties = {}}) {
         if (!target)
             throw new Error(`AwesomeCodeElement.details.utility: invalid argument [target] with value [${target}]`)
@@ -752,12 +761,12 @@ AwesomeCodeElement.details.utility = class utility {
         let xhr = new XMLHttpRequest();
             xhr.open('GET', url);
             xhr.onerror = function() {
-                on_error(`AwesomeCodeElement.details.utility.fetch_resource: network error`)
+                on_error(`AwesomeCodeElement.details.utility.fetch_resource: network error on url [${url}]`)
             };
             xhr.onload = function() {
 
                 if (xhr.status != 200) {
-                    on_error(`AwesomeCodeElement.details.utility.fetch_resource: bad request status ${xhr.status}`)
+                    on_error(`AwesomeCodeElement.details.utility.fetch_resource: bad request status ${xhr.status} on url [${url}]`)
                     return;
                 }
                 on_success(xhr.responseText)
@@ -904,7 +913,7 @@ AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard = class CopyT
         })
     }
 }
-customElements.define(
+AwesomeCodeElement.details.utility.customElements_define_once(
     AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard.HTMLElement_name,
     AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard, {extends: 'button'}
 );
@@ -1008,7 +1017,7 @@ AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInG
         AwesomeCodeElement.details.remote.CE_API.open_in_new_tab(data)
     }
 }
-customElements.define(
+AwesomeCodeElement.details.utility.customElements_define_once(
     AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt.HTMLElement_name,
     AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt, {extends: 'button'}
 );
@@ -1661,7 +1670,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             //  hljs.highlightElement(this.html_elements.execution)
 
             // update status, used in CSS
-            let status = return_code == -1 ? 'failure' : 'success'
+            
+            let status = return_code < 0 ? 'failure' : 'success'
             this.html_elements.execution.setAttribute('status', status)
         }
 
@@ -1693,17 +1703,17 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
                 let regex = new RegExp('# Compilation provided by Compiler Explorer at https://godbolt.org/\n\n(# Compiler exited with result code (-?\\d+))')
                 let regex_result = regex.exec(result)
 
-                if (regex_result === null || regex_result.length != 3)
+                if (regex_result === null)
                     return {
                         value : result,
                         error : 'unknown',
-                        return_code : -1
+                        return_code : undefined
                     }
                 else
                     return {
                         value : result.substring(regex_result[0].length - regex_result[1].length), // trim off header
                         error : undefined,
-                        return_code : regex_result[2]
+                        return_code :  regex_result.length != 3 ? undefined : parseInt(regex_result[2])
                     }
             })
             .then((result) => {
@@ -1787,7 +1797,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         }
     }
 }
-customElements.define(
+AwesomeCodeElement.details.utility.customElements_define_once(
     AwesomeCodeElement.API.HTML_elements.CodeSection.HTMLElement_name,
     AwesomeCodeElement.API.HTML_elements.CodeSection
 );
@@ -1819,9 +1829,7 @@ AwesomeCodeElement.details.Style = class Style {
                 // local
                 let root = (() => {
                     console.debug(AwesomeCodeElement.API.configuration)
-                    let value = AwesomeCodeElement.API.configuration.description.path_prefix
-                    if (!value)
-                        throw new Error('AwesomeCodeElement.details.Style: invalid configuration for [AwesomeCodeElement.API.configuration.description.path_prefix]')
+                    let value = AwesomeCodeElement.API.configuration.description.path_prefix || ""
                     return value.replace(/\/$/, '')
                 })()
 
@@ -2095,7 +2103,7 @@ AwesomeCodeElement.API.HTML_elements.ToggleDarkModeButton = class ToggleDarkMode
         ;
     }
 }
-customElements.define(
+AwesomeCodeElement.details.utility.customElements_define_once(
     AwesomeCodeElement.API.HTML_elements.ToggleDarkModeButton.HTMLElement_name,
     AwesomeCodeElement.API.HTML_elements.ToggleDarkModeButton, {extends: 'button'}
 );
@@ -2156,7 +2164,7 @@ AwesomeCodeElement.API.HTML_elements.ThemeSelector = class ThemeSelector extends
         return () => { return `${ThemeSelector.HTMLElement_name}-${counter.next().value}` }
     })()
 }
-customElements.define(
+AwesomeCodeElement.details.utility.customElements_define_once(
     AwesomeCodeElement.API.HTML_elements.ThemeSelector.HTMLElement_name,
     AwesomeCodeElement.API.HTML_elements.ThemeSelector, { extends : 'select' }
 );

@@ -23,6 +23,8 @@
 // details
 
 import ace from '../../../awesome-code-element.js'
+if (ace === undefined)
+    throw new Error('docs/details/js/modules/utils.js: missing [ace]')
 
 ace.test_utils = class {
 // class-as-namespace
