@@ -52,10 +52,14 @@ jobs:
           sudo npm install -y uglify-js -g
           sudo npm install -y uglifycss -g
 
-      - name: minify js, css of [main] into [release]
+      - name: deploy - content
+        run: |
+          cp -a main/awesome-code-element.js release/
+          cp -a main/styles/ release/
+
+      - name: deploy - minified content (js, css)
         run: |
           uglifyjs --compress --mangle --module -- main/awesome-code-element.js > release/awesome-code-element.min.js
-          [[ -d release/styles/ ]] || mkdir -p release/styles/
           uglifycss main/styles/default.css > release/styles/default.min.css
 
       - name: Deploy 🚀
