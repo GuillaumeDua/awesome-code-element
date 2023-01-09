@@ -89,16 +89,9 @@ SOFTWARE.
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     
         <!-- awesome-code-element -->
-        <script type="importmap">
-        {
-            "imports": {
-                "ace": "../../awesome-code-element/awesome-code-element.js"
-            }
-        }
-        </script>
         <script type="module">
 
-            import ace from 'ace';
+            import ace from "../../awesome-code-element/awesome-code-element.js"
 
             ace.API.configure({
                 doxygen_awesome_css_compatibility: true,
