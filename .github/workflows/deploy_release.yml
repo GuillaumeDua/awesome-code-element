@@ -1,0 +1,80 @@
+name: deploy-release
+
+# on:
+#   pull_request:
+#     types:
+#       - closed
+
+# jobs:
+#   if_merged:
+#     if: github.event.pull_request.merged == true
+#     runs-on: ubuntu-latest
+#     steps:
+#     - run: |
+#         echo The PR was merged
+
+on:
+  push:
+    branches:
+      - main
+permissions: 
+  contents: write
+jobs:
+  deploy_release:
+
+    concurrency: ci-${{ github.ref }}
+    runs-on: ubuntu-22.04 # ubuntu-latest currently is ubuntu-20.04
+
+    # Note:
+    # As a simple checkout of `release` + checkout main files is not working
+    #   git checkout main -- awesome-code-element.js styles scripts
+    # we here checkout both branches independently ...
+
+    steps:
+
+      - name: 🛎️ Checkout - release
+        uses: actions/checkout@v3
+        with:
+          ref: 'release'
+          path: release
+
+      - name: 🛎️ Checkout - main
+        uses: actions/checkout@v3
+        with:
+          ref: 'main'
+          path: main
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y bash
+          sudo apt install -y npm
+          sudo npm install -y uglify-js -g
+          sudo npm install -y uglifycss -g
+
+      - name: minify js, css of [main] into [release]
+        run: |
+          uglifyjs --compress --mangle --module -- main/awesome-code-element.js > release/awesome-code-element.min.js
+          [[ -d release/styles/ ]] || mkdir -p release/styles/
+          uglifycss main/styles/default.css > release/styles/default.min.css
+
+      - name: Deploy 🚀
+        working-directory: release
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add -A
+          git diff-index --quiet HEAD ||  git commit -am "Update release from Github-Action - deploy_release.yml"
+          git push origin release
+
+      # - name: Deploy 🚀 
+      #   uses: EndBug/add-and-commit@v9
+      #   with:
+      #     add: '.'
+      #     committer_name: GitHub Actions
+      #     committer_email: actions@github.com
+      #     default_author: github_actions
+      #     message: 'Update release from Github-Action - deploy_release.yml'
+      #     remove: './scripts/'
+
+        
