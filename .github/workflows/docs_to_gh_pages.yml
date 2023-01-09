@@ -40,8 +40,8 @@ jobs:
         run: |
           rm docs/awesome-code-element
           mkdir -p docs/awesome-code-element
-          cp -a awesome-code-element.js  docs/docs/awesome-code-element/
-          cp -a styles/                  docs/docs/awesome-code-element/
+          cp -a awesome-code-element.js  docs/awesome-code-element/
+          cp -a styles/                  docs/awesome-code-element/
 
       - name: Generates host page (README)
         run: |
