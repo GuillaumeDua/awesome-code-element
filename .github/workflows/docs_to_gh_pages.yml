@@ -30,14 +30,21 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v3
 
-      - name: Generates host page (README)
+      - name: Deploy ACE to docs/
         # replace symlink to awesome-code-element.js by the real file
         run: |
           rm docs/awesome-code-element.js
           cp awesome-code-element.js  docs/
           rm -rf docs/styles
           cp -a styles                docs/
+
+      - name: Generates host page (README)
+        run: |
           cp README.md                docs/
+
+      - name: Showcase - plain doxygen
+        run: |
+          sudo doxygen docs/showcase/using_doxygen/demo.Doxyfile
 
       - name: Deploy 🚀 
         uses: JamesIves/github-pages-deploy-action@v4.3.3
