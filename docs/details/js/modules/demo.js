@@ -21,11 +21,15 @@
 // SOFTWARE.
 
 import ace from '../../../awesome-code-element.js'
+if (ace === undefined)
+    throw new Error('docs/details/js/modules/utils.js: missing [ace]')
 
 if (ace.API.HTML_elements.CodeSection === undefined)
     throw new Error('CodeSection_demo: missing mandatory dependency [ace.CodeSection]')
 
 import ace_test_utils from '../../../details/js/modules/utils.js';
+if (ace.test_utils === undefined)
+    throw new Error('docs/details/js/modules/utils.js: missing [ace.test_utils]')
 
 ace.showcase                    = ace.showcase ?? {}
 ace.showcase.HTML_elements      = ace.showcase.HTML_elements ?? {}

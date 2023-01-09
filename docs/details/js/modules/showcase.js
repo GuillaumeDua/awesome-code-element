@@ -21,6 +21,8 @@
 // SOFTWARE.
 
 import ace from '../../../awesome-code-element.js'
+if (ace === undefined)
+    throw new Error('docs/details/js/modules/utils.js: missing [ace]')
 
 ace.showcase                        = ace.showcase ?? {}
 ace.showcase.HTML_elements          = ace.showcase.HTML_elements ?? {}
