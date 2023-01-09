@@ -36,12 +36,12 @@ jobs:
           sudo apt install -y doxygen
 
       - name: Deploy ACE to docs/
-        # replace symlink to awesome-code-element.js by the real file
+        # replace symlink to awesome-code-element
         run: |
-          rm docs/awesome-code-element.js
-          cp awesome-code-element.js  docs/
-          rm -rf docs/styles
-          cp -a styles                docs/
+          rm docs/awesome-code-element
+          mkdir -p docs/awesome-code-element
+          cp -a awesome-code-element.js  docs/docs/awesome-code-element/
+          cp -a styles/                  docs/docs/awesome-code-element/
 
       - name: Generates host page (README)
         run: |
