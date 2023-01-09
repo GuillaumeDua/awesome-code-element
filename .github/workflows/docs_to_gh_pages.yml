@@ -30,6 +30,11 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v3
 
+      - name: Doxygen installation
+        run: |
+          sudo apt update
+          sudo apt install -y doxygen
+
       - name: Deploy ACE to docs/
         # replace symlink to awesome-code-element.js by the real file
         run: |
