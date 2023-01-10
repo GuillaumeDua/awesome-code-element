@@ -55,13 +55,15 @@
         import ace from "./awesome-code-element.js"
 
         ace.API.configure({
-            compatibility : {
+            CodeSection: {
+            },
+            compatibility: {
                 doxygen: true
             },
-            hljs : {
+            hljs: {
                 version: '11.7.0'
             },
-            CE : new ace.API.CE_ConfigurationManager([
+            CE: new ace.API.CE_ConfigurationManager([
                 [
                     'cpp',
                     {

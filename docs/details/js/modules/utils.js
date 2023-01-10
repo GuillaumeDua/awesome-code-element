@@ -138,6 +138,7 @@ ace.test_utils.global_behavior_modifiers = class global_behavior_modifiers {
 // ===========
 // UI elements
 
+// TODO: make always visible on top
 ace.test_utils.HTML_elements = {}
 ace.test_utils.HTML_elements.toolbar = class test_utils extends HTMLElement {
     static HTMLElement_name = 'awesome_code_element_test-utility-toolbar'

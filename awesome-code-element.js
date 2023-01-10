@@ -233,7 +233,6 @@ AwesomeCodeElement.details.dependency_manager = new class dependency_manager {
         }
     })
 ])
-
 await AwesomeCodeElement.details.dependency_manager.load_missing_dependencies()
 
 // ==================
@@ -368,9 +367,9 @@ AwesomeCodeElement.API.configuration = {
         default_theme   : 'tokyo-night'  // supports dark/light variations
     },
     compatibility                       : {
-        doxygen:                Boolean(AwesomeCodeElement.details.dependency_manager.dependencies.doxygen.version),
-        doxygen_awesome_css:    false,  // TODO: autodetect
-        pre_code:               false
+        doxygen:                        Boolean(AwesomeCodeElement.details.dependency_manager.dependencies.doxygen.version), // default: enabled if detected
+        doxygen_awesome_css:            false,  // TODO: autodetect
+        pre_code:                       false
     },
     auto_hide_buttons                   : false, // TODO: rename force_ or always_
     force_dark_light_scheme             : (() => {
@@ -730,6 +729,7 @@ AwesomeCodeElement.details.utility = class utility {
                 slot.removeEventListener('slotchange', callback);
                 element.shadowRoot.innerHTML = ""
                 element.outerHTML = element.outerHTML
+                return element
             }
         }
     }
@@ -1139,10 +1139,9 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
     }
     #shadow_root_callback() {
     // defered initialization
-        let _this = this
-        let error = (function(){
+        let error = (() => {
             try {
-                return _this.acquire_parameters(_this.#_parameters)
+                return this.acquire_parameters(this.#_parameters)
                     ? undefined
                     : 'acquire_parameters failed with no detailed informations'
             }
@@ -1151,11 +1150,13 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
             }
         })()
 
-        this.shadowroot_accessor.remove()
+        // this.shadowroot_accessor.remove()
+
         if (error) {
-            console.error(_this)
-            _this.on_critical_internal_error(error)
+            this.on_critical_internal_error(error)
+            return
         }
+        this.initialize()
     }
 
     // accessors
@@ -1329,10 +1330,12 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
 
     // initialization
     acquire_parameters(parameters) {
+    // acquire parameters for defered initialization
         this.#_parameters.style.direction = this.#_parameters.style.direction || this.getAttribute('direction') || this.style.flexDirection
         return true
     }
     initialize() {
+    // defered initialization, use/consume this.#_parameters
         this.direction = this.#_parameters.style.direction || AwesomeCodeElement.API.configuration.CodeSection.direction
         this.#initialize_HTML()
     }
@@ -2260,7 +2263,7 @@ AwesomeCodeElement.API.initializers = {
     }
 }
 AwesomeCodeElement.API.initialize = () => {
-   
+
     $(function() {
         $(document).ready(function() {
 
@@ -2280,14 +2283,15 @@ AwesomeCodeElement.API.initialize = () => {
                 AwesomeCodeElement.API.HTML_elements.CodeSection
             ].forEach(html_component => ReplaceHTMLPlaceholders(html_component.PlaceholdersTranslation))
 
-            if (AwesomeCodeElement.API.configuration.compatibility.doxygen_awesome_css === true) {
-                console.info(`awesome-code-element.js:initialize: doxygen-awesome-css compatiblity ...`)
-                AwesomeCodeElement.API.initializers.doxygenCodeSections()
-            }
+            // WIP:
+            // if (AwesomeCodeElement.API.configuration.compatibility.doxygen) {
+            //     console.info(`awesome-code-element.js:initialize: doxygen compatiblity ...`)
+            //     AwesomeCodeElement.API.initializers.doxygenCodeSections()
+            // }
 
             if (AwesomeCodeElement.API.configuration.compatibility.pre_code) {
                 console.info(`awesome-code-element.js:initialize: existing pre-code compatiblity ...`)
-                AwesomeCodeElement.API.initializers.PreCodeHTML_elements
+                AwesomeCodeElement.API.initializers.PreCodeHTML_elements()
             }
 
             AwesomeCodeElement.details.Style.initialize()

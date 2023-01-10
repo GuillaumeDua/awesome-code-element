@@ -6,6 +6,14 @@ Some code examples here.
 
 ---
 
+## plain \`\include\` doxygen directive
+
+```html
+\include noexecute_show_block_with_output.cpp
+```
+
+\include noexecute_show_block_with_output.cpp
+
 ## Using \`\include\` doxygen directive
 
 ```html
