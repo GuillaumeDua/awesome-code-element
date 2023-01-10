@@ -1120,8 +1120,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
             if (!this.acquire_parameters(this.#_parameters)) {
                 console.debug('AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement: create shadowroot slot')
                 this.shadowroot_accessor = AwesomeCodeElement.details.utility.create_shadowroot_slot(
-                    this,
-                    () => { this.#shadow_root_callback() }
+                    this, () => { this.#shadow_root_callback() }
                 )
             }
             else {
@@ -1410,6 +1409,11 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         this.#view_update_code()
     }
     #view_update_code() {
+        if (this.html_elements.code === undefined) { // not initialized yet (shadow-root)
+            this.textContent = this.code            // trigger defered initialization
+            return
+        }
+
         this.toggle_error_view = false // clear possibly existing errors
         // update view
         this.html_elements.code.textContent = this.code || ""
