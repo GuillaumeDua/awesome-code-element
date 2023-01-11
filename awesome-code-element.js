@@ -1091,7 +1091,7 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
 //  otherwise, initialize when created
 
 //  interface:
-//  - acquire_parameters({}) -> bool(success?)
+//  - acquire_parameters({}) -> bool(ready_to_initialize?)
 //  - initialize()
 
 
@@ -1150,6 +1150,15 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
             return
         }
         this.initialize()
+    }
+    acquire_parameters(parameters) {
+    // acquire parameters for defered initialization
+        // store everything
+        AwesomeCodeElement.details.utility.unfold_into({
+            target: this._parameters,
+            properties: parameters || {}
+        })
+        return false
     }
 }
 // TODO: flex-resizer between the two panels ?
@@ -1342,7 +1351,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
 
     // initialization
     acquire_parameters(parameters) {
-    // acquire parameters for defered initialization
+        super.acquire_parameters(parameters)
         this._parameters.style  = {
             direction : this.getAttribute('direction') || this.style.flexDirection || ""
         }
@@ -1543,11 +1552,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
     acquire_parameters(parameters) {
 
         super.acquire_parameters(parameters)
-
-        AwesomeCodeElement.details.utility.unfold_into({
-            target: this._parameters,
-            properties: parameters || {}
-        })
 
         let maybe_use_attribute = (property_name) => {
             this._parameters[property_name] = this._parameters[property_name] || this.getAttribute(property_name) || undefined
