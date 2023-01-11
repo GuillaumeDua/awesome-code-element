@@ -1553,38 +1553,36 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
 
         super.acquire_parameters(parameters)
 
-        let maybe_use_attribute = (property_name) => {
+        const load_parameter = ({ property_name }) => {
             this._parameters[property_name] = this._parameters[property_name] || this.getAttribute(property_name) || undefined
         }
-        maybe_use_attribute('language')
-        maybe_use_attribute('toggle_parsing')
-        maybe_use_attribute('toggle_execution')
+        [
+            'language',
+            'toggle_parsing',
+            'toggle_execution',
+            'url'
+        ].forEach((property_name) => load_parameter({ property_name: property_name }))
 
-        let cleanup_code = (value) => {
-            return value && value
-                // remove enclosing white-spaces
-                .replace(/^\s*/, '').replace(/\s*$/, '')
+        const textContent = (() => {
+        // removes any interpretation of inner text
+            const value = [...this.childNodes]
+                .map(element => element.outerHTML ?? element.textContent)
+                .join('')
+            return AwesomeCodeElement.details.utility.html_codec.decode(value)
+                .replaceAll(/\<\/\w+\>/g, '')   // Quick-fix: attempt to fix code previously interpreted as HTML.
+                                                // Typically, `#include <smthg>` directive produce #include <smthg> ... </smthg>
+        })()
+
+        const cleanup_code = (value) => {
+            return value && value.replace(/^\s*/, '').replace(/\s*$/, '') // remove enclosing white-spaces
         }
-
-        // remove any interpretation of inner text
-        let textContent = [...this.childNodes]
-            .map(element => element.outerHTML ?? element.textContent)
-            .join('')
-        textContent = AwesomeCodeElement.details.utility.html_codec.decode(textContent)
-            // quick-fix
-            .replaceAll(/\<\/\w+\>/g, '')   // attempt to fix code previously interpreted as HTML.
-                                            // Typically, `#include <smthg>` directive produce #include <smthg> ... </smthg>
-
-        // try to acquire local code
         this._parameters.code = 
                 cleanup_code(this._parameters.code)
             ||  cleanup_code(textContent)
             ||  cleanup_code(this.getAttribute('code'))
             ||  ''
-        // otherwise, remote
-        this._parameters.url = this._parameters.url || this.getAttribute('url') || ''
 
-        // TODO: load attributes as function, that can possibly override non-existing parameters
+        // TODO: #34: preserve original innerHTML ?
 
         // post-condition: valid code content
         let is_valid = (this._parameters.code || this._parameters.url)
