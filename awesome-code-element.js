@@ -780,6 +780,8 @@ AwesomeCodeElement.details.utility = class utility {
     static is_valid_tagname(name) {
         return !(document.createElement(name) instanceof HTMLUnknownElement)
     }
+    // TODO: use widely/everywhere
+    // TODO: remove doxygen-specific behavior
     static html_node_content_to_code(element) {
 
         if (AwesomeCodeElement.API.configuration.compatibility.doxygen
@@ -807,6 +809,14 @@ AwesomeCodeElement.details.utility = class utility {
                 }
             })
             .join('')
+    }
+    static html_node_recursive_valid_children_count(element) {
+        return Array
+            .from(element.children)
+            .map((element) => {
+                return (0 + is_valid_tagname(element)) + html_node_recursive_valid_child_count(element)
+            })
+            .reduce((total, current) => total + current, 0)
     }
 }
 AwesomeCodeElement.details.log_facility = class {
@@ -1409,6 +1419,29 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
 
 // ==================
 // HTML_elements : API
+
+const code_element_factory = function({ element }){
+// WIP
+    const is_self_contained = Array.from(element.childNodes).
+    const code = (() => {
+
+        const textContent = AwesomeCodeElement.details.utility.html_node_content_to_code(element)
+        const cleanup_code = (value) => {
+            return value && value.replace(/^\s*/, '').replace(/\s*$/, '') // remove enclosing white-spaces
+        }
+        return cleanup_code(textContent) || cleanup_code(element.getAttribute('code')) ||  ''
+    })()
+
+    return {
+        is_editable: !is_self_contained,
+        html_element: is_self_contained ? element : (() => {
+            let value = document.createElement(null)
+            value.innerHTML = `<pre><code>${code}</code></pre>`
+            return value
+        })(),
+        code: code
+    }
+}
 
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement {
