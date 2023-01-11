@@ -1085,46 +1085,43 @@ AwesomeCodeElement.details.HTML_elements.LoadingAnimation = class LoadingAnimati
         }
     }
 }
-// TODO: flex-resizer between the two panels ?
-AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSectionHTMLElement extends HTMLElement {
-// HTML layout/barebone for CodeSection
+AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTMLElement {
+// HTMLElements that handles defered initialization
+//  if first added to the DOM empty, then triggers initialization when a first child is attached
+//  otherwise, initialize when created
 
-    static #id_generator = (() => {
-        let counter = AwesomeCodeElement.details.utility.make_incremental_counter_generator()
-        return () => { return `cs_${counter.next().value}` }
-    })()
+//  interface:
+//  - acquire_parameters({}) -> bool(success?)
+//  - initialize()
 
-    #_parameters = { // temporary storage for possibly constructor-provided arguments
-        style:{}
-    }
 
-    // HTMLElement
+    _parameters = {} // temporary storage for possibly constructor-provided arguments
+
     constructor(parameters) {
         super();
         AwesomeCodeElement.details.utility.unfold_into({
-            target: this.#_parameters,
+            target: this._parameters,
             properties: parameters || {}
         })
 
         // explicit, user-provided attributes
-        if (this.#_parameters.attributes) {
-            console.debug(`AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement: constructor: explicit attributes:`, this.#_parameters.attributes)
-            for (const property in this.#_parameters.attributes)
-                this.setAttribute(property, this.#_parameters.attributes[property])
+        if (this._parameters.attributes) {
+            console.debug(`AwesomeCodeElement.details.HTML_elements.deferedHTMLElement: constructor: explicit attributes:`, this._parameters.attributes)
+            for (const property in this._parameters.attributes)
+                this.setAttribute(property, this._parameters.attributes[property])
         }
     }
-
     connectedCallback() {
-        console.debug('AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement: connectedCallback')
+        console.debug('AwesomeCodeElement.details.HTML_elements.deferedHTMLElement: connectedCallback')
         try {
-            if (!this.acquire_parameters(this.#_parameters)) {
-                console.debug('AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement: create shadowroot slot')
+            if (!this.acquire_parameters(this._parameters)) {
+                console.debug('AwesomeCodeElement.details.HTML_elements.deferedHTMLElement: create shadowroot slot')
                 this.shadowroot_accessor = AwesomeCodeElement.details.utility.create_shadowroot_slot(
                     this, () => { this.#shadow_root_callback() }
                 )
             }
             else {
-                console.debug('AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement: no need for shadowroot slot')
+                console.debug('AwesomeCodeElement.details.HTML_elements.deferedHTMLElement: no need for shadowroot slot')
                 this.initialize()
             }
         }
@@ -1133,16 +1130,13 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
             this.on_critical_internal_error(error)
         }
     }
-    disconnectedCallback() {
-        AwesomeCodeElement.details.HTML_elements.resize_observer.unobserve(this)
-    }
     #shadow_root_callback() {
     // defered initialization
         let error = (() => {
             try {
-                return this.acquire_parameters(this.#_parameters)
+                return this.acquire_parameters(this._parameters)
                     ? undefined
-                    : 'acquire_parameters failed with no detailed informations'
+                    : 'acquire_parameters failed (no detailed informations)'
             }
             catch (error) {
                 return error
@@ -1156,6 +1150,26 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
             return
         }
         this.initialize()
+    }
+}
+// TODO: flex-resizer between the two panels ?
+AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSectionHTMLElement
+                                                                    extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement 
+{
+// HTML layout/barebone for CodeSection
+
+    static #id_generator = (() => {
+        let counter = AwesomeCodeElement.details.utility.make_incremental_counter_generator()
+        return () => { return `cs_${counter.next().value}` }
+    })()
+
+    // HTMLElement
+    constructor(parameters) {
+        super(parameters);
+    }
+
+    disconnectedCallback() {
+        AwesomeCodeElement.details.HTML_elements.resize_observer.unobserve(this)
     }
 
     // accessors
@@ -1330,12 +1344,14 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement = class CodeSect
     // initialization
     acquire_parameters(parameters) {
     // acquire parameters for defered initialization
-        this.#_parameters.style.direction = this.#_parameters.style.direction || this.getAttribute('direction') || this.style.flexDirection
+        this._parameters.style  = {
+            direction : this.getAttribute('direction') || this.style.flexDirection || ""
+        }
         return true
     }
     initialize() {
-    // defered initialization, use/consume this.#_parameters
-        this.direction = this.#_parameters.style.direction || AwesomeCodeElement.API.configuration.CodeSection.direction
+    // defered initialization, use/consume this._parameters
+        this.direction = this._parameters.style.direction || AwesomeCodeElement.API.configuration.CodeSection.direction
         this.#initialize_HTML()
     }
     
@@ -1524,18 +1540,18 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
     constructor(parameters) {
         super(parameters)
     }
-    #_parameters = {}
+    _parameters = {}
     acquire_parameters(parameters) {
 
         super.acquire_parameters(parameters)
 
         AwesomeCodeElement.details.utility.unfold_into({
-            target: this.#_parameters,
+            target: this._parameters,
             properties: parameters || {}
         })
 
         let maybe_use_attribute = (property_name) => {
-            this.#_parameters[property_name] = this.#_parameters[property_name] || this.getAttribute(property_name) || undefined
+            this._parameters[property_name] = this._parameters[property_name] || this.getAttribute(property_name) || undefined
         }
         maybe_use_attribute('language')
         maybe_use_attribute('toggle_parsing')
@@ -1557,18 +1573,18 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
                                             // Typically, `#include <smthg>` directive produce #include <smthg> ... </smthg>
 
         // try to acquire local code
-        this.#_parameters.code = 
-                cleanup_code(this.#_parameters.code)
+        this._parameters.code = 
+                cleanup_code(this._parameters.code)
             ||  cleanup_code(textContent)
             ||  cleanup_code(this.getAttribute('code'))
             ||  ''
         // otherwise, remote
-        this.#_parameters.url = this.#_parameters.url || this.getAttribute('url') || ''
+        this._parameters.url = this._parameters.url || this.getAttribute('url') || ''
 
         // TODO: load attributes as function, that can possibly override non-existing parameters
 
         // post-condition: valid code content
-        let is_valid = (this.#_parameters.code || this.#_parameters.url)
+        let is_valid = (this._parameters.code || this._parameters.url)
         if (is_valid)
             this.acquire_parameters = () => { throw new Error('CodeSection.acquire_parameters: already called') }
         return is_valid
@@ -1576,18 +1592,18 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
     initialize() {
         super.initialize()
 
-        console.debug(`AwesomeCodeElement.details.HTML_elements.CodeSection: initializing with parameters:`, this.#_parameters)
+        console.debug(`AwesomeCodeElement.details.HTML_elements.CodeSection: initializing with parameters:`, this._parameters)
 
         // defered initialiation
-        this.#_language                 = this.#_parameters.language || AwesomeCodeElement.API.configuration.CodeSection.language
+        this.#_language                 = this._parameters.language || AwesomeCodeElement.API.configuration.CodeSection.language
         this.toggle_language_detection  = !this.#is_valid_language
-        this.#_toggle_execution         = this.#_parameters.toggle_execution    || AwesomeCodeElement.API.configuration.CodeSection.toggle_execution
-        this.#_toggle_parsing           = this.#_parameters.toggle_parsing      || AwesomeCodeElement.API.configuration.CodeSection.toggle_parsing
+        this.#_toggle_execution         = this._parameters.toggle_execution    || AwesomeCodeElement.API.configuration.CodeSection.toggle_execution
+        this.#_toggle_parsing           = this._parameters.toggle_parsing      || AwesomeCodeElement.API.configuration.CodeSection.toggle_parsing
 
-        if (this.#_parameters.url)  // remote code
-            this.url = this.#_parameters.url
+        if (this._parameters.url)  // remote code
+            this.url = this._parameters.url
         else                        // local code
-            this.#_code = new AwesomeCodeElement.details.ParsedCode(this.#_parameters.code, this.language)  // only update code, not its view
+            this.#_code = new AwesomeCodeElement.details.ParsedCode(this._parameters.code, this.language)  // only update code, not its view
 
         this.#view_update_code()
 
