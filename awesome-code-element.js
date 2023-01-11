@@ -1163,9 +1163,8 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
         return () => { return `cs_${counter.next().value}` }
     })()
 
-    // HTMLElement
     constructor(parameters) {
-        super(parameters);
+        super(parameters) // deferedHTMLElement
     }
 
     disconnectedCallback() {
@@ -1540,7 +1539,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
     constructor(parameters) {
         super(parameters)
     }
-    _parameters = {}
+
     acquire_parameters(parameters) {
 
         super.acquire_parameters(parameters)
