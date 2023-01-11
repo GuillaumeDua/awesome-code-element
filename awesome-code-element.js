@@ -1422,9 +1422,9 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
 
 const code_element_factory = function({ element }){
 // WIP
-    const is_self_contained = Array.from(element.childNodes).
+    const is_self_contained = Boolean(AwesomeCodeElement.details.utility.html_node_recursive_valid_children_count(element))
     const code = (() => {
-
+        
         const textContent = AwesomeCodeElement.details.utility.html_node_content_to_code(element)
         const cleanup_code = (value) => {
             return value && value.replace(/^\s*/, '').replace(/\s*$/, '') // remove enclosing white-spaces
