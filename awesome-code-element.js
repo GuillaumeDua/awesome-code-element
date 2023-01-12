@@ -818,6 +818,23 @@ AwesomeCodeElement.details.utility = class utility {
             })
             .reduce((total, current) => total + current, 0)
     }
+    // WIP
+    static cleanup_code_element(element){
+        // replace invalid HTMLElement by their localName as text
+        //  faster approach?:   use regex on outerHTML: \<(?'closing'\/?)(?'tagname'\w+\-?)+.*?\>
+        //                      with cache for quick-check
+            let childNodes = Array.from(element.childNodes) // preserve reference/offset integrity
+            if (!AwesomeCodeElement.details.utility.is_valid_tagname(element.tagName)) {
+                element.previousSibling.appendData(`<${element.localName}>`)                        // replace by text
+                childNodes.forEach(node => element.parentNode.insertBefore(node, element))          // transfert childrensNodes to parent
+                element = element.parentNode.removeChild(element)                                   // remove the element
+            }
+            childNodes
+                .filter(element => element.nodeType === HTMLElement.ELEMENT_NODE)
+                .forEach(element => {
+                    utility.cleanup_code_element(element)
+                })
+        }
 }
 AwesomeCodeElement.details.log_facility = class {
     
