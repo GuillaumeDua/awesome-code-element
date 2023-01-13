@@ -836,6 +836,135 @@ AwesomeCodeElement.details.utility = class utility {
                 })
         }
 }
+
+
+// WIP
+class html_parser {
+    static is_valid_tagName({ tagName }) {
+        if (!(typeof tagName === 'string') && !(tagName instanceof String))
+            throw new Error('html_parser.is_valid_tagName: invalid argument')
+        // TODO: cache to decrease costly element creation
+        return !(document.createElement(tagName) instanceof HTMLUnknownElement)
+    }
+    static count_valid_childrens({ element, is_recursive = false }) {
+        return Array
+            .from(element.children)
+            .map((element) => {
+                console.log(element, html_parser.is_valid_tagName({ tagName: element.nodeName }))
+                return 0
+                    + html_parser.is_valid_tagName({ tagName: element.nodeName })
+                    + (is_recursive ? html_parser.count_valid_childrens({ element: element, is_recursive: is_recursive }) : 0)
+            })
+            .reduce((total, current) => total + current, 0)
+    }
+    // TODO?:
+    //  faster approach?:   use regex on outerHTML: \<(?'closing'\/?)(?'tagname'\w+\-?)+.*?\>
+    static to_code({ element }) {
+    // replace invalid HTMLElement by their localName as text
+        return Array
+            .from(element.childNodes)
+            .map(element => {
+                switch (element.nodeType) {
+                    case Node.TEXT_NODE:
+                        return element.textContent
+                    case Node.ELEMENT_NODE:
+                        if (html_parser.is_valid_tagName({ tagName: element.tagName }))
+                            return html_parser.to_code({ element: element })
+                        // invalid tagname are kept, to preserve include semantic.
+                        //  e.g: `<iostream>` in `#include <iostream>`
+                        return `<${element.localName}>${html_parser.to_code({ element: element })}`
+                    case Node.COMMENT_NODE:
+                    case Node.CDATA_SECTION_NODE:
+                    default:
+                        console.debug(`html_parser: html_node_content_to_code: unhandled tags [comment, cdata, etc.]`)
+                        return ''                        
+                }
+            })
+            .join('')
+    }
+    static cleanup({ element }){
+    // recursively replaces invalid childrens element by their tagname as text
+        let childNodes = Array.from(element.childNodes)
+        childNodes
+            .filter(element => element.nodeType === HTMLElement.ELEMENT_NODE)
+            .forEach(element => {
+                html_parser.#cleanup_impl({ element: element })
+            })
+        return element
+    }
+    static #cleanup_impl({ element }){
+    // recursively replaces invalid element by their tagname as text
+        let childNodes = Array.from(element.childNodes)                                         // preserve reference/offset integrity
+        if (!html_parser.is_valid_tagName({ tagName: element.tagName })) {
+            element.previousSibling.appendData(`<${element.localName}>`)                        // replace by text
+            childNodes.forEach(node => element.parentNode.insertBefore(node, element))          // transfert childrensNodes to parent
+            element = element.parentNode.removeChild(element)                                   // remove the element
+        }
+        childNodes
+            .filter(element => element.nodeType === HTMLElement.ELEMENT_NODE)
+            .forEach(element => {
+                html_parser.#cleanup_impl({ element: element })
+            })
+    }
+}
+
+class code {
+
+    get is_editable() { return !is_self_contained }
+
+    constructor(argument) {
+        if (argument instanceof HTMLElement)
+            this.#build_from_element(argument)
+        else
+            this.#build_from_text(argument)
+    }
+
+    static cleanup(code_as_text){
+        if (!code_as_text)
+            throw new Error('code.cleanup: invalid argument')
+        return code_as_text.replace(/^\s*/, '').replace(/\s*$/, '') // remove enclosing white-spaces
+    }
+
+    #build_from_text(value){
+
+        this.is_self_contained = false
+        this.model = code.cleanup(value)
+        this.view = (() => {
+            let value = document.createElement('pre')
+            let code_node = value.appendChild(document.createElement('code'))
+                code_node.textContent = this.model
+            return value
+        })()
+    }
+    #build_from_element(element){
+
+        if (!(element instanceof HTMLElement))
+            throw new Error('code.#build_from_element: invalid argument')
+
+        this.is_self_contained = Boolean(html_parser.count_valid_childrens({ element: element, is_recursive: true }))
+        this.model = (() => {
+            if (this.is_self_contained)
+                element = html_parser.cleanup({ element: element })
+            const textContent = html_parser.to_code({ element: element })
+            return code.cleanup(textContent) || code.cleanup(element.getAttribute('code')) ||  ''
+        })()
+        if (!this.is_self_contained) {
+            this.#build_from_text(this.model)
+            return
+        }
+        this.view = element
+    }
+
+    update_view() {
+
+    }
+}
+
+// /WIP
+
+
+
+
 AwesomeCodeElement.details.log_facility = class {
     
     static #default_channels = {
