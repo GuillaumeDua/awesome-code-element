@@ -777,54 +777,66 @@ AwesomeCodeElement.details.utility = class utility {
         let i = 0;
         while (true) { yield i++; }
     }
-    static is_valid_tagname(name) {
-        return !(document.createElement(name) instanceof HTMLUnknownElement)
-    }
-    // TODO: use widely/everywhere
-    // TODO: remove doxygen-specific behavior
-    static html_node_content_to_code(element) {
-
-        if (AwesomeCodeElement.API.configuration.compatibility.doxygen
-        &&  element.children.length === 1
-        &&  element.children[0].className)
-            return element.textContent
-
-        return Array
-            .from(element.childNodes)
-            .map(element => {
-                switch (element.nodeType) {
-                    case Node.TEXT_NODE:
-                        return element.textContent
-                    case Node.ELEMENT_NODE:
-                        if (utility.is_valid_tagname(element.nodeName))
-                            return utility.html_node_content_to_code(element)
-                        // invalid tagname are kept, to preserve include semantic.
-                        //  e.g: `<iostream>` in `#include <iostream>`
-                        return `<${element.localName}>${utility.html_node_content_to_code(element)}`
-                    case Node.COMMENT_NODE:
-                    case Node.CDATA_SECTION_NODE:
-                    default:
-                        console.warn(`AwesomeCodeElement.details.utility: html_node_content_to_code: unhandled tags [comment, cdata]`)
-                        return ''                        
-                }
-            })
-            .join('')
-    }
-    static html_node_recursive_valid_children_count(element) {
-        return Array
-            .from(element.children)
-            .map((element) => {
-                return (0 + is_valid_tagname(element)) + html_node_recursive_valid_child_count(element)
-            })
-            .reduce((total, current) => total + current, 0)
-    }
-    // WIP
-    static cleanup_code_element(element){
+}
+AwesomeCodeElement.details.code_element = class code_element {
+// acquire { model, view } from an HTMLElement
+//  model: inner text considered as plain code: any invalid nodes injected by the HTML rendering are removed
+//  view : either a pre>code or the given element, if the later contains valid HTML elements
+    static html_parser = class html_parser {
+        static is_valid_tagName({ tagName }) {
+            if (!(typeof tagName === 'string') && !(tagName instanceof String))
+                throw new Error('html_parser.is_valid_tagName: invalid argument')
+            // TODO: cache to decrease costly element creation
+            return !(document.createElement(tagName) instanceof HTMLUnknownElement)
+        }
+        static count_valid_childrens({ element, is_recursive = false }) {
+            return Array
+                .from(element.children)
+                .map((element) => {
+                    return 0
+                        + html_parser.is_valid_tagName({ tagName: element.nodeName })
+                        + (is_recursive ? html_parser.count_valid_childrens({ element: element, is_recursive: is_recursive }) : 0)
+                })
+                .reduce((total, current) => total + current, 0)
+        }
+        static to_code({ element }) {
+        // TODO?: faster approach?: use regex on outerHTML: \<(?'closing'\/?)(?'tagname'\w+\-?)+.*?\>
         // replace invalid HTMLElement by their localName as text
-        //  faster approach?:   use regex on outerHTML: \<(?'closing'\/?)(?'tagname'\w+\-?)+.*?\>
-        //                      with cache for quick-check
-            let childNodes = Array.from(element.childNodes) // preserve reference/offset integrity
-            if (!AwesomeCodeElement.details.utility.is_valid_tagname(element.tagName)) {
+            return Array
+                .from(element.childNodes)
+                .map(element => {
+                    switch (element.nodeType) {
+                        case Node.TEXT_NODE:
+                            return element.textContent
+                        case Node.ELEMENT_NODE:
+                            if (html_parser.is_valid_tagName({ tagName: element.tagName }))
+                                return html_parser.to_code({ element: element })
+                            // invalid tagname are kept, to preserve include semantic.
+                            //  e.g: `<iostream>` in `#include <iostream>`
+                            return `<${element.localName}>${html_parser.to_code({ element: element })}`
+                        case Node.COMMENT_NODE:
+                        case Node.CDATA_SECTION_NODE:
+                        default:
+                            console.debug(`code_element.parser.to_code: unhandled tags [comment, cdata, etc.]`)
+                            return ''                        
+                    }
+                })
+                .join('')
+        }
+        static cleanup({ element }){
+        // recursively replaces invalid childrens element by their tagname as text
+            let childNodes = Array.from(element.childNodes)
+            childNodes
+                .filter(element => element.nodeType === HTMLElement.ELEMENT_NODE)
+                .forEach(element => {
+                    html_parser.#cleanup_impl({ element: element })
+                })
+            return element
+        }
+        static #cleanup_impl({ element }){
+        // recursively replaces invalid element by their tagname as text
+            let childNodes = Array.from(element.childNodes)                                         // preserve reference/offset integrity
+            if (!html_parser.is_valid_tagName({ tagName: element.tagName })) {
                 element.previousSibling.appendData(`<${element.localName}>`)                        // replace by text
                 childNodes.forEach(node => element.parentNode.insertBefore(node, element))          // transfert childrensNodes to parent
                 element = element.parentNode.removeChild(element)                                   // remove the element
@@ -832,103 +844,32 @@ AwesomeCodeElement.details.utility = class utility {
             childNodes
                 .filter(element => element.nodeType === HTMLElement.ELEMENT_NODE)
                 .forEach(element => {
-                    utility.cleanup_code_element(element)
+                    html_parser.#cleanup_impl({ element: element })
                 })
         }
-}
-
-
-// WIP
-class html_parser {
-    static is_valid_tagName({ tagName }) {
-        if (!(typeof tagName === 'string') && !(tagName instanceof String))
-            throw new Error('html_parser.is_valid_tagName: invalid argument')
-        // TODO: cache to decrease costly element creation
-        return !(document.createElement(tagName) instanceof HTMLUnknownElement)
-    }
-    static count_valid_childrens({ element, is_recursive = false }) {
-        return Array
-            .from(element.children)
-            .map((element) => {
-                console.log(element, html_parser.is_valid_tagName({ tagName: element.nodeName }))
-                return 0
-                    + html_parser.is_valid_tagName({ tagName: element.nodeName })
-                    + (is_recursive ? html_parser.count_valid_childrens({ element: element, is_recursive: is_recursive }) : 0)
-            })
-            .reduce((total, current) => total + current, 0)
-    }
-    // TODO?:
-    //  faster approach?:   use regex on outerHTML: \<(?'closing'\/?)(?'tagname'\w+\-?)+.*?\>
-    static to_code({ element }) {
-    // replace invalid HTMLElement by their localName as text
-        return Array
-            .from(element.childNodes)
-            .map(element => {
-                switch (element.nodeType) {
-                    case Node.TEXT_NODE:
-                        return element.textContent
-                    case Node.ELEMENT_NODE:
-                        if (html_parser.is_valid_tagName({ tagName: element.tagName }))
-                            return html_parser.to_code({ element: element })
-                        // invalid tagname are kept, to preserve include semantic.
-                        //  e.g: `<iostream>` in `#include <iostream>`
-                        return `<${element.localName}>${html_parser.to_code({ element: element })}`
-                    case Node.COMMENT_NODE:
-                    case Node.CDATA_SECTION_NODE:
-                    default:
-                        console.debug(`html_parser: html_node_content_to_code: unhandled tags [comment, cdata, etc.]`)
-                        return ''                        
-                }
-            })
-            .join('')
-    }
-    static cleanup({ element }){
-    // recursively replaces invalid childrens element by their tagname as text
-        let childNodes = Array.from(element.childNodes)
-        childNodes
-            .filter(element => element.nodeType === HTMLElement.ELEMENT_NODE)
-            .forEach(element => {
-                html_parser.#cleanup_impl({ element: element })
-            })
-        return element
-    }
-    static #cleanup_impl({ element }){
-    // recursively replaces invalid element by their tagname as text
-        let childNodes = Array.from(element.childNodes)                                         // preserve reference/offset integrity
-        if (!html_parser.is_valid_tagName({ tagName: element.tagName })) {
-            element.previousSibling.appendData(`<${element.localName}>`)                        // replace by text
-            childNodes.forEach(node => element.parentNode.insertBefore(node, element))          // transfert childrensNodes to parent
-            element = element.parentNode.removeChild(element)                                   // remove the element
-        }
-        childNodes
-            .filter(element => element.nodeType === HTMLElement.ELEMENT_NODE)
-            .forEach(element => {
-                html_parser.#cleanup_impl({ element: element })
-            })
-    }
-}
-
-class code {
+    };
 
     get is_editable() { return !is_self_contained }
 
-    constructor(argument) {
-        if (argument instanceof HTMLElement)
-            this.#build_from_element(argument)
-        else
-            this.#build_from_text(argument)
+    constructor({ element }) {
+        if (!(element instanceof HTMLElement))
+            throw new Error('code_element: invalid argument')
+        this.#build_from_element(element)
+        // else
+        //     this.#build_from_text(argument)
+        element.replaceWith(this.view)
     }
 
     static cleanup(code_as_text){
-        if (!code_as_text)
-            throw new Error('code.cleanup: invalid argument')
+        if (undefined === code_as_text)
+            throw new Error('code_element.cleanup: invalid argument')
         return code_as_text.replace(/^\s*/, '').replace(/\s*$/, '') // remove enclosing white-spaces
     }
 
     #build_from_text(value){
 
         this.is_self_contained = false
-        this.model = code.cleanup(value)
+        this.model = code_element.cleanup(value)
         this.view = (() => {
             let value = document.createElement('pre')
             let code_node = value.appendChild(document.createElement('code'))
@@ -939,14 +880,14 @@ class code {
     #build_from_element(element){
 
         if (!(element instanceof HTMLElement))
-            throw new Error('code.#build_from_element: invalid argument')
+            throw new Error('code_element.#build_from_element: invalid argument')
 
-        this.is_self_contained = Boolean(html_parser.count_valid_childrens({ element: element, is_recursive: true }))
+        this.is_self_contained = Boolean(code_element.html_parser.count_valid_childrens({ element: element, is_recursive: true }))
         this.model = (() => {
             if (this.is_self_contained)
-                element = html_parser.cleanup({ element: element })
-            const textContent = html_parser.to_code({ element: element })
-            return code.cleanup(textContent) || code.cleanup(element.getAttribute('code')) ||  ''
+                element = code_element.html_parser.cleanup({ element: element })
+            const textContent = code_element.html_parser.to_code({ element: element })
+            return code_element.cleanup(textContent) || code_element.cleanup(element.getAttribute('code')) ||  ''
         })()
         if (!this.is_self_contained) {
             this.#build_from_text(this.model)
@@ -954,16 +895,7 @@ class code {
         }
         this.view = element
     }
-
-    update_view() {
-
-    }
 }
-
-// /WIP
-
-
-
 
 AwesomeCodeElement.details.log_facility = class {
     
@@ -1565,29 +1497,6 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
 
 // ==================
 // HTML_elements : API
-
-const code_element_factory = function({ element }){
-// WIP
-    const is_self_contained = Boolean(AwesomeCodeElement.details.utility.html_node_recursive_valid_children_count(element))
-    const code = (() => {
-        
-        const textContent = AwesomeCodeElement.details.utility.html_node_content_to_code(element)
-        const cleanup_code = (value) => {
-            return value && value.replace(/^\s*/, '').replace(/\s*$/, '') // remove enclosing white-spaces
-        }
-        return cleanup_code(textContent) || cleanup_code(element.getAttribute('code')) ||  ''
-    })()
-
-    return {
-        is_editable: !is_self_contained,
-        html_element: is_self_contained ? element : (() => {
-            let value = document.createElement(null)
-            value.innerHTML = `<pre><code>${code}</code></pre>`
-            return value
-        })(),
-        code: code
-    }
-}
 
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement {
