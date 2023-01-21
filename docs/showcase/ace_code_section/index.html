@@ -147,9 +147,6 @@ SOFTWARE.
     <button style="margin-top: 10px;" onclick="
         document.getElementById('my_custom_cs_id').textContent = document.getElementById('cs_0').code
         this.style.display = 'none'
-        window.setTimeout(() => { // wait until the element is fully initialized
-            document.getElementById('my_custom_cs_id').html_elements.code.classList.add('stylished')
-        }, 500)
     ">
         <b style="color:green">Click me !</b> <i>(load content, trigger defered initialization)</i>
     </button>

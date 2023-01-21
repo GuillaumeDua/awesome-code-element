@@ -693,6 +693,12 @@ AwesomeCodeElement.details.utility = class utility {
             throw new Error(`AwesomeCodeElement.details.utility: invalid argument [target] with value [${target}]`)
 
         for (const property in properties) {
+            // HTMLElement
+            if (target[property]
+            &&  target[property] instanceof HTMLElement || properties[property] instanceof HTMLElement) {
+                target[property] = properties[property]; // no unfolding here but assign, to preserve
+                continue
+            }
             // Map
             if (target[property]
             &&  target[property] instanceof Map && properties[property] instanceof Map) {
@@ -851,19 +857,38 @@ AwesomeCodeElement.details.code_element = class code_element {
 
     get is_editable() { return !is_self_contained }
 
-    constructor({ element }) {
-        if (!(element instanceof HTMLElement))
-            throw new Error('code_element: invalid argument')
-        this.#build_from_element(element)
-        // else
-        //     this.#build_from_text(argument)
-        element.replaceWith(this.view)
+    constructor(argument) {
+
+        if (argument instanceof code_element) {
+            this.is_self_contained = argument.is_self_contained
+            this.model = argument.mode
+            this.view = argument.view
+            return;
+        }
+
+        if (argument instanceof HTMLElement)
+            this.#build_from_element(argument)
+        else
+            this.#build_from_text(argument)
+    
+        // TODO? element.replaceWith(this.view)
     }
 
     static cleanup(code_as_text){
-        if (undefined === code_as_text)
-            throw new Error('code_element.cleanup: invalid argument')
+        if (!code_as_text)
+            return code_as_text
+
         return code_as_text.replace(/^\s*/, '').replace(/\s*$/, '') // remove enclosing white-spaces
+
+        // const textContent = (() => {
+        // // removes any interpretation of inner text
+        //     const value = [...this.childNodes]
+        //         .map(element => element.outerHTML ?? element.textContent)
+        //         .join('')
+        //     return AwesomeCodeElement.details.utility.html_codec.decode(value)
+        //         .replaceAll(/\<\/\w+\>/g, '')   // Quick-fix: attempt to fix code previously interpreted as HTML.
+        //                                         // Typically, `#include <smthg>` directive produce #include <smthg> ... </smthg>
+        // })()
     }
 
     #build_from_text(value){
@@ -1242,10 +1267,12 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
     acquire_parameters(parameters) {
     // acquire parameters for defered initialization
         // store everything
+        
         AwesomeCodeElement.details.utility.unfold_into({
             target: this._parameters,
             properties: parameters || {}
         })
+
         return false
     }
 }
@@ -1301,7 +1328,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
         code: undefined,
         execution: undefined
     }
-    #initialize_HTML() {
+    #initialize_HTML({ content_element }) {
 
         if (!this.isConnected)
             throw new Error('CodeSectionHTMLElement:#initialize_HTML: not connected yet')
@@ -1312,7 +1339,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
         const {
             panel: left_panel,
             elements: left_panel_elements
-        } = this.#make_HTML_left_panel()
+        } = this.#make_HTML_left_panel({ content_element: content_element })
 
         this.html_elements.code                 = left_panel_elements.code
         this.html_elements.panels.left          = left_panel
@@ -1361,10 +1388,18 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
 
         this.#initialize_ids()
     }
-    #make_HTML_left_panel() {
-        let left_panel = document.createElement('pre');
-        let code_element = document.createElement('code');
-            code_element = left_panel.appendChild(code_element)
+    #make_HTML_left_panel({ content_element }) {
+    // wraps around a given `content_element`, or provide a default pre>code
+
+        let left_panel = content_element || document.createElement('pre')
+        let code_element = (() => {
+            if (!content_element) {
+                let value = document.createElement('code');
+                    value = left_panel.appendChild(value)
+                return value
+            }
+            return content_element.childElementCount === 1 ? content_element.firstChild : content_element
+        })()
 
         // buttons : copy-to-clipboard
         let copy_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
@@ -1372,6 +1407,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
             copy_button = left_panel.appendChild(copy_button)
 
         let CE_button = new AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt()
+            CE_button.style.zIndex = CE_button.style.zIndex + 1
             CE_button = left_panel.appendChild(CE_button)
 
         return { 
@@ -1445,10 +1481,10 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
         }
         return true
     }
-    initialize() {
+    initialize({ content_element }) {
     // defered initialization, use/consume this._parameters
         this.direction = this._parameters.style.direction || AwesomeCodeElement.API.configuration.CodeSection.direction
-        this.#initialize_HTML()
+        this.#initialize_HTML({ content_element: content_element })
     }
     
     static get_hljs_language(code_tag) {
@@ -1499,7 +1535,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
 // HTML_elements : API
 
 AwesomeCodeElement.API.HTML_elements = {}
-AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement {
+AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement { 
 // TODO: code loading policy/behavior - as function : default is textContent, but can be remote using an url, or another rich text area for instance
 
     // --------------------------------
@@ -1651,48 +1687,40 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             'url'
         ].forEach((property_name) => load_parameter({ property_name: property_name }))
 
-        const textContent = (() => {
-        // removes any interpretation of inner text
-            const value = [...this.childNodes]
-                .map(element => element.outerHTML ?? element.textContent)
-                .join('')
-            return AwesomeCodeElement.details.utility.html_codec.decode(value)
-                .replaceAll(/\<\/\w+\>/g, '')   // Quick-fix: attempt to fix code previously interpreted as HTML.
-                                                // Typically, `#include <smthg>` directive produce #include <smthg> ... </smthg>
-        })()
 
-        const cleanup_code = (value) => {
-            return value && value.replace(/^\s*/, '').replace(/\s*$/, '') // remove enclosing white-spaces
+        try {
+            this._parameters.code = (() => {
+                let value = this.getAttribute('code')
+                return new AwesomeCodeElement.details.code_element(value ? value : this)
+            })()
         }
-        this._parameters.code = 
-                cleanup_code(this._parameters.code)
-            ||  cleanup_code(textContent)
-            ||  cleanup_code(this.getAttribute('code'))
-            ||  ''
-
-        // TODO: #34: preserve original innerHTML ?
+        catch (error) {
+            console.error('ace.API.HTML_elements.CodeSection: cannot build a valid ace.details.code_element', error)
+            return false;
+        }
 
         // post-condition: valid code content
-        let is_valid = (this._parameters.code || this._parameters.url)
+        const is_valid = Boolean(this._parameters.code.model || this._parameters.url)
         if (is_valid)
             this.acquire_parameters = () => { throw new Error('CodeSection.acquire_parameters: already called') }
         return is_valid
     }
     initialize() {
-        super.initialize()
 
         console.debug(`AwesomeCodeElement.details.HTML_elements.CodeSection: initializing with parameters:`, this._parameters)
 
+        super.initialize({ element: this._parameters.code.view })
+
         // defered initialiation
-        this.#_language                 = this._parameters.language || AwesomeCodeElement.API.configuration.CodeSection.language
+        this.#_language                 = this._parameters.language         || AwesomeCodeElement.API.configuration.CodeSection.language
         this.toggle_language_detection  = !this.#is_valid_language
-        this.#_toggle_execution         = this._parameters.toggle_execution    || AwesomeCodeElement.API.configuration.CodeSection.toggle_execution
-        this.#_toggle_parsing           = this._parameters.toggle_parsing      || AwesomeCodeElement.API.configuration.CodeSection.toggle_parsing
+        this.#_toggle_execution         = this._parameters.toggle_execution || AwesomeCodeElement.API.configuration.CodeSection.toggle_execution
+        this.#_toggle_parsing           = this._parameters.toggle_parsing   || AwesomeCodeElement.API.configuration.CodeSection.toggle_parsing
 
         if (this._parameters.url)  // remote code
             this.url = this._parameters.url
         else                        // local code
-            this.#_code = new AwesomeCodeElement.details.ParsedCode(this._parameters.code, this.language)  // only update code, not its view
+            this.#_code = new AwesomeCodeElement.details.ParsedCode(this._parameters.code.model, this.language)  // only update code, not its view
 
         this.#view_update_code()
 
@@ -1902,7 +1930,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
                 })
 
             // code
-            let code = AwesomeCodeElement.details.utility.html_node_content_to_code(element)
+            let code = new AwesomeCodeElement.details.code_element(element)
             args.code = args.code ?? code
 
             return new CodeSection(args)
