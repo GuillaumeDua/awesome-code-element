@@ -861,7 +861,7 @@ AwesomeCodeElement.details.code_element = class code_element {
 
         if (argument instanceof code_element) {
             this.is_self_contained = argument.is_self_contained
-            this.model = argument.mode
+            this.model = argument.model
             this.view = argument.view
             return;
         }
@@ -1691,7 +1691,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         try {
             this._parameters.code = (() => {
                 let value = this.getAttribute('code') || this._parameters.code
-                    value = new AwesomeCodeElement.details.code_element(value ? value : this)
+                if (!(value instanceof AwesomeCodeElement.details.code_element))
+                    value = new AwesomeCodeElement.details.code_element(value ?? this)
                 return value.model ? value : undefined
             })()
         }
@@ -1702,7 +1703,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
 
         // post-condition: valid code content
         const is_valid = Boolean(this._parameters.code ?? this._parameters.url)
-        // console.debug('>>>', is_valid, this._parameters.code)
+        console.debug('>>>', is_valid, this._parameters.code)
         if (is_valid)
             this.acquire_parameters = () => { throw new Error('CodeSection.acquire_parameters: already called') }
         return is_valid
@@ -1934,12 +1935,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
                 })
             // TODO: remove class===HTMLElement_name
 
-            // code
-            let code = new AwesomeCodeElement.details.code_element(element)
-            args.code = args.code ?? code
-
-            console.debug('>>>', code, args.code)
-
+            args.code = args.code ?? new AwesomeCodeElement.details.code_element(element)
             return new CodeSection(args)
         }
     }
