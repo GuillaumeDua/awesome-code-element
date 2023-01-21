@@ -1690,8 +1690,9 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
 
         try {
             this._parameters.code = (() => {
-                let value = this.getAttribute('code')
-                return new AwesomeCodeElement.details.code_element(value ? value : this)
+                let value = this.getAttribute('code') || this._parameters.code
+                    value = new AwesomeCodeElement.details.code_element(value ? value : this)
+                return value.model ? value : undefined
             })()
         }
         catch (error) {
@@ -1700,7 +1701,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         }
 
         // post-condition: valid code content
-        const is_valid = Boolean(this._parameters.code.model || this._parameters.url)
+        const is_valid = Boolean(this._parameters.code ?? this._parameters.url)
+        // console.debug('>>>', is_valid, this._parameters.code)
         if (is_valid)
             this.acquire_parameters = () => { throw new Error('CodeSection.acquire_parameters: already called') }
         return is_valid
@@ -1709,7 +1711,9 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
 
         console.debug(`AwesomeCodeElement.details.HTML_elements.CodeSection: initializing with parameters:`, this._parameters)
 
-        super.initialize({ element: this._parameters.code.view })
+        super.initialize({
+            element: this._parameters.code ? this._parameters.code.view : undefined
+        })
 
         // defered initialiation
         this.#_language                 = this._parameters.language         || AwesomeCodeElement.API.configuration.CodeSection.language
@@ -1928,10 +1932,13 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
                 .forEach((attribute) => {
                     args.attributes[attribute.nodeName] = attribute.textContent
                 })
+            // TODO: remove class===HTMLElement_name
 
             // code
             let code = new AwesomeCodeElement.details.code_element(element)
             args.code = args.code ?? code
+
+            console.debug('>>>', code, args.code)
 
             return new CodeSection(args)
         }
@@ -1968,7 +1975,6 @@ AwesomeCodeElement.details.Style = class Style {
 
                 // local
                 let root = (() => {
-                    console.debug(AwesomeCodeElement.API.configuration)
                     let value = AwesomeCodeElement.API.configuration.description.path_prefix || ""
                     return value.replace(/\/$/, '')
                 })()
