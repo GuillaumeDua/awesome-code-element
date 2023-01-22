@@ -79,6 +79,16 @@
 // TODO: style : px vs. em
 // TODO: listener for CSS attribute change, properly calling setters ? (language, toggle_execution, toggle_parsing, orientation)
 
+// WIP: ace.cs wrap mode
+// ---------------------
+//  either ace.cs wraps around an existing node, or takes some text as input
+//      text: default html layout (pre>code)
+//      wrap: (html element):
+//          - removes invalid html elements
+//          - if contains at least 1 valid html element
+//              - then wraps aroud: disable highlighting ?      <--- ? (preserves links, other highlightings - e.g doxygen -, etc.)
+//              - else same as text using element.textContent
+
 export { AwesomeCodeElement as default }
 
 // ----------------------------------------------------------------------------------------------------------------------------
@@ -1212,6 +1222,9 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
 
     constructor(parameters) {
         super();
+
+        console.debug('deferedHTMLElement', parameters, this._parameters)
+
         AwesomeCodeElement.details.utility.unfold_into({
             target: this._parameters,
             properties: parameters || {}
@@ -1669,7 +1682,12 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
     // --------------------------------
     // construction/initialization
 
-    constructor(parameters) {
+    constructor(parameters = {}) {
+        if (typeof parameters !== "object")
+            throw new Error(
+                `AwesomeCodeElement.API.HTML_elements.CodeSection.constructor: invalid argument.
+                expected object layout: { .url(string) or .code(string or HTMLElement) }
+                or valid childs/textContent when onConnectedCallback triggers`)
         super(parameters)
     }
 
