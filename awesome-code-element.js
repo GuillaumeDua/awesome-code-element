@@ -73,7 +73,7 @@
 // TODO: HTML_elements_name -> ace_${name}
 // TODO: check shadowroot-callbacks
 // TODO: dark_or_light -> color_scheme
-// TODO: console.xxxx -> replace '\n\t' by ','-seperated arguments ?
+// TODO: console.xxxx -> replace '\n\t' by ','-separated arguments ?
 // TODO: remove useless funcs, class (if any)
 // TODO: awesome-code-element.js: sub-modules aggregator
 // TODO: style : px vs. em
@@ -88,6 +88,18 @@
 //          - if contains at least 1 valid html element
 //              - then wraps aroud: disable highlighting ?      <--- ? (preserves links, other highlightings - e.g doxygen -, etc.)
 //              - else same as text using element.textContent
+//
+// Doxygen integration quick-test
+/*
+import('./awesome-code-element.js').then(m => ace = m)
+	.then(() => {
+        let value = document.querySelector('div[class=fragment]')
+        console.debug('before', value)
+        let replacement = new ace.default.API.HTML_elements.CodeSection({ code: value })
+        value.replaceWith(replacement)
+        console.debug('after', replacement)
+    })
+*/
 
 export { AwesomeCodeElement as default }
 
@@ -1217,7 +1229,6 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
 //  - acquire_parameters({}) -> bool(ready_to_initialize?)
 //  - initialize()
 
-
     _parameters = {} // temporary storage for possibly constructor-provided arguments
 
     constructor(parameters) {
@@ -1402,17 +1413,27 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
         this.#initialize_ids()
     }
     #make_HTML_left_panel({ content_element }) {
-    // wraps around a given `content_element`, or provide a default pre>code
+    // wraps around a given `content_element`, or provides a default pre>code
 
-        let left_panel = content_element || document.createElement('pre')
-        let code_element = (() => {
-            if (!content_element) {
-                let value = document.createElement('code');
-                    value = left_panel.appendChild(value)
-                return value
-            }
-            return content_element.childElementCount === 1 ? content_element.firstChild : content_element
-        })()
+        let left_panel, code_element;
+        if (!content_element) { // default
+            left_panel   = document.createElement('pre')
+            code_element = left_panel.appendChild(document.createElement('code'))
+            console.debug('>>> CodeSectionHTMLElement.make_HTML_left_panel: default')
+        }
+        else if (content_element instanceof HTMLPreElement
+             && content_element.childElementCount === 1
+             && content_element.firstChild.localName === "code"
+        ){ // already fits the expected layout
+            left_panel = content_element
+            code_element = content_element.firstChild
+            console.debug('>>> CodeSectionHTMLElement.make_HTML_left_panel: already fits the expected layout')
+        }
+        else { // wraps around
+            left_panel = document.createElement('div')
+            code_element = left_panel.appendChild(content_element)
+            console.debug('>>> CodeSectionHTMLElement.make_HTML_left_panel: wraps around')
+        }
 
         // buttons : copy-to-clipboard
         let copy_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
@@ -1452,6 +1473,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
         }
     }
     #initialize_ids() {
+    // TODO: also dedicated classes?
         this.id = this.id || CodeSectionHTMLElement.#id_generator()
         this.html_elements.panels.left.id   = `${this.id}.panels.left`
         this.html_elements.panels.right.id  = `${this.id}.panels.right`
@@ -1681,7 +1703,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
 
     // --------------------------------
     // construction/initialization
-
+ 
     constructor(parameters = {}) {
         if (typeof parameters !== "object")
             throw new Error(
@@ -1710,7 +1732,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             this._parameters.code = (() => {
                 let value = this.getAttribute('code') || this._parameters.code
                 if (!(value instanceof AwesomeCodeElement.details.code_element))
-                    value = new AwesomeCodeElement.details.code_element(value ?? this)
+                    value = new AwesomeCodeElement.details.code_element(value ?? this) // TODO: `this` only if shadow
                 return value.model ? value : undefined
             })()
         }
@@ -1731,7 +1753,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         console.debug(`AwesomeCodeElement.details.HTML_elements.CodeSection: initializing with parameters:`, this._parameters)
 
         super.initialize({
-            element: this._parameters.code ? this._parameters.code.view : undefined
+            content_element: this._parameters.code ? this._parameters.code.view : undefined
         })
 
         // defered initialiation
