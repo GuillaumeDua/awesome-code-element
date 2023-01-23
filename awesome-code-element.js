@@ -1417,7 +1417,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
     static behaviors = class behaviors {
     // default pre>code, or wraps around - attempting to preserves - an existing element
         static basic = class {
-            constructor({ target }){
+            constructor({ target = undefined }){
                 this.target = target
             }
             make_HTML_content(){
@@ -1456,7 +1456,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
         static make_behavior = function({ target }) {
         // behavior factory
             if (!target) { // default
-                return new behaviors.basic();
+                return new behaviors.basic({ target: undefined });
             }
             else if (target instanceof HTMLPreElement
                  && target.childElementCount === 1
@@ -1637,7 +1637,8 @@ class language_policies {
             if (result.relevance < 5)
                 console.warn(
                     `use_hljs_language_policy.highlight: poor language relevance [${result.relevance}/10] for language [${result.language}]
-                    Perhaps the code is too small ? (${code_element.textContent.length} characters)`
+                    Perhaps the code is too small ? (${code_element.textContent.length} characters)`,
+                    result
                 )
             return result
         }
@@ -1713,11 +1714,17 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
     }
     set language(arg) {
 
-        if (!this.code_element)
-            throw new Error('ace.cs.set(language): HTML layout is not initialized yet')
+        // code_element -> html_elements.code
+        if (!this.html_elements.code || this.html_elements.code.textContent.length === 0) {
+            // throw new Error('ace.cs.set(language): HTML layout is not initialized yet')
+            const language_new_value = hljs.getLanguage(arg)
+            this.#_language = language_new_value ? language_new_value.name : arg
+            this.toggle_language_detection = Boolean(language_new_value)
+            return
+        }
 
-        const result = use_hljs_language_policy.highlight({
-            code_element: this.code_element,
+        const result = this.#language_policy.highlight({
+            code_element: this.html_elements.code,
             language: this.toggle_language_detection ? undefined : arg
         })
         this.#_language = result.language // not arg if invalid
@@ -1732,10 +1739,12 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
 
         // CE button visibility
         // Note that resize observer can still toggle `display: block|none`
-        this.html_elements.panels.left.buttons.CE.style.visibility = Boolean(this.#is_valid_language && AwesomeCodeElement.API.configuration.CE.has(this.#_language))
-            ? 'visible'
-            : 'hidden'
+        this.html_elements.panels.left.buttons.CE.style.visibility = Boolean(
+            this.#language_policy.is_valid_language(this.#_language)
+        &&  AwesomeCodeElement.API.configuration.CE.has(this.#_language)
+        ) ? 'visible' : 'hidden'
 
+        this.#_code.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.#_language)
         // trigger (refresh) execution panel if required
         this.toggle_execution = this.toggle_execution
     }
@@ -1797,7 +1806,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
 
         // defered initialiation
         this.#_language                 = this._parameters.language         || AwesomeCodeElement.API.configuration.CodeSection.language
-        this.toggle_language_detection  = !this.#is_valid_language
+        this.toggle_language_detection  = !(this.#language_policy.is_valid_language(this.#_language))
         this.#_toggle_execution         = this._parameters.toggle_execution || AwesomeCodeElement.API.configuration.CodeSection.toggle_execution
         this.#_toggle_parsing           = this._parameters.toggle_parsing   || AwesomeCodeElement.API.configuration.CodeSection.toggle_parsing
 
