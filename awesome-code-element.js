@@ -1412,42 +1412,83 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
 
         this.#initialize_ids()
     }
+
+    // policies
+    //  - ...
+    static policies = class policies {
+    // default pre>code, or wraps around - attempting to preserves - an existing element
+        static default_layout = class {
+            constructor({ target }){
+                this.target = target
+            }
+            make_HTML_content(){
+
+                let container, content
+                if (undefined === this.target) {
+                    container = document.createElement('pre')
+                    content   = container.appendChild(document.createElement('code'))
+                }
+                else {
+                    container = this.target
+                    content   = this.target.firstChild
+                }
+
+                return {
+                    container: container,
+                    content: content
+                }
+            }
+        }
+        static wraps_layout = class {
+
+            constructor({ target }){
+                this.target = target
+            }
+            make_HTML_content(){
+                let container = document.createElement('div')
+                let content   = container.appendChild(this.target)
+                return {
+                    container: container,
+                    content: content
+                }
+            }
+        }
+
+        static make_layout_policy = function({ target }) {
+            if (!target) { // default
+                return new policies.default_layout();
+            }
+            else if (target instanceof HTMLPreElement
+                 && target.childElementCount === 1
+                 && target.firstChild.localName === "code"
+            ){ // already fits the expected layout
+                return new policies.default_layout({ target: target });
+            }
+            else { // wraps around
+                return new policies.wraps_layout({ target: target })
+            }
+        }
+    }
+
     #make_HTML_left_panel({ content_element }) {
     // wraps around a given `content_element`, or provides a default pre>code
 
-        let left_panel, code_element;
-        if (!content_element) { // default
-            left_panel   = document.createElement('pre')
-            code_element = left_panel.appendChild(document.createElement('code'))
-            console.debug('>>> CodeSectionHTMLElement.make_HTML_left_panel: default')
-        }
-        else if (content_element instanceof HTMLPreElement
-             && content_element.childElementCount === 1
-             && content_element.firstChild.localName === "code"
-        ){ // already fits the expected layout
-            left_panel = content_element
-            code_element = content_element.firstChild
-            console.debug('>>> CodeSectionHTMLElement.make_HTML_left_panel: already fits the expected layout')
-        }
-        else { // wraps around
-            left_panel = document.createElement('div')
-            code_element = left_panel.appendChild(content_element)
-            console.debug('>>> CodeSectionHTMLElement.make_HTML_left_panel: wraps around')
-        }
+        this.layout_policy = AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement.policies.make_layout_policy({ target: content_element })
+        let { container, content } = this.layout_policy.make_HTML_content()
 
         // buttons : copy-to-clipboard
         let copy_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
-            copy_button.style.zIndex = left_panel.style.zIndex + 1
-            copy_button = left_panel.appendChild(copy_button)
+            copy_button.style.zIndex = container.style.zIndex + 1
+            copy_button = container.appendChild(copy_button)
 
         let CE_button = new AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt()
             CE_button.style.zIndex = CE_button.style.zIndex + 1
-            CE_button = left_panel.appendChild(CE_button)
+            CE_button = container.appendChild(CE_button)
 
         return { 
-            panel: left_panel,
+            panel: container,
             elements: {
-                code : code_element,
+                code : content,
                 buttons : {
                     CE: CE_button,
                     copy_to_clipboard: copy_button
@@ -1524,7 +1565,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
     
     static get_hljs_language(code_tag) {
         if (code_tag === undefined || code_tag.tagName !== 'CODE')
-            throw new Error(`awesome-code-element.js:CodeSectionHTMLElement.get_code_hljs_language: bad input`)
+            return undefined // throw new Error(`awesome-code-element.js:CodeSectionHTMLElement.get_code_hljs_language: bad input`)
 
         let result = code_tag.classList.toString().match(/language-(\w+)/, '')
         return result ? result[1] : undefined // first capture group
