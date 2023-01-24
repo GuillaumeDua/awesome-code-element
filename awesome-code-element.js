@@ -79,6 +79,7 @@
 // TODO: style : px vs. em
 // TODO: listener for CSS attribute change, properly calling setters ? (language, toggle_execution, toggle_parsing, orientation)
 // TODO: get rid of jquery ? -> document.querySelector
+// TODO: doxygen: configuration -> use_hljs or use_no_highlighter (preserves/keep doxygen code highlighting)
 
 // WIP: ace.cs wrap mode
 // ---------------------
@@ -1302,6 +1303,49 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
         return false
     }
 }
+
+class layout_policies {
+// default pre>code, or wraps around - attempting to preserves - an existing element
+    static basic = class basic {
+        static build_layout_for = function({ target }){
+
+            let container, content
+            if (!target) {
+                container = document.createElement('pre')
+                content   = container.appendChild(document.createElement('code'))
+            }
+            else {
+                container = target
+                content   = target.firstChild
+            }
+
+            return {
+                container: container,
+                content: content
+            }
+        }
+    }
+    static wraps = class wraps {
+        static build_layout_for = function(){
+            let container = document.createElement('div')
+            let content   = container.appendChild(target)
+            return {
+                container: container,
+                content: content
+            }
+        }
+    }
+
+    static select_best_for_target = function({ target }) {
+    // behavior factory
+        const is_expected_layout = target instanceof HTMLPreElement
+            && target.childElementCount === 1
+            && target.firstChild.localName === "code"
+        return !target || is_expected_layout
+            ? layout_policies.basic // already fits the expected layout
+            : layout_policies.wraps // wraps around
+    }
+}
 // TODO: flex-resizer between the two panels ?
 AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSectionHTMLElement
                                                                     extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement 
@@ -1415,67 +1459,12 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
         this.#initialize_ids()
     }
 
-    static behaviors = class behaviors {
-    // default pre>code, or wraps around - attempting to preserves - an existing element
-        static basic = class {
-            constructor({ target = undefined }){
-                this.target = target
-            }
-            make_HTML_content(){
-
-                let container, content
-                if (undefined === this.target) {
-                    container = document.createElement('pre')
-                    content   = container.appendChild(document.createElement('code'))
-                }
-                else {
-                    container = this.target
-                    content   = this.target.firstChild
-                }
-
-                return {
-                    container: container,
-                    content: content
-                }
-            }
-        }
-        static wraps = class {
-
-            constructor({ target }){
-                this.target = target
-            }
-            make_HTML_content(){
-                let container = document.createElement('div')
-                let content   = container.appendChild(this.target)
-                return {
-                    container: container,
-                    content: content
-                }
-            }
-        }
-
-        static make_behavior = function({ target }) {
-        // behavior factory
-            if (!target) { // default
-                return new behaviors.basic({ target: undefined });
-            }
-            else if (target instanceof HTMLPreElement
-                 && target.childElementCount === 1
-                 && target.firstChild.localName === "code"
-            ){ // already fits the expected layout
-                return new behaviors.basic({ target: target });
-            }
-            else { // wraps around
-                return new behaviors.wraps({ target: target })
-            }
-        }
-    }
     #make_HTML_left_panel({ content_element }) {
     // wraps around a given `content_element`, or provides a default pre>code
 
-        const this_type = AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement
-        this.layout_policy = this_type.behaviors.make_behavior({ target: content_element })
-        let { container, content } = this.layout_policy.make_HTML_content()
+        this.layout_policy = layout_policies.select_best_for_target({ target: content_element })
+        console.debug('ace.details.cs_HTMLElement: selected layout policy:', this.layout_policy.prototype.constructor.name)
+        let { container, content } = this.layout_policy.build_layout_for({ target: content_element })
 
         // buttons : copy-to-clipboard
         let copy_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
@@ -1612,6 +1601,20 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
 // HTML_elements : API
 
 class language_policies {
+    static use_no_highlighter = class {
+    // do nothing
+        static is_valid_language(language){ return true; }
+        static get_language(code_element){
+            return "n/a"
+        }
+        static highlight({ code_element, language }){
+            return {
+                relevance: 10,
+                language: "n/a",
+                value: code_element.innerHTML
+            }
+        }
+    }
     static use_hljs = class use_hljs_language_policy {
 
         static is_valid_language(language){
@@ -1621,10 +1624,10 @@ class language_policies {
             if (code_element === undefined || !(code_element instanceof HTMLElement))
                 throw new Error(`awesome-code-element.js:CodeSectionHTMLElement.get_code_hljs_language: bad input`)
 
-            let result = code_element.classList.toString().match(/language-(\w+)/, '')
-            return result ? result[1] : undefined // first capture group
+            const result = code_element.classList.toString().match(/language-(\w+)/, '')
+            return Boolean(result && result.length === 1) ? result[1] : undefined // first capture group
         }
-        static highlight_dry_run({ code_element, language }){
+        static #highlight_dry_run({ code_element, language }){
             if (!code_element || !(code_element instanceof HTMLElement))
                 throw new Error('use_hljs_language_policy.highlight: invalid argument. Expect [code_element] to be a valid HTMLElement')
             if (language && !use_hljs_language_policy.is_valid_language(language)) {
@@ -1644,7 +1647,7 @@ class language_policies {
             return result
         }
         static highlight({ code_element, language }){
-            const result = use_hljs_language_policy.highlight_dry_run({
+            const result = use_hljs_language_policy.#highlight_dry_run({
                 code_element: code_element,
                 language: language
             })
@@ -1700,8 +1703,11 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         this.toggle_execution = this.toggle_execution
     }
     
+    // --------------------------------
+    // language
+    // use_no_highlighter
     #language_policy = language_policies.use_hljs // TODO: not hard-coded, use a selector instead
-    #_language = undefined
+    // #language_policy = this.layout_policy === AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement.behaviors.wraps ? language_policies.
 
     #_toggle_language_detection = true
     set toggle_language_detection(value) {
@@ -1710,7 +1716,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
     get toggle_language_detection() {
         return this.#_toggle_language_detection || !this.#language_policy.is_valid_language(this.#_language)
     }
-    
+
+    #_language = undefined
     get language() {
 
         if (this.#language_policy.is_valid_language(this.#_language))
@@ -1742,7 +1749,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
 
         this.#onLanguageChange()
     }
-
     #onLanguageChange(){
 
         this.setAttribute('language', this.#_language)
@@ -1972,7 +1978,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         return this.#_url
     }
     set url(value) {
-    // TODO: Cancel or wait for pending resource acquisition
+    // TODO: Async task cancelation: 
+    //  Cancel or wait for pending resource acquisition
     //  issue:  if `url` is set twice (in a short period of time), we have a race condition
     //          can be fix with some internal stat management
         this.html_elements.panels.left.toggle_loading_animation = true
