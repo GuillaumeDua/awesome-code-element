@@ -1326,7 +1326,7 @@ class layout_policies {
         }
     }
     static wraps = class wraps {
-        static build_layout_for = function(){
+        static build_layout_for = function({ target }){
             let container = document.createElement('div')
             let content   = container.appendChild(target)
             return {
