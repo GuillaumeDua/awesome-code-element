@@ -1264,7 +1264,8 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
             }
         }
         catch (error) {
-            console.error(`${error}`)
+            // todo: error.stack seems to be truncated for some reasons ?
+            console.error(error)
             this.on_critical_internal_error(error)
         }
     }
@@ -1683,8 +1684,10 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         this.#view_update_code()
     }
     #view_update_code() {
-        if (this.html_elements.code === undefined) { // not initialized yet (shadow-root)
-            this.textContent = this.code            // trigger defered initialization
+
+        if (this.html_elements.code === undefined) {
+        // not initialized yet (shadow-root)
+            this.textContent = this.code // triggers defered initialization
             return
         }
 
@@ -1699,7 +1702,14 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
     
     #language_policy = language_policies.use_hljs // TODO: not hard-coded, use a selector instead
     #_language = undefined
-    toggle_language_detection = true
+
+    #_toggle_language_detection = true
+    set toggle_language_detection(value) {
+        this.#_toggle_language_detection = value
+    }
+    get toggle_language_detection() {
+        return this.#_toggle_language_detection || !this.#language_policy.is_valid_language(this.#_language)
+    }
     
     get language() {
 
@@ -1714,12 +1724,12 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
     }
     set language(arg) {
 
-        // code_element -> html_elements.code
+        const is_valid_input = this.#language_policy.is_valid_language(arg)
+        this.toggle_language_detection = !is_valid_input
+
         if (!this.html_elements.code || this.html_elements.code.textContent.length === 0) {
             // throw new Error('ace.cs.set(language): HTML layout is not initialized yet')
-            const language_new_value = hljs.getLanguage(arg)
-            this.#_language = language_new_value ? language_new_value.name : arg
-            this.toggle_language_detection = Boolean(language_new_value)
+            this.#_language = is_valid_input ? arg : undefined
             return
         }
 
@@ -1728,7 +1738,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             language: this.toggle_language_detection ? undefined : arg
         })
         this.#_language = result.language // not arg if invalid
-        this.toggle_language_detection = Boolean(result.relevance >= 5)
+        this.toggle_language_detection = Boolean(result.relevance <= 5)
 
         this.#onLanguageChange()
     }
@@ -1791,7 +1801,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
 
         // post-condition: valid code content
         const is_valid = Boolean(this._parameters.code ?? this._parameters.url)
-        console.debug('>>>', is_valid, this._parameters.code)
         if (is_valid)
             this.acquire_parameters = () => { throw new Error('CodeSection.acquire_parameters: already called') }
         return is_valid
@@ -1845,6 +1854,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
 
     // --------------------------------
     // core logic : execution
+    //  TODO: executor policy -> select (language) -> use_compiler_explorer_API
 
     get ce_options() {
         return this.#_code.ce_options
@@ -1974,18 +1984,25 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         let previous_execution_state = this.toggle_execution
         this.toggle_execution = false // disabled while loading
 
-        let _this = this // TODO: useless
         AwesomeCodeElement.details.utility.fetch_resource(this.#_url, {
             on_error: (error) => {
-                _this.on_error(`CodeSection: network error: ${error}`)
+                this.on_error(`CodeSection: network error: ${error}`)
                 this.html_elements.panels.left.toggle_loading_animation = false
             },
             on_success: (code) => {
                 if (!code) {
-                    _this.on_error('CodeSection: fetched invalid (possibly empty) remote code')
+                    this.on_error('CodeSection: fetched invalid (possibly empty) remote code')
                 }
-                _this.language = AwesomeCodeElement.details.utility.get_url_extension(_this.#_url)
-                _this.code = code
+
+                if (this.toggle_language_detection) {
+                // use url extension as language, if valid
+                    const url_extension = AwesomeCodeElement.details.utility.get_url_extension(this.#_url)
+                    if (url_extension && this.#language_policy.is_valid_language(url_extension)) {
+                        this.toggle_language_detection = false
+                        this.#_language = url_extension
+                    }
+                }
+                this.code = code
                 this.html_elements.panels.left.toggle_loading_animation = false
                 this.toggle_execution = previous_execution_state // restore execution state
             }
@@ -2460,8 +2477,8 @@ AwesomeCodeElement.API.initializers = {
     
         // TODO: restore documentation reference links
         doc_ref_links.forEach((values, keys) => {
-            // console.debug(">>>>>>> " + value.href + " => " + value.textContent)
-            console.debug(">>>>>>> " + values + " => " + keys)
+            // console.debug(">>> " + value.href + " => " + value.textContent)
+            console.debug(">>> " + values + " => " + keys)
         })
     
         var place_holders = $('body').find('awesome-code-element_code-section pre code') // span or text
