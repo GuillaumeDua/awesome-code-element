@@ -828,21 +828,22 @@ AwesomeCodeElement.details.code_element = class code_element {
                 })
                 .reduce((total, current) => total + current, 0)
         }
-        static to_code({ element }) {
+        static to_code({ elements }) {
+        // expect Array.from(node.childNodes)
         // TODO?: faster approach?: use regex on outerHTML: \<(?'closing'\/?)(?'tagname'\w+\-?)+.*?\>
         // replace invalid HTMLElement by their localName as text
-            return Array
-                .from(element.childNodes)
+            
+            return elements
                 .map(element => {
                     switch (element.nodeType) {
                         case Node.TEXT_NODE:
                             return element.textContent
                         case Node.ELEMENT_NODE:
                             if (html_parser.is_valid_tagName({ tagName: element.tagName }))
-                                return html_parser.to_code({ element: element })
-                            // invalid tagname are kept, to preserve include semantic.
+                                return html_parser.to_code({ elements: Array.from(element.childNodes) })
+                            // invalid tagname are kept as text, to preserve include semantic.
                             //  e.g: `<iostream>` in `#include <iostream>`
-                            return `<${element.localName}>${html_parser.to_code({ element: element })}`
+                            return `<${element.localName}>${html_parser.to_code({ elements: Array.from(element.childNodes) })}`
                         case Node.COMMENT_NODE:
                         case Node.CDATA_SECTION_NODE:
                         default:
@@ -891,8 +892,12 @@ AwesomeCodeElement.details.code_element = class code_element {
 
         if (argument instanceof HTMLElement)
             this.#build_from_element(argument)
+        else if (argument instanceof Array && argument.reduce((index, arg) => undefined !== arg.nodeType, true))
+            this.#build_from_elements_array(argument)
+        else if (argument.nodeType === document.TEXT_NODE)
+            this.#build_from_text(argument.textContent)
         else
-            this.#build_from_text(argument)
+            this.#build_from_text(argument.toString())
     
         // TODO? element.replaceWith(this.view)
     }
@@ -934,8 +939,38 @@ AwesomeCodeElement.details.code_element = class code_element {
         this.model = (() => {
             if (this.is_self_contained)
                 element = code_element.html_parser.cleanup({ element: element })
-            const textContent = code_element.html_parser.to_code({ element: element })
+            const textContent = code_element.html_parser.to_code({ elements: Array.from(element.childNodes) })
             return code_element.cleanup(textContent) || code_element.cleanup(element.getAttribute('code')) ||  ''
+        })()
+        if (!this.is_self_contained) {
+            this.#build_from_text(this.model)
+            return
+        }
+        this.view = element
+    }
+    #build_from_elements_array(elements){
+    // expected: Array.from(node.childNodes)
+
+        if (!(elements instanceof Array)
+        ||  !elements.reduce((index, arg) => undefined !== arg.nodeType, true))
+            throw new Error('code_element.#build_from_elements_array: invalid argument')
+
+        this.is_self_contained = false
+        this.model = (() => {
+            
+            elements.forEach((element) => code_element.html_parser.cleanup({ element: element }))
+            const textContent = elements
+                .map((element) => { 
+
+                    let result = code_element.html_parser.to_code({ elements: Array.from(element.childNodes) })
+                    console.debug('>>>', element, '\ntext:', result)
+                    return result
+                })
+                .join('')
+
+            console.debug('>>>>>>', elements, '\nresult:', textContent)
+
+            return code_element.cleanup(textContent) || ''
         })()
         if (!this.is_self_contained) {
             this.#build_from_text(this.model)
@@ -1264,8 +1299,8 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
             }
         }
         catch (error) {
-            // todo: error.stack seems to be truncated for some reasons ?
-            console.error(error)
+            // TODO: error.stack seems to be truncated for some reasons ?
+            console.error('ace.details.defered_HTMLElement: error:', error, error.stack)
             this.on_critical_internal_error(error)
         }
     }
@@ -1315,7 +1350,7 @@ class layout_policies {
             }
             else {
                 container = target
-                content   = target.firstChild
+                content   = target.firstElementChild
             }
 
             return {
@@ -1339,7 +1374,7 @@ class layout_policies {
     // behavior factory
         const is_expected_layout = target instanceof HTMLPreElement
             && target.childElementCount === 1
-            && target.firstChild.localName === "code"
+            && target.firstElementChild.localName === "code"
         return !target || is_expected_layout
             ? layout_policies.basic // already fits the expected layout
             : layout_policies.wraps // wraps around
@@ -1421,7 +1456,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
             owner:  this.html_elements.panels.left,
             target_or_accessor: this.html_elements.code
         })
-        this.html_elements.panels.left  = this.appendChild(this.html_elements.panels.left)
+        this.html_elements.panels.left = this.appendChild(this.html_elements.panels.left)
 
         // right panel: execution
         const { 
@@ -1437,7 +1472,7 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
             owner:  this.html_elements.panels.right,
             target_or_accessor: () => { return this.html_elements.execution }
         })
-        this.html_elements.panels.right      = this.appendChild(this.html_elements.panels.right)
+        this.html_elements.panels.right = this.appendChild(this.html_elements.panels.right)
 
         // panels: add on_resize event
         let set_on_resize_event = ({panel, scrolling_element, elements_to_hide}) => {
@@ -1811,8 +1846,17 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         try {
             this._parameters.code = (() => {
                 let value = this.getAttribute('code') || this._parameters.code
-                if (!(value instanceof AwesomeCodeElement.details.code_element))
-                    value = new AwesomeCodeElement.details.code_element(value ?? this) // TODO: `this` only if shadow
+                if (!(value instanceof AwesomeCodeElement.details.code_element)) {
+
+                    let arg = (() => {
+                        if (value) return value
+                        return Array.from(this.childNodes)
+                        // if (this.childNodes.length === 1) return this.firstChild // either element or text
+                        // return AwesomeCodeElement.details.utility.html_codec.decode(this.innerHTML) // textContent might skip illegal HTMLElement-s
+                    })()
+
+                    value = new AwesomeCodeElement.details.code_element(arg) // TODO: `this` only if shadowroot or not initialized ?
+                }
                 return value.model ? value : undefined
             })()
         }
