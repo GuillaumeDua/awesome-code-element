@@ -812,18 +812,21 @@ AwesomeCodeElement.details.code_element = class code_element {
 //  model: inner text considered as plain code: any invalid nodes injected by the HTML rendering are removed
 //  view : either a pre>code or the given element, if the later contains valid HTML elements
     static html_parser = class html_parser {
+        static is_valid_HTMLElement({ element }){
+            return element instanceof HTMLElement && !(element instanceof HTMLUnknownElement)
+        }
         static is_valid_tagName({ tagName }) {
             if (!(typeof tagName === 'string') && !(tagName instanceof String))
                 throw new Error('html_parser.is_valid_tagName: invalid argument')
-            // TODO: cache to decrease costly element creation
-            return !(document.createElement(tagName) instanceof HTMLUnknownElement)
+            // TODO: cache tagname -> result, to decrease costly/useless element creation
+            return html_parser.is_valid_HTMLElement({ element: document.createElement(tagName) })
         }
         static count_valid_childrens({ element, is_recursive = false }) {
             return Array
                 .from(element.children)
                 .map((element) => {
                     return 0
-                        + html_parser.is_valid_tagName({ tagName: element.nodeName })
+                        + html_parser.is_valid_HTMLElement({ element: element })
                         + (is_recursive ? html_parser.count_valid_childrens({ element: element, is_recursive: is_recursive }) : 0)
                 })
                 .reduce((total, current) => total + current, 0)
@@ -839,7 +842,8 @@ AwesomeCodeElement.details.code_element = class code_element {
                         case Node.TEXT_NODE:
                             return element.textContent
                         case Node.ELEMENT_NODE:
-                            if (html_parser.is_valid_tagName({ tagName: element.tagName }))
+                            console.debug('>>> is', element, 'a valid HTMLElement?', html_parser.is_valid_HTMLElement({ element: element }))
+                            if (html_parser.is_valid_HTMLElement({ element: element }))
                                 return html_parser.to_code({ elements: Array.from(element.childNodes) })
                             // invalid tagname are kept as text, to preserve include semantic.
                             //  e.g: `<iostream>` in `#include <iostream>`
@@ -866,7 +870,7 @@ AwesomeCodeElement.details.code_element = class code_element {
         static #cleanup_impl({ element }){
         // recursively replaces invalid element by their tagname as text
             let childNodes = Array.from(element.childNodes)                                         // preserve reference/offset integrity
-            if (!html_parser.is_valid_tagName({ tagName: element.tagName })) {
+            if (!html_parser.is_valid_HTMLElement({ element: element })) {
                 element.previousSibling.appendData(`<${element.localName}>`)                        // replace by text
                 childNodes.forEach(node => element.parentNode.insertBefore(node, element))          // transfert childrensNodes to parent
                 element = element.parentNode.removeChild(element)                                   // remove the element
@@ -904,7 +908,7 @@ AwesomeCodeElement.details.code_element = class code_element {
 
     static cleanup(code_as_text){
         if (!code_as_text)
-            return code_as_text
+            return ''
 
         return code_as_text.replace(/^\s*/, '').replace(/\s*$/, '') // remove enclosing white-spaces
 
@@ -962,15 +966,14 @@ AwesomeCodeElement.details.code_element = class code_element {
             const textContent = elements
                 .map((element) => { 
 
-                    let result = code_element.html_parser.to_code({ elements: Array.from(element.childNodes) })
-                    console.debug('>>>', element, '\ntext:', result)
+                    let result = code_element.html_parser.to_code({
+                        elements: [ element ]
+                    })
                     return result
                 })
                 .join('')
 
-            console.debug('>>>>>>', elements, '\nresult:', textContent)
-
-            return code_element.cleanup(textContent) || ''
+            return code_element.cleanup(textContent)
         })()
         if (!this.is_self_contained) {
             this.#build_from_text(this.model)

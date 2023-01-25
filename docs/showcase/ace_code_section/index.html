@@ -230,7 +230,7 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
         <ul><li>
         <h3>compilation <b style="color:green">success</b></h3>
 <ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
-#include <iostream>
+#include <iostream> // note that <iostream> is not interpreted by ace.cs as an HTMLElement here
 auto main() -> int {
     auto i = 42;
     std::cout << "some console output";
