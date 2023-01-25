@@ -79,7 +79,6 @@
 // TODO: style : px vs. em
 // TODO: listener for CSS attribute change, properly calling setters ? (language, toggle_execution, toggle_parsing, orientation)
 // TODO: get rid of jquery ? -> document.querySelector
-// TODO: doxygen: configuration -> use_hljs or use_no_highlighter (preserves/keep doxygen code highlighting)
 
 // WIP: ace.cs wrap mode
 // ---------------------
@@ -1398,12 +1397,16 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
         code: undefined,
         execution: undefined
     }
+    layout_policy = undefined
     #initialize_HTML({ content_element }) {
 
         if (!this.isConnected)
             throw new Error('CodeSectionHTMLElement:#initialize_HTML: not connected yet')
 
         this.innerHTML = ""
+
+        this.layout_policy = layout_policies.select_best_for_target({ target: content_element })
+        console.debug('ace.details.cs_HTMLElement: selected layout policy:', this.layout_policy.prototype.constructor.name)
 
         // left panel: code content
         const {
@@ -1462,8 +1465,9 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
     #make_HTML_left_panel({ content_element }) {
     // wraps around a given `content_element`, or provides a default pre>code
 
-        this.layout_policy = layout_policies.select_best_for_target({ target: content_element })
-        console.debug('ace.details.cs_HTMLElement: selected layout policy:', this.layout_policy.prototype.constructor.name)
+        if (!this.layout_policy)
+            throw new Error('ace.details.cs_HTMLElement: invalid layout_policy')
+
         let { container, content } = this.layout_policy.build_layout_for({ target: content_element })
 
         // buttons : copy-to-clipboard
@@ -1597,72 +1601,81 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
     }
 }
 
-// ==================
-// HTML_elements : API
-
 class language_policies {
-    static use_no_highlighter = class {
-    // do nothing
-        static is_valid_language(language){ return true; }
-        static get_language(code_element){
-            return "n/a"
+
+    static detectors = class {
+        static use_none = class {
+            static is_valid_language(language){ return true; }
+            static get_language(code_element){
+                return "n/a"
+            }
         }
-        static highlight({ code_element, language }){
-            return {
-                relevance: 10,
-                language: "n/a",
-                value: code_element.innerHTML
+        static use_hljs = class use_hljs_language_detector_policy {
+            static is_valid_language(language){
+                return hljs.getLanguage(language) !== undefined
+            }
+            static get_language(code_element) {
+                if (code_element === undefined || !(code_element instanceof HTMLElement))
+                    throw new Error(`awesome-code-element.js:CodeSectionHTMLElement.get_code_hljs_language: bad input`)
+    
+                const result = code_element.classList.toString().match(/language-(\w+)/, '') // expected: "hljs language-[name]"
+                return Boolean(result && result.length === 1) ? result[1] : undefined // first capture group
             }
         }
     }
-    static use_hljs = class use_hljs_language_policy {
 
-        static is_valid_language(language){
-            return hljs.getLanguage(language) !== undefined
-        }
-        static get_language(code_element) {
-            if (code_element === undefined || !(code_element instanceof HTMLElement))
-                throw new Error(`awesome-code-element.js:CodeSectionHTMLElement.get_code_hljs_language: bad input`)
-
-            const result = code_element.classList.toString().match(/language-(\w+)/, '')
-            return Boolean(result && result.length === 1) ? result[1] : undefined // first capture group
-        }
-        static #highlight_dry_run({ code_element, language }){
-            if (!code_element || !(code_element instanceof HTMLElement))
-                throw new Error('use_hljs_language_policy.highlight: invalid argument. Expect [code_element] to be a valid HTMLElement')
-            if (language && !use_hljs_language_policy.is_valid_language(language)) {
-                console.warn(`use_hljs_language_policy.highlight: invalid language [${language}], attempting fallback detection`)
-                language = undefined
+    static highlighters = class {
+        static use_none = class {
+            static highlight({ code_element, language }){
+                return {
+                    relevance: 10,
+                    language: "n/a",
+                    value: code_element.innerHTML
+                }
             }
-            
-            const result = language
-                ? hljs.highlight(code_element.textContent, { language: language })
-                : hljs.highlightAuto(code_element.textContent)
-            if (result.relevance < 5)
-                console.warn(
-                    `use_hljs_language_policy.highlight: poor language relevance [${result.relevance}/10] for language [${result.language}]
-                    Perhaps the code is too small ? (${code_element.textContent.length} characters)`,
-                    result
-                )
-            return result
         }
-        static highlight({ code_element, language }){
-            const result = use_hljs_language_policy.#highlight_dry_run({
-                code_element: code_element,
-                language: language
-            })
-            code_element.innerHTML = result.value
-
-            const update_classList = () => {
-                code_element.classList = [...code_element.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
-                code_element.classList.add(`hljs`)
-                code_element.classList.add(`language-${result.language}`)
+        static use_hljs = class use_hljs_language_policy {
+    
+            static #highlight_dry_run({ code_element, language }){
+                if (!code_element || !(code_element instanceof HTMLElement))
+                    throw new Error('use_hljs_language_policy.highlight: invalid argument. Expect [code_element] to be a valid HTMLElement')
+                if (language && !language_policies.detectors.use_hljs.is_valid_language(language)) {
+                    console.warn(`use_hljs_language_policy.highlight: invalid language [${language}], attempting fallback detection`)
+                    language = undefined
+                }
+                
+                const result = language
+                    ? hljs.highlight(code_element.textContent, { language: language })
+                    : hljs.highlightAuto(code_element.textContent)
+                if (result.relevance < 5)
+                    console.warn(
+                        `use_hljs_language_policy.highlight: poor language relevance [${result.relevance}/10] for language [${result.language}]
+                        Perhaps the code is too small ? (${code_element.textContent.length} characters)`,
+                        result
+                    )
+                return result
             }
-            update_classList()
-            return result
+            static highlight({ code_element, language }){
+                const result = use_hljs_language_policy.#highlight_dry_run({
+                    code_element: code_element,
+                    language: language
+                })
+                code_element.innerHTML = result.value
+    
+                const update_classList = () => {
+                    code_element.classList = [...code_element.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
+                    code_element.classList.add(`hljs`)
+                    code_element.classList.add(`language-${result.language}`)
+                }
+                update_classList()
+                return result
+            }
         }
     }
 }
+
+// ==================
+// HTML_elements : API
 
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement { 
@@ -1682,7 +1695,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             this.#_code = value
         else if (typeof value === 'string')
             this.#_code = new AwesomeCodeElement.details.ParsedCode(value, this.language)
-        else throw new Error('SimpleCodeSection: set code: invalid input argument type')
+        else throw new Error('ace.cs: set code: invalid input argument type')
 
         this.#view_update_code()
     }
@@ -1698,40 +1711,43 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         // update view
         this.html_elements.code.textContent = this.code || ""
         // language
-        this.language = this.language // redetect language if required
+        this.language = (this.toggle_language_detection ? undefined : this.language) // redetect language if required
         // trigger (refresh) execution panel if required
         this.toggle_execution = this.toggle_execution
     }
     
     // --------------------------------
     // language
-    // use_no_highlighter
-    #language_policy = language_policies.use_hljs // TODO: not hard-coded, use a selector instead
-    // #language_policy = this.layout_policy === AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement.behaviors.wraps ? language_policies.
+    #language_policies = {
+    // default: hljs.
+    // TODO: override this in configuration ?
+        detector:       language_policies.detectors.use_hljs,
+        highlighter:    language_policies.highlighters.use_hljs
+    }
 
     #_toggle_language_detection = true
     set toggle_language_detection(value) {
         this.#_toggle_language_detection = value
     }
     get toggle_language_detection() {
-        return this.#_toggle_language_detection || !this.#language_policy.is_valid_language(this.#_language)
+        return this.#_toggle_language_detection || !this.#language_policies.detector.is_valid_language(this.#_language)
     }
 
     #_language = undefined
     get language() {
 
-        if (this.#language_policy.is_valid_language(this.#_language))
+        if (this.#language_policies.detector.is_valid_language(this.#_language))
             return this.#_language
         if (this.code_element) {
             console.info('ace.cs : invalid language, attempting a detection as fallback')
-            const detected_language = this.#language_policy.get_language(this.code_element)
+            const detected_language = this.#language_policies.detector.get_language(this.code_element)
             return detected_language === 'undefined' ? undefined : detected_language
         }
         return undefined
     }
     set language(arg) {
 
-        const is_valid_input = this.#language_policy.is_valid_language(arg)
+        const is_valid_input = this.#language_policies.detector.is_valid_language(arg)
         this.toggle_language_detection = !is_valid_input
 
         if (!this.html_elements.code || this.html_elements.code.textContent.length === 0) {
@@ -1740,7 +1756,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             return
         }
 
-        const result = this.#language_policy.highlight({
+        const result = this.#language_policies.highlighter.highlight({
             code_element: this.html_elements.code,
             language: this.toggle_language_detection ? undefined : arg
         })
@@ -1756,7 +1772,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         // CE button visibility
         // Note that resize observer can still toggle `display: block|none`
         this.html_elements.panels.left.buttons.CE.style.visibility = Boolean(
-            this.#language_policy.is_valid_language(this.#_language)
+            this.#language_policies.detector.is_valid_language(this.#_language)
         &&  AwesomeCodeElement.API.configuration.CE.has(this.#_language)
         ) ? 'visible' : 'hidden'
 
@@ -1819,9 +1835,19 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             content_element: this._parameters.code ? this._parameters.code.view : undefined
         })
 
+        this.#language_policies = (() => {
+            const policy_name = this.layout_policy === layout_policies.wraps ? 'use_none' : 'use_hljs'
+            return {
+                detector:    language_policies.detectors[policy_name],
+                highlighter: language_policies.highlighters[policy_name]
+            }
+        })()
+        console.debug('ace.cs: language detector    policy:', this.#language_policies.detector.name)
+        console.debug('ace.cs: language highlighter policy:', this.#language_policies.highlighter.name)
+
         // defered initialiation
         this.#_language                 = this._parameters.language         || AwesomeCodeElement.API.configuration.CodeSection.language
-        this.toggle_language_detection  = !(this.#language_policy.is_valid_language(this.#_language))
+        this.toggle_language_detection  = !(this.#language_policies.detector.is_valid_language(this.#_language))
         this.#_toggle_execution         = this._parameters.toggle_execution || AwesomeCodeElement.API.configuration.CodeSection.toggle_execution
         this.#_toggle_parsing           = this._parameters.toggle_parsing   || AwesomeCodeElement.API.configuration.CodeSection.toggle_parsing
 
@@ -2004,7 +2030,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
                 if (this.toggle_language_detection) {
                 // use url extension as language, if valid
                     const url_extension = AwesomeCodeElement.details.utility.get_url_extension(this.#_url)
-                    if (url_extension && this.#language_policy.is_valid_language(url_extension)) {
+                    if (url_extension && this.#language_policies.detector.is_valid_language(url_extension)) {
                         this.toggle_language_detection = false
                         this.#_language = url_extension
                     }
