@@ -1838,7 +1838,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         this.#language_policies = (() => {
             const policy_name = this.layout_policy === layout_policies.wraps ? 'use_none' : 'use_hljs'
             return {
-                detector:    language_policies.detectors[policy_name],
+                detector:    language_policies.detectors.use_hljs,  // keep hljs for language detection
                 highlighter: language_policies.highlighters[policy_name]
             }
         })()
