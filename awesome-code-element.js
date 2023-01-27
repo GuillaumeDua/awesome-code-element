@@ -79,6 +79,9 @@
 // TODO: style : px vs. em
 // TODO: listener for CSS attribute change, properly calling setters ? (language, toggle_execution, toggle_parsing, orientation)
 // TODO: get rid of jquery ? -> document.querySelector
+// TODO: wraps around a rich code editor block
+// TODO: cleanup logs
+// TODO: cleanup module: ease code navigation
 
 // WIP: ace.cs wrap mode
 // ---------------------
@@ -813,15 +816,21 @@ AwesomeCodeElement.details.code_element = class code_element {
 //  view : either a pre>code or the given element, if the later contains valid HTML elements
     static html_parser = class html_parser {
         static is_valid_HTMLElement({ element }){
+            if (element === undefined)
+                throw new Error('ace.details.code_element.html_parser.is_valid_HTMLElement: invalid argument')
             return element instanceof HTMLElement && !(element instanceof HTMLUnknownElement)
         }
         static is_valid_tagName({ tagName }) {
+            if (element === undefined)
+                throw new Error('ace.details.code_element.html_parser.is_valid_tagName: invalid argument')
             if (!(typeof tagName === 'string') && !(tagName instanceof String))
                 throw new Error('html_parser.is_valid_tagName: invalid argument')
             // TODO: cache tagname -> result, to decrease costly/useless element creation
             return html_parser.is_valid_HTMLElement({ element: document.createElement(tagName) })
         }
         static count_valid_childrens({ element, is_recursive = false }) {
+            if (element === undefined)
+                throw new Error('ace.details.code_element.html_parser.count_valid_childrens: invalid argument')
             return Array
                 .from(element.children)
                 .map((element) => {
@@ -835,14 +844,14 @@ AwesomeCodeElement.details.code_element = class code_element {
         // expect Array.from(node.childNodes)
         // TODO?: faster approach?: use regex on outerHTML: \<(?'closing'\/?)(?'tagname'\w+\-?)+.*?\>
         // replace invalid HTMLElement by their localName as text
-            
+            if (elements === undefined)
+                throw new Error('ace.details.code_element.html_parser.count_valid_childrens: invalid argument')
             return elements
                 .map(element => {
                     switch (element.nodeType) {
                         case Node.TEXT_NODE:
                             return element.textContent
                         case Node.ELEMENT_NODE:
-                            console.debug('>>> is', element, 'a valid HTMLElement?', html_parser.is_valid_HTMLElement({ element: element }))
                             if (html_parser.is_valid_HTMLElement({ element: element }))
                                 return html_parser.to_code({ elements: Array.from(element.childNodes) })
                             // invalid tagname are kept as text, to preserve include semantic.
@@ -859,6 +868,9 @@ AwesomeCodeElement.details.code_element = class code_element {
         }
         static cleanup({ element }){
         // recursively replaces invalid childrens element by their tagname as text
+            if (element === undefined)
+                throw new Error('ace.details.code_element.html_parser.cleanup: invalid argument')
+
             let childNodes = Array.from(element.childNodes)
             childNodes
                 .filter(element => element.nodeType === HTMLElement.ELEMENT_NODE)
@@ -869,6 +881,10 @@ AwesomeCodeElement.details.code_element = class code_element {
         }
         static #cleanup_impl({ element }){
         // recursively replaces invalid element by their tagname as text
+
+            if (element === undefined)
+                throw new Error('ace.details.code_element.html_parser.cleanup_impl: invalid argument')
+
             let childNodes = Array.from(element.childNodes)                                         // preserve reference/offset integrity
             if (!html_parser.is_valid_HTMLElement({ element: element })) {
                 element.previousSibling.appendData(`<${element.localName}>`)                        // replace by text
@@ -883,7 +899,7 @@ AwesomeCodeElement.details.code_element = class code_element {
         }
     };
 
-    get is_editable() { return !is_self_contained }
+    get is_editable() { return !this.is_self_contained }
 
     constructor(argument) {
 
@@ -894,15 +910,8 @@ AwesomeCodeElement.details.code_element = class code_element {
             return;
         }
 
-        if (argument instanceof HTMLElement)
-            this.#build_from_element(argument)
-        else if (argument instanceof Array && argument.reduce((index, arg) => undefined !== arg.nodeType, true))
-            this.#build_from_elements_array(argument)
-        else if (argument.nodeType === document.TEXT_NODE)
-            this.#build_from_text(argument.textContent)
-        else
-            this.#build_from_text(argument.toString())
-    
+        this.#build_from(argument)
+
         // TODO? element.replaceWith(this.view)
     }
 
@@ -923,6 +932,28 @@ AwesomeCodeElement.details.code_element = class code_element {
         // })()
     }
 
+    #build_from(argument){
+
+        if (argument instanceof HTMLElement)
+            this.#build_from_element(argument)
+        else if (argument instanceof Array
+              && argument.reduce((index, arg) => undefined !== arg.nodeType, true))
+        {
+            let only_one_valid_element = (() => {
+                const no_ws_elements = argument.filter((element) => !(element.nodeType === Node.TEXT_NODE && /^\s+$/g.test(element.textContent)))
+                return no_ws_elements.length === 1 && code_element.html_parser.is_valid_HTMLElement({ element: no_ws_elements[0] })
+                    ? no_ws_elements[0]
+                    : undefined
+            })()
+            return only_one_valid_element
+                ? this.#build_from_element(only_one_valid_element)
+                : this.#build_from_nodes(argument)
+        }
+        else if (argument.nodeType === document.TEXT_NODE)
+            this.#build_from_text(argument.textContent)
+        else
+            this.#build_from_text(argument.toString())
+    }
     #build_from_text(value){
 
         this.is_self_contained = false
@@ -939,6 +970,7 @@ AwesomeCodeElement.details.code_element = class code_element {
         if (!(element instanceof HTMLElement))
             throw new Error('code_element.#build_from_element: invalid argument')
 
+        // TODO:WIP: set to always true?
         this.is_self_contained = Boolean(code_element.html_parser.count_valid_childrens({ element: element, is_recursive: true }))
         this.model = (() => {
             if (this.is_self_contained)
@@ -952,12 +984,12 @@ AwesomeCodeElement.details.code_element = class code_element {
         }
         this.view = element
     }
-    #build_from_elements_array(elements){
+    #build_from_nodes(elements){
     // expected: Array.from(node.childNodes)
 
         if (!(elements instanceof Array)
         ||  !elements.reduce((index, arg) => undefined !== arg.nodeType, true))
-            throw new Error('code_element.#build_from_elements_array: invalid argument')
+            throw new Error('code_element.#build_from_nodes_array: invalid argument')
 
         this.is_self_contained = false
         this.model = (() => {
@@ -1747,7 +1779,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
 
         this.toggle_error_view = false // clear possibly existing errors
         // update view
-        this.html_elements.code.textContent = this.code || ""
+        this.html_elements.code.textContent = this.code || "" // TODO: use new model-view here
         // language
         this.language = (this.toggle_language_detection ? undefined : this.language) // redetect language if required
         // trigger (refresh) execution panel if required
@@ -1762,6 +1794,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         detector:       language_policies.detectors.use_hljs,
         highlighter:    language_policies.highlighters.use_hljs
     }
+    get language_policies() { return this.#language_policies } 
 
     #_toggle_language_detection = true
     set toggle_language_detection(value) {
@@ -1845,7 +1878,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             'url'
         ].forEach((property_name) => load_parameter({ property_name: property_name }))
 
-
         try {
             this._parameters.code = (() => {
                 let value = this.getAttribute('code') || this._parameters.code
@@ -1854,11 +1886,9 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
                     let arg = (() => {
                         if (value) return value
                         return Array.from(this.childNodes)
-                        // if (this.childNodes.length === 1) return this.firstChild // either element or text
-                        // return AwesomeCodeElement.details.utility.html_codec.decode(this.innerHTML) // textContent might skip illegal HTMLElement-s
                     })()
 
-                    value = new AwesomeCodeElement.details.code_element(arg) // TODO: `this` only if shadowroot or not initialized ?
+                    value = new AwesomeCodeElement.details.code_element(arg)
                 }
                 return value.model ? value : undefined
             })()
@@ -1901,9 +1931,11 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         if (this._parameters.url)  // remote code
             this.url = this._parameters.url
         else                        // local code
+            // TODO: detect language here?
             this.#_code = new AwesomeCodeElement.details.ParsedCode(this._parameters.code.model, this.language)  // only update code, not its view
 
-        this.#view_update_code()
+        if (this._parameters.code && this._parameters.code.is_editable) // WIP
+            this.#view_update_code()
 
         this.initialize = () => { throw new Error('CodeSection.initialize: already called') }
     }
