@@ -425,124 +425,6 @@ AwesomeCodeElement.API.configure = (arg) => {
 // ================
 // internal details
 
-AwesomeCodeElement.details.ParsedCode = class ParsedCode {
-// TODO: @awesome-code-element::keep : keep tag anyway as comment (for documentation purpose)
-
-// @awesome-code-element::CE={
-//  "language"            : "c++",
-//  "compiler_id"         : "clang1400",
-//  "compilation_options" : "-O2 -std=c++20",
-//  "libs"                : [ {"id": "fmt", "version": "trunk"} ],
-//  "includes_transformation" : [
-//     // <documentation> <replacement>
-//        [ "csl/",       "https://raw.githubusercontent.com/GuillaumeDua/CppShelf/main/includes/ag/csl/" ],
-//        [ "toto",       "iostream" ]
-//  ],
-//  "add_in_doc_execution" : true
-//  }
-// @awesome-code-element::skip::block::begin,end : range to [skip] (no parsing, removed from documentation & execution)
-// @awesome-code-element::skip::line             : line  to [skip]
-// @awesome-code-element::show::block::begin,end : range to [show] (documentation side only. The rest is still part of the execution code)
-//                                                      if there is at least one occurence, the rest is by default hidden
-// @awesome-code-element::show::line             : line  to [show]
-//                                                      if there is at least one occurence, the rest is by default hidden
-
-    static tag = '// @awesome-code-element'
-
-    raw = undefined
-    to_display = undefined
-    to_execute = undefined
-    ce_options = undefined
-
-    constructor(code_content, language) {
-
-        // apply default configuration for given - non-mandatory - language
-        if (AwesomeCodeElement.API.configuration.CE.has(language))
-            this.ce_options = AwesomeCodeElement.API.configuration.CE.get(language)
-
-        if (!code_content || code_content.length === 0)
-            return // default construction
-
-        this.raw = code_content
-
-        this.#parse()
-        this.#apply_ce_transformations()
-    }
-
-    #parse() {
-
-        let code_content = this.raw
-
-        // CE options
-        let regexp = new RegExp(`^\\s*?${ParsedCode.tag}::CE=({(.*?\n\\s*//.*?)+}\n?)`, 'gm')
-        let matches = [...this.raw.matchAll(regexp)] // expect exactly 1 match
-        if (matches.length > 1)
-            console.error(`awesome-code-element.js:ParsedCode::constructor: multiples CE configurations`)
-
-        matches.map((match) => {
-            let result = match[1].replaceAll(
-                new RegExp(`^\\s*?//`, 'gm'),
-                ''
-            )
-            // remove from original content
-            code_content = code_content.slice(0, match.index)
-                         + code_content.slice(match.index + match[0].length)
-            return result
-        }).forEach((value) => {
-            // Merge CE configuration. Local can override global.
-            this.ce_options = {
-                ...(this.ce_options || {}),
-                ...JSON.parse(value)
-            }
-        })
-
-        // skip block, line (documentation & execution sides)
-        // block
-        code_content = code_content.replaceAll(
-            new RegExp(`^\\s*?${ParsedCode.tag}::skip::block::begin\n(.*?\n)*\\s*?${ParsedCode.tag}::skip::block::end\\s*?$`, 'gm'),
-            ''
-        )
-        // line
-        code_content = code_content.replaceAll(
-            new RegExp(`^.*?\\s+${ParsedCode.tag}::skip::line\\s*$`, 'gm'),
-            ''
-        )
-
-        // show block, line (documentation side)
-        let regex_show_block    = `(^\\s*?${ParsedCode.tag}::show::block::begin\n(?<block>(^.*?$\n)+)\\s*${ParsedCode.tag}::show::block::end\n?)`
-        let regex_show_line     = `(^(?<line>.*?)\\s*${ParsedCode.tag}::show::line\\s*?$)`
-        regexp = new RegExp(`${regex_show_block}|${regex_show_line}`, 'gm')
-        matches = [...code_content.matchAll(regexp)]
-        let code_only_show = matches
-            .reverse()
-            .map((match) => {
-                let result = match.groups.block !== undefined
-                    ? match.groups.block
-                    : match.groups.line
-                // remove from original content
-                // code_content = code_content.replace(match[0], result) // really slower than 2 reverse + 2 substring ?
-                code_content = code_content.substring(0, match.index) + result + code_content.substring(match.index + match[0].length)
-                return result
-            })
-            .reverse()
-            .join('\n')
-
-        this.to_display = (code_only_show !== "" ? code_only_show : code_content)
-        this.to_execute = code_content
-    }
-    #apply_ce_transformations() {
-
-        // includes_transformation
-        if (this.ce_options && this.ce_options.includes_transformation) {
-            this.ce_options.includes_transformation.forEach((value) => {
-                // replace includes
-
-                const regex = new RegExp(`^(\\s*?\\#.*?[\\"|\\<"].*?)(${value[0]})(.*?[\\"|\\>"])`, 'gm')
-                this.to_execute = this.to_execute.replace(regex, `$1${value[1]}$3`)
-            })
-        }
-    }
-}
 AwesomeCodeElement.details.remote = {}
 AwesomeCodeElement.details.remote.resources_cache = class {
     #remote_files = new Map() // uri -> text
@@ -569,120 +451,6 @@ AwesomeCodeElement.details.remote.resources_cache = class {
             )
         }
         return this.#remote_files.get(uri)
-    }
-}
-AwesomeCodeElement.details.remote.CE_API = class CE_API {
-// fetch CE API informations asynchronously
-
-    static #static_initializer = (async function(){
-        CE_API.#fetch_languages()
-        // AwesomeCodeElement.details.remote.CE_API.#fetch_compilers() // not used for now, disabled to save cache memory
-    })()
-
-    // cache
-    static languages = undefined
-    static compilers = undefined
-    static #remote_files_cache = new AwesomeCodeElement.details.remote.resources_cache()
-
-    static async #fetch_languages() {
-    // https://godbolt.org/api/languages
-        try {
-            let response = await fetch('https://godbolt.org/api/languages')
-            let datas = await response.text()
-
-            let text = datas.split('\n')
-            text.shift() // remove header
-            CE_API.languages = text.map((value) => {
-            // keep only ids
-                return value.slice(0, value.indexOf(' '))
-            })
-        }
-        catch (error) {
-            console.error(`AwesomeCodeElement.details.remote.CE_API: godbolt API exception (fetch_languages)\n\t${error}`)
-        }
-    }
-    static async #fetch_compilers() {
-    // https://godbolt.org/api/compilers
-        try {
-            let response = await fetch('https://godbolt.org/api/compilers')
-            let datas = await response.text()
-
-            let text = datas.split('\n')
-            text.shift() // remove header
-            CE_API.languages = text.map((value) => {
-            // keep only ids
-                return value.slice(0, value.indexOf(' '))
-            })
-        }
-        catch (error) {
-            console.error(`AwesomeCodeElement.details.remote.CE_API: godbolt API exception (fetch_compilers)\n\t${error}`)
-        }
-    }
-    static open_in_new_tab(request_data) {
-    // https://godbolt.org/clientstate/
-
-        let body  = JSON.stringify(request_data);
-        let state = btoa(body); // base64 encoding
-        let url   = "https://godbolt.org/clientstate/" + encodeURIComponent(state);
-
-        // Open in a new tab
-        window.open(url, "_blank");
-    }
-    static async fetch_execution_result(ce_options, code) {
-    // https://godbolt.org/api/compiler/${compiler_id}/compile
-
-        if (ce_options.compiler_id === undefined)
-            throw new Error('awesome-code-element.js::CE_API::fetch_execution_result: invalid argument, missing .compiler_id')
-
-        // POST /api/compiler/<compiler-id>/compile endpoint is not working with remote header-files in `#include`s PP directions
-        // https://github.com/compiler-explorer/compiler-explorer/issues/4190
-        let matches = [...code.matchAll(/^\s*\#\s*include\s+[\"|\<](\w+\:\/\/.*?)[\"|\>]/gm)].reverse()
-        let promises_map = matches.map(async function(match) {
-
-            let downloaded_file_content = await CE_API.#remote_files_cache.get(match[1])
-            let match_0_token = match[0].replaceAll('\n', '')
-            code = code.replace(match[0], `// download[${match_0_token}]::begin\n${downloaded_file_content}\n// download[${match_0_token}]::end`)
-        })
-
-        // Build & send the request
-        let fetch_result = async () => {
-
-            let body = {
-                "source": code,
-                "compiler": ce_options.compiler_id,
-                "options": {
-                    "userArguments": ce_options.compilation_options,
-                    "executeParameters": {
-                        "args": ce_options.execute_parameters_args || [],
-                        "stdin": ce_options.execute_parameters_stdin || ""
-                    },
-                    "compilerOptions": {
-                        "executorRequest": true
-                    },
-                    "filters": {
-                        "execute": true
-                    },
-                    "tools": [],
-                    "libraries": ce_options.libs || []
-                },
-                "lang": ce_options.language,
-                "allowStoreCodeDebug": true
-            }
-            const options = {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json;charset=utf-8'
-                },
-                body: JSON.stringify(body)
-            };
-
-            return await fetch(`https://godbolt.org/api/compiler/${ce_options.compiler_id}/compile`, options)
-                .then(response => response.text())
-        }
-
-        return await Promise.all(promises_map).then(() => {
-            return fetch_result()
-        })
     }
 }
 AwesomeCodeElement.details.utility = class utility {
@@ -808,6 +576,239 @@ AwesomeCodeElement.details.utility = class utility {
     static make_incremental_counter_generator = function*(){
         let i = 0;
         while (true) { yield i++; }
+    }
+}
+// details: code representation
+AwesomeCodeElement.details.remote.CE_API = class CE_API {
+// fetch CE API informations asynchronously
+
+    static #static_initializer = (async function(){
+        CE_API.#fetch_languages()
+        // AwesomeCodeElement.details.remote.CE_API.#fetch_compilers() // not used for now, disabled to save cache memory
+    })()
+
+    // cache
+    static languages = undefined
+    static compilers = undefined
+    static #remote_files_cache = new AwesomeCodeElement.details.remote.resources_cache()
+
+    static async #fetch_languages() {
+    // https://godbolt.org/api/languages
+        try {
+            let response = await fetch('https://godbolt.org/api/languages')
+            let datas = await response.text()
+
+            let text = datas.split('\n')
+            text.shift() // remove header
+            CE_API.languages = text.map((value) => {
+            // keep only ids
+                return value.slice(0, value.indexOf(' '))
+            })
+        }
+        catch (error) {
+            console.error(`AwesomeCodeElement.details.remote.CE_API: godbolt API exception (fetch_languages)\n\t${error}`)
+        }
+    }
+    static async #fetch_compilers() {
+    // https://godbolt.org/api/compilers
+        try {
+            let response = await fetch('https://godbolt.org/api/compilers')
+            let datas = await response.text()
+
+            let text = datas.split('\n')
+            text.shift() // remove header
+            CE_API.languages = text.map((value) => {
+            // keep only ids
+                return value.slice(0, value.indexOf(' '))
+            })
+        }
+        catch (error) {
+            console.error(`AwesomeCodeElement.details.remote.CE_API: godbolt API exception (fetch_compilers)\n\t${error}`)
+        }
+    }
+    static open_in_new_tab(request_data) {
+    // https://godbolt.org/clientstate/
+
+        let body  = JSON.stringify(request_data);
+        let state = btoa(body); // base64 encoding
+        let url   = "https://godbolt.org/clientstate/" + encodeURIComponent(state);
+
+        // Open in a new tab
+        window.open(url, "_blank");
+    }
+    static async fetch_execution_result(ce_options, code) {
+    // https://godbolt.org/api/compiler/${compiler_id}/compile
+
+        if (ce_options.compiler_id === undefined)
+            throw new Error('awesome-code-element.js::CE_API::fetch_execution_result: invalid argument, missing .compiler_id')
+
+        // POST /api/compiler/<compiler-id>/compile endpoint is not working with remote header-files in `#include`s PP directions
+        // https://github.com/compiler-explorer/compiler-explorer/issues/4190
+        let matches = [...code.matchAll(/^\s*\#\s*include\s+[\"|\<](\w+\:\/\/.*?)[\"|\>]/gm)].reverse()
+        let promises_map = matches.map(async function(match) {
+
+            let downloaded_file_content = await CE_API.#remote_files_cache.get(match[1])
+            let match_0_token = match[0].replaceAll('\n', '')
+            code = code.replace(match[0], `// download[${match_0_token}]::begin\n${downloaded_file_content}\n// download[${match_0_token}]::end`)
+        })
+
+        // Build & send the request
+        let fetch_result = async () => {
+
+            let body = {
+                "source": code,
+                "compiler": ce_options.compiler_id,
+                "options": {
+                    "userArguments": ce_options.compilation_options,
+                    "executeParameters": {
+                        "args": ce_options.execute_parameters_args || [],
+                        "stdin": ce_options.execute_parameters_stdin || ""
+                    },
+                    "compilerOptions": {
+                        "executorRequest": true
+                    },
+                    "filters": {
+                        "execute": true
+                    },
+                    "tools": [],
+                    "libraries": ce_options.libs || []
+                },
+                "lang": ce_options.language,
+                "allowStoreCodeDebug": true
+            }
+            const options = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json;charset=utf-8'
+                },
+                body: JSON.stringify(body)
+            };
+
+            return await fetch(`https://godbolt.org/api/compiler/${ce_options.compiler_id}/compile`, options)
+                .then(response => response.text())
+        }
+
+        return await Promise.all(promises_map).then(() => {
+            return fetch_result()
+        })
+    }
+}
+AwesomeCodeElement.details.ParsedCode = class ParsedCode {
+// TODO: @awesome-code-element::keep : keep tag anyway as comment (for documentation purpose)
+
+// @awesome-code-element::CE={
+//  "language"            : "c++",
+//  "compiler_id"         : "clang1400",
+//  "compilation_options" : "-O2 -std=c++20",
+//  "libs"                : [ {"id": "fmt", "version": "trunk"} ],
+//  "includes_transformation" : [
+//     // <documentation> <replacement>
+//        [ "csl/",       "https://raw.githubusercontent.com/GuillaumeDua/CppShelf/main/includes/ag/csl/" ],
+//        [ "toto",       "iostream" ]
+//  ],
+//  "add_in_doc_execution" : true
+//  }
+// @awesome-code-element::skip::block::begin,end : range to [skip] (no parsing, removed from documentation & execution)
+// @awesome-code-element::skip::line             : line  to [skip]
+// @awesome-code-element::show::block::begin,end : range to [show] (documentation side only. The rest is still part of the execution code)
+//                                                      if there is at least one occurence, the rest is by default hidden
+// @awesome-code-element::show::line             : line  to [show]
+//                                                      if there is at least one occurence, the rest is by default hidden
+
+    static tag = '// @awesome-code-element'
+
+    raw = undefined
+    to_display = undefined
+    to_execute = undefined
+    ce_options = undefined
+
+    constructor(code_content, language = undefined) {
+
+        // apply default configuration for a given - non-mandatory - language
+        if (AwesomeCodeElement.API.configuration.CE.has(language))
+            this.ce_options = AwesomeCodeElement.API.configuration.CE.get(language)
+
+        if (!code_content || code_content.length === 0)
+            return // default construction
+
+        this.raw = code_content
+
+        this.#parse()
+        this.#apply_ce_transformations()
+    }
+
+    #parse() {
+
+        let code_content = this.raw
+
+        // CE options
+        let regexp = new RegExp(`^\\s*?${ParsedCode.tag}::CE=({(.*?\n\\s*//.*?)+}\n?)`, 'gm')
+        let matches = [...this.raw.matchAll(regexp)] // expect exactly 1 match
+        if (matches.length > 1)
+            console.error(`awesome-code-element.js:ParsedCode::constructor: multiples CE configurations`)
+
+        matches.map((match) => {
+            let result = match[1].replaceAll(
+                new RegExp(`^\\s*?//`, 'gm'),
+                ''
+            )
+            // remove from original content
+            code_content = code_content.slice(0, match.index)
+                         + code_content.slice(match.index + match[0].length)
+            return result
+        }).forEach((value) => {
+            // Merge CE configuration. Local can override global.
+            this.ce_options = {
+                ...(this.ce_options || {}),
+                ...JSON.parse(value)
+            }
+        })
+
+        // skip block, line (documentation & execution sides)
+        // block
+        code_content = code_content.replaceAll(
+            new RegExp(`^\\s*?${ParsedCode.tag}::skip::block::begin\n(.*?\n)*\\s*?${ParsedCode.tag}::skip::block::end\\s*?$`, 'gm'),
+            ''
+        )
+        // line
+        code_content = code_content.replaceAll(
+            new RegExp(`^.*?\\s+${ParsedCode.tag}::skip::line\\s*$`, 'gm'),
+            ''
+        )
+
+        // show block, line (documentation side)
+        let regex_show_block    = `(^\\s*?${ParsedCode.tag}::show::block::begin\n(?<block>(^.*?$\n)+)\\s*${ParsedCode.tag}::show::block::end\n?)`
+        let regex_show_line     = `(^(?<line>.*?)\\s*${ParsedCode.tag}::show::line\\s*?$)`
+        regexp = new RegExp(`${regex_show_block}|${regex_show_line}`, 'gm')
+        matches = [...code_content.matchAll(regexp)]
+        let code_only_show = matches
+            .reverse()
+            .map((match) => {
+                let result = match.groups.block !== undefined
+                    ? match.groups.block
+                    : match.groups.line
+                // remove from original content
+                // code_content = code_content.replace(match[0], result) // really slower than 2 reverse + 2 substring ?
+                code_content = code_content.substring(0, match.index) + result + code_content.substring(match.index + match[0].length)
+                return result
+            })
+            .reverse()
+            .join('\n')
+
+        this.to_display = (code_only_show !== "" ? code_only_show : code_content)
+        this.to_execute = code_content
+    }
+    #apply_ce_transformations() {
+
+        // includes_transformation
+        if (this.ce_options && this.ce_options.includes_transformation) {
+            this.ce_options.includes_transformation.forEach((value) => {
+                // replace includes
+
+                const regex = new RegExp(`^(\\s*?\\#.*?[\\"|\\<"].*?)(${value[0]})(.*?[\\"|\\>"])`, 'gm')
+                this.to_execute = this.to_execute.replace(regex, `$1${value[1]}$3`)
+            })
+        }
     }
 }
 AwesomeCodeElement.details.code_element = class code_element {
@@ -1014,7 +1015,7 @@ AwesomeCodeElement.details.code_element = class code_element {
         this.view = element
     }
 }
-
+// details: logging
 AwesomeCodeElement.details.log_facility = class {
     
     static #default_channels = {
@@ -1676,20 +1677,36 @@ class language_policies {
     static detectors = class {
         static use_none = class {
             static is_valid_language(language){ return true; }
-            static get_language(code_element){
-                return "n/a"
+            static get_language(element){
+                return 'n/a'
+            }
+            static detect_language(text){
+                return {
+                    language: 'n/a',
+                    relevance: 10
+                }
             }
         }
         static use_hljs = class use_hljs_language_detector_policy {
             static is_valid_language(language){
                 return hljs.getLanguage(language) !== undefined
             }
-            static get_language(code_element) {
-                if (code_element === undefined || !(code_element instanceof HTMLElement))
-                    throw new Error(`awesome-code-element.js:CodeSectionHTMLElement.get_code_hljs_language: bad input`)
-    
-                const result = code_element.classList.toString().match(/language-(\w+)/, '') // expected: "hljs language-[name]"
+            static get_language(element){
+
+                if (element === undefined || !(element instanceof HTMLElement))
+                    throw new Error(`ace.language_policies.get_language(element): bad input`)
+
+                const result = element.classList.toString().match(/language-(\w+)/, '') // expected: "hljs language-[name]"
                 return Boolean(result && result.length === 1) ? result[1] : undefined // first capture group
+            }
+            static detect_language(text){
+                if (!element || !(typeof element === 'string'))
+                    throw new Error(`ace.language_policies.detect_language(text): bad input`)
+                const result = hljs.highlightAuto(text) ?? {}
+                return {
+                    language: result.language,
+                    relevance: result.relevance
+                }
             }
         }
     }
@@ -1935,7 +1952,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             this.#_code = new AwesomeCodeElement.details.ParsedCode(this._parameters.code.model, this.language)  // only update code, not its view
 
         if (this._parameters.code && this._parameters.code.is_editable) // WIP
-            this.#view_update_code()
+            this.#view_update_code() // WIP: integrate code model/view with parsing
 
         this.initialize = () => { throw new Error('CodeSection.initialize: already called') }
     }
@@ -1946,6 +1963,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
     #_code = new AwesomeCodeElement.details.ParsedCode()
     #_toggle_parsing = false
     set toggle_parsing(value) {
+
+        if (this.pol)
 
         if (this.#_toggle_parsing == value)
             return
