@@ -1697,7 +1697,9 @@ class language_policies {
                     throw new Error(`ace.language_policies.get_language(element): bad input`)
 
                 const result = element.classList.toString().match(/language-(\w+)/, '') // expected: "hljs language-[name]"
-                return Boolean(result && result.length === 1) ? result[1] : undefined // first capture group
+                return Boolean(result && result.length === 1)
+                    ? (result[1] === "undefined" ? undefined : result[1])
+                    : undefined // first capture group
             }
             static detect_language(text){
                 if (!element || !(typeof element === 'string'))
@@ -1716,7 +1718,7 @@ class language_policies {
             static highlight({ code_element, language }){
                 return {
                     relevance: 10,
-                    language: "n/a",
+                    language: language ?? 'n/a',
                     value: code_element.innerHTML
                 }
             }
@@ -1827,9 +1829,9 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         if (this.#language_policies.detector.is_valid_language(this.#_language))
             return this.#_language
         if (this.code_element) {
-            console.info('ace.cs : invalid language, attempting a detection as fallback')
-            const detected_language = this.#language_policies.detector.get_language(this.code_element)
-            return detected_language === 'undefined' ? undefined : detected_language
+            console.info('ace.cs.get(language) : invalid language, attempting fallback detections')
+            return this.#language_policies.detector.get_language(this.code_element)
+                ?? this.#language_policies.detector.detect_language(this.code_element.textContent).language
         }
         return undefined
     }
@@ -1947,11 +1949,14 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
 
         if (this._parameters.url)  // remote code
             this.url = this._parameters.url
-        else                        // local code
+        else                       // local code
             // TODO: detect language here?
-            this.#_code = new AwesomeCodeElement.details.ParsedCode(this._parameters.code.model, this.language)  // only update code, not its view
+            this.#_code = this._parameters.code.is_editable
+                ? new AwesomeCodeElement.details.ParsedCode(this._parameters.code.model, this.language)  // only update code, not its view
+                : this._parameters.code.model
+            // this.#_code = new AwesomeCodeElement.details.ParsedCode(this._parameters.code.model, this.language)  // only update code, not its view
 
-        if (this._parameters.code && this._parameters.code.is_editable) // WIP
+        // if (this._parameters.code) // WIP
             this.#view_update_code() // WIP: integrate code model/view with parsing
 
         this.initialize = () => { throw new Error('CodeSection.initialize: already called') }
