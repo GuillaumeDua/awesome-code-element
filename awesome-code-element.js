@@ -79,9 +79,11 @@
 // TODO: style : px vs. em
 // TODO: listener for CSS attribute change, properly calling setters ? (language, toggle_execution, toggle_parsing, orientation)
 // TODO: get rid of jquery ? -> document.querySelector
+//      - check $.getScript for script loading
 // TODO: wraps around a rich code editor block
 // TODO: cleanup logs
 // TODO: cleanup module: ease code navigation
+// TODO: unfold_to -> use Object.assign(a, b) ?
 
 // WIP: ace.cs wrap mode
 // ---------------------
@@ -693,6 +695,150 @@ AwesomeCodeElement.details.remote.CE_API = class CE_API {
         })
     }
 }
+
+// WIP: refactor code representation
+class code_parser_policies {
+
+    static result_type = class {
+        constructor(arg){ Object.assign(this,arg) }
+        
+        raw        = undefined
+        to_display = undefined
+        to_execute = undefined
+        ce_options = {}
+    }
+
+    static no_parser = class {
+        static parse({ code }){
+            return new code_parser_policies.result_type({
+                raw: code,
+                to_display: code,
+                to_execute: code
+            })
+        }
+    }
+    static ace_metadata_parser = class ace_metadata_parser {
+    // TODO: @awesome-code-element::keep : keep tag anyway as comment (for documentation purpose)
+
+    // @awesome-code-element::CE={
+    //  "language"            : "c++",
+    //  "compiler_id"         : "clang1400",
+    //  "compilation_options" : "-O2 -std=c++20",
+    //  "libs"                : [ {"id": "fmt", "version": "trunk"} ],
+    //  "includes_transformation" : [
+    //     // <documentation> <replacement>
+    //        [ "csl/",       "https://raw.githubusercontent.com/GuillaumeDua/CppShelf/main/includes/ag/csl/" ],
+    //        [ "toto",       "iostream" ]
+    //  ],
+    //  "add_in_doc_execution" : true
+    //  }
+    // @awesome-code-element::skip::block::begin,end : range to [skip] (no parsing, removed from documentation & execution)
+    // @awesome-code-element::skip::line             : line  to [skip]
+    // @awesome-code-element::show::block::begin,end : range to [show] (documentation side only. The rest is still part of the execution code)
+    //                                                      if there is at least one occurence, the rest is by default hidden
+    // @awesome-code-element::show::line             : line  to [show]
+    //                                                      if there is at least one occurence, the rest is by default hidden
+
+        static tag = '// @ace'// TODO:replace with `// @ace`
+        static parse({ code }) {
+
+            if (code === undefined)
+                throw new Error('code_parser_policies.ace_metadata_parser.parse: invalid argument')
+
+            let result = new code_parser_policies.result_type({ raw: code })
+                result = ace_metadata_parser.#parse_impl({ result: result})
+                result = ace_metadata_parser.#apply_ce_transformations({ result: result })
+
+            // TODO: (elsewhere!!!) merge local with global
+            // apply default configuration for a given - non-mandatory - language
+            // Note: global configuration can be overrided locally in the configuration
+            // if (AwesomeCodeElement.API.configuration.CE.has(language))
+            //     this.ce_options = AwesomeCodeElement.API.configuration.CE.get(language)
+
+            return result
+        }
+        static #parse_impl({ result }) {
+
+            let code_content = result.raw
+    
+            {   // CE options
+                const regexp = new RegExp(`^\\s*?${code_parser_policies.ace_metadata_parser.tag}::CE=({(.*?\n\\s*//.*?)+}\n?)`, 'gm')
+                const matches = [...result.raw.matchAll(regexp)] // expect exactly 1 match
+                if (matches.length > 1)
+                    console.error(`code_parser_policies.ace_metadata_parser.parse: found multiples CE configurations`)
+        
+                matches.map((match) => {
+                    const value = match[1].replaceAll(
+                        new RegExp(`^\\s*?//`, 'gm'),
+                        ''
+                    )
+                    // remove from original content
+                    code_content = code_content.slice(0, match.index)
+                                + code_content.slice(match.index + match[0].length)
+                    return value
+                }).forEach((value) => {
+                    // Merge CE configuration. Local can override global.
+                    result.ce_options = {
+                        ...(result.ce_options || {}),
+                        ...JSON.parse(value)
+                    }
+                })
+            }
+    
+            // skip block, line (documentation & execution sides)
+            // block
+            code_content = code_content.replaceAll(
+                new RegExp(`^\\s*?${code_parser_policies.ace_metadata_parser.tag}::skip::block::begin\n(.*?\n)*\\s*?${code_parser_policies.ace_metadata_parser.tag}::skip::block::end\\s*?$`, 'gm'),
+                ''
+            )
+            // line
+            code_content = code_content.replaceAll(
+                new RegExp(`^.*?\\s+${code_parser_policies.ace_metadata_parser.tag}::skip::line\\s*$`, 'gm'),
+                ''
+            )
+    
+            // show block, line (documentation side)
+            const code_only_show = (() => {
+                const regex_show_block  = `(^\\s*?${code_parser_policies.ace_metadata_parser.tag}::show::block::begin\n(?<block>(^.*?$\n)+)\\s*${code_parser_policies.ace_metadata_parser.tag}::show::block::end\n?)`
+                const regex_show_line   = `(^(?<line>.*?)\\s*${code_parser_policies.ace_metadata_parser.tag}::show::line\\s*?$)`
+                const regexp = new RegExp(`${regex_show_block}|${regex_show_line}`, 'gm')
+                const matches = [...code_content.matchAll(regexp)]
+                return matches
+                    .reverse()
+                    .map((match) => {
+                        const result = match.groups.block !== undefined
+                            ? match.groups.block
+                            : match.groups.line
+                        // remove from original content
+                        // code_content = code_content.replace(match[0], result) // really slower than 2 reverse + 2 substring ?
+                        code_content = code_content.substring(0, match.index) + result + code_content.substring(match.index + match[0].length)
+                        return result
+                    })
+                    .reverse()
+                    .join('\n')
+            })()
+    
+            result.to_display = (code_only_show !== "" ? code_only_show : code_content)
+            result.to_execute = code_content
+
+            return result
+        }
+        static #apply_ce_transformations({ result }) {
+    
+            // includes_transformation
+            if (result.ce_options && result.ce_options.includes_transformation) {
+                result.ce_options.includes_transformation.forEach((value) => {
+                    // replace includes
+    
+                    const regex = new RegExp(`^(\\s*?\\#.*?[\\"|\\<"].*?)(${value[0]})(.*?[\\"|\\>"])`, 'gm')
+                    result.to_execute = result.to_execute.replace(regex, `$1${value[1]}$3`)
+                })
+            }
+            return result
+        }
+    }
+}
+
 AwesomeCodeElement.details.ParsedCode = class ParsedCode {
 // TODO: @awesome-code-element::keep : keep tag anyway as comment (for documentation purpose)
 
@@ -1664,11 +1810,10 @@ AwesomeCodeElement.details.HTML_elements.CodeSectionHTMLElement =   class CodeSe
         ||  !this.html_elements.panels
         ||  !this.html_elements.panels.left
         ) return
-    // CSS usage
-        if (value)
-            this.html_elements.panels.left.setAttribute('status', 'error')
-        else
-            this.html_elements.panels.left.removeAttribute('status')
+
+        value // CSS usage
+            ? this.html_elements.panels.left.setAttribute('status', 'error')
+            : this.html_elements.panels.left.removeAttribute('status')
     }
 }
 
@@ -1807,8 +1952,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
     
     // --------------------------------
     // language
-    #language_policies = {
-    // default: hljs.
+    #language_policies = { // default: hljs
     // TODO: override this in configuration ?
         detector:       language_policies.detectors.use_hljs,
         highlighter:    language_policies.highlighters.use_hljs
@@ -1930,6 +2074,16 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
         super.initialize({
             content_element: this._parameters.code ? this._parameters.code.view : undefined
         })
+
+        // WIP: code+language
+        //  this.#_code -> code_element (MVVC)
+        //  integrates:
+        //  - language policies
+        //  - parsing logic (model -> ParsedCode)
+        //  - CE configuration
+        //  - immuability -> layout is wrap mode -> is_editable === false
+        //    - no parsing allowed
+        //  - language
 
         this.#language_policies = (() => {
             const policy_name = this.layout_policy === layout_policies.wraps ? 'use_none' : 'use_hljs'
