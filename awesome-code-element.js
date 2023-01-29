@@ -579,6 +579,41 @@ AwesomeCodeElement.details.utility = class utility {
         let i = 0;
         while (true) { yield i++; }
     }
+    static inject_field_proxy = function(target, property_name, { getter_payload, setter_payload } = {}) {
+    // generate a proxy to a value's field, injecting optional payload
+        
+        var _target = target
+        var storage = _target[property_name]
+        const target_getter = _target.__lookupGetter__(property_name)
+        const target_setter = _target.__lookupSetter__(property_name)
+    
+        const getter = function(){
+            const value = target_getter ? target_getter.call(_target) : storage
+            return getter_payload
+                ? getter_payload(value) ?? value
+                : value
+        };
+        const setter = function(newValue){
+    
+            if (setter_payload)
+                newValue = setter_payload(newValue)
+    
+            if (target_setter)
+                target_setter.call(_target, newValue)
+            else
+                storage = newValue
+        };
+    
+        Object.defineProperty(_target, property_name, {
+            get: getter,
+            set: setter
+        });
+    
+        return {
+            get: _target.__lookupGetter__(property_name),
+            set: _target.__lookupSetter__(property_name)
+        }
+    }
 }
 // details: code representation
 AwesomeCodeElement.details.remote.CE_API = class CE_API {
@@ -2122,8 +2157,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
     #_code = new AwesomeCodeElement.details.ParsedCode()
     #_toggle_parsing = false
     set toggle_parsing(value) {
-
-        if (this.pol)
 
         if (this.#_toggle_parsing == value)
             return

@@ -60,8 +60,6 @@ ace.test_utils = class {
                 set: setter
             });
     
-            console.log
-    
         })();
     }
     static element_shake_effect_for(element, duration) {
