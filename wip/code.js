@@ -484,29 +484,26 @@ class code_mvc_factory {
         if (!(element instanceof HTMLElement))
             throw new Error('code_mvc_factory.#build_from_element: invalid argument')
 
-        if (code_mvc_factory.is_expected_layout(element))
-            return new code_mvc_factory.result_type({
-                is_editable : true,
-                model : element.textContent,
-                view : { top_parent: element, code_container: element.firstElementChild }
-            })
 
-        // TODO:WIP: set to always true?
+        const is_expected_layout = code_mvc_factory.is_expected_layout(element)
 
-        const is_editable = !Boolean(code_mvc_factory.html_parser.count_valid_childrens({ element: element, is_recursive: true }))
-        let result = new code_mvc_factory.result_type({
+        const view = {
+            top_parent : element,
+            code_container : is_expected_layout
+                ? element.firstElementChild
+                : element
+        }
+
+        const is_editable = !Boolean(code_mvc_factory.html_parser.count_valid_childrens({ element: view.code_container, is_recursive: true }))
+
+        return new code_mvc_factory.result_type({
             is_editable : is_editable,
             model : (() => {
-                if (!is_editable)
-                    element = code_mvc_factory.html_parser.cleanup({ element: element })
-                return code_mvc_factory.html_parser.to_code({ elements: Array.from(element.childNodes) })
+                element = code_mvc_factory.html_parser.cleanup({ element: view.code_container })
+                return code_mvc_factory.html_parser.to_code({ elements: Array.from(view.code_container.childNodes) })
             })(),
-            view : { top_parent: element, code_container: element }
+            view : view
         })
-
-        return result.is_editable
-            ? code_mvc_factory.#build_from_text(result.model)
-            : result
     }
     static #build_from_nodes(elements){
     // expected: Array.from(node.childNodes)
