@@ -315,12 +315,12 @@ class code_mvc_factory {
     static html_parser = class html_parser {
         static is_valid_HTMLElement({ element }){
             if (element === undefined)
-                throw new Error('ace.details.code_mvc.html_parser.is_valid_HTMLElement: invalid argument')
+                throw new Error('ace.details.code_mvc_factory.html_parser.is_valid_HTMLElement: invalid argument')
             return element instanceof HTMLElement && !(element instanceof HTMLUnknownElement)
         }
         static is_valid_tagName({ tagName }) {
             if (element === undefined)
-                throw new Error('ace.details.code_mvc.html_parser.is_valid_tagName: invalid argument')
+                throw new Error('ace.details.code_mvc_factory.html_parser.is_valid_tagName: invalid argument')
             if (!(typeof tagName === 'string') && !(tagName instanceof String))
                 throw new Error('html_parser.is_valid_tagName: invalid argument')
             // TODO: cache tagname -> result, to decrease costly/useless element creation
@@ -328,7 +328,7 @@ class code_mvc_factory {
         }
         static count_valid_childrens({ element, is_recursive = false }) {
             if (element === undefined)
-                throw new Error('ace.details.code_mvc.html_parser.count_valid_childrens: invalid argument')
+                throw new Error('ace.details.code_mvc_factory.html_parser.count_valid_childrens: invalid argument')
             return Array
                 .from(element.children)
                 .map((element) => {
@@ -343,7 +343,7 @@ class code_mvc_factory {
         // TODO?: faster approach?: use regex on outerHTML: \<(?'closing'\/?)(?'tagname'\w+\-?)+.*?\>
         // replace invalid HTMLElement by their localName as text
             if (elements === undefined)
-                throw new Error('ace.details.code_mvc.html_parser.count_valid_childrens: invalid argument')
+                throw new Error('ace.details.code_mvc_factory.html_parser.count_valid_childrens: invalid argument')
             return elements
                 .map(element => {
                     switch (element.nodeType) {
@@ -358,7 +358,7 @@ class code_mvc_factory {
                         case Node.COMMENT_NODE:
                         case Node.CDATA_SECTION_NODE:
                         default:
-                            console.debug(`code_mvc.parser.to_code: unhandled tags [comment, cdata, etc.]`)
+                            console.debug(`code_mvc_factory.parser.to_code: unhandled tags [comment, cdata, etc.]`)
                             return ''                        
                     }
                 })
@@ -367,7 +367,7 @@ class code_mvc_factory {
         static cleanup({ element }){
         // recursively replaces invalid childrens element by their tagname as text
             if (element === undefined)
-                throw new Error('ace.details.code_mvc.html_parser.cleanup: invalid argument')
+                throw new Error('ace.details.code_mvc_factory.html_parser.cleanup: invalid argument')
 
             let childNodes = Array.from(element.childNodes)
             childNodes
@@ -381,7 +381,7 @@ class code_mvc_factory {
         // recursively replaces invalid element by their tagname as text
 
             if (element === undefined)
-                throw new Error('ace.details.code_mvc.html_parser.cleanup_impl: invalid argument')
+                throw new Error('ace.details.code_mvc_factory.html_parser.cleanup_impl: invalid argument')
 
             let childNodes = Array.from(element.childNodes)                                         // preserve reference/offset integrity
             if (!html_parser.is_valid_HTMLElement({ element: element })) {
@@ -397,7 +397,7 @@ class code_mvc_factory {
         }
     };
 
-    result_type = class {
+    static result_type = class {
 
         constructor(argument){
 
@@ -412,7 +412,7 @@ class code_mvc_factory {
 
     static is_expected_layout(element){
         if (!(element instanceof HTMLElement))
-            throw new Error('code_mvc.is_expected_layout: invalid argument')
+            throw new Error('code_mvc_factory.is_expected_layout: invalid argument')
         return (element.localName === 'pre'
              && element.childNodes.length === 1
              && element.childNodes[0].nodeType === Node.ELEMENT_NODE
@@ -420,29 +420,40 @@ class code_mvc_factory {
         )
     }
 
-    static build(argument) {
+    static build_from(argument) {
 
         if (argument instanceof code_mvc_factory.result_type)
             return argument
 
-        let result = code_mvc_factory.#build_from(argument)
-            result.model = (() => {
-                result.model = result.model ?? ''
-                result.model = result.model.replace(/^\s*/, '').replace(/\s*$/, '') // remove enclosing white-spaces
-            })()
+        let result = (() => {
+            if (undefined === argument
+            ||  argument.text !== undefined)
+                return code_mvc_factory.#build_from_text(argument)
+            if (argument.element !== undefined)
+                return code_mvc_factory.#build_from_element(argument)
+            if (argument.nodes !== undefined)
+                return code_mvc_factory.#build_from_nodes(argument)
+
+            return code_mvc_factory.#build_from(argument)
+        })()
+            result.model = (result.model ?? '')
+                .replace(/^\s*/, '')
+                .replace(/\s*$/, '') // remove enclosing white-spaces
+            if (result.is_editable)
+                result.view.code_container.textContent = result.model
         return result
     }
 
     static #build_from(argument){
 
         if (argument instanceof HTMLElement)
-            code_mvc_factory.#build_from_element(argument)
+            return code_mvc_factory.#build_from_element(argument)
         else if (argument instanceof Array
               && argument.reduce((index, arg) => undefined !== arg.nodeType, true))
         {
             let only_one_valid_element = (() => {
                 const no_ws_elements = argument.filter((element) => !(element.nodeType === Node.TEXT_NODE && /^\s+$/g.test(element.textContent)))
-                return no_ws_elements.length === 1 && code_mvc.html_parser.is_valid_HTMLElement({ element: no_ws_elements[0] })
+                return no_ws_elements.length === 1 && code_mvc_factory.html_parser.is_valid_HTMLElement({ element: no_ws_elements[0] })
                     ? no_ws_elements[0]
                     : undefined
             })()
@@ -451,15 +462,15 @@ class code_mvc_factory {
                 : code_mvc_factory.#build_from_nodes(argument)
         }
         else if (argument.nodeType === document.TEXT_NODE)
-            code_mvc_factory.#build_from_text(argument.textContent)
+            return code_mvc_factory.#build_from_text(argument.textContent)
         else
-            code_mvc_factory.#build_from_text(argument.toString())
+            return code_mvc_factory.#build_from_text(argument.toString())
     }
     static #build_from_text(value){
 
         return new code_mvc_factory.result_type({
             is_editable : true,
-            model : value,
+            model : value ?? '',
             view : (() => {
                 let value = document.createElement('pre')
                 let code_node = value.appendChild(document.createElement('code'))
@@ -471,9 +482,9 @@ class code_mvc_factory {
     static #build_from_element(element){
 
         if (!(element instanceof HTMLElement))
-            throw new Error('code_mvc.#build_from_element: invalid argument')
+            throw new Error('code_mvc_factory.#build_from_element: invalid argument')
 
-        if (code_mvc.is_expected_layout(element))
+        if (code_mvc_factory.is_expected_layout(element))
             return new code_mvc_factory.result_type({
                 is_editable : true,
                 model : element.textContent,
@@ -482,13 +493,13 @@ class code_mvc_factory {
 
         // TODO:WIP: set to always true?
 
-        const is_editable = !Boolean(code_mvc.html_parser.count_valid_childrens({ element: element, is_recursive: true }))
+        const is_editable = !Boolean(code_mvc_factory.html_parser.count_valid_childrens({ element: element, is_recursive: true }))
         let result = new code_mvc_factory.result_type({
             is_editable : is_editable,
             model : (() => {
                 if (!is_editable)
-                    element = code_mvc.html_parser.cleanup({ element: element })
-                return code_mvc.html_parser.to_code({ elements: Array.from(element.childNodes) })
+                    element = code_mvc_factory.html_parser.cleanup({ element: element })
+                return code_mvc_factory.html_parser.to_code({ elements: Array.from(element.childNodes) })
             })(),
             view : { top_parent: element, code_container: element }
         })
@@ -504,21 +515,21 @@ class code_mvc_factory {
             elements instanceof Array
         &&  elements.length !== 0
         &&  elements.reduce((index, arg) => undefined !== arg.nodeType, true)
-        ))  throw new Error('code_mvc.#build_from_nodes(array): invalid argument')
+        ))  throw new Error('code_mvc_factory.#build_from_nodes(array): invalid argument')
 
         // const parent = (() => { // have common parent
         //     const parent = elements[0].parentNode
         //     if (elements.reduce((index, arg) => arg.parentNode !== parent, true))
-        //         throw new Error('code_mvc.#build_from_nodes(array): nodes does not have a common parentNode')
+        //         throw new Error('code_mvc_factory.#build_from_nodes(array): nodes does not have a common parentNode')
         //     return parent
         // })()
 
         const code_content = (() => {
             
-            elements.forEach((element) => code_mvc.html_parser.cleanup({ element: element }))
+            elements.forEach((element) => code_mvc_factory.html_parser.cleanup({ element: element }))
             return elements
                 .map((element) => { 
-                    return code_mvc.html_parser.to_code({
+                    return code_mvc_factory.html_parser.to_code({
                         elements: [ element ]
                     })
                 })
@@ -532,7 +543,7 @@ class code_mvc_factory {
         return code_mvc_factory.#build_from_text(code_content)
     }
 }
-class code extends code_mvc {
+class code {
 // TODO: encapsulation, rd-only accessors
 // TODO: editable, not-editable behaviors
 
@@ -544,7 +555,7 @@ class code extends code_mvc {
 
     // language
     #language = undefined
-    onLanguageChange = (value) => {} // TODO: update class etc.
+    onLanguageChange = (value) => {}
     get language() {
 
         const value = (() => {
@@ -566,19 +577,17 @@ class code extends code_mvc {
             return
         this.toggle_language_detection = !is_valid_input
 
-        console.debug(this.model)
-
-        const new_value = (this.is_editable
+        const result = (this.is_editable
             ? this.#language_policies.highlighter.highlight({
                 code_element: this.view.code_container,
                 language: this.toggle_language_detection ? undefined : value
             })
             : this.#language_policies.detector.detect_language(this.model)
-        ).language
+        )
         // if (this.toggle_language_detection)
-        this.#language = new_value // note: possibly not value
+        this.#language = result.language // note: possibly not equal to `value`
         this.toggle_language_detection = Boolean(result.relevance <= 5)
-        this.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.#language)
+        // this.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.#language) // TODO: uncomment when integrated
 
         if (this.onLanguageChange) this.onLanguageChange(this.#language)
     }
@@ -593,13 +602,13 @@ class code extends code_mvc {
             || !this.#language_policies.detector.is_valid_language(this.#language)
     }
 
-    toggle_parsing = false
-
+    #toggle_parsing = false
     #model = undefined
 
-    constructor({ argument, language_policy }){
+    constructor({ code_origin, language_policy }){
 
-        super(argument)
+        Object.assign(this, code_mvc_factory.build_from(code_origin))
+        
         this.#language_policies = language_policy
         this.parser = this.is_editable
             ? code_policies.parser.ace_metadata_parser
@@ -612,26 +621,42 @@ class code extends code_mvc {
         if (!code_policies.parser.check_concept(this.parser))
             throw new Error('ace.details.code.constructor: invalid argument (parser)')
 
-        this.model = (() => {
-            console.debug(this.model)
-            const previous_value = this.model
+        // TODO: [ editable | not-editable ] static behavior switch/select
+
+        this.update_view = this.is_editable
+            ? () => {
+                this.view.code_container.textContent = this.model
+                this.#language_policies.highlighter.highlight({ code_element: this.view.code_container })
+            }
+            : () => {}
+
+        // this.model
+        this.#model = (() => {
+
+            const value = this.parser.parse({ code: this.model })
             const { get, set } = utility.inject_field_proxy(this, 'model', {
-                getter_payload: () => {
-                    return this.toggle_parsing
-                        ? this.#model.to_display
-                        : this.#model.raw
-                },
-                setter_payload: this.is_editable
-                    ? (value) => {
+                getter_payload: this.is_editable
+                    ? () => { return this.toggle_parsing ? this.#model.to_display : this.#model.raw }
+                    : () => { return this.#model.raw },
+                setter_payload: (value) => {
                         this.#model = this.parser.parse({ code: value })
-                        this.view.code_container.textContent = this.#model.to_display // update view
+                        this.update_view()
                     }
-                    : () => { console.warn('code.set(model): no-op: not editable') }
             })
-            return previous_value
+            return value
+        })()
+        this.toggle_parsing = (() => {
+
+            const { get, set } = utility.inject_field_proxy(this, 'toggle_parsing', {
+                getter_payload: () => { return this.#toggle_parsing },
+                setter_payload: this.is_editable
+                    ? (value) => { this.#toggle_parsing = value }
+                    : ()      => { console.warn('code.set(toggle_parsing): no-op: not editable') }
+            })
+            return false // TODO: or default value (configuration)
         })()
 
-        // this.language = this.#model.ce_options.language
+        this.language = this.#model.ce_options.language
     }
 }
 
