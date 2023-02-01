@@ -308,7 +308,7 @@ class code_policies {
 }
 
 // TODO: as static factory (+remove code inheritance)
-class code_mvc {
+class code_mvc_factory {
 // acquire { model, view } from an HTMLElement
 //  model: inner text considered as plain code: any invalid nodes injected by the HTML rendering are removed
 //  view : either a pre>code or the given element, if the later contains valid HTML elements
@@ -397,16 +397,17 @@ class code_mvc {
         }
     };
 
-    get is_editable() { return !this.is_self_contained }
+    result_type = class {
 
-    constructor(argument) {
+        constructor(argument){
 
-        if (argument instanceof code_mvc) {
-            Object.assign(this, arg)
-            return
+            Object.assign(this, argument)
+            Object.seal(this)
         }
 
-        this.#build_from(argument)
+        model = undefined
+        view = { top_parent: undefined, code_container: undefined }
+        is_editable = false
     }
 
     static is_expected_layout(element){
@@ -419,20 +420,23 @@ class code_mvc {
         )
     }
 
-    #model = undefined
-    get model(){ return this.#model }
-    set model(value){
-        value = value ?? ''
-        this.#model = value.replace(/^\s*/, '').replace(/\s*$/, '') // remove enclosing white-spaces
+    static build(argument) {
+
+        if (argument instanceof code_mvc_factory.result_type)
+            return argument
+
+        let result = code_mvc_factory.#build_from(argument)
+            result.model = (() => {
+                result.model = result.model ?? ''
+                result.model = result.model.replace(/^\s*/, '').replace(/\s*$/, '') // remove enclosing white-spaces
+            })()
+        return result
     }
 
-    view = { top_parent: undefined, code_container: undefined }
-    is_self_contained = false
-
-    #build_from(argument){
+    static #build_from(argument){
 
         if (argument instanceof HTMLElement)
-            this.#build_from_element(argument)
+            code_mvc_factory.#build_from_element(argument)
         else if (argument instanceof Array
               && argument.reduce((index, arg) => undefined !== arg.nodeType, true))
         {
@@ -443,57 +447,73 @@ class code_mvc {
                     : undefined
             })()
             return only_one_valid_element
-                ? this.#build_from_element(only_one_valid_element)
-                : this.#build_from_nodes(argument)
+                ? code_mvc_factory.#build_from_element(only_one_valid_element)
+                : code_mvc_factory.#build_from_nodes(argument)
         }
         else if (argument.nodeType === document.TEXT_NODE)
-            this.#build_from_text(argument.textContent)
+            code_mvc_factory.#build_from_text(argument.textContent)
         else
-            this.#build_from_text(argument.toString())
+            code_mvc_factory.#build_from_text(argument.toString())
     }
-    #build_from_text(value){
+    static #build_from_text(value){
 
-        this.is_self_contained = false
-        this.model = value
-        this.view = (() => {
-            let value = document.createElement('pre')
-            let code_node = value.appendChild(document.createElement('code'))
-                code_node.textContent = this.model
-            return { top_parent: value, code_container: code_node }
-        })()
+        return new code_mvc_factory.result_type({
+            is_editable : true,
+            model : value,
+            view : (() => {
+                let value = document.createElement('pre')
+                let code_node = value.appendChild(document.createElement('code'))
+                    code_node.textContent = value
+                return { top_parent: value, code_container: code_node }
+            })()
+        })
     }
-    #build_from_element(element){
+    static #build_from_element(element){
 
         if (!(element instanceof HTMLElement))
             throw new Error('code_mvc.#build_from_element: invalid argument')
 
-        if (code_mvc.is_expected_layout(element)) {
-            this.is_self_contained = false
-            this.model = element.textContent
-            this.view = { top_parent: element, code_container: element.firstElementChild }
-            return
-        }
+        if (code_mvc.is_expected_layout(element))
+            return new code_mvc_factory.result_type({
+                is_editable : true,
+                model : element.textContent,
+                view : { top_parent: element, code_container: element.firstElementChild }
+            })
 
         // TODO:WIP: set to always true?
-        this.is_self_contained = Boolean(code_mvc.html_parser.count_valid_childrens({ element: element, is_recursive: true }))
-        this.model = (() => {
-            if (this.is_self_contained)
-                element = code_mvc.html_parser.cleanup({ element: element })
-            return code_mvc.html_parser.to_code({ elements: Array.from(element.childNodes) })
-        })()
-        if (!this.is_self_contained)
-            return this.#build_from_text(this.model)
-        this.view = { top_parent: element, code_container: element }
+
+        const is_editable = !Boolean(code_mvc.html_parser.count_valid_childrens({ element: element, is_recursive: true }))
+        let result = new code_mvc_factory.result_type({
+            is_editable : is_editable,
+            model : (() => {
+                if (!is_editable)
+                    element = code_mvc.html_parser.cleanup({ element: element })
+                return code_mvc.html_parser.to_code({ elements: Array.from(element.childNodes) })
+            })(),
+            view : { top_parent: element, code_container: element }
+        })
+
+        return result.is_editable
+            ? code_mvc_factory.#build_from_text(result.model)
+            : result
     }
-    #build_from_nodes(elements){
+    static #build_from_nodes(elements){
     // expected: Array.from(node.childNodes)
 
-        if (!(elements instanceof Array)
-        ||  !elements.reduce((index, arg) => undefined !== arg.nodeType, true))
-            throw new Error('code_mvc.#build_from_nodes_array: invalid argument')
+        if (!(
+            elements instanceof Array
+        &&  elements.length !== 0
+        &&  elements.reduce((index, arg) => undefined !== arg.nodeType, true)
+        ))  throw new Error('code_mvc.#build_from_nodes(array): invalid argument')
 
-        this.is_self_contained = false
-        this.model = (() => {
+        // const parent = (() => { // have common parent
+        //     const parent = elements[0].parentNode
+        //     if (elements.reduce((index, arg) => arg.parentNode !== parent, true))
+        //         throw new Error('code_mvc.#build_from_nodes(array): nodes does not have a common parentNode')
+        //     return parent
+        // })()
+
+        const code_content = (() => {
             
             elements.forEach((element) => code_mvc.html_parser.cleanup({ element: element }))
             return elements
@@ -504,7 +524,12 @@ class code_mvc {
                 })
                 .join('')
         })()
-        this.#build_from_text(this.model)
+        // return new code_mvc_factory.result_type({
+        //     is_editable : false,
+        //     model : code_content,
+        //     view : { top_parent: element, code_container: element }
+        // })
+        return code_mvc_factory.#build_from_text(code_content)
     }
 }
 class code extends code_mvc {
@@ -609,6 +634,8 @@ class code extends code_mvc {
         // this.language = this.#model.ce_options.language
     }
 }
+
+// TODO: empty CE options?
 
 // new code({
 //     argument: document.getElementById('test_1'),
