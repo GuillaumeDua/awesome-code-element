@@ -307,7 +307,6 @@ class code_policies {
     }
 }
 
-// TODO: as static factory (+remove code inheritance)
 class code_mvc_factory {
 // acquire { model, view } from an HTMLElement
 //  model: inner text considered as plain code: any invalid nodes injected by the HTML rendering are removed
@@ -484,7 +483,6 @@ class code_mvc_factory {
         if (!(element instanceof HTMLElement))
             throw new Error('code_mvc_factory.#build_from_element: invalid argument')
 
-
         const is_expected_layout = code_mvc_factory.is_expected_layout(element)
 
         const view = {
@@ -548,7 +546,7 @@ class code {
         detector: undefined,
         highlighter: undefined
     }
-    parser = undefined
+    #parser = undefined
 
     // language
     #language = undefined
@@ -604,18 +602,26 @@ class code {
 
     constructor({ code_origin, language_policy }){
 
+        if (code_origin === undefined
+        ||  language_policy === undefined)
+            throw new Error('ace.code.constructor: invalid arguments')
+
         Object.assign(this, code_mvc_factory.build_from(code_origin))
         
         this.#language_policies = language_policy
-        this.parser = this.is_editable
+        this.#parser = this.is_editable
             ? code_policies.parser.ace_metadata_parser
             : code_policies.parser.no_parser
+
+        this.#language_policies.highlighter = this.is_editable
+            ? this.#language_policies.highlighter
+            : language_policies.highlighters.use_none
 
         if (!language_policies.detectors.check_concept(this.#language_policies.detector))
             throw new Error('ace.details.code.constructor: invalid argument (language_policy.detector)')
         if (!language_policies.highlighters.check_concept(this.#language_policies.highlighter))
             throw new Error('ace.details.code.constructor: invalid argument (language_policy.highlighter)')
-        if (!code_policies.parser.check_concept(this.parser))
+        if (!code_policies.parser.check_concept(this.#parser))
             throw new Error('ace.details.code.constructor: invalid argument (parser)')
 
         // TODO: [ editable | not-editable ] static behavior switch/select
@@ -623,26 +629,28 @@ class code {
         this.update_view = this.is_editable
             ? () => {
                 this.view.code_container.textContent = this.model
-                this.#language_policies.highlighter.highlight({ code_element: this.view.code_container })
+                if (this.toggle_language_detection)
+                    this.language = undefined
+                else
+                    this.#language_policies.highlighter.highlight({ code_element: this.view.code_container })
             }
             : () => {}
 
-        // this.model
         this.#model = (() => {
 
-            const value = this.parser.parse({ code: this.model })
+            const value = this.#parser.parse({ code: this.model })
             const { get, set } = utility.inject_field_proxy(this, 'model', {
                 getter_payload: this.is_editable
                     ? () => { return this.toggle_parsing ? this.#model.to_display : this.#model.raw }
                     : () => { return this.#model.raw },
                 setter_payload: (value) => {
-                        this.#model = this.parser.parse({ code: value })
+                        this.#model = this.#parser.parse({ code: value })
                         this.update_view()
                     }
             })
             return value
         })()
-        this.toggle_parsing = (() => {
+        this.#toggle_parsing = (() => {
 
             const { get, set } = utility.inject_field_proxy(this, 'toggle_parsing', {
                 getter_payload: () => { return this.#toggle_parsing },
@@ -659,10 +667,26 @@ class code {
 
 // TODO: empty CE options?
 
-// new code({
-//     argument: document.getElementById('test_1'),
+// [ 'test_1', 'test_2', 'test_3' ].forEach((test_name, index) => {
+//     console.debug(`processing test: ${test_name} ...`)
+//     value = new code({
+//         code_origin: document.getElementById(test_name),
+//         language_policy: {
+//             detector: language_policies.detectors.use_hljs,
+//             highlighter: language_policies.highlighters.use_hljs
+//         }
+//     })
+//     value.model
+// })
+
+// TEST: cpp code -> bash
+// value = new code({
+//     code_origin: document.getElementById('test_1'),
 //     language_policy: {
 //        detector: language_policies.detectors.use_hljs,
 //        highlighter: language_policies.highlighters.use_hljs
 //     }
 //  })
+// value.model
+// value.model = '[[ $0 ]] && echo "qwe"'
+// value.language
