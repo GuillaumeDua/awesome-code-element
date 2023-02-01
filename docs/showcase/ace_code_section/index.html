@@ -27,7 +27,7 @@ SOFTWARE.
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
 
-        <script src="../../../local/code.js"></script>
+        <script src="../../../wip/code.js"></script>
 
         <!-- <link id='ace-stylesheet' rel="stylesheet" href="../../styles/default.css"> -->
 
@@ -154,6 +154,21 @@ SOFTWARE.
         </li></ul>
 
         <!-- TODO:local CE configuration -->
+
+        <pre id="test_1"><code>
+            int main() { return 42; }
+        </code></pre>
+
+        <pre id="test_2"><code>
+            int main() {
+                auto i = 42;
+                return i;
+            }
+        </code></pre>
+
+        <div id='test_3' class="my_code_class">
+            int <p style="color:blue;">main</p>(){ return 42; }
+        </div>
 
 </body>
 </html>
