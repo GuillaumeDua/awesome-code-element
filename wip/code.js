@@ -324,13 +324,21 @@ class code_mvc_factory {
                 throw new Error('ace.details.code_mvc_factory.html_parser.is_valid_HTMLElement: invalid argument')
             return element instanceof HTMLElement && !(element instanceof HTMLUnknownElement)
         }
+        static #valid_tagName_cache = new Map
         static is_valid_tagName({ tagName }) {
             if (element === undefined)
                 throw new Error('ace.details.code_mvc_factory.html_parser.is_valid_tagName: invalid argument')
             if (!(typeof tagName === 'string') && !(tagName instanceof String))
                 throw new Error('html_parser.is_valid_tagName: invalid argument')
-            // TODO: cache tagname -> result, to decrease costly/useless element creation
-            return html_parser.is_valid_HTMLElement({ element: document.createElement(tagName) })
+
+            return (() => {
+                let value = this.#valid_tagName_cache.get(tagName)
+                if (!value) {
+                    value = html_parser.is_valid_HTMLElement({ element: document.createElement(tagName) })
+                    this.#valid_tagName_cache.set(tagName, value)
+                }
+                return value
+            })()
         }
         static count_valid_childrens({ element, is_recursive = false }) {
             if (element === undefined)
@@ -550,13 +558,26 @@ class code_mvc_factory {
     }
 }
 
-class NotifyPropertyChangeInterface {
+class NotifyPropertyChangedInterface {
 
     #handlers = new Map
 
+    constructor(args){
+        if (!args)
+            return
+        if (!(arg instanceof Array))
+            throw new Error('NotifyPropertyChangedInterface.constructor: invalid argument')
+
+        args.forEach((value, index) => {
+            if (!(value instanceof Array) || value.length !== 2)
+                throw new Error(`NotifyPropertyChangedInterface.constructor: invalid argument (at index ${index})`)
+            this.add_OnPropertyChangeHandler(value[0], value[1])
+        })
+    }
+
     add_OnPropertyChangeHandler({property_name, handler}) {
         if (!(handler instanceof Function))
-            throw new Error('NotifyPropertyChangeInterface.add_OnPropertyChangeHandler: invalid argument')
+            throw new Error('NotifyPropertyChangedInterface.add_OnPropertyChangeHandler: invalid argument')
         this.#handlers.set(property_name, handler)
     }
     remove_OnPropertyChangeHandler({property_name}) {
@@ -573,7 +594,7 @@ class NotifyPropertyChangeInterface {
     }
 }
 
-class code extends NotifyPropertyChangeInterface{
+class code extends NotifyPropertyChangedInterface{
 
     #language_policies = {
         detector: undefined,
@@ -630,10 +651,20 @@ class code extends NotifyPropertyChangeInterface{
             || !this.#language_policies.detector.is_valid_language(this.#language)
     }
 
-    #toggle_parsing = false
+    #toggle_parsing = undefined
     #model = undefined
 
-    constructor({ code_origin, language_policy }){
+    static default_options = {
+        language : undefined,
+        toggle_parsing : false,
+        toggle_language_detection : true
+    }
+
+    constructor({ code_origin, language_policy, options = code.default_options }){
+
+        super()
+
+        options ??= code.default_options
 
         if (language_policy === undefined)
             throw new Error('ace.code.constructor: invalid arguments')
@@ -647,11 +678,12 @@ class code extends NotifyPropertyChangeInterface{
         })
 
         this.#language_policies = language_policy
-        this.#initialize_behaviors()
-        this.language = this.#model.ce_options.language
+        this.#initialize_behaviors(options)
+        this.toggle_language_detection = Boolean(options.toggle_language_detection)
+        this.language = this.#model.ce_options.language ?? options.language
     }
 
-    #initialize_behaviors(){
+    #initialize_behaviors(options){
     // [ const | mutable ] specific behaviors
 
         this.#parser = this.is_mutable
@@ -673,7 +705,7 @@ class code extends NotifyPropertyChangeInterface{
             ? () => {
                 this.view.code_container.textContent = this.model
                 if (this.toggle_language_detection)
-                    this.language = undefined
+                    this.language = undefined // will trigger auto-detect
                 else
                     this.#language_policies.highlighter.highlight({ code_element: this.view.code_container })
             }
@@ -706,12 +738,10 @@ class code extends NotifyPropertyChangeInterface{
                     }
                     : ()      => { console.warn('code.set(toggle_parsing): no-op: not editable') }
             })
-            return false // TODO: or default value (configuration)
+            return Boolean(options.toggle_parsing)
         })()
     }
 }
-
-// TODO: empty CE options?
 
 // value = '';
 // [ 'test_1', 'test_2', 'test_3', 'test_4' ].forEach((test_name, index) => {
