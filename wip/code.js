@@ -549,8 +549,31 @@ class code_mvc_factory {
         return code_mvc_factory.#build_from_text(code_content)
     }
 }
-class code {
-// TODO: editable, not-editable behaviors
+
+class NotifyPropertyChangeInterface {
+
+    #handlers = new Map
+
+    add_OnPropertyChangeHandler({property_name, handler}) {
+        if (!(handler instanceof Function))
+            throw new Error('NotifyPropertyChangeInterface.add_OnPropertyChangeHandler: invalid argument')
+        this.#handlers.set(property_name, handler)
+    }
+    remove_OnPropertyChangeHandler({property_name}) {
+        this.#handlers.delete(property_name)
+    }
+
+    NotifyPropertyChanged({property_name}){
+        const handler = this.#handlers.get(property_name)
+        if (handler)
+            handler({
+                property_name: property_name,
+                value: this[property_name]
+            })
+    }
+}
+
+class code extends NotifyPropertyChangeInterface{
 
     #language_policies = {
         detector: undefined,
@@ -560,7 +583,6 @@ class code {
 
     // language
     #language = undefined
-    onLanguageChange = (value) => {}
     get language() {
 
         const value = (() => {
@@ -594,13 +616,14 @@ class code {
         this.toggle_language_detection = Boolean(result.relevance <= 5)
         // this.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.#language) // TODO: uncomment when integrated
 
-        if (this.onLanguageChange) this.onLanguageChange(this.#language)
+        this.NotifyPropertyChanged('language')
     }
 
     // language_detection
     #toggle_language_detection = true
     set toggle_language_detection(value) {
         this.#toggle_language_detection = value
+        this.NotifyPropertyChanged('toggle_language_detection')
     }
     get toggle_language_detection() {
         return  this.#toggle_language_detection
@@ -666,6 +689,7 @@ class code {
                 set: (value) => {
                     this.#model = this.#parser.parse({ code: value })
                     this.update_view()
+                    this.NotifyPropertyChanged('model')
                 }
             })
             return value
@@ -675,7 +699,11 @@ class code {
             Object.defineProperty(this, 'toggle_parsing', {
                 get: () => { return this.#toggle_parsing },
                 set: this.is_mutable
-                    ? (value) => { this.#toggle_parsing = value }
+                    ? (value) => { 
+                        this.#toggle_parsing = value
+                        this.update_view()
+                        this.NotifyPropertyChanged('toggle_parsing')
+                    }
                     : ()      => { console.warn('code.set(toggle_parsing): no-op: not editable') }
             })
             return false // TODO: or default value (configuration)
@@ -685,7 +713,8 @@ class code {
 
 // TODO: empty CE options?
 
-// [ 'test_1', 'test_2', 'test_3' ].forEach((test_name, index) => {
+// value = '';
+// [ 'test_1', 'test_2', 'test_3', 'test_4' ].forEach((test_name, index) => {
 //     console.debug(`processing test: ${test_name} ...`)
 //     value = new code({
 //         code_origin: document.getElementById(test_name),
@@ -696,6 +725,8 @@ class code {
 //     })
 //     value.model
 // })
+// value.toggle_parsing = true
+// value.language = 'cpp'
 
 // TEST: cpp code -> bash
 // value = new code({
