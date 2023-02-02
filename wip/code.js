@@ -156,7 +156,7 @@ class utility {
 //      - highlighter
 //  - parsing logic (model -> code_policies.parser.ace_metadata_parser)
 //  - CE configuration
-//  - immuability -> layout is wrap mode -> is_editable === false
+//  - immuability -> layout is wrap mode -> is_mutable === false
 //    - no parsing allowed
 //  - language
 //  - toggle_language detection
@@ -413,7 +413,8 @@ class code_mvc_factory {
 
         model = undefined
         view = { top_parent: undefined, code_container: undefined }
-        is_editable = false
+
+        is_mutable = false
     }
 
     static is_expected_layout(element){
@@ -431,7 +432,10 @@ class code_mvc_factory {
         if (argument instanceof code_mvc_factory.result_type)
             return argument
 
+        argument ??= ''
+
         let result = (() => {
+
             if (undefined === argument
             ||  argument.text !== undefined)
                 return code_mvc_factory.#build_from_text(argument)
@@ -445,7 +449,7 @@ class code_mvc_factory {
             result.model = (result.model ?? '')
                 .replace(/^\s*/, '')
                 .replace(/\s*$/, '') // remove enclosing white-spaces
-            if (result.is_editable)
+            if (result.is_mutable)
                 result.view.code_container.textContent = result.model
         return result
     }
@@ -475,7 +479,7 @@ class code_mvc_factory {
     static #build_from_text(value){
 
         return new code_mvc_factory.result_type({
-            is_editable : true,
+            is_mutable : true,
             model : value ?? '',
             view : (() => {
                 let value = document.createElement('pre')
@@ -499,10 +503,10 @@ class code_mvc_factory {
                 : element
         }
 
-        const is_editable = !Boolean(code_mvc_factory.html_parser.count_valid_childrens({ element: view.code_container, is_recursive: true }))
+        const is_mutable = !Boolean(code_mvc_factory.html_parser.count_valid_childrens({ element: view.code_container, is_recursive: true }))
 
         return new code_mvc_factory.result_type({
-            is_editable : is_editable,
+            is_mutable : is_mutable,
             model : (() => {
                 element = code_mvc_factory.html_parser.cleanup({ element: view.code_container })
                 return code_mvc_factory.html_parser.to_code({ elements: Array.from(view.code_container.childNodes) })
@@ -538,7 +542,7 @@ class code_mvc_factory {
                 .join('')
         })()
         // return new code_mvc_factory.result_type({
-        //     is_editable : false,
+        //     is_mutable : false,
         //     model : code_content,
         //     view : { top_parent: element, code_container: element }
         // })
@@ -578,7 +582,7 @@ class code {
             return
         this.toggle_language_detection = !is_valid_input
 
-        const result = (this.is_editable
+        const result = (this.is_mutable
             ? this.#language_policies.highlighter.highlight({
                 code_element: this.view.code_container,
                 language: this.toggle_language_detection ? undefined : value
@@ -608,66 +612,88 @@ class code {
 
     constructor({ code_origin, language_policy }){
 
-        if (code_origin === undefined
-        ||  language_policy === undefined)
+        if (language_policy === undefined)
             throw new Error('ace.code.constructor: invalid arguments')
 
         Object.assign(this, code_mvc_factory.build_from(code_origin))
         
+        const is_mutable = this.is_mutable
+        Object.defineProperty(this, 'is_mutable', {
+            get: () => { return is_mutable },
+            set: () => { console.warn('ace.details.code.set(is_mutable): no-op, const property') },
+        })
+
         this.#language_policies = language_policy
-        this.#parser = this.is_editable
-            ? code_policies.parser.ace_metadata_parser
-            : code_policies.parser.no_parser
+        this.is_mutable
+            ? this.#initialize_as_mutable()
+            : this.#initialize_as_const()
+        this.language = this.#model.ce_options.language
+    }
 
-        this.#language_policies.highlighter = this.is_editable
-            ? this.#language_policies.highlighter
-            : language_policies.highlighters.use_none
-
+    #check_properties_concepts(){
         if (!language_policies.detectors.check_concept(this.#language_policies.detector))
             throw new Error('ace.details.code.constructor: invalid argument (language_policy.detector)')
         if (!language_policies.highlighters.check_concept(this.#language_policies.highlighter))
             throw new Error('ace.details.code.constructor: invalid argument (language_policy.highlighter)')
         if (!code_policies.parser.check_concept(this.#parser))
             throw new Error('ace.details.code.constructor: invalid argument (parser)')
+    }
+    #initialize_as_mutable(){
 
-        // TODO: [ editable | not-editable ] static behavior switch/select
+        if (!this.is_mutable)
+            throw new Error('ace.details.code.#initialize_as_mutable: invalid call')
 
-        this.update_view = this.is_editable
-            ? () => {
-                this.view.code_container.textContent = this.model
-                if (this.toggle_language_detection)
-                    this.language = undefined
-                else
-                    this.#language_policies.highlighter.highlight({ code_element: this.view.code_container })
+        this.#parser = code_policies.parser.ace_metadata_parser
+        this.#check_properties_concepts()
+
+        this.update_view = () => {
+            this.view.code_container.textContent = this.model
+            if (this.toggle_language_detection)
+                this.language = undefined
+            else
+                this.#language_policies.highlighter.highlight({ code_element: this.view.code_container })
+        }
+
+        this.#model = this.#parser.parse({ code: this.model })
+        Object.defineProperty(this, 'model', {
+            get: () => { return this.toggle_parsing ? this.#model.to_display : this.#model.raw },
+            set: (value) => {
+                this.#model = this.#parser.parse({ code: value })
+                this.update_view()
             }
-            : () => {}
+        })
 
-        this.#model = (() => {
+        this.#toggle_parsing = false // TODO: or default value (configuration)
+        Object.defineProperty(this, 'toggle_parsing', {
+            get: ()      => { return this.#toggle_parsing },
+            set: (value) => { this.#toggle_parsing = value }
+        })
+    }
+    #initialize_as_const(){
 
-            const value = this.#parser.parse({ code: this.model })
-            const { get, set } = utility.inject_field_proxy(this, 'model', {
-                getter_payload: this.is_editable
-                    ? () => { return this.toggle_parsing ? this.#model.to_display : this.#model.raw }
-                    : () => { return this.#model.raw },
-                setter_payload: (value) => {
-                        this.#model = this.#parser.parse({ code: value })
-                        this.update_view()
-                    }
-            })
-            return value
-        })()
-        this.#toggle_parsing = (() => {
+        if (this.is_mutable)
+            throw new Error('ace.details.code.#initialize_as_const: invalid call')
 
-            const { get, set } = utility.inject_field_proxy(this, 'toggle_parsing', {
-                getter_payload: () => { return this.#toggle_parsing },
-                setter_payload: this.is_editable
-                    ? (value) => { this.#toggle_parsing = value }
-                    : ()      => { console.warn('code.set(toggle_parsing): no-op: not editable') }
-            })
-            return false // TODO: or default value (configuration)
-        })()
+        this.#parser = code_policies.parser.no_parser
+        this.#language_policies.highlighter = language_policies.highlighters.use_none
+        this.#check_properties_concepts()
 
-        this.language = this.#model.ce_options.language
+        this.update_view = () => {}
+
+        this.#model = this.#parser.parse({ code: this.model })
+        Object.defineProperty(this, 'model', {
+            get: ()      => { return this.#model.raw },
+            set: (value) => {
+                this.#model = this.#parser.parse({ code: value })
+                this.update_view()
+            }
+        })
+
+        this.#toggle_parsing = false // TODO: or default value (configuration)
+        Object.defineProperty(this, 'toggle_parsing', {
+            get: () => { return this.#toggle_parsing },
+            set: () => { console.warn('code.set(toggle_parsing): no-op: not editable') }
+        })
     }
 }
 
