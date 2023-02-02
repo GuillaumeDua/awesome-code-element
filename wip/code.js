@@ -106,32 +106,39 @@ class language_policies {
 class utility {
     static inject_field_proxy = function(target, property_name, { getter_payload, setter_payload } = {}) {
     // generate a proxy to a value's field, injecting optional payload
+
+        if (1 === (Boolean(target.__lookupSetter__(property_name) === undefined)
+                +  Boolean(target.__lookupGetter__(property_name) === undefined)
+        ))   console.warn(`utility.inject_field_proxy: target property [${target.constructor.name}.${property_name}] has a getter but no setter, or vice-versa`)
         
         var _target = target
         var storage = _target[property_name]
-        const target_getter = _target.__lookupGetter__(property_name)
-        const target_setter = _target.__lookupSetter__(property_name)
-    
-        const getter = function(){
-            const value = target_getter ? target_getter.call(_target) : storage
-            return getter_payload
-                ? getter_payload(value) ?? value
-                : value
-        };
-        const setter = function(newValue){
-    
-            if (setter_payload)
-                newValue = setter_payload(newValue)
-    
-            if (target_setter)
-                target_setter.call(_target, newValue)
-            else
-                storage = newValue
-        };
-    
+        const target_getter = (() => {
+            const value = _target.__lookupGetter__(property_name)
+            return value
+                ? value.bind(target)
+                : () => { return storage }
+        })()
+        const target_setter = (() => {
+            const value = _target.__lookupSetter__(property_name)
+            return value
+                ? value.bind(_target)
+                : (argument) => { storage = argument }
+        })()
+        
         Object.defineProperty(_target, property_name, {
-            get: getter,
-            set: setter
+            get: getter_payload
+                ? () => {
+                    const value = target_getter()
+                    return getter_payload(value) ?? value
+                }
+                : () => { return target_getter() },
+            set: setter_payload
+                ? (value) => {
+                    value = setter_payload(value)
+                    target_setter(value)
+                }
+                : (value) => { target_setter(value) }
         });
     
         return {
@@ -539,7 +546,6 @@ class code_mvc_factory {
     }
 }
 class code {
-// TODO: encapsulation, rd-only accessors
 // TODO: editable, not-editable behaviors
 
     #language_policies = {
