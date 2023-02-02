@@ -624,76 +624,62 @@ class code {
         })
 
         this.#language_policies = language_policy
-        this.is_mutable
-            ? this.#initialize_as_mutable()
-            : this.#initialize_as_const()
+        this.#initialize_behaviors()
         this.language = this.#model.ce_options.language
     }
 
-    #check_properties_concepts(){
+    #initialize_behaviors(){
+    // [ const | mutable ] specific behaviors
+
+        this.#parser = this.is_mutable
+            ? code_policies.parser.ace_metadata_parser
+            : code_policies.parser.no_parser
+
+        this.#language_policies.highlighter = this.is_mutable
+            ? this.#language_policies.highlighter
+            : language_policies.highlighters.use_none
+
         if (!language_policies.detectors.check_concept(this.#language_policies.detector))
             throw new Error('ace.details.code.constructor: invalid argument (language_policy.detector)')
         if (!language_policies.highlighters.check_concept(this.#language_policies.highlighter))
             throw new Error('ace.details.code.constructor: invalid argument (language_policy.highlighter)')
         if (!code_policies.parser.check_concept(this.#parser))
             throw new Error('ace.details.code.constructor: invalid argument (parser)')
-    }
-    #initialize_as_mutable(){
 
-        if (!this.is_mutable)
-            throw new Error('ace.details.code.#initialize_as_mutable: invalid call')
-
-        this.#parser = code_policies.parser.ace_metadata_parser
-        this.#check_properties_concepts()
-
-        this.update_view = () => {
-            this.view.code_container.textContent = this.model
-            if (this.toggle_language_detection)
-                this.language = undefined
-            else
-                this.#language_policies.highlighter.highlight({ code_element: this.view.code_container })
-        }
-
-        this.#model = this.#parser.parse({ code: this.model })
-        Object.defineProperty(this, 'model', {
-            get: () => { return this.toggle_parsing ? this.#model.to_display : this.#model.raw },
-            set: (value) => {
-                this.#model = this.#parser.parse({ code: value })
-                this.update_view()
+        this.update_view = this.is_mutable
+            ? () => {
+                this.view.code_container.textContent = this.model
+                if (this.toggle_language_detection)
+                    this.language = undefined
+                else
+                    this.#language_policies.highlighter.highlight({ code_element: this.view.code_container })
             }
-        })
+            : () => {}
 
-        this.#toggle_parsing = false // TODO: or default value (configuration)
-        Object.defineProperty(this, 'toggle_parsing', {
-            get: ()      => { return this.#toggle_parsing },
-            set: (value) => { this.#toggle_parsing = value }
-        })
-    }
-    #initialize_as_const(){
+        this.#model = (() => {
 
-        if (this.is_mutable)
-            throw new Error('ace.details.code.#initialize_as_const: invalid call')
+            const value = this.#parser.parse({ code: this.model })
+            Object.defineProperty(this, 'model', {
+                get: this.is_mutable
+                    ? () => { return this.toggle_parsing ? this.#model.to_display : this.#model.raw }
+                    : () => { return this.#model.raw },
+                set: (value) => {
+                    this.#model = this.#parser.parse({ code: value })
+                    this.update_view()
+                }
+            })
+            return value
+        })()
+        this.#toggle_parsing = (() => {
 
-        this.#parser = code_policies.parser.no_parser
-        this.#language_policies.highlighter = language_policies.highlighters.use_none
-        this.#check_properties_concepts()
-
-        this.update_view = () => {}
-
-        this.#model = this.#parser.parse({ code: this.model })
-        Object.defineProperty(this, 'model', {
-            get: ()      => { return this.#model.raw },
-            set: (value) => {
-                this.#model = this.#parser.parse({ code: value })
-                this.update_view()
-            }
-        })
-
-        this.#toggle_parsing = false // TODO: or default value (configuration)
-        Object.defineProperty(this, 'toggle_parsing', {
-            get: () => { return this.#toggle_parsing },
-            set: () => { console.warn('code.set(toggle_parsing): no-op: not editable') }
-        })
+            Object.defineProperty(this, 'toggle_parsing', {
+                get: () => { return this.#toggle_parsing },
+                set: this.is_mutable
+                    ? (value) => { this.#toggle_parsing = value }
+                    : ()      => { console.warn('code.set(toggle_parsing): no-op: not editable') }
+            })
+            return false // TODO: or default value (configuration)
+        })()
     }
 }
 
