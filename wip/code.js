@@ -63,13 +63,13 @@ class language_policies {
                 }
             }
         }
-        static use_hljs = class use_hljs_language_policy {
+        static use_hljs = class use_hljs {
     
             static #highlight_dry_run({ code_element, language }){
                 if (!code_element || !(code_element instanceof HTMLElement))
-                    throw new Error('use_hljs_language_policy.highlight: invalid argument. Expect [code_element] to be a valid HTMLElement')
+                    throw new Error('use_hljs.highlight: invalid argument. Expect [code_element] to be a valid HTMLElement')
                 if (language && !language_policies.detectors.use_hljs.is_valid_language(language)) {
-                    console.warn(`use_hljs_language_policy.highlight: invalid language [${language}], attempting fallback detection`)
+                    console.warn(`use_hljs.highlight: invalid language [${language}], attempting fallback detection`)
                     language = undefined
                 }
                 
@@ -78,14 +78,13 @@ class language_policies {
                     : hljs.highlightAuto(code_element.textContent)
                 if (result.relevance < 5)
                     console.warn(
-                        `use_hljs_language_policy.highlight: poor language relevance [${result.relevance}/10] for language [${result.language}]
-                        Perhaps the code is too small ? (${code_element.textContent.length} characters)`,
-                        result
+                        `use_hljs.highlight: poor language relevance [${result.relevance}/10] for language [${result.language}]\n`,
+                        `Perhaps the code is too small ? (${code_element.textContent.length} characters):`, result
                     )
                 return result
             }
             static highlight({ code_element, language }){
-                const result = use_hljs_language_policy.#highlight_dry_run({
+                const result = use_hljs.#highlight_dry_run({
                     code_element: code_element,
                     language: language
                 })
@@ -236,12 +235,17 @@ class code_policies {
                 let code_content = result.raw
         
                 {   // CE options
-                    const regexp = new RegExp(`^\\s*?${code_policies.parser.ace_metadata_parser.tag}::CE=({(.*?\n\\s*//.*?)+}\n?)`, 'gm')
+                    const regex_match_json_pattern = '\{(?:[^{}]|(?:\{[^{}]*\}))*\}'
+                    const regexp = new RegExp(`^\\s*?${code_policies.parser.ace_metadata_parser.tag}::CE=(${regex_match_json_pattern})\s*?\n?`, 'gm')
                     const matches = [...result.raw.matchAll(regexp)] // expect exactly 1 match
                     if (matches.length > 1)
-                        console.error(`code_policies.parser.ace_metadata_parser.parse: found multiples CE configurations`)
+                        console.warn(
+                            `code_policies.parser.ace_metadata_parser.parse: found multiples CE configurations\n`,
+                            matches
+                        )
             
-                    matches.map((match) => {
+                    // reverse twice because we hare altering the original code_content here
+                    matches.reverse().map((match) => {
                         const value = match[1].replaceAll(
                             new RegExp(`^\\s*?//`, 'gm'),
                             ''
@@ -250,7 +254,8 @@ class code_policies {
                         code_content = code_content.slice(0, match.index)
                                     + code_content.slice(match.index + match[0].length)
                         return value
-                    }).forEach((value) => {
+                    }).reverse().forEach((value) => {
+
                         // Merge CE configuration. Local can override global.
                         result.ce_options = {
                             ...(result.ce_options || {}),
@@ -295,6 +300,7 @@ class code_policies {
                 result.to_display = (code_only_show !== "" ? code_only_show : code_content)
                 result.to_execute = code_content
 
+                console.log(result)
                 return result
             }
             static #apply_ce_transformations({ result }) {
@@ -690,9 +696,13 @@ class code extends NotifyPropertyChangedInterface{
             ? code_policies.parser.ace_metadata_parser
             : code_policies.parser.no_parser
 
-        this.#language_policies.highlighter = this.is_mutable
-            ? this.#language_policies.highlighter
-            : language_policies.highlighters.use_none
+        if (!this.is_mutable) {
+            console.warn(
+                'ace.details.code.constructor: invalid language_policies.highlighter for non-mutable/const code mvc\n',
+                `was [${this.#language_policies.highlighter.name}], switching to fallback [language_policies.highlighters.use_none]`
+            )
+            this.#language_policies.highlighter = language_policies.highlighters.use_none
+        }
 
         if (!language_policies.detectors.check_concept(this.#language_policies.detector))
             throw new Error('ace.details.code.constructor: invalid argument (language_policy.detector)')
