@@ -404,7 +404,7 @@ class code_mvc_factory {
 
             let childNodes = Array.from(element.childNodes)                                         // preserve reference/offset integrity
             if (!html_parser.is_valid_HTMLElement({ element: element })) {
-                const nodes_attr_as_text = `${element.attributes.length ? '/' : ''}${Array.from(element.attributes).map(value => value.name).toString()}`
+                const nodes_attr_as_text = `${element.attributes.length ? '/' : ''}${Array.from(element.attributes).map(value => value.name).join('/')}`
                 const node_text          = `<${element.localName}${nodes_attr_as_text}>`            // #include <toto/b.hpp> : `toto` is the invalid tag, `b.hpp` its attribute
                 element.previousSibling.appendData(node_text)                                       // replace by text
                 childNodes.forEach(node => element.parentNode.insertBefore(node, element))          // transfert childrensNodes to parent
