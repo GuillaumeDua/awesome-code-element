@@ -241,10 +241,10 @@ class code_policies {
                     if (matches.length > 1)
                         console.warn(
                             `code_policies.parser.ace_metadata_parser.parse: found multiples CE configurations\n`,
-                            matches
+                            ...matches.map((value) => value.at(0))
                         )
             
-                    // reverse twice because we hare altering the original code_content here
+                    // reversed twiced array: because we are altering the original `code_content` here, yet prevalence matters
                     matches.reverse().map((match) => {
                         const value = match[1].replaceAll(
                             new RegExp(`^\\s*?//`, 'gm'),
@@ -300,7 +300,6 @@ class code_policies {
                 result.to_display = (code_only_show !== "" ? code_only_show : code_content)
                 result.to_execute = code_content
 
-                console.log(result)
                 return result
             }
             static #apply_ce_transformations({ result }) {
@@ -405,7 +404,9 @@ class code_mvc_factory {
 
             let childNodes = Array.from(element.childNodes)                                         // preserve reference/offset integrity
             if (!html_parser.is_valid_HTMLElement({ element: element })) {
-                element.previousSibling.appendData(`<${element.localName}>`)                        // replace by text
+                const nodes_attr_as_text = `${element.attributes.length ? '/' : ''}${Array.from(element.attributes).map(value => value.name).toString()}`
+                const node_text          = `<${element.localName}${nodes_attr_as_text}>`            // #include <toto/b.hpp> : `toto` is the invalid tag, `b.hpp` its attribute
+                element.previousSibling.appendData(node_text)                                       // replace by text
                 childNodes.forEach(node => element.parentNode.insertBefore(node, element))          // transfert childrensNodes to parent
                 element = element.parentNode.removeChild(element)                                   // remove the element
             }
