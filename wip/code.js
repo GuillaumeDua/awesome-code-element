@@ -10,6 +10,7 @@ class language_policies {
 
         static use_none = class {
             static is_valid_language(language){ return true; }
+            static get_language_name(maybe_alias){ return maybe_alias; }
             static get_language(element){
                 return 'n/a'
             }
@@ -24,6 +25,10 @@ class language_policies {
         static use_hljs = class use_hljs_language_detector_policy {
             static is_valid_language(language){
                 return hljs.getLanguage(language) !== undefined
+            }
+            static get_language_name(maybe_alias){
+                const language = hljs.getLanguage(maybe_alias)
+                return language ? language.name : undefined
             }
             static get_language(element){
 
@@ -90,10 +95,11 @@ class language_policies {
                 })
                 code_element.innerHTML = result.value
     
+                language = language_policies.detectors.use_hljs.get_language_name(result.language)
                 const update_classList = () => {
                     code_element.classList = [...code_element.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
                     code_element.classList.add(`hljs`)
-                    code_element.classList.add(`language-${result.language}`)
+                    code_element.classList.add(`language-${language}`) // TODO:useless?
                 }
                 update_classList()
                 return result
@@ -627,20 +633,22 @@ class code extends NotifyPropertyChangedInterface{
     }
     set language(value) {
 
-        const is_valid_input = this.#language_policies.detector.is_valid_language(value)
+        value = this.#language_policies.detector.get_language_name(value)
+        const is_valid_input = Boolean(value)
+
         if (this.#language === value && is_valid_input)
             return
         this.toggle_language_detection = !is_valid_input
 
-        const result = (this.is_mutable
+        const result = this.is_mutable
             ? this.#language_policies.highlighter.highlight({
                 code_element: this.view.code_container,
                 language: this.toggle_language_detection ? undefined : value
             })
             : this.#language_policies.detector.detect_language(this.model)
-        )
+
         // if (this.toggle_language_detection)
-        this.#language = result.language // note: possibly not equal to `value`
+        this.#language = this.#language_policies.detector.get_language_name(result.language) // note: possibly not equal to `value`
         this.toggle_language_detection = Boolean(result.relevance <= 5)
         // this.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.#language) // TODO: uncomment when integrated
 
@@ -663,7 +671,7 @@ class code extends NotifyPropertyChangedInterface{
 
     static default_arguments = {
         options: {
-            language : undefined,
+            language : undefined, // TODO: global configuration < local < in-code (ce_options)
             toggle_parsing : false,
             toggle_language_detection : true
         },
@@ -690,7 +698,7 @@ class code extends NotifyPropertyChangedInterface{
 
         this.#language_policies = language_policy
         this.#initialize_behaviors(options)
-        this.#language = this.#model.ce_options.language ?? options.language
+        this.#language = this.#language_policies.detector.get_language_name(this.#model.ce_options.language ?? options.language)
         this.toggle_language_detection = Boolean(options.toggle_language_detection) && !Boolean(this.#model.ce_options.language)
         this.#toggle_parsing |= Boolean(this.#model.ce_options)
         this.update_view()
