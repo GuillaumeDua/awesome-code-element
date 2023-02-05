@@ -661,20 +661,24 @@ class code extends NotifyPropertyChangedInterface{
     #toggle_parsing = undefined
     #model = undefined
 
-    static default_options = {
-        language : undefined,
-        toggle_parsing : false,
-        toggle_language_detection : true
+    static default_arguments = {
+        options: {
+            language : undefined,
+            toggle_parsing : false,
+            toggle_language_detection : true
+        },
+        language_policy: {
+            detector:    language_policies.detectors.use_hljs,
+            highlighter: language_policies.highlighters.use_hljs
+        }
     }
 
-    constructor({ code_origin, language_policy, options = code.default_options }){
-
+    constructor({
+        code_origin,
+        language_policy = code.default_arguments.language_policy,
+        options = code.default_arguments.options
+    }){
         super()
-
-        options ??= code.default_options
-
-        if (language_policy === undefined)
-            throw new Error('ace.code.constructor: invalid arguments')
 
         Object.assign(this, code_mvc_factory.build_from(code_origin))
         
@@ -686,8 +690,10 @@ class code extends NotifyPropertyChangedInterface{
 
         this.#language_policies = language_policy
         this.#initialize_behaviors(options)
-        this.toggle_language_detection = Boolean(options.toggle_language_detection)
-        this.language = this.#model.ce_options.language ?? options.language
+        this.#language = this.#model.ce_options.language ?? options.language
+        this.toggle_language_detection = Boolean(options.toggle_language_detection) && !Boolean(this.#model.ce_options.language)
+        this.#toggle_parsing |= Boolean(this.#model.ce_options)
+        this.update_view()
     }
 
     #initialize_behaviors(options){
@@ -718,7 +724,7 @@ class code extends NotifyPropertyChangedInterface{
                 if (this.toggle_language_detection)
                     this.language = undefined // will trigger auto-detect
                 else
-                    this.#language_policies.highlighter.highlight({ code_element: this.view.code_container })
+                    this.#language_policies.highlighter.highlight({ code_element: this.view.code_container, language: this.language })
             }
             : () => {}
 
