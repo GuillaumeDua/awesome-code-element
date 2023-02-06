@@ -208,5 +208,21 @@ BAD CODE // @ace::skip::line
 // @ace::skip::block::end
 </code></pre>
 
+<pre id="test_5">
+<code>
+    #include <iostream>
+
+        int main() {
+            std::cout << "<html>" << std::endl;
+            std::cout << "  <body>" << std::endl;
+            std::cout << "    This code is invalid in HTML because it contains unescaped < characters" << std::endl;
+            std::cout << "  </body>" << std::endl;
+            std::cout << "</html>" << std::endl;
+        
+            return 0;
+        }
+</code>
+</pre>
+
 </body>
 </html>

@@ -442,9 +442,9 @@ class code_mvc_factory {
         if (!(element instanceof HTMLElement))
             throw new Error('code_mvc_factory.is_expected_layout: invalid argument')
         return (element.localName === 'pre'
-             && element.childNodes.length === 1
-             && element.childNodes[0].nodeType === Node.ELEMENT_NODE
-             && element.childNodes[0].localName === 'code'
+             && element.childElementCount === 1
+             && element.children[0].nodeType === Node.ELEMENT_NODE
+             && element.children[0].localName === 'code'
         )
     }
 
@@ -459,11 +459,11 @@ class code_mvc_factory {
 
             if (undefined === argument
             ||  argument.text !== undefined)
-                return code_mvc_factory.#build_from_text(argument)
+                return code_mvc_factory.#build_from_text(argument.text)
             if (argument.element !== undefined)
-                return code_mvc_factory.#build_from_element(argument)
+                return code_mvc_factory.#build_from_element(argument.element)
             if (argument.nodes !== undefined)
-                return code_mvc_factory.#build_from_nodes(argument)
+                return code_mvc_factory.#build_from_nodes(argument.nodes)
 
             return code_mvc_factory.#build_from(argument)
         })()
