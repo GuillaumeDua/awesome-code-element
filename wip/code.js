@@ -515,11 +515,9 @@ class code_mvc_factory {
         if (!(element instanceof HTMLElement))
             throw new Error('code_mvc_factory.#build_from_element: invalid argument')
 
-        const is_expected_layout = code_mvc_factory.is_expected_layout(element)
-
         const view = {
             top_parent : element,
-            code_container : is_expected_layout
+            code_container : code_mvc_factory.is_expected_layout(element)
                 ? element.firstElementChild
                 : element
         }
@@ -777,7 +775,7 @@ class code extends NotifyPropertyChangedInterface{
 }
 
 // value = '';
-// [ 'test_1', 'test_2', 'test_3', 'test_4' ].forEach((test_name, index) => {
+// [ 'test_1', 'test_2', 'test_3', 'test_4', 'test_5 ].forEach((test_name, index) => {
 //     console.debug(`processing test: ${test_name} ...`)
 //     value = new code({
 //         code_origin: document.getElementById(test_name),
