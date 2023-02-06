@@ -633,22 +633,30 @@ class code extends NotifyPropertyChangedInterface{
     }
     set language(value) {
 
-        value = this.#language_policies.detector.get_language_name(value)
-        const is_valid_input = Boolean(value)
+        const argument = (() => {
+            const language_name = this.#language_policies.detector.get_language_name(value)
+            const is_valid_input = Boolean(value)
+            return {
+                language_name: language_name,
+                is_valid: is_valid_input
+            }
+        })()
 
-        if (this.#language === value && is_valid_input)
+        if (this.#language === argument.language_name && argument.is_valid)
             return
-        this.toggle_language_detection = !is_valid_input
+        
+        if (this.toggle_language_detection = !argument.is_valid)
+            console.warn(`ace.details.code.set(language): invalid input [${value}], attempting fallback detection.`)
 
         const result = this.is_mutable
             ? this.#language_policies.highlighter.highlight({
                 code_element: this.view.code_container,
-                language: this.toggle_language_detection ? undefined : value
+                language: this.toggle_language_detection ? undefined : argument.language_name
             })
             : this.#language_policies.detector.detect_language(this.model)
 
         // if (this.toggle_language_detection)
-        this.#language = this.#language_policies.detector.get_language_name(result.language) // note: possibly not equal to `value`
+        this.#language = this.#language_policies.detector.get_language_name(result.language) // note: possibly not equal to `value.input`
         this.toggle_language_detection = Boolean(result.relevance <= 5)
         // this.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.#language) // TODO: uncomment when integrated
 
