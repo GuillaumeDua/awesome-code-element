@@ -605,7 +605,7 @@ class NotifyPropertyChangedInterface {
     }
 }
 
-class code extends NotifyPropertyChangedInterface{
+class code_mvc extends NotifyPropertyChangedInterface{
 
     #language_policies = {
         detector: undefined,
@@ -687,10 +687,15 @@ class code extends NotifyPropertyChangedInterface{
         }
     }
 
+    view = undefined
+    model = undefined
+    is_mutable = undefined
+    toggle_parsing = undefined
+
     constructor({
         code_origin,
-        language_policy = code.default_arguments.language_policy,
-        options = code.default_arguments.options
+        language_policy = code_mvc.default_arguments.language_policy,
+        options = code_mvc.default_arguments.options
     }){
         super()
 
@@ -771,6 +776,167 @@ class code extends NotifyPropertyChangedInterface{
             })
             return Boolean(options.toggle_parsing)
         })()
+    }
+}
+
+// TODO:
+//  - resize observer
+//  - DeferedHTMLElement
+class ace_cs_HTMLElement_factory {
+// HTML layout/barebone for CodeSection
+
+    static #id_generator = (() => {
+        const counter = (function*(){
+            let i = 0;
+            while (true) { yield i++; }
+        })()
+        return () => { return `cs_${counter.next().value}` }
+    })()
+
+    static layout_policies = class layout_policies {
+        static basic = class {
+            static make(argument){
+                if (!(argument instanceof code_mvc)
+                 || !argument.is_mutable
+                 || !code_mvc_factory.is_expected_layout(argument.view)
+                )   throw new Error('ace_cs_HTMLElement_factory.layout_policies.basic: invalid argument')
+                return {
+                    container: argument.view,
+                    content: argument.view.firstElementChild
+                }
+            }
+        }
+        static wrap = class {
+            static make(argument){
+                if (!(argument instanceof code_mvc))
+                    throw new Error('ace_cs_HTMLElement_factory.layout_policies.wrap: invalid argument')
+                if (code_mvc_factory.is_expected_layout(argument.view))
+                    console.warn('ace_cs_HTMLElement_factory.layout_policies.wrap: wrapping on an default layout. Consider using layout_policies.basic instead')
+
+                let container = document.createElement('div')
+                let content   = container.appendChild(target)
+                return {
+                    container: container,
+                    content: content
+                }
+            }
+        }
+
+        static always_best = class {
+            static make(argument){
+                if (!(argument instanceof code_mvc))
+                    throw new Error('ace_cs_HTMLElement_factory.layout_policies.select_best_for: invalid argument')
+                const best_policy = argument.is_mutable && code_mvc_factory.is_expected_layout(argument.view)
+                    ? layout_policies.basic
+                    : layout_policies.wrap
+                return best_policy.make(argument)
+            }
+        }
+    }
+
+    static make_HTML_layout(argument) {
+
+        if (!(argument instanceof code_mvc)) 
+            throw new Error('ace_cs_HTMLElement_factory.make_HTML_layout: invalid argument')
+
+        let left_panel = (() => {
+
+            let { container, content } = this.layout_policies.always_best.make(argument)
+
+            let copy_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
+                copy_button.style.zIndex = container.style.zIndex + 1
+                copy_button = container.appendChild(copy_button)
+
+            let CE_button = new AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt()
+                CE_button.style.zIndex = CE_button.style.zIndex + 1
+                CE_button = container.appendChild(CE_button)
+
+            AwesomeCodeElement.details.HTML_elements.LoadingAnimation.inject_into({
+                owner:  container,
+                target_or_accessor: content
+            })
+
+            return {
+                container: container,
+                content: content,
+                buttons: {
+                    CE: CE_button,
+                    copy_to_clipboard: copy_button
+                }
+            }
+        })()
+        let right_panel = (() => {
+            let container = document.createElement('pre')
+            let content = document.createElement('code')
+                content = container.appendChild(content)
+            let copy_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
+                copy_button = container.appendChild(copy_button)
+
+            AwesomeCodeElement.details.HTML_elements.LoadingAnimation.inject_into({
+                owner:  container,
+                target_or_accessor: content
+            })
+
+            return { 
+                container: container,
+                content: content,
+                buttons: {
+                    copy_to_clipboard: copy_button
+                }
+            }
+        })()
+
+        // panels: add on_resize event
+        const set_on_resize_event = ({panel, scrolling_element, elements_to_hide}) => {
+            panel.on_resize = CodeSectionHTMLElement.#make_event_on_resize_maybe_hide_elements({
+                owner: scrolling_element,
+                elements: Object.entries(elements_to_hide).map(element => element[1]) // structure-to-array
+            })
+            AwesomeCodeElement.details.HTML_elements.resize_observer.observe(panel)
+        }
+        set_on_resize_event({
+            panel: left_panel.container,
+            scrolling_element: left_panel.content,
+            elements_to_hide: left_panel.buttons
+        })
+        set_on_resize_event({
+            panel: right_panel.container,
+            scrolling_element: right_panel.content,
+            elements_to_hide: right_panel.buttons
+        })
+
+        return {
+            panels: {
+                left: left_panel,
+                right: right_panel
+            }
+        }
+    }
+    static add_HTML_layout_to({owner, argument}) {
+
+        if (!(owner instanceof HTMLElement))
+            throw new Error('ace_cs_HTMLElement_factory.add_HTML_layout_to: invalid argument')
+        
+        let { panels } = ace_cs_HTMLElement_factory.make_HTML_layout(argument)
+        owner.html_elements = { panels : panels }
+
+        // add to owner
+        owner.innerHTML = ""
+        owner.appendChild(left_panel.container)
+        owner.appendChild(right_panel.container)
+
+        const initialize_ids = () => {
+        // TODO: also dedicated classes?
+            owner.id = owner.id || CodeSectionHTMLElement.#id_generator()
+            owner.html_elements.panels.left.container.id   = `${owner.id}.panels.left.container`
+            owner.html_elements.panels.right.container.id  = `${owner.id}.panels.right.container`
+            owner.html_elements.panels.left.content.id     = `${owner.id}.panels.left.content`
+            owner.html_elements.panels.right.content.id    = `${owner.id}.panels.right.content`
+            owner.html_elements.panels.left.buttons.CE.id                    = `${owner.id}.panels.left.buttons.CE`
+            owner.html_elements.panels.left.buttons.copy_to_clipboard.id     = `${owner.id}.panels.left.buttons.copy_to_clipboard`
+            owner.html_elements.panels.right.buttons.copy_to_clipboard.id    = `${owner.id}.panels.right.buttons.copy_to_clipboard`
+        }
+        initialize_ids()
     }
 }
 
