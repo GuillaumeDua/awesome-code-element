@@ -635,7 +635,7 @@ class code extends NotifyPropertyChangedInterface{
 
         const argument = (() => {
             const language_name = this.#language_policies.detector.get_language_name(value)
-            const is_valid_input = Boolean(value)
+            const is_valid_input = Boolean(language_name)
             return {
                 language_name: language_name,
                 is_valid: is_valid_input
@@ -644,7 +644,7 @@ class code extends NotifyPropertyChangedInterface{
 
         if (this.#language === argument.language_name && argument.is_valid)
             return
-        
+
         if (this.toggle_language_detection = !argument.is_valid)
             console.warn(`ace.details.code.set(language): invalid input [${value}], attempting fallback detection.`)
 
