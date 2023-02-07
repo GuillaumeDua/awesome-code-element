@@ -478,6 +478,7 @@ AwesomeCodeElement.details.utility = class utility {
     }
 
     static customElements_define_once(name, ...args) {
+    // TODO: useless. The definition of the class still produce an invalid constructor (even if it is the same, twice)
         if (!!customElements.get(name)) {
             console.warn(`AwesomeCodeElement.details.utility: AwesomeCodeElement.details.utility.customElements_define_once: [${name}] is already defined`)
             return
@@ -1913,14 +1914,14 @@ class ace_cs_HTMLElement_factory {
         }
     }
 
-    static make_HTML_layout(argument) {
+    static make_HTML_layout(code_mvc_value) {
 
-        if (!(argument instanceof code_mvc)) 
+        if (!(code_mvc_value instanceof code_mvc)) 
             throw new Error('ace_cs_HTMLElement_factory.make_HTML_layout: invalid argument')
 
         let left_panel = (() => {
 
-            let { container, content } = this.layout_policies.always_best.make(argument)
+            let { container, content } = this.layout_policies.always_best.make(code_mvc_value)
 
             let copy_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
                 copy_button.style.zIndex = container.style.zIndex + 1
@@ -1991,12 +1992,12 @@ class ace_cs_HTMLElement_factory {
             }
         }
     }
-    static add_HTML_layout_to({owner, argument}) {
+    static add_HTML_layout_to({owner, code_mvc_value}) {
 
         if (!(owner instanceof HTMLElement))
             throw new Error('ace_cs_HTMLElement_factory.add_HTML_layout_to: invalid argument')
         
-        let { panels } = ace_cs_HTMLElement_factory.make_HTML_layout(argument)
+        let { panels } = ace_cs_HTMLElement_factory.make_HTML_layout(code_mvc_value)
         owner.html_elements = { panels : panels }
 
         // add to owner
@@ -2098,10 +2099,11 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends Awe
             code_origin: this._parameters.code
         })
         Object.assign(this, code_mvc_value)
-        ace_cs_HTMLElement_factory.add_HTML_layout_to(this, code_mvc_value)
+        ace_cs_HTMLElement_factory.add_HTML_layout_to({ owner: this, code_mvc_value: code_mvc_value })
         
         this.#_toggle_execution = this._parameters.toggle_execution || AwesomeCodeElement.API.configuration.CodeSection.toggle_execution
 
+        delete this._parameters
         this.initialize = () => { throw new Error('CodeSection.initialize: already called') }
     }
 
