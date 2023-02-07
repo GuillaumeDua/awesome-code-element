@@ -860,13 +860,22 @@ AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInG
             () => {
                 this.innerHTML = ShowInGodboltButton.successIcon
                 this.style.fill = 'green'
-
-                this.onClickSend()
+                this.style.borderColor = ''
 
                 window.setTimeout(() => {
                     this.innerHTML = ShowInGodboltButton.icon
+                    this.style.borderColor = ''
                     this.style.fill = 'black'
                 }, 1000);
+
+                try {
+                    this.onClickSend()
+                }
+                catch (error){
+                    this.style.borderColor = 'red'
+                    this.style.fill = 'red'
+                    throw error
+                }
             }
         );
     }
@@ -903,6 +912,7 @@ AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInG
     }
 
     onClickSend() {
+
         let codeSectionElement = this.parentElement.parentElement
 
         if (codeSectionElement === undefined
