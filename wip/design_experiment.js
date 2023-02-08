@@ -46,11 +46,24 @@ const op_bundle_1 = (state) => ({
         state.NotifyPropertyChanged({ property_name: 'value' })
     }
 })
-const op_bundle_NotifyPropertyChangedInterface = (state, args) => {
+const op_bundle_NotifyPropertyChangedInterface = (state, parameters) => {
     
-    handlers = new Map
+    handlers = new Map // private storage
 
-    value = {
+    return {
+        _constructor(){
+
+            if (!parameters)
+                return
+            if (!(parameters instanceof Array))
+                throw new Error('NotifyPropertyChangedInterface.constructor: invalid argument')
+
+            parameters.forEach((value, index) => {
+                if (!(value instanceof Array) || value.length !== 2)
+                    throw new Error(`NotifyPropertyChangedInterface.constructor: invalid argument (at index ${index})`)
+                state.add_OnPropertyChangeHandler({ property_name: value[0], handler: value[1] })
+            })
+        },
         add_OnPropertyChangeHandler({property_name, handler}) {
             if (!(handler instanceof Function))
                 throw new Error('NotifyPropertyChangedInterface.add_OnPropertyChangeHandler: invalid argument')
@@ -68,38 +81,35 @@ const op_bundle_NotifyPropertyChangedInterface = (state, args) => {
                 })
         }
     }
-
-    // (() => {
-    //     console.log('---> called !')
-
-    //     if (!args)
-    //         return
-    //     if (!(arg instanceof Array))
-    //         throw new Error('NotifyPropertyChangedInterface.constructor: invalid argument')
-
-    //     args.forEach((value, index) => {
-    //         if (!(value instanceof Array) || value.length !== 2)
-    //             throw new Error(`NotifyPropertyChangedInterface.constructor: invalid argument (at index ${index})`)
-    //         console.log('qweqwe')
-    //         value.add_OnPropertyChangeHandler(value[0], value[1])
-    //     })
-    // })()
-    return value
 }
 
-const make_type_1 = (args) => {
-    let state = { // can be a class that extends smthg like HTMLElement
-        // datas
-        details: {
-            value: 42
-        },
-        value: 1
+class composition_factory {
+    static is_feature_descriptor = (value) => {
+        return value && value.value && value.parameters
     }
-    return Object.assign(
-        {},
-        op_bundle_1(state),
-        op_bundle_NotifyPropertyChangedInterface(state, [ ['value', () => console.log('value changed')] ])
-        // op_bundle_2
-        // etc...
-    )
+    static make = ({ state, features }) => {
+
+        if (!state
+         || !(features instanceof Array)
+         || features.filter(feature => !feature).length)
+            throw new Error('composition_factory: invalid argument')
+
+        features.map(feature => {
+            if (!composition_factory.is_feature_descriptor(feature)) {
+                feature = {
+                    value: feature,
+                    parameters: []
+                }
+            }
+            return Object.getOwnPropertyDescriptors(feature.value(state, ...feature.parameters))
+        }).forEach(propertyDescriptor => {
+            Object.defineProperties(state, propertyDescriptor)
+            if (propertyDescriptor._constructor) {
+                state._constructor()
+                delete state._constructor
+            }
+        })
+        
+        return state
+    }
 }
