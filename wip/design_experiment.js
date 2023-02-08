@@ -1,41 +1,3 @@
-class A {
-    #a = 'a'
-    get a(){ return this.#a }
-    set a(value){ this.#a = value }
-}
-class B_base {
-    #b_base = 'b_base'
-    get b_base(){ return this.#b_base }
-    set b_base(value){ this.#b_base = value }
-}
-class B extends B_base {
-    #b = 'b'
-    get b(){ return this.#b }
-    set b(value){ this.#b = value }
-}
-
-const A_mixin = base => class extends base {
-    #a = 'a'
-    get a(){ return this.#a }
-    set a(value){ this.#a = value }
-}
-const B_base_mixin = base => class extends base {
-    #b_base = 'b_base'
-    get b_base(){ return this.#b_base }
-    set b_base(value){ this.#b_base = value }
-}
-const B_mixin = base => class extends base {
-    #b = 'b'
-    get b(){ return this.#b }
-    set b(value){ this.#b = value }
-}
-
-class T extends A_mixin(B_mixin(B_base)) {
-
-}
-
-// ---
-
 const op_bundle_1 = (state) => ({
     op_1: () => console.log('op_1'),
     get value() {
@@ -48,7 +10,7 @@ const op_bundle_1 = (state) => ({
 })
 const op_bundle_NotifyPropertyChangedInterface = (state, parameters) => {
     
-    handlers = new Map // private storage
+    handlers = new Map // private storage // TODO: as member
 
     return {
         _constructor(){
@@ -87,12 +49,14 @@ class composition_factory {
     static is_feature_descriptor = (value) => {
         return value && value.value && value.parameters
     }
-    static make = ({ state, features }) => {
+    static make_prototype = ({ state, features }) => {
 
         if (!state
          || !(features instanceof Array)
          || features.filter(feature => !feature).length)
             throw new Error('composition_factory: invalid argument')
+
+        state = structuredClone(state) // explicit copy
 
         features.map(feature => {
             if (!composition_factory.is_feature_descriptor(feature)) {
@@ -111,5 +75,14 @@ class composition_factory {
         })
         
         return state
+    }
+    static make_composition = ({ state, features }) => {
+        // return () => composition_factory.make_prototype({ state: state, features: features })
+        return class {
+            constructor(){
+                const prototype = composition_factory.make_prototype({ state: state, features: features })
+                Object.defineProperties(this, Object.getOwnPropertyDescriptors(prototype))
+            }
+        }
     }
 }
