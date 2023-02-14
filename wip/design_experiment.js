@@ -66,25 +66,31 @@ class composition_factory {
 
         state = composition_factory.is_class_definition(state)
             ? new state
-            : structuredClone(state)
+            : state // structuredClone(state)
 
-        features.map(feature => {
-            console.debug('processing feature', feature)
-            let feature_factory = composition_factory.is_class_definition(feature)
+        features
+        .map(feature => {
+            const feature_constructor = composition_factory.is_class_definition(feature)
                 ? (arg) => { return new feature(arg) }
                 : feature
-            if (!(feature_factory instanceof Function))
+            if (!(feature_constructor instanceof Function))
                 throw new Error(`composition_factory.make_prototype: invalid feature [${feature}]`)
-            console.debug('feature=', feature_factory)
-            return Object.getOwnPropertyDescriptors(feature_factory(state))
-        }).forEach(propertyDescriptors => {
-        // TODO: constructor ?
-            console.log(propertyDescriptors)
-            Object.defineProperties(state, propertyDescriptors)
-            if (propertyDescriptors._constructor) {
-                state._constructor()
-                delete state._constructor
+
+            let feature_value = feature_constructor(state)
+            return {
+                ...Object.getOwnPropertyDescriptors(feature_value),
+                ...Object.getOwnPropertyDescriptors(Object.getPrototypeOf(feature_value))
+                // ...Object.getOwnPropertyDescriptors(Reflect.getPrototypeOf(Object.getPrototypeOf(b)))
             }
+        })
+        .forEach(propertyDescriptors => {
+        // // TODO: constructor ?
+        //     console.log(propertyDescriptors)
+             Object.defineProperties(state, propertyDescriptors)
+        //     if (propertyDescriptors._constructor) {
+        //         state._constructor()
+        //         delete state._constructor
+        //     }
         })
         
         return state
@@ -150,6 +156,41 @@ class NotifyPropertyChangedInterface {
 class state {
     details = { value: 42 }
 }
+
+class A{ 
+    a = 1
+    get a_value(){ return this.a }
+}
+class B extends A { 
+    b = 1
+    get b_value(){ return this.b }
+}
+class C extends B { 
+    c = 1
+    get c_value(){ return this.c }
+}
+
+get_complete_descriptor = (value) => {
+// handles inheritance
+
+    if (!Boolean(value instanceof Object))
+        throw new Error('get_complete_descriptor: invalid argument')
+
+    let result = Object.getOwnPropertyDescriptors(value)
+
+    const add_parents_prototype = (proto) => {
+        result = {
+            ...result,
+            ...Object.getOwnPropertyDescriptors(proto)
+        }
+        if (proto = Object.getPrototypeOf(proto))
+            add_parents_prototype(proto)
+    }
+    add_parents_prototype(Object.getPrototypeOf(value))
+
+    return result
+}
+
 const type_1 = composition_factory.make_composition({
     state: state,
     features: [
@@ -160,16 +201,6 @@ const type_1 = composition_factory.make_composition({
             value.add_OnPropertyChangeHandler({ property_name: 'value', handler: (arg) => console.log('value changed to:', state[arg]) })
             return value
         }
-        // {
-        //     value: feature_NotifyPropertyChangedInterface,
-        //     parameters: [
-        //         [
-        //             [
-        //                 'value', (arg) => console.log('value changer to:', arg)
-        //             ]
-        //         ]
-        //     ]
-        // }
     ],
     extends_type: HTMLElement
 })
