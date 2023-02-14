@@ -1,4 +1,5 @@
 const feature_value_storage = (state) => ({
+
     op_1: () => console.log('op_1'),
     get value() {
         return state.details.value
@@ -56,31 +57,31 @@ class composition_factory {
             && value.constructor.toString().substring(0, 5) === 'class'
     }
 
-    static is_feature_descriptor = (value) => {
-        return value && value.value && value.parameters
-    }
     static make_prototype = ({ state, features }) => {
 
         if (!state
          || !(features instanceof Array)
          || features.filter(feature => !feature).length)
-            throw new Error('composition_factory: invalid argument')
+            throw new Error('composition_factory.make_prototype: invalid argument')
 
         state = composition_factory.is_class_definition(state)
             ? new state
             : structuredClone(state)
 
         features.map(feature => {
-            if (!composition_factory.is_feature_descriptor(feature)) {
-                feature = {
-                    value: feature,
-                    parameters: []
-                }
-            }
-            return Object.getOwnPropertyDescriptors(feature.value(state, ...feature.parameters))
-        }).forEach(propertyDescriptor => {
-            Object.defineProperties(state, propertyDescriptor)
-            if (propertyDescriptor._constructor) {
+            console.debug('processing feature', feature)
+            let feature_factory = composition_factory.is_class_definition(feature)
+                ? (arg) => { return new feature(arg) }
+                : feature
+            if (!(feature_factory instanceof Function))
+                throw new Error(`composition_factory.make_prototype: invalid feature [${feature}]`)
+            console.debug('feature=', feature_factory)
+            return Object.getOwnPropertyDescriptors(feature_factory(state))
+        }).forEach(propertyDescriptors => {
+        // TODO: constructor ?
+            console.log(propertyDescriptors)
+            Object.defineProperties(state, propertyDescriptors)
+            if (propertyDescriptors._constructor) {
                 state._constructor()
                 delete state._constructor
             }
@@ -108,6 +109,44 @@ class composition_factory {
 
 // ---
 
+class NotifyPropertyChangedInterface {
+
+    _handlers = new Map
+
+    constructor(args){
+        console.debug(`NotifyPropertyChangedInterface.constructor with`, args)
+
+        if (!args)
+            return
+        if (!(args instanceof Array))
+            throw new Error('NotifyPropertyChangedInterface.constructor: invalid argument')
+
+        args.forEach((value, index) => {
+            if (!(value instanceof Array) || value.length !== 2)
+                throw new Error(`NotifyPropertyChangedInterface.constructor: invalid argument (at index ${index})`)
+            this.add_OnPropertyChangeHandler(value[0], value[1])
+        })
+    }
+
+    add_OnPropertyChangeHandler = ({property_name, handler}) => {
+        if (!(handler instanceof Function))
+            throw new Error('NotifyPropertyChangedInterface.add_OnPropertyChangeHandler: invalid argument')
+        this._handlers.set(property_name, handler)
+    }
+    remove_OnPropertyChangeHandler = ({property_name}) => {
+        this._handlers.delete(property_name)
+    }
+
+    NotifyPropertyChanged = ({property_name}) => {
+        const handler = this._handlers.get(property_name)
+        console.log(this)
+        if (handler)
+            handler(property_name)
+    }
+}
+
+// ---
+
 class state {
     details = { value: 42 }
 }
@@ -115,25 +154,24 @@ const type_1 = composition_factory.make_composition({
     state: state,
     features: [
         feature_value_storage,
-        {
-            value: feature_NotifyPropertyChangedInterface,
-            parameters: [
-                [
-                    [
-                        'value', (arg) => console.log('value changer to:', arg)
-                    ]
-                ]
-            ]
+        // NotifyPropertyChangedInterface
+        (state) => {
+            let value = new NotifyPropertyChangedInterface
+            value.add_OnPropertyChangeHandler({ property_name: 'value', handler: (arg) => console.log('value changed to:', state[arg]) })
+            return value
         }
+        // {
+        //     value: feature_NotifyPropertyChangedInterface,
+        //     parameters: [
+        //         [
+        //             [
+        //                 'value', (arg) => console.log('value changer to:', arg)
+        //             ]
+        //         ]
+        //     ]
+        // }
     ],
     extends_type: HTMLElement
 })
 customElements.define('type-1', type_1)
 
-// ---
-
-document.addEventListener("DOMContentLoaded", () => {
-    value = new type_1
-    document.body.prepend(value)
-    value.innerHTML = '===> Hello, there <==='
-});
