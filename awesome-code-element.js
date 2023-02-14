@@ -1624,12 +1624,14 @@ class code_mvc_factory {
 
 class NotifyPropertyChangedInterface {
 
-    #handlers = new Map
+    _handlers = new Map
 
     constructor(args){
+        console.debug(`NotifyPropertyChangedInterface.constructor with`, args)
+
         if (!args)
             return
-        if (!(arg instanceof Array))
+        if (!(args instanceof Array))
             throw new Error('NotifyPropertyChangedInterface.constructor: invalid argument')
 
         args.forEach((value, index) => {
@@ -1639,22 +1641,20 @@ class NotifyPropertyChangedInterface {
         })
     }
 
-    add_OnPropertyChangeHandler({property_name, handler}) {
+    add_OnPropertyChangeHandler = ({property_name, handler}) => {
         if (!(handler instanceof Function))
             throw new Error('NotifyPropertyChangedInterface.add_OnPropertyChangeHandler: invalid argument')
-        this.#handlers.set(property_name, handler)
+        this._handlers.set(property_name, handler)
     }
-    remove_OnPropertyChangeHandler({property_name}) {
-        this.#handlers.delete(property_name)
+    remove_OnPropertyChangeHandler = ({property_name}) => {
+        this._handlers.delete(property_name)
     }
 
-    NotifyPropertyChanged({property_name}){
-        const handler = this.#handlers.get(property_name)
+    NotifyPropertyChanged = ({property_name}) => {
+        const handler = this._handlers.get(property_name)
+        console.log(this)
         if (handler)
-            handler({
-                property_name: property_name,
-                value: this[property_name]
-            })
+            handler(property_name)
     }
 }
 

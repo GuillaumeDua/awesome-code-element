@@ -1,50 +1,3 @@
-const feature_value_storage = (state) => ({
-
-    op_1: () => console.log('op_1'),
-    get value() {
-        return state.details.value
-    },
-    set value(arg) {
-        state.details.value = arg
-        state.NotifyPropertyChanged({ property_name: 'value' })
-    }
-})
-const feature_NotifyPropertyChangedInterface = (state, parameters) => {
-
-    return {
-        _NotifyPropertyChangedInterface_handlers: new Map,
-        _constructor(){
-
-            if (!parameters)
-                return
-            if (!(parameters instanceof Array))
-                throw new Error('NotifyPropertyChangedInterface.constructor: invalid argument')
-
-            parameters.forEach((value, index) => {
-                if (!(value instanceof Array) || value.length !== 2)
-                    throw new Error(`NotifyPropertyChangedInterface.constructor: invalid argument (at index ${index})`)
-                this.add_OnPropertyChangeHandler({ property_name: value[0], handler: value[1] })
-            })
-        },
-        add_OnPropertyChangeHandler({property_name, handler}) {
-            if (!(handler instanceof Function))
-                throw new Error('NotifyPropertyChangedInterface.add_OnPropertyChangeHandler: invalid argument')
-            this._NotifyPropertyChangedInterface_handlers.set(property_name, handler)
-        },
-        remove_OnPropertyChangeHandler({property_name}) {
-            this._NotifyPropertyChangedInterface_handlers.delete(property_name)
-        },
-        NotifyPropertyChanged({property_name}){
-            const handler = this._NotifyPropertyChangedInterface_handlers.get(property_name)
-            if (handler)
-                handler({
-                    property_name: property_name,
-                    value: this[property_name]
-                })
-        }
-    }
-}
-
 class composition_factory {
 
     static is_class_definition(value){
@@ -63,21 +16,20 @@ class composition_factory {
             throw new Error('get_complete_descriptor: invalid argument')
     
         let result = Object.getOwnPropertyDescriptors(value)
-    
-        const add_parents_prototype = (proto) => {
+        const add_prototypes = (proto) => {
             result = {
                 ...result,
                 ...Object.getOwnPropertyDescriptors(proto)
             }
             if (proto = Object.getPrototypeOf(proto))
-                add_parents_prototype(proto)
+                add_prototypes(proto)
         }
-        add_parents_prototype(Object.getPrototypeOf(value))
+        add_prototypes(Object.getPrototypeOf(value))
     
         return result
     }
 
-    static make_prototype = ({ state, features }) => {
+    static make_composition_prototype = ({ state, features }) => {
 
         if (!state
          || !(features instanceof Array)
@@ -90,10 +42,13 @@ class composition_factory {
 
         features
             .map(feature => {
-                // feature with a decorrelated state
-                const feature_constructor = composition_factory.is_class_definition(feature)
-                    ? (arg) => { return new feature(arg) }
-                    : feature
+                const feature_constructor = () => {
+                    if (composition_factory.is_class_definition(feature))
+                        return (arg) => { return new feature(arg) }     // feature with a decorrelated state
+                    if (!(feature_constructor instanceof Function))
+                        return (arg) => { return feature }              // feature with a decorrelated state (unless specified before)
+                    return feature                                      // feature with a   correlated state
+                }
                 if (!(feature_constructor instanceof Function))
                     throw new Error(`composition_factory.make_prototype: invalid feature [${feature}]`)
 
@@ -111,35 +66,38 @@ class composition_factory {
             ? class extends extends_type {
                 constructor(){
                     super()
-                    const prototype = composition_factory.make_prototype({ state: state, features: features })
+                    const prototype = composition_factory.make_composition_prototype({ state: state, features: features })
                     Object.defineProperties(this, Object.getOwnPropertyDescriptors(prototype))
                 }
             }
             : class {
                 constructor(){
-                    const prototype = composition_factory.make_prototype({ state: state, features: features })
+                    const prototype = composition_factory.make_composition_prototype({ state: state, features: features })
                     Object.defineProperties(this, Object.getOwnPropertyDescriptors(prototype))
                 }
             }
     }
-    static make_type = (features) => {
+    static make_type = ({ features, extends_type = undefined }) => {
 
         if (!(features instanceof Array))
             throw new Error('composition_factory.make_type: invalid argument')
 
         const features_as_descriptors = features
             .map((feature) => {
-                return composition_factory.get_descriptor_of(new feature)
+                feature = composition_factory.is_class_definition(feature)
+                    ? new feature
+                    : feature
+                return composition_factory.get_descriptor_of(feature)
             })
             .reduce((accumulator, value) => {
                 return { ...accumulator, ...value }
             }, {})
 
-        console.debug(features_as_descriptors)
-
-        class definition{}
-        Object.defineProperties(definition.prototype, features_as_descriptors)
-        return definition
+        let composition_factory_make_type_result_t = extends_type
+            ? class extends extends_type {}
+            : class {}
+        Object.defineProperties(composition_factory_make_type_result_t.prototype, features_as_descriptors)
+        return composition_factory_make_type_result_t
     }
 }
 
@@ -188,6 +146,13 @@ class state {
 }
 
 class A{
+
+    get _this(){ return this }
+
+    #a_private = 1
+
+    get a_private(){ return this.#a_private }
+
     a = 1
     get a_value(){ return this.a }
 
@@ -195,11 +160,9 @@ class A{
 }
 class B extends A {
 
-    constructor(this_state){
+    constructor(){
         console.debug('ctor: B')
-
         super()
-        this.this_state = this_state
     }
 
     b = 1
@@ -215,7 +178,6 @@ class C extends B {
 const type_1 = composition_factory.make_composition({
     state: state,
     features: [
-        feature_value_storage,
         // NotifyPropertyChangedInterface
         (state) => {
             let value = new NotifyPropertyChangedInterface
@@ -228,3 +190,5 @@ const type_1 = composition_factory.make_composition({
 })
 customElements.define('type-1', type_1)
 
+const type_2 = composition_factory.make_type({ features: [ C ], extends_type: HTMLElement })
+customElements.define('type-2', type_2)
