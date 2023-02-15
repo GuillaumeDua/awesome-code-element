@@ -17,11 +17,13 @@ class composition_factory {
     
         let result = Object.getOwnPropertyDescriptors(value)
         const add_prototypes = (proto) => {
+
             result = {
                 ...result,
                 ...Object.getOwnPropertyDescriptors(proto)
             }
-            if (proto = Object.getPrototypeOf(proto))
+            proto = Object.getPrototypeOf(proto)
+            if (proto !== undefined && proto !== Object.getPrototypeOf({}))
                 add_prototypes(proto)
         }
         add_prototypes(Object.getPrototypeOf(value))
@@ -156,6 +158,8 @@ class A{
     a = 1
     get a_value(){ return this.a }
 
+    a_func(){ return 42; }
+
     constructor(){ console.debug('ctor: A') }
 }
 class B extends A {
@@ -204,7 +208,7 @@ class ThisOP {
     }
 }
 
-function aggregation_factory(features, extends_type = undefined) {
+function aggregation_factory_dynamic(features, extends_type = undefined){
 // dynamic lookup
     return class extends (extends_type ?? Object) {
         features = new Map(features.map((value) => {
@@ -237,6 +241,41 @@ function aggregation_factory(features, extends_type = undefined) {
                 }
             };
             return new Proxy(this, lookup);
+        }
+    }
+}
+
+function aggregation_factory_static(features){
+    return class {
+        features = features.map((value) => {
+            return new value
+        })
+
+        constructor(){
+
+            this.features
+                .map((feature) => {
+                    let entries = Object.entries(Object.getOwnPropertyDescriptors(Object.getPrototypeOf(feature)))
+                    return entries.filter(([ name, descriptor ]) => name !== 'constructor')
+                })
+                .map(([ name, descriptor ]) => {
+                    return {
+                        ...descriptor,
+                        ...A(descriptor.get
+                            ? {
+                                get: function(){
+                                    return descriptor.get.call(feature)
+                                }
+                            }
+                            : {}
+                        )
+                    }
+                })
+                .forEach(([ name, descriptor ]) => {
+                    Object.defineProperty(
+
+                    )
+                })
         }
     }
 }
