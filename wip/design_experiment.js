@@ -192,3 +192,39 @@ customElements.define('type-1', type_1)
 
 const type_2 = composition_factory.make_type({ features: [ C ], extends_type: HTMLElement })
 customElements.define('type-2', type_2)
+
+// ---
+
+function aggregation_factory(features) {
+    return class {
+        features = new Map(features.map((value) => {
+            return [ value.name, new value ]
+        }))
+
+        constructor(){
+            const lookup = {
+                get(target, prop, receiver) {
+                    if (target[prop] === undefined) {
+                        for (let feature of target.features.values()) {
+                            if (undefined !== feature[prop])
+                                return feature[prop]
+                        }
+                        return undefined
+                    }
+                    return Reflect.get(...arguments);
+                },
+                set(target, prop, value) {
+                    if (target[prop] === undefined) {
+                        for (let feature of target.features.values()) {
+                            if (undefined !== feature[prop])
+                                return feature[prop] = value
+                        }
+                        return undefined
+                    }
+                    return Reflect.set(...arguments);
+                }
+            };
+            return new Proxy(this, lookup);
+        }
+    }
+}

@@ -1658,7 +1658,7 @@ class NotifyPropertyChangedInterface {
     }
 }
 
-class code_mvc extends NotifyPropertyChangedInterface{
+class code_mvc extends NotifyPropertyChangedInterface {
 
     view = undefined
     model = undefined
@@ -2034,6 +2034,8 @@ class ace_cs_HTMLElement_factory {
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement { 
 // Conjunction of `code_mvc` and `HTMLElement`
+//                   |                \
+//                  mvc        ace_cs_HTMLElement_factory.make_HTML_layout/add_HTML_layout_to
 
     constructor(parameters = {}) {
         if (typeof parameters !== "object")
