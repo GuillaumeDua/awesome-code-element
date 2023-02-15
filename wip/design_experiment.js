@@ -195,33 +195,45 @@ customElements.define('type-2', type_2)
 
 // ---
 
-function aggregation_factory(features) {
-    return class {
+class ThisOP {
+    print_this(){
+        console.log(this)
+    }
+    calculate_abc(){
+        return this.a + this.b + this.c
+    }
+}
+
+function aggregation_factory(features, extends_type = undefined) {
+// dynamic lookup
+    return class extends (extends_type ?? Object) {
         features = new Map(features.map((value) => {
             return [ value.name, new value ]
         }))
 
         constructor(){
+            super()
             const lookup = {
                 get(target, prop, receiver) {
-                    if (target[prop] === undefined) {
-                        for (let feature of target.features.values()) {
-                            if (undefined !== feature[prop])
-                                return feature[prop]
-                        }
-                        return undefined
-                    }
-                    return Reflect.get(...arguments);
+
+                    return prop in target
+                        ? Reflect.get(...arguments)
+                        : (() => {
+                            for (let feature of target.features.values()) {
+                                if (prop in feature)
+                                    return Reflect.get(feature, prop)
+                            }
+                            return undefined
+                        })()
                 },
                 set(target, prop, value) {
-                    if (target[prop] === undefined) {
+
+                    if (!(prop in target))
                         for (let feature of target.features.values()) {
-                            if (undefined !== feature[prop])
-                                return feature[prop] = value
+                            if (prop in feature)
+                                return Reflect.set(feature, prop, value)
                         }
-                        return undefined
-                    }
-                    return Reflect.set(...arguments);
+                    return Reflect.set(...arguments)
                 }
             };
             return new Proxy(this, lookup);
