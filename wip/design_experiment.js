@@ -159,6 +159,7 @@ class A{
     get a_value(){ return this.a }
 
     a_func(){ return 42; }
+    a_lambda = () => { return 42 }
 
     constructor(){ console.debug('ctor: A') }
 }
@@ -246,12 +247,44 @@ function aggregation_factory_dynamic(features, extends_type = undefined){
     }
 }
 function aggregation_factory_static(features){
-    return class {
+    return class result_t {
         features = features.map((value) => {
             return new value
         })
         // TODO: check feature clash (ex: [ A, B, C ] => [ C ])
         //                           (ex: { a: 42 }, { a: 13 })
+
+        static #change_descriptor_execution_context({ context, property_name, property_descriptor }){
+
+            if (property_descriptor.value
+             && (property_descriptor.get || property_descriptor.set))
+                throw new Error(`aggregation_factory_static.constructor: ill-formed property ${property_name} with descriptor ${descriptor}`)
+
+            // replace the invocation context of property getter/setters & functions
+            let contextualized_descriptor = {
+                ...property_descriptor,
+                ...(property_descriptor.get ? {
+                        get: function(){ return property_descriptor.get.call(context) }
+                    } : {}),
+                ...(property_descriptor.set ? {
+                        set: function(value){ return property_descriptor.set.call(context, value) }
+                    } : {}),
+                ...(property_descriptor.value instanceof Function ? {
+                    value: function(){ return context[property_name](...arguments) }
+                    // property_descriptor.value.call(feature, ...arguments) // infinite recursion
+                } : {}),
+                ...(property_descriptor.value ? {
+                    get: function(){ return context[property_name] },
+                    set: function(value){ return context[property_name] = value }
+                } : {})
+            }
+            if (contextualized_descriptor.get || contextualized_descriptor.set) {
+            // prevent ill-formed descriptor
+                delete contextualized_descriptor.value
+                delete contextualized_descriptor.writable
+            }
+            return contextualized_descriptor
+        }
 
         constructor(){
 
@@ -266,54 +299,11 @@ function aggregation_factory_static(features){
                 .map(({ feature, descriptors }) => {
 
                     descriptors = descriptors.map(([ name, descriptor ]) => {
-
-                        if (descriptor.value && (descriptor.get || descriptor.set))
-                            throw new Error(`aggregation_factory_static.constructor: ill-formed property ${name} with descriptor ${descriptor}`)
-
-                        // replace invocation context of property getter/setters & functions
-                        let contextualized_descriptor = descriptor
-
-                        if (contextualized_descriptor.get)
-                            contextualized_descriptor = {
-                                get: function(){
-                                    console.log(name, ': get proxy')
-                                    return descriptor.get.call(feature)
-                                }
-                            }
-                        if (contextualized_descriptor.set)
-                            contextualized_descriptor.set = {
-                                set: function(value){
-                                    console.log(name, ': set proxy')
-                                    return descriptor.set.call(feature, value)
-                                }
-                            }
-                        if (contextualized_descriptor.value) {
-                            
-                            if (contextualized_descriptor.value instanceof Function)
-                                contextualized_descriptor.value = {
-                                    value: function(){
-                                        console.log(name, ': value proxy')
-                                        return descriptor.value.call(feature, ...arguments)
-                                    }
-                                }
-                            else {
-                            // simple value
-                                contextualized_descriptor = {
-                                    ...contextualized_descriptor,
-                                    ...{
-                                        value: undefined,
-                                        get: function(){
-                                            return feature[name]
-                                        },
-                                        set: function(value){
-                                            return feature[name] = value
-                                        }
-                                    }
-                                }
-
-                            }
-                        }
-
+                        const contextualized_descriptor = result_t.#change_descriptor_execution_context({
+                            context: feature,
+                            property_name: name,
+                            property_descriptor: descriptor``
+                        })
                         return [ name, contextualized_descriptor ]
                     })
                     return { feature, descriptors }
@@ -322,14 +312,8 @@ function aggregation_factory_static(features){
                     return [ ...accumulator, ...descriptors ]
                 }, [])
                 .forEach(([ name, descriptor ]) => {
-                    console.log(name, descriptor)
                     Object.defineProperty(this, name, descriptor)
                 })
-                // .forEach(([ name, descriptor ]) => {
-                //     console.log(name, ' - ', descriptor)
-                //     // Object.defineProperty(this, name, descriptor)
-                // })
-            console.log('done')
         }
     }
 }
