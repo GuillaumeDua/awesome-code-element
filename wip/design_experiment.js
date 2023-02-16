@@ -208,6 +208,7 @@ class ThisOP {
     }
 }
 
+// TODO: dispatch arguments to features constructors ( feature_name => ...args )
 function aggregation_factory_dynamic(features, extends_type = undefined){
 // dynamic lookup
     return class extends (extends_type ?? Object) {
@@ -244,38 +245,91 @@ function aggregation_factory_dynamic(features, extends_type = undefined){
         }
     }
 }
-
 function aggregation_factory_static(features){
     return class {
         features = features.map((value) => {
             return new value
         })
+        // TODO: check feature clash (ex: [ A, B, C ] => [ C ])
+        //                           (ex: { a: 42 }, { a: 13 })
 
         constructor(){
 
             this.features
                 .map((feature) => {
-                    let entries = Object.entries(Object.getOwnPropertyDescriptors(Object.getPrototypeOf(feature)))
-                    return entries.filter(([ name, descriptor ]) => name !== 'constructor')
-                })
-                .map(([ name, descriptor ]) => {
                     return {
-                        ...descriptor,
-                        ...A(descriptor.get
-                            ? {
+                        feature: feature,
+                        descriptors: Object.entries(composition_factory.get_descriptor_of(feature))
+                            .filter(([ name, descriptor ]) => name !== 'constructor')
+                    }
+                })
+                .map(({ feature, descriptors }) => {
+
+                    descriptors = descriptors.map(([ name, descriptor ]) => {
+
+                        if (descriptor.value && (descriptor.get || descriptor.set))
+                            throw new Error(`aggregation_factory_static.constructor: ill-formed property ${name} with descriptor ${descriptor}`)
+
+                        // replace invocation context of property getter/setters & functions
+                        let contextualized_descriptor = descriptor
+
+                        if (contextualized_descriptor.get)
+                            contextualized_descriptor = {
                                 get: function(){
+                                    console.log(name, ': get proxy')
                                     return descriptor.get.call(feature)
                                 }
                             }
-                            : {}
-                        )
-                    }
-                })
-                .forEach(([ name, descriptor ]) => {
-                    Object.defineProperty(
+                        if (contextualized_descriptor.set)
+                            contextualized_descriptor.set = {
+                                set: function(value){
+                                    console.log(name, ': set proxy')
+                                    return descriptor.set.call(feature, value)
+                                }
+                            }
+                        if (contextualized_descriptor.value) {
+                            
+                            if (contextualized_descriptor.value instanceof Function)
+                                contextualized_descriptor.value = {
+                                    value: function(){
+                                        console.log(name, ': value proxy')
+                                        return descriptor.value.call(feature, ...arguments)
+                                    }
+                                }
+                            else {
+                            // simple value
+                                contextualized_descriptor = {
+                                    ...contextualized_descriptor,
+                                    ...{
+                                        value: undefined,
+                                        get: function(){
+                                            return feature[name]
+                                        },
+                                        set: function(value){
+                                            return feature[name] = value
+                                        }
+                                    }
+                                }
 
-                    )
+                            }
+                        }
+
+                        return [ name, contextualized_descriptor ]
+                    })
+                    return { feature, descriptors }
                 })
+                .reduce((accumulator, { feature, descriptors }) => {
+                    return [ ...accumulator, ...descriptors ]
+                }, [])
+                .forEach(([ name, descriptor ]) => {
+                    console.log(name, descriptor)
+                    Object.defineProperty(this, name, descriptor)
+                })
+                // .forEach(([ name, descriptor ]) => {
+                //     console.log(name, ' - ', descriptor)
+                //     // Object.defineProperty(this, name, descriptor)
+                // })
+            console.log('done')
         }
     }
 }
