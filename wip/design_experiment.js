@@ -247,6 +247,7 @@ function aggregation_factory_dynamic(features, extends_type = undefined){
     }
 }
 function aggregation_factory_static(features){
+// TODO: build only once
     return class result_t {
         features = features.map((value) => {
             return new value
@@ -302,7 +303,7 @@ function aggregation_factory_static(features){
                         const contextualized_descriptor = result_t.#change_descriptor_execution_context({
                             context: feature,
                             property_name: name,
-                            property_descriptor: descriptor``
+                            property_descriptor: descriptor
                         })
                         return [ name, contextualized_descriptor ]
                     })
@@ -312,6 +313,8 @@ function aggregation_factory_static(features){
                     return [ ...accumulator, ...descriptors ]
                 }, [])
                 .forEach(([ name, descriptor ]) => {
+                    if (Object.getOwnPropertyDescriptor(this, name))
+                        console.warn(`aggregation_factory_static.<result_t>.constructor: overriding existing property [${name}].`)
                     Object.defineProperty(this, name, descriptor)
                 })
         }
