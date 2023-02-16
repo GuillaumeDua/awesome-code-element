@@ -49,7 +49,7 @@ ace-code-section        button[is='ace-button-copy-to-clipboard'],
 ace-code-section-demo   button[is='ace-button-copy-to-clipboard'] {
     right       : 5px;
 }
-/* [id^='.panels.left.buttons.CE'] */
+/* [id^='.panels.presentation.buttons.CE'] */
 ace-code-section        button[is='ace-button-send-to-godbolt'],
 ace-code-section-demo   button[is='ace-button-send-to-godbolt']{
     right       : 45px;
@@ -94,45 +94,45 @@ ace-code-section-demo   > [id*='.panels.'] {
     border-radius: var(--border-radius-small);
     border: 1px solid var(--separator-color);
 }
-ace-code-section      > [id$='.panels.left'],
-ace-code-section-demo > [id$='.panels.left'] {
+ace-code-section      > [id$='.panels.presentation'],
+ace-code-section-demo > [id$='.panels.presentation'] {
     width:      100%;
     box-sizing: border-box;
 }
-ace-code-section      > [id$='.panels.left'][status='error'],
-ace-code-section-demo > [id$='.panels.left'][status='error'],
-ace-code-section      > [id$='.panels.right'][status='error'],
-ace-code-section-demo > [id$='.panels.right'][status='error'] {
+ace-code-section      > [id$='.panels.presentation'][status='error'],
+ace-code-section-demo > [id$='.panels.presentation'][status='error'],
+ace-code-section      > [id$='.panels.execution'][status='error'],
+ace-code-section-demo > [id$='.panels.execution'][status='error'] {
     border: 1px solid red;
     color:red;
 }
-ace-code-section      > [id$='.panels.right'][status='error'] > [id$='.execution'],
-ace-code-section-demo > [id$='.panels.right'][status='error'] > [id$='.execution'] {
+ace-code-section      > [id$='.panels.execution'][status='error'] > [id$='.execution'],
+ace-code-section-demo > [id$='.panels.execution'][status='error'] > [id$='.execution'] {
     color:red;
 }
 
-ace-code-section      > [id$='.panels.left'] > [id$='.code'],
-ace-code-section-demo > [id$='.panels.left'] > [id$='.code'] {
+ace-code-section      > [id$='.panels.presentation'] > [id$='.code'],
+ace-code-section-demo > [id$='.panels.presentation'] > [id$='.code'] {
     width:      auto;
     height:     100%;
     box-sizing: border-box;
     display:    block;
 }
-ace-code-section        > [id$='.panels.left.buttons.CE'],
-ace-code-section-demo   > [id$='.panels.left.buttons.CE'] {
+ace-code-section        > [id$='.panels.presentation.buttons.CE'],
+ace-code-section-demo   > [id$='.panels.presentation.buttons.CE'] {
     z-index : 2;
     display : none; /* hidden by default */
 }
-ace-code-section      > [id$='.panels.right'], 
-ace-code-section-demo > [id$='.panels.right'] {
+ace-code-section      > [id$='.panels.execution'], 
+ace-code-section-demo > [id$='.panels.execution'] {
     flex:       1 1 content;
     display:     flex;
     align-items: stretch;
     box-sizing:  border-box;
 }
 /* display:    flex; flex-direction : column; */
-ace-code-section      > [id$='.panels.right'] > [id$='.execution'],
-ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'] {
+ace-code-section      > [id$='.panels.execution'] > [id$='.execution'],
+ace-code-section-demo > [id$='.panels.execution'] > [id$='.execution'] {
     display:        block;
     width:          100%;
     overflow:       auto;
@@ -140,12 +140,12 @@ ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'] {
     overflow:       auto;
     border-radius:  var(--border-radius-small)
 }
-ace-code-section      > [id$='.panels.right'] > [id$='.execution'][status='success'],
-ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'][status='success'] {
+ace-code-section      > [id$='.panels.execution'] > [id$='.execution'][status='success'],
+ace-code-section-demo > [id$='.panels.execution'] > [id$='.execution'][status='success'] {
     border-top: 2px solid green;
 }
-ace-code-section      > [id$='.panels.right'] > [id$='.execution'][status='failure'],
-ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'][status='failure'] {
+ace-code-section      > [id$='.panels.execution'] > [id$='.execution'][status='failure'],
+ace-code-section-demo > [id$='.panels.execution'] > [id$='.execution'][status='failure'] {
     border-top: 2px solid red;
 }
 
