@@ -940,7 +940,7 @@ AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard = class CopyT
                 }
             );
             window.setTimeout(() => {
-                this.style.fill = 'black'
+                this.style.fill = ''
                 this.innerHTML = CopyToClipboardButton.copyIcon
             }, CopyToClipboardButton.successDuration);
         })
@@ -2056,57 +2056,62 @@ class ace_cs_HTML_content_factoy {
         }
     }
 
-    static add_HTML_layout_to({ owner_HTMLElement, code_mvc_value }) {
+    static panels_for = class {
 
-        if (!(owner_HTMLElement instanceof HTMLElement))
-            throw new Error('ace_cs_HTML_content_factoy.add_HTML_layout_to: invalid argument')
-        
-        let [ presentation_panel, execution_panel ] = [
-            ace_cs_HTML_content_factoy.make_panel({ code_mvc_value: code_mvc_value }),
-            ace_cs_HTML_content_factoy.make_panel({
-                code_mvc_value: new code_mvc({
-                    code_origin: undefined,
-                    language_policy: {
-                        detector:    language_policies.detectors.use_none,
-                        highlighter: language_policies.highlighters.use_none
-                    }
-                })
-            })
-        ]
-        
-        owner_HTMLElement.cs_panels = {
-            presentation: presentation_panel,
-            execution: execution_panel
-        }
-
-        // add to owner
-        owner_HTMLElement.innerHTML = ""
-        owner_HTMLElement.appendChild(owner_HTMLElement.cs_panels.presentation.container)
-        owner_HTMLElement.appendChild(owner_HTMLElement.cs_panels.execution.container)
-
-        const initialize_ids = () => {
-        // TODO: also dedicated classes?
-            owner_HTMLElement.id = owner_HTMLElement.id || ace_cs_HTML_content_factoy.#id_generator()
-            owner_HTMLElement.cs_panels.presentation.container.id   = `${owner_HTMLElement.id}.panels.presentation.container`
-            owner_HTMLElement.cs_panels.execution.container.id      = `${owner_HTMLElement.id}.panels.execution.container`
-            owner_HTMLElement.cs_panels.presentation.content.id     = `${owner_HTMLElement.id}.panels.presentation.content`
-            owner_HTMLElement.cs_panels.execution.content.id        = `${owner_HTMLElement.id}.panels.execution.content`
-            owner_HTMLElement.cs_panels.presentation.buttons.CE.id                  = `${owner_HTMLElement.id}.panels.presentation.buttons.CE`
-            owner_HTMLElement.cs_panels.presentation.buttons.copy_to_clipboard.id   = `${owner_HTMLElement.id}.panels.presentation.buttons.copy_to_clipboard`
-            owner_HTMLElement.cs_panels.execution.buttons.CE.id                     = `${owner_HTMLElement.id}.panels.execution.buttons.CE`
-            owner_HTMLElement.cs_panels.execution.buttons.copy_to_clipboard.id      = `${owner_HTMLElement.id}.panels.execution.buttons.copy_to_clipboard`
-        }
-        initialize_ids()
-
-        return owner_HTMLElement
-    }
-    static #id_generator = (() => {
-        const counter = (function*(){
-            let i = 0;
-            while (true) { yield i++; }
+        static #id_generator = (() => {
+            const counter = (function*(){
+                let i = 0;
+                while (true) { yield i++; }
+            })()
+            return () => { return `cs_${counter.next().value}` }
         })()
-        return () => { return `cs_${counter.next().value}` }
-    })()
+
+        constructor({ code_mvc_value }) {
+            let [ presentation_panel, execution_panel ] = [
+                ace_cs_HTML_content_factoy.make_panel({ code_mvc_value: code_mvc_value }),
+                ace_cs_HTML_content_factoy.make_panel({
+                    code_mvc_value: new code_mvc({
+                        code_origin: undefined,
+                        language_policy: {
+                            detector:    language_policies.detectors.use_none,
+                            highlighter: language_policies.highlighters.use_none
+                        }
+                    })
+                })
+            ]
+            this.presentation = presentation_panel
+            this.execution = execution_panel
+        }
+        add_to({ target_element }) {
+
+            if (!(target_element instanceof HTMLElement))
+                throw new Error('ace_cs_HTML_content_factoy.panels_for.add_to: invalid argument')
+
+            target_element.cs_panels = {
+                presentation: this.presentation,
+                execution: this.execution
+            }
+
+            // add to target_element
+            target_element.innerHTML = ""
+            target_element.appendChild(target_element.cs_panels.presentation.container)
+            target_element.appendChild(target_element.cs_panels.execution.container)
+
+            const initialize_ids = () => {
+            // TODO: also dedicated classes?
+                target_element.id = target_element.id || ace_cs_HTML_content_factoy.panels_for.#id_generator()
+                target_element.cs_panels.presentation.container.id   = `${target_element.id}.panels.presentation.container`
+                target_element.cs_panels.execution.container.id      = `${target_element.id}.panels.execution.container`
+                target_element.cs_panels.presentation.content.id     = `${target_element.id}.panels.presentation.content`
+                target_element.cs_panels.execution.content.id        = `${target_element.id}.panels.execution.content`
+                target_element.cs_panels.presentation.buttons.CE.id                  = `${target_element.id}.panels.presentation.buttons.CE`
+                target_element.cs_panels.presentation.buttons.copy_to_clipboard.id   = `${target_element.id}.panels.presentation.buttons.copy_to_clipboard`
+                target_element.cs_panels.execution.buttons.CE.id                     = `${target_element.id}.panels.execution.buttons.CE`
+                target_element.cs_panels.execution.buttons.copy_to_clipboard.id      = `${target_element.id}.panels.execution.buttons.copy_to_clipboard`
+            }
+            initialize_ids()
+        }
+    }
 
     // html-related events
     static #make_event_on_resize_maybe_hide_elements({ owner, elements }) {
@@ -2171,7 +2176,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         // TODO: object as references
 
         this.code_mvc = new code_mvc({ code_origin: this._parameters.code })
-        ace_cs_HTML_content_factoy.add_HTML_layout_to({ owner_HTMLElement: this, code_mvc_value: this.code_mvc })
+        const html_elements_panels = new ace_cs_HTML_content_factoy.panels_for({ code_mvc_value: this.code_mvc })
+        html_elements_panels.add_to({ target_element : this })
 
         if (this._parameters.url)
             this.url = this._parameters.url // initiate loading
@@ -2240,7 +2246,7 @@ AwesomeCodeElement.details.utility.customElements_define_once(
 // AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement { 
 // // Conjunction of `code_mvc` and `HTMLElement`
 // //                   |                \
-// //                  mvc        ace_cs_HTML_content_factoy.make_HTML_layout/add_HTML_layout_to
+// //                  mvc        ace_cs_HTML_content_factoy.make_HTML_layout/integrate_panels_to
 
 //     constructor(parameters = {}) {
 //         if (typeof parameters !== "object")
@@ -2289,7 +2295,7 @@ AwesomeCodeElement.details.utility.customElements_define_once(
 //         Object.defineProperties(this, Object.getOwnPropertyDescriptors(code_mvc_value))
 //         // Object.assign(this, code_mvc_value)
 
-//         ace_cs_HTML_content_factoy.add_HTML_layout_to({ owner_HTMLElement: this, code_mvc_value: code_mvc_value })
+//         ace_cs_HTML_content_factoy.integrate_panels_to({ owner_HTMLElement: this, code_mvc_value: code_mvc_value })
         
 //         this.#_toggle_execution = this._parameters.toggle_execution || AwesomeCodeElement.API.configuration.CodeSection.toggle_execution
 
