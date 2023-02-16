@@ -392,34 +392,3 @@ function aggregation_factory_static_2(features){
 
     return result_t
 }
-
-check_performance = (task) => {
-    console.time('task')
-    task()
-    console.timeEnd('task')
- }
-
- check_performance(() => {
-    type = aggregation_factory_static([ C ])
-    qwe = new type
-    asd = new type
-  
-    qwe.a = 13
-    console.log(`success? ${qwe.a} vs. ${asd.a}`)
-    console.log(qwe, asd)
-
-    for (let i = 0; i < 1000; ++i)
-        value = new type
-  })
-  check_performance(() => {
-    type = aggregation_factory_static_2([ C ])
-    qwe = new type
-    asd = new type
-  
-    qwe.a = 13
-    console.log(`success? ${qwe.a} vs. ${asd.a}`)
-    console.log(qwe, asd)
-
-    for (let i = 0; i < 1000; ++i)
-        value = new type
-  })

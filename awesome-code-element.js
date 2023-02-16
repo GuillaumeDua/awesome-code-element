@@ -738,6 +738,106 @@ AwesomeCodeElement.details.remote.CE_API = class CE_API {
     }
 }
 
+class type_combinator {
+    static get_descriptor_of = (value) => {
+    // Descriptors of value properties and prototype (handles inheritance)
+
+        if (!Boolean(value instanceof Object))
+            throw new Error('get_complete_descriptor: invalid argument')
+    
+        let result = Object.getOwnPropertyDescriptors(value)
+        const add_prototypes = (proto) => {
+
+            result = {
+                ...result,
+                ...Object.getOwnPropertyDescriptors(proto)
+            }
+            proto = Object.getPrototypeOf(proto)
+            if (proto !== undefined && proto !== Object.getPrototypeOf({}))
+                add_prototypes(proto)
+        }
+        add_prototypes(Object.getPrototypeOf(value))
+    
+        return result
+    }
+    static make_type({ features, extends_type = undefined }) {
+    
+        const change_descriptor_execution_context = ({ feature_index, property_name, property_descriptor }) => {
+    
+            if (property_descriptor.value
+                && (property_descriptor.get || property_descriptor.set))
+                throw new Error(`aggregation_factory_static.constructor: ill-formed property ${property_name} with descriptor ${descriptor}`)
+    
+            // replace the invocation context of property getter/setters & functions
+            let contextualized_descriptor = {
+                ...property_descriptor,
+                ...(property_descriptor.get ? {
+                        get: function(){ 
+                            console.log(this)
+                            return property_descriptor.get.call(this.features[feature_index])
+                        }
+                    } : {}),
+                ...(property_descriptor.set ? {
+                        set: function(value){ return property_descriptor.set.call(this.features[feature_index], value) }
+                    } : {}),
+                ...(property_descriptor.value instanceof Function ? {
+                    value: function(){ return this.features[feature_index][property_name](...arguments) }
+                    // property_descriptor.value.call(feature, ...arguments) // infinite recursion
+                } : {}),
+                ...(property_descriptor.value ? {
+                    get: function(){ return this.features[feature_index][property_name] },
+                    set: function(value){ return this.features[feature_index][property_name] = value }
+                } : {})
+            }
+            if (contextualized_descriptor.get || contextualized_descriptor.set) {
+            // prevent ill-formed descriptor
+                delete contextualized_descriptor.value
+                delete contextualized_descriptor.writable
+            }
+            return contextualized_descriptor
+        }
+    
+        class result_t extends (extends_type ?? Object) {
+            constructor(){ super() }
+            features = features.map((value) => {
+                return new value
+            })
+        }
+        // Properties of instances of type result_t will redirect calls to their features set
+        Array.from(features.keys())
+            .map((feature_index) => {
+                return {
+                    feature_index: feature_index,
+                    descriptors: Object.entries(composition_factory.get_descriptor_of(new features[feature_index]))
+                        .filter(([ name, descriptor ]) => name !== 'constructor')
+                }
+            })
+            .map(({ feature_index, descriptors }) => {
+    
+                descriptors = descriptors.map(([ name, descriptor ]) => {
+                    const contextualized_descriptor = change_descriptor_execution_context({
+                        feature_index: feature_index,
+                        property_name: name,
+                        property_descriptor: descriptor
+                    })
+                    return [ name, contextualized_descriptor ]
+                })
+                return descriptors
+            })
+            .reduce((accumulator, descriptors) => {
+                return [ ...accumulator, ...descriptors ]
+            }, [])
+            .forEach(([ name, descriptor ]) => {
+                console.log('->', name, descriptor)
+                if (Object.getOwnPropertyDescriptor(result_t.prototype, name))
+                    console.warn(`aggregation_factory_static.<result_t>.constructor: overriding existing property [${name}].`)
+                Object.defineProperty(result_t.prototype, name, descriptor)
+            })
+    
+        return result_t
+    }
+}
+
 // details: logging
 AwesomeCodeElement.details.log_facility = class {
     
