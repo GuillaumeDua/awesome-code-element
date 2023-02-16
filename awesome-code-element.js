@@ -992,67 +992,50 @@ AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInG
         );
     }
 
-    static #make_user_options_accessor(codeSectionElement) {
-        return (() => {
-            return {
-                configuration : function() {
-
-                    let configuration = AwesomeCodeElement.API.configuration.CE.get(codeSectionElement.language)
-                    if (configuration === undefined)
-                        throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: missing configuration for language [${codeSectionElement.language}]`)
-                    return configuration
-                },
-                ce_options : function() {
-                    return codeSectionElement.ce_options || this.configuration()
-                },
-                language : function() {
-                // translate hljs into CE language
-                //      hljs    https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
-                //  vs. CE      https://godbolt.org/api/languages
-                    return AwesomeCodeElement.details.remote.CE_API.languages.includes(this.ce_options().language)
-                        ? this.ce_options().language
-                        : this.configuration().language
-                },
-                code : function() {
-                    let result = codeSectionElement.ce_code || codeSectionElement.code
-                    if (result === undefined)
-                        throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: missing code`)
-                    return result
-                }
-            }
-        })()
-    }
-
     onClickSend() {
 
-        let codeSectionElement = this.parentElement.parentElement
-
-        if (codeSectionElement === undefined
-        ||  codeSectionElement.tagName.match(`\w+${AwesomeCodeElement.API.HTML_elements.CodeSection.HTMLElement_name.toUpperCase()}`) === '')
-            throw new Error('awesome-code-element.js: ShowInGodboltButton.onClickSend: ill-formed element: unexpected parent.parent element (must be a CodeSection)')
+        const codeSectionElement = this.parentElement.parentElement
+        if (!(codeSectionElement instanceof AwesomeCodeElement.API.HTML_elements.CodeSection))
+            throw new Error('awesome-code-element.js: ShowInGodboltButton.onClickSend: ill-formed element: unexpected parent.parent element (must be an ace.cs)')
         console.info('awesome-code-element.js: ShowInGodboltButton.onClickSend: sending request ...')
 
-        let accessor = ShowInGodboltButton.#make_user_options_accessor(codeSectionElement)
+        const accessor = {
+            get ce_options(){
+                return codeSectionElement.code_mvc.ce_options
+                    || AwesomeCodeElement.API.configuration.CE.get(codeSectionElement.code_mvc.language)
+            },
+            get language(){ return this.ce_options.language },
+            get code(){ return codeSectionElement.code_mvc.model_details.to_execute }
+        }
+        if (!accessor.ce_options)
+            throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: missing CE configuration for language [${accessor.language}]`)
+
+        console.log(AwesomeCodeElement.details.remote.CE_API.languages)
+
+        if (!AwesomeCodeElement.details.remote.CE_API.languages.includes(accessor.language))
+            //      hljs    https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
+            //  vs. CE      https://godbolt.org/api/languages
+            throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: invalid CE API language [${accessor.language}]`);
 
         // build request as JSon
-        let data = {
+        const data = {
             "sessions": [{
                 "id": 1,
-                "language": accessor.language(),
-                "source": accessor.code(),
+                "language": accessor.language,
+                "source": accessor.code,
                 "compilers":  [
                     {
-                        "id": accessor.ce_options().compiler_id || accessor.configuration().compiler_id,
-                        "libs": accessor.ce_options().libs || [ ],
-                        "options": accessor.ce_options().compilation_options || accessor.configuration().default_options
+                        "id": accessor.ce_options.compiler_id || accessor.ce_options.compiler_id,
+                        "libs": accessor.ce_options.libs || [],
+                        "options": accessor.ce_options.compilation_options || accessor.ce_options.default_options
                     }
                 ],
                 "executors": [{
                     "compiler":
                     {
-                        "id": accessor.ce_options().compiler_id || accessor.configuration().compiler_id,
-                        "libs": accessor.ce_options().libs || [ ],
-                        "options": accessor.ce_options().compilation_options || accessor.configuration().default_options
+                        "id": accessor.ce_options.compiler_id,
+                        "libs": accessor.ce_options.libs || [ ],
+                        "options": accessor.ce_options.compilation_options || accessor.ce_options.default_options
                     }
                     // TODO: exec
                 }]
@@ -1744,7 +1727,6 @@ class code_mvc_factory {
         return code_mvc_factory.#build_from_text(code_content)
     }
 }
-
 class NotifyPropertyChangedInterface {
 
     _handlers = new Map
@@ -1779,7 +1761,6 @@ class NotifyPropertyChangedInterface {
             handler(property_name)
     }
 }
-
 class code_mvc extends NotifyPropertyChangedInterface {
 // enhanced { model, view } to represent some code as an html-element
 
@@ -1964,10 +1945,6 @@ class code_mvc extends NotifyPropertyChangedInterface {
         })()
     }
 }
-
-// WIP: panel => { code_mvc, panel as html_element }
-//         left (presentation), right (execution)
-
 class ace_cs_HTML_content_factoy {
 // HTML layout/barebone for CodeSection
 
@@ -2093,7 +2070,6 @@ class ace_cs_HTML_content_factoy {
             }
 
             // add to target_element
-            target_element.innerHTML = ""
             target_element.appendChild(target_element.cs_panels.presentation.container)
             target_element.appendChild(target_element.cs_panels.execution.container)
 
@@ -2173,10 +2149,10 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     initialize() {
         console.debug(`AwesomeCodeElement.details.HTML_elements.CodeSection.initialize: initializing with parameters:`, this._parameters)
 
-        // TODO: object as references
-
         this.code_mvc = new code_mvc({ code_origin: this._parameters.code })
         const html_elements_panels = new ace_cs_HTML_content_factoy.panels_for({ code_mvc_value: this.code_mvc })
+
+        this.innerHTML = ""
         html_elements_panels.add_to({ target_element : this })
 
         if (this._parameters.url)
@@ -2187,7 +2163,98 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         this.initialize = () => { throw new Error('AwesomeCodeElement.details.HTML_elements.CodeSection.initialize: already called') }
     }
 
-    // TODO: toggle_execution
+    #toggle_execution = false
+    set toggle_execution(value) {
+
+        this.#toggle_execution = value
+
+        if (this.#toggle_execution) {
+
+            this.cs_panels.execution.container.style.display = ''
+            try {
+                this.cs_panels.execution.container.animate_loading_while(this.#fetch_execution.bind(this))
+            }
+            catch(error) {
+                console.error(error)
+            }
+        }
+        else {
+            this.cs_panels.execution.container.style.display = 'none'
+        }
+    }
+    get toggle_execution() { return this.#toggle_execution }
+    get is_executable() { return Boolean(this.model_details.ce_options) } // TODO: check if this CE configuration is valid
+    #fetch_execution() {
+
+        let set_execution_content = ({ is_fetch_success, content: { value, return_code } }) => {
+
+            if (!is_fetch_success) {
+                this.cs_panels.execution.container.setAttribute('status', 'error')
+                this.cs_panels.execution.content.textContent = value
+                return
+            }
+
+            this.cs_panels.execution.content.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
+            // force hljs bash language (TODO: wrap into a dedicated function)
+            this.cs_panels.execution.content.innerHTML = hljs.highlightAuto(value, [ 'bash' ]).value
+            this.cs_panels.execution.content.classList = [...this.html_elements.code.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
+            this.cs_panels.execution.content.classList.add(`hljs`)
+            this.cs_panels.execution.content.classList.add(`language-bash`)
+            // automated hljs language
+            //  this.html_elements.execution.textContent = result.value
+            //  hljs.highlightElement(this.html_elements.execution)
+
+            // update status, used in CSS
+            
+            let status = return_code < 0 ? 'failure' : 'success'
+            this.html_elements.execution.setAttribute('status', status)
+        }
+
+        // cleanup status
+        this.cs_panels.execution.container.removeAttribute('status')
+        this.cs_panels.execution.content.removeAttribute('status')
+
+        if (!this.is_executable) {
+
+            let error = `CodeSection:fetch_execution: not executable.\n\tNo known valid configuration for language [${this.language}]`
+            set_execution_content({
+                is_fetch_success : false,
+                content : {
+                    return_code: -1,
+                    value: error
+                }
+            })
+            throw new Error(error)
+        }
+
+        // right panel: replace with result
+        return AwesomeCodeElement.details.remote.CE_API.fetch_execution_result(this.model_details.ce_options, this.model_details.to_execute)
+            .catch((error) => {
+                this.on_critical_internal_error(`CodeSection:fetch_execution: CE_API.fetch_execution_result: failed:\n\t[${error}]`)
+            })
+            .then((result) => {
+
+                // CE header: parse & remove
+                let regex = new RegExp('# Compilation provided by Compiler Explorer at https://godbolt.org/\n\n(# Compiler exited with result code (-?\\d+))')
+                let regex_result = regex.exec(result)
+
+                if (regex_result === null)
+                    return {
+                        value : result,
+                        error : 'unknown',
+                        return_code : undefined
+                    }
+                else
+                    return {
+                        value : result.substring(regex_result[0].length - regex_result[1].length), // trim off header
+                        error : undefined,
+                        return_code :  regex_result.length != 3 ? undefined : parseInt(regex_result[2])
+                    }
+            })
+            .then((result) => {
+                set_execution_content({ is_fetch_success : true, content : result })
+            })
+    }
 
     #_url = undefined
     get url() { return this.#_url }
