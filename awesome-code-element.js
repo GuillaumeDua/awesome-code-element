@@ -1157,8 +1157,7 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
             }
         }
         catch (error) {
-            // TODO: error.stack seems to be truncated for some reasons ?
-            console.error('ace.details.defered_HTMLElement: error:', error, error.stack)
+            console.error('ace.details.defered_HTMLElement: error:', error)
             this.on_critical_internal_error(error)
         }
     }
@@ -1762,7 +1761,7 @@ class NotifyPropertyChangedInterface {
     }
 }
 class code_mvc extends NotifyPropertyChangedInterface {
-// enhanced { model, view } to represent some code as an html-element
+// enhanced { model, view } to represent some code as a (possibly-existing) html-element
 
     view = undefined
     model = undefined
@@ -1878,7 +1877,7 @@ class code_mvc extends NotifyPropertyChangedInterface {
         this.#initialize_behaviors(options)
         this.#language = this.#language_policies.detector.get_language_name(this.#model.ce_options.language ?? options.language)
         this.toggle_language_detection = Boolean(options.toggle_language_detection) && !Boolean(this.#model.ce_options.language)
-        this.#toggle_parsing | Boolean(this.#model.ce_options)
+        this.#toggle_parsing |= Boolean(this.#model.ce_options) // TODO: check (?)
         this.update_view()
     }
 
@@ -1945,6 +1944,70 @@ class code_mvc extends NotifyPropertyChangedInterface {
         })()
     }
 }
+
+// WIP: code_mvc as HTMLElement
+
+class basic_code_HTML_element extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement {
+
+    constructor(parameters = {}) {
+        if (typeof parameters !== "object")
+            throw new Error(
+                `basic_code_HTML_element.constructor: invalid argument.
+                expected object layout: { .url(string) or .code(string or HTMLElement) }
+                or valid childs/textContent when onConnectedCallback triggers`)
+        super(parameters)
+    }
+
+    acquire_parameters(parameters) {
+        super.acquire_parameters(parameters)
+
+        const load_parameter = ({ property_name }) => {
+            this._parameters[property_name] = this._parameters[property_name] || this.getAttribute(property_name) || undefined
+        }
+        [
+            'language',
+            'toggle_parsing',
+            'toggle_language_detection',
+            'code'
+        ].forEach((property_name) => load_parameter({ property_name: property_name }))
+
+        this._parameters.code ||= (() => { 
+            return this.childNodes.length ? Array.from(this.childNodes) : undefined
+        })()
+
+        // post-condition: valid code content
+        const is_valid = Boolean(this._parameters.code)
+        if (is_valid)
+            this.acquire_parameters = () => { throw new Error('basic_code_HTML_element.acquire_parameters: already called') }
+        return is_valid
+    }
+    initialize(){
+        console.debug(`initializing with parameters:`, this._parameters)
+
+        this.code_mvc = new code_mvc({ code_origin: this._parameters.code })
+        console.log('basic_code_HTML_element:', this.code_mvc)
+
+        // this as proxy to code_mvc
+        delete this._parameters
+    }
+}
+customElements.define('ace-cs-basic-code-element', basic_code_HTML_element);
+
+// display: flex
+// align-items: center
+
+(() => {
+    // let qwe = new basic_code_HTML_element({ code: document.getElementById('test_1') })
+    // console.log(qwe)
+
+    let asd = new basic_code_HTML_element()
+    document.body.prepend(asd)
+    asd.appendChild(document.getElementById('test_2'))
+    console.log(asd)
+})()
+
+// ---
+
 class ace_cs_HTML_content_factoy {
 // HTML layout/barebone for CodeSection
 
@@ -2113,8 +2176,6 @@ class ace_cs_HTML_content_factoy {
         }
     }
 }
-
-// TODO: execution panel as a code_mvc (with: no parsing policy, no/bash higlighting)
 
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement {
