@@ -1755,88 +1755,134 @@ class NotifyPropertyChangedInterface {
 class code_mvc {
 // enhanced { model, view } to represent some code as a (possibly-existing) html-element
 
+    is_mutable = undefined
     view = undefined
     model = undefined
-    is_mutable = undefined
-    toggle_parsing = undefined
+    controler = undefined
 
-    // policies, behaviors
-    get language_policies(){
-        return this.#language_policies
-    }
+    #parser = undefined
+    #model = undefined
     get model_details(){
         return this.#model
     }
 
-    #language_policies = {
-        detector: undefined,
-        highlighter: undefined
-    }
-    #parser = undefined
+    static controler_type = class {
 
-    // language
-    #language = undefined
-    get language() {
+        #target = undefined
+        toggle_parsing = undefined
 
-        const value = (() => {
-            if (this.#language_policies.detector.is_valid_language(this.#language))
-                return this.#language
+        constructor({ target, language_policy, options }){
+            if (!(target instanceof code_mvc))
+                throw new Error('code_mvc.controler_type.constructor: invalid argument')
+
+            this.#target = target
+            this.#language_policies = language_policy
+
+            this.#language = this.#language_policies.detector.get_language_name(this.#target.model_details.ce_options.language ?? options.language)
+            this.toggle_language_detection = Boolean(options.toggle_language_detection) && !Boolean(this.#target.model_details.ce_options.language)
+
+            this.#initialize_behaviors(options)
+        }
+        #initialize_behaviors(options){
+        // [ const | mutable ] specific behaviors
         
-            console.info('ace.code.get(language) : invalid language, attempting fallback detections')
-            return this.#language_policies.detector.get_language(this.view)
-                ?? this.#language_policies.detector.detect_language(this.model).language
-        })()
-        if (this.toggle_language_detection)
-            this.#language = value
-        return value
-    }
-    set language(value) {
-
-        const argument = (() => {
-            const language_name = this.#language_policies.detector.get_language_name(value)
-            const is_valid_input = Boolean(language_name)
-            return {
-                language_name: language_name,
-                is_valid: is_valid_input
+            if (!this.#target.is_mutable) {
+                console.warn(
+                    'ace.details.code.constructor: invalid language_policies.highlighter for non-mutable/const code mvc\n',
+                    `was [${this.language_policies.highlighter.name}], switching to fallback [language_policies.highlighters.use_none]`
+                )
+                this.language_policies.highlighter = language_policies.highlighters.use_none
             }
-        })()
+    
+            if (!language_policies.detectors.check_concept(this.language_policies.detector))
+                throw new Error('ace.details.code.constructor: invalid argument (language_policy.detector)')
+            if (!language_policies.highlighters.check_concept(this.language_policies.highlighter))
+                throw new Error('ace.details.code.constructor: invalid argument (language_policy.highlighter)')
+            
+            this.#toggle_parsing = (() => {
+    
+                Object.defineProperty(this, 'toggle_parsing', {
+                    get: () => { return Boolean(this.#toggle_parsing) },
+                    set: this.#target.is_mutable
+                        ? (value) => { 
+                            this.#toggle_parsing = Boolean(value)
+                            this.#target.update_view()
+                        }
+                        : () => { console.warn('code.set(toggle_parsing): no-op: not editable') }
+                })
+                return (Boolean(options.toggle_parsing) || Boolean(this.#target.model_details.ce_options)) && this.#target.is_mutable
+            })()
+        }
 
-        if (this.#language === argument.language_name && argument.is_valid)
-            return
+        // policies, behaviors
+        get language_policies(){
+            return this.#language_policies
+        }
+        #language_policies = {
+            detector: undefined,
+            highlighter: undefined
+        }
 
-        if (this.toggle_language_detection = !argument.is_valid)
-            console.warn(`ace.details.code.set(language): invalid input [${value}], attempting fallback detection.`)
+        // language
+        #language = undefined
+        get language() {
 
-        const result = this.is_mutable
-            ? this.#language_policies.highlighter.highlight({
-                code_element: this.view,
-                language: this.toggle_language_detection ? undefined : argument.language_name
-            })
-            : this.#language_policies.detector.detect_language(this.model)
+            const value = (() => {
+                if (this.language_policies.detector.is_valid_language(this.#language))
+                    return this.#language
+            
+                console.info('code_mvc.controler.get(language) : invalid language, attempting fallback detections')
+                return this.language_policies.detector.get_language(this.#target.view)
+                    ?? this.language_policies.detector.detect_language(this.#target.model).language
+            })()
+            if (this.toggle_language_detection)
+                this.#language = value
+            return value
+        }
+        set language(value) {
 
-        // if (this.toggle_language_detection)
-        this.#language = this.#language_policies.detector.get_language_name(result.language) // note: possibly not equal to `value.input`
-        this.toggle_language_detection = Boolean(result.relevance <= 5)
-        if (this.#language !== argument.language_name)
-            this.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.#language)
+            const argument = (() => {
+                const language_name = this.language_policies.detector.get_language_name(value)
+                const is_valid_input = Boolean(language_name)
+                return {
+                    language_name: language_name,
+                    is_valid: is_valid_input
+                }
+            })()
+
+            if (this.#language === argument.language_name && argument.is_valid)
+                return
+
+            if (this.toggle_language_detection = !argument.is_valid)
+                console.warn(`ace.details.code.set(language): invalid input [${value}], attempting fallback detection.`)
+
+            const result = this.#target.is_mutable
+                ? this.#language_policies.highlighter.highlight({
+                    code_element: this.#target.view,
+                    language: this.toggle_language_detection ? undefined : argument.language_name
+                })
+                : this.#language_policies.detector.detect_language(this.#target.model)
+
+            // if (this.toggle_language_detection)
+            this.#language = this.#language_policies.detector.get_language_name(result.language) // note: possibly not equal to `value.input`
+            this.toggle_language_detection = Boolean(result.relevance <= 5)
+            if (this.#language !== argument.language_name)
+                this.#target.model_details.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.#language)
+        }
+
+        // language_detection
+        #toggle_parsing = undefined
+        #toggle_language_detection = true
+        set toggle_language_detection(value) { this.#toggle_language_detection = value }
+        get toggle_language_detection() {
+            return  this.#toggle_language_detection
+                || !this.language_policies.detector.is_valid_language(this.#language)
+        }
     }
-
-    // language_detection
-    #toggle_language_detection = true
-    set toggle_language_detection(value) {
-        this.#toggle_language_detection = value
-    }
-    get toggle_language_detection() {
-        return  this.#toggle_language_detection
-            || !this.#language_policies.detector.is_valid_language(this.#language)
-    }
-
-    #toggle_parsing = undefined
-    #model = undefined
 
     // initialization
     static default_arguments = {
-        options: {
+        controler_options: {
             language : undefined, // TODO: global configuration < local < in-code (ce_options)
             toggle_parsing : false,
             toggle_language_detection : true
@@ -1850,66 +1896,49 @@ class code_mvc {
     constructor({
         code_origin,
         language_policy = { ...code_mvc.default_arguments.language_policy },
-        options = { ...code_mvc.default_arguments.options }
+        controler_options = { ...code_mvc.default_arguments.controler_options }
     }){
-
-        console.log('DEBUG:', code_origin, language_policy, options)
-
         Object.assign(this, code_mvc_factory.build_from(code_origin))
-        
+
         const is_mutable = this.is_mutable // or seal/non-writable ?
         Object.defineProperty(this, 'is_mutable', {
             get: () => { return is_mutable },
             set: () => { console.warn('ace.details.code.set(is_mutable): no-op, const property') },
         })
 
-        this.#language_policies = language_policy
-        this.#initialize_behaviors(options)
-        this.#language = this.#language_policies.detector.get_language_name(this.#model.ce_options.language ?? options.language)
-        this.toggle_language_detection = Boolean(options.toggle_language_detection) && !Boolean(this.#model.ce_options.language)
-        this.#toggle_parsing ||= Boolean(this.#model.ce_options)
-        this.#toggle_parsing &&= is_mutable
+        this.#initialize_behaviors()
+        this.controler = new code_mvc.controler_type({
+            target: this,
+            language_policy: language_policy,
+            options: controler_options
+        })
         this.update_view()
     }
 
-    #initialize_behaviors(options){
+    #initialize_behaviors(){
     // [ const | mutable ] specific behaviors
 
         this.#parser = this.is_mutable
             ? code_policies.parser.ace_metadata_parser
             : code_policies.parser.no_parser
 
-        if (!this.is_mutable) {
-            console.warn(
-                'ace.details.code.constructor: invalid language_policies.highlighter for non-mutable/const code mvc\n',
-                `was [${this.#language_policies.highlighter.name}], switching to fallback [language_policies.highlighters.use_none]`
-            )
-            this.#language_policies.highlighter = language_policies.highlighters.use_none
-        }
-
-        if (!language_policies.detectors.check_concept(this.#language_policies.detector))
-            throw new Error('ace.details.code.constructor: invalid argument (language_policy.detector)')
-        if (!language_policies.highlighters.check_concept(this.#language_policies.highlighter))
-            throw new Error('ace.details.code.constructor: invalid argument (language_policy.highlighter)')
         if (!code_policies.parser.check_concept(this.#parser))
             throw new Error('ace.details.code.constructor: invalid argument (parser)')
 
         this.update_view = this.is_mutable
             ? () => {
                 this.view.textContent = this.model
-                if (this.toggle_language_detection)
-                    this.language = undefined // will trigger auto-detect
+                if (this.controler.toggle_language_detection)
+                    this.controler.language = undefined // will trigger auto-detect
                 else
-                    this.#language_policies.highlighter.highlight({ code_element: this.view, language: this.language })
+                    this.controler.language_policies.highlighter.highlight({ code_element: this.view, language: this.controler.language })
             }
             : () => {}
-
         this.#model = (() => {
-
             const value = this.#parser.parse({ code: this.model })
             Object.defineProperty(this, 'model', {
                 get: this.is_mutable
-                    ? () => { return this.toggle_parsing ? this.#model.to_display : this.#model.raw }
+                    ? () => { return this.controler.toggle_parsing ? this.#model.to_display : this.#model.raw }
                     : () => { return this.#model.raw },
                 set: (value) => {
                     this.#model = this.#parser.parse({ code: value })
@@ -1917,19 +1946,6 @@ class code_mvc {
                 }
             })
             return value
-        })()
-        this.#toggle_parsing = (() => {
-
-            Object.defineProperty(this, 'toggle_parsing', {
-                get: () => { return Boolean(this.#toggle_parsing) },
-                set: this.is_mutable
-                    ? (value) => { 
-                        this.#toggle_parsing = Boolean(value)
-                        this.update_view()
-                    }
-                    : ()      => { console.warn('code.set(toggle_parsing): no-op: not editable') }
-            })
-            return Boolean(options.toggle_parsing)
         })()
     }
 }
