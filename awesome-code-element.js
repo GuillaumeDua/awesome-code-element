@@ -1484,8 +1484,8 @@ class code_policies {
 
 class code_mvc_factory {
 // acquire { model, view } from an HTMLElement
-//  model: inner text considered as plain code: any invalid nodes injected by the HTML rendering are removed
-//  view : either a pre>code or the given element, if the later contains valid HTML elements
+//  model : inner text considered as plain code: any invalid nodes injected by the HTML rendering are removed
+//  view  : either a pre>code or the given element, if the later contains valid HTML elements
     
     static html_parser = class html_parser {
         static is_valid_HTMLElement({ element }){
@@ -1599,11 +1599,7 @@ class code_mvc_factory {
     static is_expected_layout(element){
         if (!(element instanceof HTMLElement))
             throw new Error('code_mvc_factory.is_expected_layout: invalid argument')
-        return (element.localName === 'pre'
-             && element.childElementCount === 1
-             && element.children[0].nodeType === Node.ELEMENT_NODE
-             && element.children[0].localName === 'code'
-        )
+        return element.localName === 'code'
     }
 
     static build_from(argument) {
@@ -1629,7 +1625,7 @@ class code_mvc_factory {
                 .replace(/^\s*/, '')
                 .replace(/\s*$/, '') // remove enclosing white-spaces
             if (result.is_mutable)
-                result.view.code_container.textContent = result.model
+                result.view.textContent = result.model
         return result
     }
 
@@ -1661,10 +1657,9 @@ class code_mvc_factory {
             is_mutable : true,
             model : value ?? '',
             view : (() => {
-                let value = document.createElement('pre')
-                let code_node = value.appendChild(document.createElement('code'))
+                let code_node = document.createElement('code')
                     code_node.textContent = value
-                return { top_parent: value, code_container: code_node }
+                return code_node
             })()
         })
     }
@@ -1673,22 +1668,15 @@ class code_mvc_factory {
         if (!(element instanceof HTMLElement))
             throw new Error('code_mvc_factory.#build_from_element: invalid argument')
 
-        const view = {
-            top_parent : element,
-            code_container : code_mvc_factory.is_expected_layout(element)
-                ? element.firstElementChild
-                : element
-        }
-
-        const is_mutable = !Boolean(code_mvc_factory.html_parser.count_valid_childrens({ element: view.code_container, is_recursive: true }))
+        const is_mutable = !Boolean(code_mvc_factory.html_parser.count_valid_childrens({ element: element, is_recursive: true }))
 
         return new code_mvc_factory.result_type({
             is_mutable : is_mutable,
             model : (() => {
-                element = code_mvc_factory.html_parser.cleanup({ element: view.code_container })
-                return code_mvc_factory.html_parser.to_code({ elements: Array.from(view.code_container.childNodes) })
+                element = code_mvc_factory.html_parser.cleanup({ element: element })
+                return code_mvc_factory.html_parser.to_code({ elements: Array.from(element.childNodes) })
             })(),
-            view : view
+            view : element
         })
     }
     static #build_from_nodes(elements){
@@ -1760,7 +1748,7 @@ class NotifyPropertyChangedInterface {
             handler(property_name)
     }
 }
-class code_mvc extends NotifyPropertyChangedInterface {
+class code_mvc {
 // enhanced { model, view } to represent some code as a (possibly-existing) html-element
 
     view = undefined
@@ -1770,7 +1758,7 @@ class code_mvc extends NotifyPropertyChangedInterface {
 
     // policies, behaviors
     get language_policies(){
-        return this.language_policies
+        return this.#language_policies
     }
     get model_details(){
         return this.#model
@@ -1791,7 +1779,7 @@ class code_mvc extends NotifyPropertyChangedInterface {
                 return this.#language
         
             console.info('ace.code.get(language) : invalid language, attempting fallback detections')
-            return this.#language_policies.detector.get_language(this.view.code_container)
+            return this.#language_policies.detector.get_language(this.view)
                 ?? this.#language_policies.detector.detect_language(this.model).language
         })()
         if (this.toggle_language_detection)
@@ -1817,7 +1805,7 @@ class code_mvc extends NotifyPropertyChangedInterface {
 
         const result = this.is_mutable
             ? this.#language_policies.highlighter.highlight({
-                code_element: this.view.code_container,
+                code_element: this.view,
                 language: this.toggle_language_detection ? undefined : argument.language_name
             })
             : this.#language_policies.detector.detect_language(this.model)
@@ -1827,15 +1815,12 @@ class code_mvc extends NotifyPropertyChangedInterface {
         this.toggle_language_detection = Boolean(result.relevance <= 5)
         if (this.#language !== argument.language_name)
             this.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.#language)
-
-        this.NotifyPropertyChanged('language')
     }
 
     // language_detection
     #toggle_language_detection = true
     set toggle_language_detection(value) {
         this.#toggle_language_detection = value
-        this.NotifyPropertyChanged('toggle_language_detection')
     }
     get toggle_language_detection() {
         return  this.#toggle_language_detection
@@ -1860,14 +1845,15 @@ class code_mvc extends NotifyPropertyChangedInterface {
 
     constructor({
         code_origin,
-        language_policy = code_mvc.default_arguments.language_policy,
-        options = code_mvc.default_arguments.options
+        language_policy = { ...code_mvc.default_arguments.language_policy },
+        options = { ...code_mvc.default_arguments.options }
     }){
-        super()
+
+        console.log('DEBUG:', code_origin, language_policy, options)
 
         Object.assign(this, code_mvc_factory.build_from(code_origin))
         
-        const is_mutable = this.is_mutable
+        const is_mutable = this.is_mutable // or seal/non-writable ?
         Object.defineProperty(this, 'is_mutable', {
             get: () => { return is_mutable },
             set: () => { console.warn('ace.details.code.set(is_mutable): no-op, const property') },
@@ -1877,7 +1863,8 @@ class code_mvc extends NotifyPropertyChangedInterface {
         this.#initialize_behaviors(options)
         this.#language = this.#language_policies.detector.get_language_name(this.#model.ce_options.language ?? options.language)
         this.toggle_language_detection = Boolean(options.toggle_language_detection) && !Boolean(this.#model.ce_options.language)
-        this.#toggle_parsing |= Boolean(this.#model.ce_options) // TODO: check (?)
+        this.#toggle_parsing ||= Boolean(this.#model.ce_options)
+        this.#toggle_parsing &&= is_mutable
         this.update_view()
     }
 
@@ -1905,11 +1892,11 @@ class code_mvc extends NotifyPropertyChangedInterface {
 
         this.update_view = this.is_mutable
             ? () => {
-                this.view.code_container.textContent = this.model
+                this.view.textContent = this.model
                 if (this.toggle_language_detection)
                     this.language = undefined // will trigger auto-detect
                 else
-                    this.#language_policies.highlighter.highlight({ code_element: this.view.code_container, language: this.language })
+                    this.#language_policies.highlighter.highlight({ code_element: this.view, language: this.language })
             }
             : () => {}
 
@@ -1923,7 +1910,6 @@ class code_mvc extends NotifyPropertyChangedInterface {
                 set: (value) => {
                     this.#model = this.#parser.parse({ code: value })
                     this.update_view()
-                    this.NotifyPropertyChanged('model')
                 }
             })
             return value
@@ -1936,7 +1922,6 @@ class code_mvc extends NotifyPropertyChangedInterface {
                     ? (value) => { 
                         this.#toggle_parsing = Boolean(value)
                         this.update_view()
-                        this.NotifyPropertyChanged('toggle_parsing')
                     }
                     : ()      => { console.warn('code.set(toggle_parsing): no-op: not editable') }
             })
@@ -2000,10 +1985,20 @@ customElements.define('ace-cs-basic-code-element', basic_code_HTML_element);
     // let qwe = new basic_code_HTML_element({ code: document.getElementById('test_1') })
     // console.log(qwe)
 
-    let asd = new basic_code_HTML_element()
-    document.body.prepend(asd)
-    asd.appendChild(document.getElementById('test_2'))
-    console.log(asd)
+    [ 1,2,3,4,5 ].forEach((test_id) => {
+        console.log(`--- TEST: ${test_id} ... ---`)
+
+        let value = new basic_code_HTML_element()
+
+        document.body.append(value)
+
+        let spacer = document.createElement('p')
+            spacer.textContent = '-----'
+        document.body.append(spacer)
+
+        value.appendChild(document.getElementById(`test_${test_id}`))
+        console.log(value)
+    })
 })()
 
 // ---
@@ -2016,27 +2011,21 @@ class ace_cs_HTML_content_factoy {
             static make(argument){
                 if (!(argument instanceof code_mvc)
                  || !argument.is_mutable
-                 || !code_mvc_factory.is_expected_layout(argument.view.top_parent)
+                 || !code_mvc_factory.is_expected_layout(argument.view)
                 )   throw new Error('ace_cs_HTML_content_factoy.layout_policies.basic: invalid argument')
-                return {
-                    container: argument.view.top_parent,
-                    content: argument.view.top_parent.firstElementChild
-                }
+                return argument.view
             }
         }
         static wrap = class {
             static make(argument){
                 if (!(argument instanceof code_mvc))
                     throw new Error('ace_cs_HTML_content_factoy.layout_policies.wrap: invalid argument')
-                if (code_mvc_factory.is_expected_layout(argument.view.top_parent))
+                if (code_mvc_factory.is_expected_layout(argument.view))
                     console.warn('ace_cs_HTML_content_factoy.layout_policies.wrap: wrapping on an default layout. Consider using layout_policies.basic instead')
 
-                let container = document.createElement('div')
-                let content   = container.appendChild(target)
-                return {
-                    container: container,
-                    content: content
-                }
+                // let container = document.createElement('div')
+                // let content   = container.appendChild(target)
+                return target
             }
         }
 
@@ -2044,7 +2033,7 @@ class ace_cs_HTML_content_factoy {
             static make(argument){
                 if (!(argument instanceof code_mvc))
                     throw new Error('ace_cs_HTML_content_factoy.layout_policies.select_best_for: invalid argument')
-                const best_policy = argument.is_mutable && code_mvc_factory.is_expected_layout(argument.view.top_parent)
+                const best_policy = argument.is_mutable && code_mvc_factory.is_expected_layout(argument.view)
                     ? layout_policies.basic
                     : layout_policies.wrap
                 return best_policy.make(argument)
@@ -2065,30 +2054,29 @@ class ace_cs_HTML_content_factoy {
         if (!(code_mvc_value instanceof code_mvc)) 
             throw new Error('ace_cs_HTML_content_factoy.make_HTML_layout: invalid argument')
 
-        let { container, content } = this.layout_policies.always_best.make(code_mvc_value)
+        let view = this.layout_policies.always_best.make(code_mvc_value)
 
         let copy_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
-            copy_button.style.zIndex = container.style.zIndex + 1
-            copy_button = container.appendChild(copy_button)
+            copy_button.style.zIndex = view.style.zIndex + 1
+            copy_button = view.appendChild(copy_button)
 
         let CE_button = new AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt()
             CE_button.style.zIndex = CE_button.style.zIndex + 1
-            CE_button = container.appendChild(CE_button)
+            CE_button = view.appendChild(CE_button)
 
         AwesomeCodeElement.details.HTML_elements.LoadingAnimation.inject_into({
-            owner:  container,
+            owner:  view,
             target_or_accessor: content
         })
 
         ace_cs_HTML_content_factoy.#set_on_resize_event({
-            panel: container,
+            panel: view,
             scrolling_element: content,
             elements_to_hide: [ copy_button, CE_button ]
         })
 
         return {
-            container: container,
-            content: content,
+            container: view,
             buttons: {
                 CE: CE_button,
                 copy_to_clipboard: copy_button
