@@ -1748,6 +1748,10 @@ class NotifyPropertyChangedInterface {
             handler(property_name)
     }
 }
+
+// mvc -> { model, view, controller } using custom constructor(){ return class ... } ?
+//  then acquire controler by ref
+
 class code_mvc {
 // enhanced { model, view } to represent some code as a (possibly-existing) html-element
 
@@ -1990,14 +1994,16 @@ customElements.define('ace-cs-basic-code-element', basic_code_HTML_element);
 
         let value = new basic_code_HTML_element()
 
-        document.body.append(value)
-
-        let spacer = document.createElement('p')
-            spacer.textContent = '-----'
-        document.body.append(spacer)
+        let pre = document.createElement('pre')
+            pre.appendChild(value)
+        document.body.appendChild(pre)
 
         value.appendChild(document.getElementById(`test_${test_id}`))
         console.log(value)
+
+        let spacer = document.createElement('p')
+            spacer.textContent = '-----'
+        document.body.appendChild(spacer)
     })
 })()
 
