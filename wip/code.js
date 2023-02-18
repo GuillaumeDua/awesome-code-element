@@ -15,6 +15,38 @@ class LoadingAnimation {
         return LoadingAnimation.#cache.cloneNode()
     }
 
+    static controler = class {
+
+        #owner = undefined
+        #target = undefined
+        #target_visible_display = undefined
+        #element = undefined
+
+        constructor({ owner, target }) {
+
+            if (!(owner instanceof HTMLElement)
+             || !(target instanceof HTMLElement)
+            ) throw new Error('LoadingAnimation.controler: invalid argument type')
+
+            this.#owner = owner
+            this.#target = target
+            this.#target_visible_display = target.style.display
+
+            this.#element = this.#owner.appendChild(LoadingAnimation.element)
+        }
+
+        set toggle_animation(value){
+
+            this.#target.style.display = Boolean(value) ? 'none' : this.#target_visible_display
+            this.#element.style.display = Boolean(value) ? 'flex' : 'none'
+        }
+        get toggle_animation(){
+            return Boolean(this.#element.style.display !== 'none')
+        }
+    }
+}
+
+
     static inject_into({owner, target_or_accessor }) {
         LoadingAnimation.#inject_toggle_loading_animation({owner, target_or_accessor })
         LoadingAnimation.#inject_animate_loading_while({owner})

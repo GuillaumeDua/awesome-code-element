@@ -1780,6 +1780,8 @@ class code_mvc {
             this.toggle_language_detection = Boolean(options.toggle_language_detection) && !Boolean(this.#target.model_details.ce_options.language)
 
             this.#initialize_behaviors(options)
+
+            this.language = this.#language // might trigger auto-detect
         }
         #initialize_behaviors(options){
         // [ const | mutable ] specific behaviors
@@ -1834,8 +1836,13 @@ class code_mvc {
                     ?? this.language_policies.detector.detect_language(this.#target.model).language
             })()
             value = this.#language_policies.detector.get_language_name(value)
-            if (this.toggle_language_detection)
+
+            // autodetect
+            if (this.toggle_language_detection){
                 this.#language = value
+                this.#on_language_changed()
+            }
+            
             return value
         }
         set language(value) {
@@ -1862,11 +1869,22 @@ class code_mvc {
                 })
                 : this.#language_policies.detector.detect_language(this.#target.model)
 
-            // if (this.toggle_language_detection)
-            this.#language = this.#language_policies.detector.get_language_name(result.language) // note: possibly not equal to `value.input`
-            this.toggle_language_detection = Boolean(result.relevance <= 5)
-            if (this.#language !== argument.language_name)
+            if (this.#language !== argument.language_name){
+                this.#language = this.#language_policies.detector.get_language_name(result.language) // note: possibly not equal to `value`
+                this.toggle_language_detection = Boolean(result.relevance <= 5)
+                this.#on_language_changed()
+            }
+        }
+
+        #on_language_changed(){
+            // update CE options
+            if (!this.#target.model_details.ce_options
+            ||  !this.#target.model_details.ce_options.language
+            ||   this.#language !== this.language_policies.detector.get_language_name(this.#target.model_details.ce_options.language)
+            ){
                 this.#target.model_details.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.#language)
+                console.log(`code_mvc.#on_language_changed: loaded matching CE configuration for language [${this.#language}]: `, this.#target.model_details.ce_options)
+            }
         }
 
         // language_detection
@@ -1911,7 +1929,6 @@ class code_mvc {
             language_policy: language_policy,
             options: controler_options
         })
-        this.controler.language = this.controler.language // ensure language detection triggers, if required
         this.update_view()
     }
 
