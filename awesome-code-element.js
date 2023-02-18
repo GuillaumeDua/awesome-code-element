@@ -1749,9 +1749,6 @@ class NotifyPropertyChangedInterface {
     }
 }
 
-// mvc -> { model, view, controller } using custom constructor(){ return class ... } ?
-//  then acquire controler by ref
-
 class code_mvc {
 // enhanced { model, view } to represent some code as a (possibly-existing) html-element
 
@@ -1760,7 +1757,7 @@ class code_mvc {
     model = undefined
     controler = undefined
 
-    #parser = undefined
+    #model_parser = undefined
     #model = undefined
     get model_details(){
         return this.#model
@@ -1772,8 +1769,9 @@ class code_mvc {
         toggle_parsing = undefined
 
         constructor({ target, language_policy, options }){
+            
             if (!(target instanceof code_mvc))
-                throw new Error('code_mvc.controler_type.constructor: invalid argument')
+                throw new Error('code_mvc.controler_type.constructor: invalid argument (invalid type for argument `target`)')
 
             this.#target = target
             this.#language_policies = language_policy
@@ -1827,14 +1825,15 @@ class code_mvc {
         #language = undefined
         get language() {
 
-            const value = (() => {
+            let value = (() => {
                 if (this.language_policies.detector.is_valid_language(this.#language))
                     return this.#language
             
-                console.info('code_mvc.controler.get(language) : invalid language, attempting fallback detections')
+                console.info(`code_mvc.controler.get(language) : invalid language [${this.#language}], attempting fallback detections`)
                 return this.language_policies.detector.get_language(this.#target.view)
                     ?? this.language_policies.detector.detect_language(this.#target.model).language
             })()
+            value = this.#language_policies.detector.get_language_name(value)
             if (this.toggle_language_detection)
                 this.#language = value
             return value
@@ -1912,17 +1911,18 @@ class code_mvc {
             language_policy: language_policy,
             options: controler_options
         })
+        this.controler.language = this.controler.language // ensure language detection triggers, if required
         this.update_view()
     }
 
     #initialize_behaviors(){
     // [ const | mutable ] specific behaviors
 
-        this.#parser = this.is_mutable
+        this.#model_parser = this.is_mutable
             ? code_policies.parser.ace_metadata_parser
             : code_policies.parser.no_parser
 
-        if (!code_policies.parser.check_concept(this.#parser))
+        if (!code_policies.parser.check_concept(this.#model_parser))
             throw new Error('ace.details.code.constructor: invalid argument (parser)')
 
         this.update_view = this.is_mutable
@@ -1935,13 +1935,13 @@ class code_mvc {
             }
             : () => {}
         this.#model = (() => {
-            const value = this.#parser.parse({ code: this.model })
+            const value = this.#model_parser.parse({ code: this.model })
             Object.defineProperty(this, 'model', {
                 get: this.is_mutable
                     ? () => { return this.controler.toggle_parsing ? this.#model.to_display : this.#model.raw }
                     : () => { return this.#model.raw },
                 set: (value) => {
-                    this.#model = this.#parser.parse({ code: value })
+                    this.#model = this.#model_parser.parse({ code: value })
                     this.update_view()
                 }
             })
@@ -1951,6 +1951,7 @@ class code_mvc {
 }
 
 // WIP: code_mvc as HTMLElement
+// TODO: refactor animation/animate_while
 
 class basic_code_HTML_element extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement {
 
