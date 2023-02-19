@@ -86,6 +86,7 @@
 // TODO: unfold_to -> use Object.assign(a, b) ?
 // TODO: naming consistency
 // TODO: remove unused or unecessary code
+// TODO: extends HTMLElements: prefix this lib methods => `ace_cs_${NAME}` ?
 
 // Doxygen integration quick-test
 /*
@@ -1753,7 +1754,7 @@ class NotifyPropertyChangedInterface {
 }
 
 class code_mvc {
-// enhanced { model, view } to represent some code as a (possibly-existing) html-element
+// enhanced { model, view, controler } to represent some code as a (possibly-existing) html-element
 
     is_mutable = undefined
     view = undefined
@@ -1973,6 +1974,67 @@ class code_mvc {
 // WIP: code_mvc as HTMLElement
 // TODO: refactor animation/animate_while
 
+class animation {
+    
+    static HTMLElement_name = 'ace-animation'
+    static #cache = (function(){
+    // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
+        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/resources/images/loading_animation.svg'
+        let value = document.createElement('img');
+            value.src = loading_animation_fallback_url
+            value.id = animation.HTMLElement_name
+            value.className = animation.HTMLElement_name
+            value.style.display = 'none'
+        return value
+    })()
+    static get element() {
+        return animation.#cache.cloneNode()
+    }
+
+    static controler = class {
+
+        #owner = undefined
+        #target = undefined
+        #target_visible_display = undefined
+        #element = undefined
+
+        constructor({ owner, target }) {
+
+            if (!(owner instanceof HTMLElement)
+             || !(target instanceof HTMLElement)
+            ) throw new Error('animation.controler: invalid argument type')
+
+            this.#owner = owner
+            this.#target = target
+            this.#target_visible_display = target.style.display
+
+            this.#element = this.#owner.appendChild(animation.element)
+        }
+
+        set toggle_animation(value){
+            this.#element.style.height = this.#target.clientHeight + 'px'
+            this.#target.style.display  = Boolean(value) ? 'none' : this.#target_visible_display
+            this.#element.style.display = Boolean(value) ? 'flex' : 'none'
+        }
+        get toggle_animation(){
+            return Boolean(this.#element.style.display !== 'none')
+        }
+        animate_while({ promise }){
+
+            if (!(promise instanceof Promise))
+                throw new Error('animation.controler.animate_while: invalid argument type')
+
+            if (this.toggle_animation)
+                throw new Error('animation.controler.animate_while: already animating')
+
+            this.toggle_animation = true
+            promise.then(() => {
+                this.toggle_animation = false
+            })
+        }
+    }
+}
+
 class basic_code_HTML_element extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement {
 
     constructor(parameters = {}) {
@@ -2015,12 +2077,12 @@ class basic_code_HTML_element extends AwesomeCodeElement.details.HTML_elements.d
 
         // this as proxy to code_mvc
         delete this._parameters
+
+        this.loading_animation_controler = new animation.controler({ owner: this, target: this.code_mvc.view })
+        // ex: temp0.loading_animation_controler.animate_while({ promise: new Promise((resolve, reject) => setTimeout(() => { resolve() }, 1000)) })
     }
 }
 customElements.define('ace-cs-basic-code-element', basic_code_HTML_element);
-
-// display: flex
-// align-items: center
 
 (() => {
     // let qwe = new basic_code_HTML_element({ code: document.getElementById('test_1') })

@@ -35,7 +35,7 @@ ace.test_utils = class {
         var storage = _owner[property_name] // unused if the field custom getter or setter
     
         let js_parser_sucks = (function(){
-            var old_getter = _owner.__lookupGetter__(property_name)
+            var old_getter = _owner.__lookupGetter__(property_name) // TODO: use Object.getOwnPropertyDescriptors instead
             var old_setter = _owner.__lookupSetter__(property_name)
     
             var getter = function(){
