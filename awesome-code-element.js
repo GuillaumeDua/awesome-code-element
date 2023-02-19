@@ -1791,7 +1791,11 @@ class code_mvc {
             this.#target = target
             this.#language_policies = language_policy
 
-            this.#language = this.#language_policies.detector.get_language_name(options.language ?? this.#target.model_details.ce_options.language)
+            const language_argument = options.language ?? this.#target.model_details.ce_options.language
+            this.#language = this.#language_policies.detector.get_language_name(language_argument)
+            if (this.#language === undefined && language_argument)
+                console.warn(`code_mvc.controler_type.constructor: invalid user-provided language: [${language_argument}]`)
+
             this.toggle_language_detection = options.language // if a user-provided valid language exists, then toggle_language-deteciton is set to false
                 ? !Boolean(this.#language)
                 : options.toggle_language_detection
@@ -2117,7 +2121,13 @@ customElements.define('ace-cs-code-mvc', code_mvc_HTMLElement);
 
         let value = new code_mvc_HTMLElement({
             toggle_parsing: Boolean(test_id % 2),
-            language: test_id === 1 ? 'js' : undefined
+            language: (() => {
+                switch(test_id){
+                    case 1: return 'INVALID_LANGUAGE_NAME';
+                    case 2: return 'js';
+                    default: return undefined;
+                }
+            })()
         })
 
         let pre = document.createElement('pre')
