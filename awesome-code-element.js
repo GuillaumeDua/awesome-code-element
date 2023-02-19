@@ -1482,21 +1482,21 @@ class code_policies {
     }
 }
 
-class code_mvc_factory {
-// acquire { model, view } from an HTMLElement
+class code_mvc_details {
+// acquire { model, view } from an HTMLElement or text
 //  model : inner text considered as plain code: any invalid nodes injected by the HTML rendering are removed
-//  view  : either a pre>code or the given element, if the later contains valid HTML elements
+//  view  : either an `HTMLCodeElement` (expected layout), a given HTMLElement (wrap mode) or if the later contains valid HTML elements
     
     static html_parser = class html_parser {
         static is_valid_HTMLElement({ element }){
             if (element === undefined)
-                throw new Error('ace.details.code_mvc_factory.html_parser.is_valid_HTMLElement: invalid argument')
+                throw new Error('ace.details.code_mvc_details.html_parser.is_valid_HTMLElement: invalid argument')
             return element instanceof HTMLElement && !(element instanceof HTMLUnknownElement)
         }
         static #valid_tagName_cache = new Map
         static is_valid_tagName({ tagName }) {
             if (element === undefined)
-                throw new Error('ace.details.code_mvc_factory.html_parser.is_valid_tagName: invalid argument')
+                throw new Error('ace.details.code_mvc_details.html_parser.is_valid_tagName: invalid argument')
             if (!(typeof tagName === 'string') && !(tagName instanceof String))
                 throw new Error('html_parser.is_valid_tagName: invalid argument')
 
@@ -1511,7 +1511,7 @@ class code_mvc_factory {
         }
         static count_valid_childrens({ element, is_recursive = false }) {
             if (element === undefined)
-                throw new Error('ace.details.code_mvc_factory.html_parser.count_valid_childrens: invalid argument')
+                throw new Error('ace.details.code_mvc_details.html_parser.count_valid_childrens: invalid argument')
             return Array
                 .from(element.children)
                 .map((element) => {
@@ -1526,7 +1526,7 @@ class code_mvc_factory {
         // TODO?: faster approach?: use regex on outerHTML: \<(?'closing'\/?)(?'tagname'\w+\-?)+.*?\>
         // replace invalid HTMLElement by their localName as text
             if (elements === undefined)
-                throw new Error('ace.details.code_mvc_factory.html_parser.count_valid_childrens: invalid argument')
+                throw new Error('ace.details.code_mvc_details.html_parser.count_valid_childrens: invalid argument')
             return elements
                 .map(element => {
                     switch (element.nodeType) {
@@ -1541,7 +1541,7 @@ class code_mvc_factory {
                         case Node.COMMENT_NODE:
                         case Node.CDATA_SECTION_NODE:
                         default:
-                            console.debug(`code_mvc_factory.parser.to_code: unhandled tags [comment, cdata, etc.]`)
+                            console.debug(`code_mvc_details.parser.to_code: unhandled tags [comment, cdata, etc.]`)
                             return ''                        
                     }
                 })
@@ -1550,7 +1550,7 @@ class code_mvc_factory {
         static cleanup({ element }){
         // recursively replaces invalid childrens element by their tagname as text
             if (element === undefined)
-                throw new Error('ace.details.code_mvc_factory.html_parser.cleanup: invalid argument')
+                throw new Error('ace.details.code_mvc_details.html_parser.cleanup: invalid argument')
 
             let childNodes = Array.from(element.childNodes)
             childNodes
@@ -1564,7 +1564,7 @@ class code_mvc_factory {
         // recursively replaces invalid element by their tagname as text
 
             if (element === undefined)
-                throw new Error('ace.details.code_mvc_factory.html_parser.cleanup_impl: invalid argument')
+                throw new Error('ace.details.code_mvc_details.html_parser.cleanup_impl: invalid argument')
 
             let childNodes = Array.from(element.childNodes)                                         // preserve reference/offset integrity
             if (!html_parser.is_valid_HTMLElement({ element: element })) {
@@ -1582,136 +1582,139 @@ class code_mvc_factory {
         }
     };
 
-    static result_type = class {
+    static factory = class factory {
 
-        constructor(argument){
+        static result_type = class {
 
-            Object.assign(this, argument)
-            Object.seal(this)
+            constructor(argument){
+    
+                Object.assign(this, argument)
+                Object.seal(this)
+            }
+    
+            model = undefined
+            view = { top_parent: undefined, code_container: undefined }
+    
+            is_mutable = false
         }
 
-        model = undefined
-        view = { top_parent: undefined, code_container: undefined }
-
-        is_mutable = false
-    }
-
-    static is_expected_layout(element){
-        if (!(element instanceof HTMLElement))
-            throw new Error('code_mvc_factory.is_expected_layout: invalid argument')
-        return element.localName === 'code'
-    }
-
-    static build_from(argument) {
-
-        if (argument instanceof code_mvc_factory.result_type)
-            return argument
-
-        argument ??= ''
-
-        let result = (() => {
-
-            if (undefined === argument
-            ||  argument.text !== undefined)
-                return code_mvc_factory.#build_from_text(argument.text)
-            if (argument.element !== undefined)
-                return code_mvc_factory.#build_from_element(argument.element)
-            if (argument.nodes !== undefined)
-                return code_mvc_factory.#build_from_nodes(argument.nodes)
-
-            return code_mvc_factory.#build_from(argument)
-        })()
-            result.model = (result.model ?? '')
-                .replace(/^\s*/, '')
-                .replace(/\s*$/, '') // remove enclosing white-spaces
-            if (result.is_mutable)
-                result.view.textContent = result.model
-        return result
-    }
-
-    static #build_from(argument){
-
-        if (argument instanceof HTMLElement)
-            return code_mvc_factory.#build_from_element(argument)
-        else if (argument instanceof Array
-              && argument.reduce((index, arg) => undefined !== arg.nodeType, true))
-        {
-            let only_one_valid_element = (() => {
-                const no_ws_elements = argument.filter((element) => !(element.nodeType === Node.TEXT_NODE && /^\s+$/g.test(element.textContent)))
-                return no_ws_elements.length === 1 && code_mvc_factory.html_parser.is_valid_HTMLElement({ element: no_ws_elements[0] })
-                    ? no_ws_elements[0]
-                    : undefined
-            })()
-            return only_one_valid_element
-                ? code_mvc_factory.#build_from_element(only_one_valid_element)
-                : code_mvc_factory.#build_from_nodes(argument)
+        static is_expected_layout(element){
+            if (!(element instanceof HTMLElement))
+                throw new Error('code_mvc_details.factory.is_expected_layout: invalid argument')
+            return element.localName === 'code'
         }
-        else if (argument.nodeType === document.TEXT_NODE)
-            return code_mvc_factory.#build_from_text(argument.textContent)
-        else
-            return code_mvc_factory.#build_from_text(argument.toString())
-    }
-    static #build_from_text(value){
 
-        return new code_mvc_factory.result_type({
-            is_mutable : true,
-            model : value ?? '',
-            view : (() => {
-                let code_node = document.createElement('code')
-                    code_node.textContent = value
-                return code_node
+        static build_from(argument) {
+
+            if (argument instanceof code_mvc_details.factory.result_type)
+                return argument
+
+            argument ??= ''
+
+            let result = (() => {
+
+                if (undefined === argument
+                ||  argument.text !== undefined)
+                    return code_mvc_details.factory.#build_from_text(argument.text)
+                if (argument.element !== undefined)
+                    return code_mvc_details.factory.#build_from_element(argument.element)
+                if (argument.nodes !== undefined)
+                    return code_mvc_details.factory.#build_from_nodes(argument.nodes)
+
+                return code_mvc_details.factory.#build_from(argument)
             })()
-        })
-    }
-    static #build_from_element(element){
+                result.model = (result.model ?? '')
+                    .replace(/^\s*/, '')
+                    .replace(/\s*$/, '') // remove enclosing white-spaces
+                if (result.is_mutable)
+                    result.view.textContent = result.model
+            return result
+        }
 
-        if (!(element instanceof HTMLElement))
-            throw new Error('code_mvc_factory.#build_from_element: invalid argument')
+        static #build_from(argument){
 
-        const is_mutable = !Boolean(code_mvc_factory.html_parser.count_valid_childrens({ element: element, is_recursive: true }))
+            if (argument instanceof HTMLElement)
+                return code_mvc_details.factory.#build_from_element(argument)
+            else if (argument instanceof Array
+                && argument.reduce((index, arg) => undefined !== arg.nodeType, true))
+            {
+                let only_one_valid_element = (() => {
+                    const no_ws_elements = argument.filter((element) => !(element.nodeType === Node.TEXT_NODE && /^\s+$/g.test(element.textContent)))
+                    return no_ws_elements.length === 1 && code_mvc_details.html_parser.is_valid_HTMLElement({ element: no_ws_elements[0] })
+                        ? no_ws_elements[0]
+                        : undefined
+                })()
+                return only_one_valid_element
+                    ? code_mvc_details.factory.#build_from_element(only_one_valid_element)
+                    : code_mvc_details.factory.#build_from_nodes(argument)
+            }
+            else if (argument.nodeType === document.TEXT_NODE)
+                return code_mvc_details.factory.#build_from_text(argument.textContent)
+            else
+                return code_mvc_details.factory.#build_from_text(argument.toString())
+        }
+        static #build_from_text(value){
 
-        return new code_mvc_factory.result_type({
-            is_mutable : is_mutable,
-            model : (() => {
-                element = code_mvc_factory.html_parser.cleanup({ element: element })
-                return code_mvc_factory.html_parser.to_code({ elements: Array.from(element.childNodes) })
-            })(),
-            view : element
-        })
-    }
-    static #build_from_nodes(elements){
-    // expected: Array.from(node.childNodes)
+            return new code_mvc_details.factory.result_type({
+                is_mutable : true,
+                model : value ?? '',
+                view : (() => {
+                    let code_node = document.createElement('code')
+                        code_node.textContent = value
+                    return code_node
+                })()
+            })
+        }
+        static #build_from_element(element){
 
-        if (!(
-            elements instanceof Array
-        &&  elements.length !== 0
-        &&  elements.reduce((index, arg) => undefined !== arg.nodeType, true)
-        ))  throw new Error('code_mvc_factory.#build_from_nodes(array): invalid argument')
+            if (!(element instanceof HTMLElement))
+                throw new Error('code_mvc_details.factory.#build_from_element: invalid argument')
 
-        // const parent = (() => { // have common parent
-        //     const parent = elements[0].parentNode
-        //     if (elements.reduce((index, arg) => arg.parentNode !== parent, true))
-        //         throw new Error('code_mvc_factory.#build_from_nodes(array): nodes does not have a common parentNode')
-        //     return parent
-        // })()
+            const is_mutable = !Boolean(code_mvc_details.html_parser.count_valid_childrens({ element: element, is_recursive: true }))
 
-        const code_content = (() => {
-            
-            elements.forEach((element) => code_mvc_factory.html_parser.cleanup({ element: element }))
-            return elements
-                .map((element) => { 
-                    return code_mvc_factory.html_parser.to_code({
-                        elements: [ element ]
+            return new code_mvc_details.factory.result_type({
+                is_mutable : is_mutable,
+                model : (() => {
+                    element = code_mvc_details.html_parser.cleanup({ element: element })
+                    return code_mvc_details.html_parser.to_code({ elements: Array.from(element.childNodes) })
+                })(),
+                view : element
+            })
+        }
+        static #build_from_nodes(elements){
+        // expected: Array.from(node.childNodes)
+
+            if (!(
+                elements instanceof Array
+            &&  elements.length !== 0
+            &&  elements.reduce((index, arg) => undefined !== arg.nodeType, true)
+            ))  throw new Error('code_mvc_details.factory.#build_from_nodes(array): invalid argument')
+
+            // const parent = (() => { // have common parent
+            //     const parent = elements[0].parentNode
+            //     if (elements.reduce((index, arg) => arg.parentNode !== parent, true))
+            //         throw new Error('code_mvc_details.factory.#build_from_nodes(array): nodes does not have a common parentNode')
+            //     return parent
+            // })()
+
+            const code_content = (() => {
+                
+                elements.forEach((element) => code_mvc_details.html_parser.cleanup({ element: element }))
+                return elements
+                    .map((element) => { 
+                        return code_mvc_details.html_parser.to_code({
+                            elements: [ element ]
+                        })
                     })
-                })
-                .join('')
-        })()
-        // return new code_mvc_factory.result_type({
-        //     is_mutable : false,
-        //     model : code_content,
-        //     view : { top_parent: element, code_container: element }
-        // })
-        return code_mvc_factory.#build_from_text(code_content)
+                    .join('')
+            })()
+            // return new code_mvc_details.factory.result_type({
+            //     is_mutable : false,
+            //     model : code_content,
+            //     view : { top_parent: element, code_container: element }
+            // })
+            return code_mvc_details.factory.#build_from_text(code_content)
+        }
     }
 }
 class NotifyPropertyChangedInterface {
@@ -1915,7 +1918,7 @@ class code_mvc {
         language_policy = { ...code_mvc.default_arguments.language_policy },
         controler_options = { ...code_mvc.default_arguments.controler_options }
     }){
-        Object.assign(this, code_mvc_factory.build_from(code_origin))
+        Object.assign(this, code_mvc_details.factory.build_from(code_origin))
 
         const is_mutable = this.is_mutable // or seal/non-writable ?
         Object.defineProperty(this, 'is_mutable', {
@@ -2051,7 +2054,7 @@ class ace_cs_HTML_content_factoy {
             static make(argument){
                 if (!(argument instanceof code_mvc)
                  || !argument.is_mutable
-                 || !code_mvc_factory.is_expected_layout(argument.view)
+                 || !code_mvc_details.factory.is_expected_layout(argument.view)
                 )   throw new Error('ace_cs_HTML_content_factoy.layout_policies.basic: invalid argument')
                 return argument.view
             }
@@ -2060,7 +2063,7 @@ class ace_cs_HTML_content_factoy {
             static make(argument){
                 if (!(argument instanceof code_mvc))
                     throw new Error('ace_cs_HTML_content_factoy.layout_policies.wrap: invalid argument')
-                if (code_mvc_factory.is_expected_layout(argument.view))
+                if (code_mvc_details.factory.is_expected_layout(argument.view))
                     console.warn('ace_cs_HTML_content_factoy.layout_policies.wrap: wrapping on an default layout. Consider using layout_policies.basic instead')
 
                 // let container = document.createElement('div')
@@ -2073,7 +2076,7 @@ class ace_cs_HTML_content_factoy {
             static make(argument){
                 if (!(argument instanceof code_mvc))
                     throw new Error('ace_cs_HTML_content_factoy.layout_policies.select_best_for: invalid argument')
-                const best_policy = argument.is_mutable && code_mvc_factory.is_expected_layout(argument.view)
+                const best_policy = argument.is_mutable && code_mvc_details.factory.is_expected_layout(argument.view)
                     ? layout_policies.basic
                     : layout_policies.wrap
                 return best_policy.make(argument)
