@@ -931,7 +931,9 @@ AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard = class CopyT
             this.innerHTML = CopyToClipboardButton.successIcon
             this.style.fill = 'green'
 
-            let text = this.previousSibling.textContent
+            console.log(this)
+
+            let text = this.parentElement.textContent
             navigator.clipboard.writeText(text).then(
                 function() {
                     console.info('awesome-code-element.js:CopyToClipboardButton: success');
@@ -1131,10 +1133,7 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
 
         console.debug('deferedHTMLElement', parameters, this._parameters)
 
-        AwesomeCodeElement.details.utility.unfold_into({
-            target: this._parameters,
-            properties: parameters || {}
-        })
+        this.acquire_parameters_impl(parameters)
 
         // explicit, user-provided attributes
         if (this._parameters.attributes) {
@@ -1186,13 +1185,14 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
     acquire_parameters(parameters) {
     // acquire parameters for defered initialization
     // store everything
-        
-        AwesomeCodeElement.details.utility.unfold_into({
-            target: this._parameters,
-            properties: parameters || {}
-        })
-
+        this.acquire_parameters_impl(parameters)
         return false
+    }
+    acquire_parameters_impl(parameters){
+        this._parameters = {
+            ...this._parameters,
+            ...(parameters || {})
+        }
     }
 
     on_critical_internal_error(error = "") {
@@ -1753,6 +1753,17 @@ class NotifyPropertyChangedInterface {
     }
 }
 
+// TODO: put elsewhere
+let accumulate_objects = (lhs, rhs) => {
+    let result = { ...lhs }
+    
+    const keys = new Set([ ...Object.keys(lhs), ...Object.keys(rhs)])
+    keys.forEach((key) => {
+        result[key] = rhs[key] ?? lhs[key]
+    })
+    return result
+}
+
 class code_mvc {
 // enhanced { model, view, controler } to represent some code as a (possibly-existing) html-element
 
@@ -1780,8 +1791,10 @@ class code_mvc {
             this.#target = target
             this.#language_policies = language_policy
 
-            this.#language = this.#language_policies.detector.get_language_name(this.#target.model_details.ce_options.language ?? options.language)
-            this.toggle_language_detection = Boolean(options.toggle_language_detection) && !Boolean(this.#target.model_details.ce_options.language)
+            this.#language = this.#language_policies.detector.get_language_name(options.language ?? this.#target.model_details.ce_options.language)
+            this.toggle_language_detection = options.language // if a user-provided valid language exists, then toggle_language-deteciton is set to false
+                ? !Boolean(this.#language)
+                : options.toggle_language_detection
 
             this.#initialize_behaviors(options)
 
@@ -1814,7 +1827,9 @@ class code_mvc {
                         }
                         : () => { console.warn('code.set(toggle_parsing): no-op: not editable') }
                 })
-                return (Boolean(options.toggle_parsing) || Boolean(this.#target.model_details.ce_options)) && this.#target.is_mutable
+                return this.#target.is_mutable
+                    ? Boolean(options.toggle_parsing) ?? Boolean(this.#target.model_details.ce_options)
+                    : false
             })()
         }
 
@@ -1905,7 +1920,7 @@ class code_mvc {
     static default_arguments = {
         controler_options: {
             language : undefined, // TODO: global configuration < local < in-code (ce_options)
-            toggle_parsing : false,
+            toggle_parsing : true,
             toggle_language_detection : true
         },
         language_policy: {
@@ -1931,7 +1946,7 @@ class code_mvc {
         this.controler = new code_mvc.controler_type({
             target: this,
             language_policy: language_policy,
-            options: controler_options
+            options: accumulate_objects(code_mvc.default_arguments.controler_options, controler_options)
         })
         this.update_view()
     }
@@ -1970,9 +1985,6 @@ class code_mvc {
         })()
     }
 }
-
-// WIP: code_mvc as HTMLElement
-// TODO: refactor animation/animate_while
 
 class animation {
     
@@ -2035,22 +2047,23 @@ class animation {
     }
 }
 
-class basic_code_HTML_element extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement {
+class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement {
 
     constructor(parameters = {}) {
         if (typeof parameters !== "object")
             throw new Error(
-                `basic_code_HTML_element.constructor: invalid argument.
+                `code_mvc_HTMLElement.constructor: invalid argument.
                 expected object layout: { .url(string) or .code(string or HTMLElement) }
                 or valid childs/textContent when onConnectedCallback triggers`)
         super(parameters)
     }
 
     acquire_parameters(parameters) {
+
         super.acquire_parameters(parameters)
 
         const load_parameter = ({ property_name }) => {
-            this._parameters[property_name] = this._parameters[property_name] || this.getAttribute(property_name) || undefined
+            this._parameters[property_name] = this._parameters[property_name] ?? this.getAttribute(property_name) ?? undefined
         }
         [
             'language',
@@ -2066,32 +2079,46 @@ class basic_code_HTML_element extends AwesomeCodeElement.details.HTML_elements.d
         // post-condition: valid code content
         const is_valid = Boolean(this._parameters.code)
         if (is_valid)
-            this.acquire_parameters = () => { throw new Error('basic_code_HTML_element.acquire_parameters: already called') }
+            this.acquire_parameters = () => { throw new Error('code_mvc_HTMLElement.acquire_parameters: already called') }
+
+        console.debug(`code_mvc_HTMLElement.acquire_parameters ... ${is_valid}`, this._parameters)
+
         return is_valid
     }
     initialize(){
-        console.debug(`initializing with parameters:`, this._parameters)
+        console.debug(`code_mvc_HTMLElement.initialize: parameters:`, this._parameters)
 
-        this.code_mvc = new code_mvc({ code_origin: this._parameters.code })
-        console.log('basic_code_HTML_element:', this.code_mvc)
+        this.code_mvc = new code_mvc({
+            code_origin: this._parameters.code,
+            controler_options: {
+                language: this._parameters.language,
+                toggle_language_detection: this._parameters.toggle_language_detection,
+                toggle_parsing: this._parameters.toggle_parsing
+            }
+        })
 
-        // this as proxy to code_mvc
-        delete this._parameters
+        // this as proxy to code_mvc ?
+        // TODO: url here ?
+
+        // delete this._parameters
 
         this.loading_animation_controler = new animation.controler({ owner: this, target: this.code_mvc.view })
         // ex: temp0.loading_animation_controler.animate_while({ promise: new Promise((resolve, reject) => setTimeout(() => { resolve() }, 1000)) })
     }
 }
-customElements.define('ace-cs-basic-code-element', basic_code_HTML_element);
+customElements.define('ace-cs-code-mvc', code_mvc_HTMLElement);
 
 (() => {
-    // let qwe = new basic_code_HTML_element({ code: document.getElementById('test_1') })
-    // console.log(qwe)
+    let qwe = new code_mvc_HTMLElement({ code: document.getElementById('test_1') })
+    console.log(qwe);
 
     [ 1,2,3,4,5 ].forEach((test_id) => {
-        console.log(`--- TEST: ${test_id} ... ---`)
+        console.log(`--- TEST: ${test_id} ... ---`);
 
-        let value = new basic_code_HTML_element()
+        let value = new code_mvc_HTMLElement({
+            toggle_parsing: Boolean(test_id % 2),
+            language: test_id === 1 ? 'js' : undefined
+        })
 
         let pre = document.createElement('pre')
             pre.appendChild(value)
@@ -2108,46 +2135,12 @@ customElements.define('ace-cs-basic-code-element', basic_code_HTML_element);
 
 // ---
 
-class ace_cs_HTML_content_factoy {
+// TODO: details.factory
+class ace_cs_HTML_content_factory {
 // HTML layout/barebone for CodeSection
 
-    static layout_policies = class layout_policies {
-        static basic = class {
-            static make(argument){
-                if (!(argument instanceof code_mvc)
-                 || !argument.is_mutable
-                 || !code_mvc_details.factory.is_expected_layout(argument.view)
-                )   throw new Error('ace_cs_HTML_content_factoy.layout_policies.basic: invalid argument')
-                return argument.view
-            }
-        }
-        static wrap = class {
-            static make(argument){
-                if (!(argument instanceof code_mvc))
-                    throw new Error('ace_cs_HTML_content_factoy.layout_policies.wrap: invalid argument')
-                if (code_mvc_details.factory.is_expected_layout(argument.view))
-                    console.warn('ace_cs_HTML_content_factoy.layout_policies.wrap: wrapping on an default layout. Consider using layout_policies.basic instead')
-
-                // let container = document.createElement('div')
-                // let content   = container.appendChild(target)
-                return target
-            }
-        }
-
-        static always_best = class {
-            static make(argument){
-                if (!(argument instanceof code_mvc))
-                    throw new Error('ace_cs_HTML_content_factoy.layout_policies.select_best_for: invalid argument')
-                const best_policy = argument.is_mutable && code_mvc_details.factory.is_expected_layout(argument.view)
-                    ? layout_policies.basic
-                    : layout_policies.wrap
-                return best_policy.make(argument)
-            }
-        }
-    }
-
     static #set_on_resize_event = ({ panel, scrolling_element, elements_to_hide }) => {
-        panel.on_resize = ace_cs_HTML_content_factoy.#make_event_on_resize_maybe_hide_elements({
+        panel.on_resize = ace_cs_HTML_content_factory.#make_event_on_resize_maybe_hide_elements({
             owner: scrolling_element,
             elements: Object.entries(elements_to_hide).map(element => element[1]) // structure-to-array
         })
@@ -2159,34 +2152,26 @@ class ace_cs_HTML_content_factoy {
         if (!(code_mvc_value instanceof code_mvc)) 
             throw new Error('ace_cs_HTML_content_factoy.make_HTML_layout: invalid argument')
 
-        let view = this.layout_policies.always_best.make(code_mvc_value)
-
-        let copy_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
-            copy_button.style.zIndex = view.style.zIndex + 1
-            copy_button = view.appendChild(copy_button)
+        let copy_to_clipboard_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
+            copy_to_clipboard_button.style.zIndex = code_mvc_value.view.style.zIndex + 1
+            copy_to_clipboard_button = code_mvc_value.view.appendChild(copy_to_clipboard_button)
 
         let CE_button = new AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt()
             CE_button.style.zIndex = CE_button.style.zIndex + 1
-            CE_button = view.appendChild(CE_button)
+            CE_button = code_mvc_value.view.appendChild(CE_button)
 
-        AwesomeCodeElement.details.HTML_elements.LoadingAnimation.inject_into({
-            owner:  view,
-            target_or_accessor: content
-        })
+        // ace_cs_HTML_content_factoy.#set_on_resize_event({
+        //     panel: view,
+        //     scrolling_element: content,
+        //     elements_to_hide: [ copy_button, CE_button ]
+        // })
 
-        ace_cs_HTML_content_factoy.#set_on_resize_event({
-            panel: view,
-            scrolling_element: content,
-            elements_to_hide: [ copy_button, CE_button ]
-        })
-
-        return {
-            container: view,
-            buttons: {
-                CE: CE_button,
-                copy_to_clipboard: copy_button
-            }
+        code_mvc_value.view.ace_cs_buttons = {
+            CE: CE_button,
+            copy_to_clipboard: copy_to_clipboard_button
         }
+
+        return code_mvc_value
     }
 
     static panels_for = class {
@@ -2201,8 +2186,8 @@ class ace_cs_HTML_content_factoy {
 
         constructor({ code_mvc_value }) {
             let [ presentation_panel, execution_panel ] = [
-                ace_cs_HTML_content_factoy.make_panel({ code_mvc_value: code_mvc_value }),
-                ace_cs_HTML_content_factoy.make_panel({
+                ace_cs_HTML_content_factory.make_panel({ code_mvc_value: code_mvc_value }),
+                ace_cs_HTML_content_factory.make_panel({
                     code_mvc_value: new code_mvc({
                         code_origin: undefined,
                         language_policy: {
@@ -2226,20 +2211,18 @@ class ace_cs_HTML_content_factoy {
             }
 
             // add to target_element
-            target_element.appendChild(target_element.cs_panels.presentation.container)
-            target_element.appendChild(target_element.cs_panels.execution.container)
+            target_element.appendChild(target_element.cs_panels.presentation)
+            target_element.appendChild(target_element.cs_panels.execution)
 
             const initialize_ids = () => {
             // TODO: also dedicated classes?
-                target_element.id = target_element.id || ace_cs_HTML_content_factoy.panels_for.#id_generator()
-                target_element.cs_panels.presentation.container.id   = `${target_element.id}.panels.presentation.container`
-                target_element.cs_panels.execution.container.id      = `${target_element.id}.panels.execution.container`
-                target_element.cs_panels.presentation.content.id     = `${target_element.id}.panels.presentation.content`
-                target_element.cs_panels.execution.content.id        = `${target_element.id}.panels.execution.content`
-                target_element.cs_panels.presentation.buttons.CE.id                  = `${target_element.id}.panels.presentation.buttons.CE`
-                target_element.cs_panels.presentation.buttons.copy_to_clipboard.id   = `${target_element.id}.panels.presentation.buttons.copy_to_clipboard`
-                target_element.cs_panels.execution.buttons.CE.id                     = `${target_element.id}.panels.execution.buttons.CE`
-                target_element.cs_panels.execution.buttons.copy_to_clipboard.id      = `${target_element.id}.panels.execution.buttons.copy_to_clipboard`
+                target_element.id = target_element.id || ace_cs_HTML_content_factory.panels_for.#id_generator()
+                target_element.cs_panels.presentation.id   = `${target_element.id}.panels.presentation`
+                target_element.cs_panels.execution.id      = `${target_element.id}.panels.execution`
+                target_element.cs_panels.presentation.ace_cs_buttons.CE.id                  = `${target_element.id}.panels.presentation.buttons.CE`
+                target_element.cs_panels.presentation.ace_cs_buttons.copy_to_clipboard.id   = `${target_element.id}.panels.presentation.buttons.copy_to_clipboard`
+                target_element.cs_panels.execution.ace_cs_buttons.CE.id                     = `${target_element.id}.panels.execution.buttons.CE`
+                target_element.cs_panels.execution.ace_cs_buttons.copy_to_clipboard.id      = `${target_element.id}.panels.execution.buttons.copy_to_clipboard`
             }
             initialize_ids()
         }
@@ -2303,19 +2286,50 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     initialize() {
         console.debug(`AwesomeCodeElement.details.HTML_elements.CodeSection.initialize: initializing with parameters:`, this._parameters)
 
-        this.code_mvc = new code_mvc({ code_origin: this._parameters.code })
-        const html_elements_panels = new ace_cs_HTML_content_factoy.panels_for({ code_mvc_value: this.code_mvc })
+        // this.innerHTML = ""
+        this.ace_cs_panels = (() => {
 
-        this.innerHTML = ""
-        html_elements_panels.add_to({ target_element : this })
+            let [ presentation, execution ] = [
+                new code_mvc_HTMLElement(this._parameters),
+                new code_mvc_HTMLElement()
+                // code_origin: undefined,
+                // language_policy: {
+                //     detector:    language_policies.detectors.use_none,
+                //     highlighter: language_policies.highlighters.use_none
+                // }
+            ]
+
+            const add_buttons_to = ({ element }) => {
+                let copy_to_clipboard_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
+                    copy_to_clipboard_button.style.zIndex = element.style.zIndex + 1
+                    copy_to_clipboard_button = element.appendChild(copy_to_clipboard_button)
+
+                let CE_button = new AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt()
+                    CE_button.style.zIndex = CE_button.style.zIndex + 1
+                    CE_button = element.appendChild(CE_button)
+            }
+            const initialize_panel = ({ panel }) => {
+                console.debug('panel:', panel)
+                this.appendChild(panel)
+                add_buttons_to({ element: panel.code_mvc.view })
+            }
+            [ presentation, execution ].forEach((panel) => initialize_panel({ panel: panel }))
+
+            return {
+                presentation,
+                execution
+            }
+        })()
 
         if (this._parameters.url)
             this.url = this._parameters.url // initiate loading
 
         // callable once
-        delete this._parameters
+        // delete this._parameters
         this.initialize = () => { throw new Error('AwesomeCodeElement.details.HTML_elements.CodeSection.initialize: already called') }
     }
+
+    // TODO: initialize IDs
 
     #toggle_execution = false
     set toggle_execution(value) {
