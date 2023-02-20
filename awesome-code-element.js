@@ -1131,9 +1131,7 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
     constructor(parameters) {
         super();
 
-        console.debug('deferedHTMLElement', parameters, this._parameters)
-
-        this.acquire_parameters_impl(parameters)
+        this.#acquire_parameters_impl(parameters)
 
         // explicit, user-provided attributes
         if (this._parameters.attributes) {
@@ -1143,7 +1141,6 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
         }
     }
     connectedCallback() {
-        console.debug('AwesomeCodeElement.details.HTML_elements.deferedHTMLElement: connectedCallback')
         try {
             if (!this.acquire_parameters(this._parameters)) {
                 console.debug('AwesomeCodeElement.details.HTML_elements.deferedHTMLElement: create shadowroot slot')
@@ -1185,10 +1182,10 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
     acquire_parameters(parameters) {
     // acquire parameters for defered initialization
     // store everything
-        this.acquire_parameters_impl(parameters)
+        this.#acquire_parameters_impl(parameters)
         return false
     }
-    acquire_parameters_impl(parameters){
+    #acquire_parameters_impl(parameters){
         this._parameters = {
             ...this._parameters,
             ...(parameters || {})
@@ -2053,13 +2050,34 @@ class animation {
 
 class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement {
 
+    static named_parameters = [
+        'language',
+        'toggle_parsing',
+        'toggle_language_detection',
+        'code'
+    ]
+
     constructor(parameters = {}) {
         if (typeof parameters !== "object")
             throw new Error(
                 `code_mvc_HTMLElement.constructor: invalid argument.
-                expected object layout: { .url(string) or .code(string or HTMLElement) }
+                Expected object layout: { ${code_mvc_HTMLElement.named_parameters } }
                 or valid childs/textContent when onConnectedCallback triggers`)
-        super(parameters)
+        
+        if (parameters instanceof code_mvc){
+        // direct initialization from code_mvc value,
+        // by-pass deferedHTMLElement
+            super()
+            this.acquire_parameters = () => { return true }
+            this.initialize = () => {
+        
+                this.code_mvc = parameters
+                this.innerHTML = ""
+                this.appendChild(this.code_mvc.view)
+                this.loading_animation_controler = new animation.controler({ owner: this, target: this.code_mvc.view })
+            }
+        }
+        else super(parameters)
     }
 
     acquire_parameters(parameters) {
@@ -2069,12 +2087,7 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         const load_parameter = ({ property_name }) => {
             this._parameters[property_name] = this._parameters[property_name] ?? this.getAttribute(property_name) ?? undefined
         }
-        [
-            'language',
-            'toggle_parsing',
-            'toggle_language_detection',
-            'code'
-        ].forEach((property_name) => load_parameter({ property_name: property_name }))
+        code_mvc_HTMLElement.named_parameters.forEach((property_name) => load_parameter({ property_name: property_name }))
 
         this._parameters.code ||= (() => { 
             return this.childNodes.length ? Array.from(this.childNodes) : undefined
@@ -2094,6 +2107,7 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
 
         this.code_mvc = new code_mvc({
             code_origin: this._parameters.code,
+            // TODO: language_policies ?
             controler_options: {
                 language: this._parameters.language,
                 toggle_language_detection: this._parameters.toggle_language_detection,
@@ -2101,10 +2115,13 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
             }
         })
 
+        this.innerHTML = ""
+        this.appendChild(this.code_mvc.view)
+
         // this as proxy to code_mvc ?
         // TODO: url here ?
 
-        // delete this._parameters
+        delete this._parameters
 
         this.loading_animation_controler = new animation.controler({ owner: this, target: this.code_mvc.view })
         // ex: temp0.loading_animation_controler.animate_while({ promise: new Promise((resolve, reject) => setTimeout(() => { resolve() }, 1000)) })
@@ -2112,36 +2129,36 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
 }
 customElements.define('ace-cs-code-mvc', code_mvc_HTMLElement);
 
-(() => {
-    let qwe = new code_mvc_HTMLElement({ code: document.getElementById('test_1') })
-    console.log(qwe);
+// (() => {
+//     let qwe = new code_mvc_HTMLElement({ code: document.getElementById('test_1') })
+//     console.log(qwe);
 
-    [ 1,2,3,4,5 ].forEach((test_id) => {
-        console.log(`--- TEST: ${test_id} ... ---`);
+//     [ 1,2,3,4,5 ].forEach((test_id) => {
+//         console.log(`--- TEST: ${test_id} ... ---`);
 
-        let value = new code_mvc_HTMLElement({
-            toggle_parsing: Boolean(test_id % 2),
-            language: (() => {
-                switch(test_id){
-                    case 1: return 'INVALID_LANGUAGE_NAME';
-                    case 2: return 'js';
-                    default: return undefined;
-                }
-            })()
-        })
+//         let value = new code_mvc_HTMLElement({
+//             toggle_parsing: Boolean(test_id % 2),
+//             language: (() => {
+//                 switch(test_id){
+//                     case 1: return 'INVALID_LANGUAGE_NAME';
+//                     case 2: return 'js';
+//                     default: return undefined;
+//                 }
+//             })()
+//         })
 
-        let pre = document.createElement('pre')
-            pre.appendChild(value)
-        document.body.appendChild(pre)
+//         let pre = document.createElement('pre')
+//             pre.appendChild(value)
+//         document.body.appendChild(pre)
 
-        value.appendChild(document.getElementById(`test_${test_id}`))
-        console.log(value)
+//         value.appendChild(document.getElementById(`test_${test_id}`))
+//         console.log(value)
 
-        let spacer = document.createElement('p')
-            spacer.textContent = '-----'
-        document.body.appendChild(spacer)
-    })
-})()
+//         let spacer = document.createElement('p')
+//             spacer.textContent = '-----'
+//         document.body.appendChild(spacer)
+//     })
+// })()
 
 // ---
 
@@ -2263,12 +2280,27 @@ class ace_cs_HTML_content_factory {
     }
 }
 
+// TODO: attribute change => trigger setter
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement {
 
     static HTMLElement_name = 'ace-code-section'
+    static named_parameters = [
+        'language',
+        'toggle_parsing',
+        'toggle_execution',
+        'url',
+        'code'
+    ]
 
-    constructor(){ super() }
+    constructor(parameters = {}){
+        if (typeof parameters !== "object")
+            throw new Error(
+                `code_mvc_HTMLElement.constructor: invalid argument.
+                Expected object layout: { ${cs.named_parameters } }
+                or valid childs/textContent when onConnectedCallback triggers`)
+        super(parameters)
+    }
 
     acquire_parameters(parameters) {
 
@@ -2277,13 +2309,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         const load_parameter = ({ property_name }) => {
             this._parameters[property_name] = this._parameters[property_name] || this.getAttribute(property_name) || undefined
         }
-        [
-            'language',
-            'toggle_parsing',
-            'toggle_execution',
-            'url',
-            'code'
-        ].forEach((property_name) => load_parameter({ property_name: property_name }))
+        cs.named_parameters.forEach((property_name) => load_parameter({ property_name: property_name }))
 
         this._parameters.code ||= Array.from(this.childNodes)
 
@@ -2301,12 +2327,13 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
             let [ presentation, execution ] = [
                 new code_mvc_HTMLElement(this._parameters),
-                new code_mvc_HTMLElement()
-                // code_origin: undefined,
-                // language_policy: {
-                //     detector:    language_policies.detectors.use_none,
-                //     highlighter: language_policies.highlighters.use_none
-                // }
+                new code_mvc_HTMLElement(new code_mvc({
+                    code_origin: '',
+                    language_policy: {
+                        detector:    language_policies.detectors.use_none,
+                        highlighter: language_policies.highlighters.use_none
+                    }
+                }))
             ]
 
             const add_buttons_to = ({ element }) => {
@@ -2320,8 +2347,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             }
             const initialize_panel = ({ panel }) => {
                 console.debug('panel:', panel)
-                this.appendChild(panel)
-                add_buttons_to({ element: panel.code_mvc.view })
+                panel = this.appendChild(panel)
+                // add_buttons_to({ element: panel.code_mvc.view })
             }
             [ presentation, execution ].forEach((panel) => initialize_panel({ panel: panel }))
 

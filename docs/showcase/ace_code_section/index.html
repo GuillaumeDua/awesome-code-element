@@ -144,74 +144,7 @@ SOFTWARE.
 int main(){ return 42; }
 </ace-code-section> -->
 
-        <!-- TODO:local CE configuration -->
-
-        <code id="test_1">
-            int main() { return 42; }
-        </code>
-
-        <code id="test_2">
-#include <memory>
-#include <csl/toto.hpp>
-#include <csl/includes/tata.hpp>
-        </code>
-
-<!-- WIP: @ace.CE: includes_transformation -->
-
-<div id='test_3' class="my_code_class" style="display: ruby;">
-    <p style="color:yellow;">int</p> <p style="color:blue;">main</p>(){ return <p style="color:orange;">42</p>; }
-</div>
-
-<code id="test_4">
-// some comment here
-// ...
-
-// @ace::CE={
-//  "add_in_doc_execution" : true
-//  }
-// @ace::CE={
-//  "language" : "cpp"
-//  }
-// @ace::CE={
-//  "language"            : "c++",
-//  "compiler_id"         : "clang1400",
-//  "compilation_options" : "-O2 -std=c++20",
-//  "libs"                : [ {"id": "fmt", "version": "trunk"} ],
-//  "includes_transformation" : [
-//        [ "csl/",       "https://raw.githubusercontent.com/GuillaumeDua/CppShelf/main/includes/ag/csl/" ]
-//  ]
-//  }
-
-#include <memory>
-#include <csl/toto.hpp>
-#include <csl/includes/tata.hpp>
-
-auto main() -> int {
-    return 42;
-}
-
-BAD CODE // @ace::skip::line 
-
-// @ace::skip::block::begin
-// skip me !
-// and me !
-// and me too !
-// @ace::skip::block::end
-</code>
-
-<code id="test_5">
-    #include <iostream>
-
-        int main() {
-            std::cout << "<html>" << std::endl;
-            std::cout << "  <body>" << std::endl;
-            std::cout << "    This code is invalid in HTML because it contains unescaped < characters" << std::endl;
-            std::cout << "  </body>" << std::endl;
-            std::cout << "</html>" << std::endl;
-        
-            return 0;
-        }
-</code>
+<ace-cs-code-mvc>int main(){ return 42; }</ace-cs-code-mvc>
 
 </body>
 </html>
