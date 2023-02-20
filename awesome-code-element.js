@@ -1126,7 +1126,7 @@ AwesomeCodeElement.details.HTML_elements.LoadingAnimation = class LoadingAnimati
         }
     }
 }
-AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTMLElement {
+AwesomeCodeElement.details.HTML_elements.defered_HTMLElement = class extends HTMLElement {
 // HTMLElements that handles defered initialization
 //  if first added to the DOM empty, then triggers initialization when a first child is attached
 //  otherwise, initialize when created
@@ -1144,7 +1144,7 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
 
         // explicit, user-provided attributes
         if (this._parameters.attributes) {
-            console.debug(`AwesomeCodeElement.details.HTML_elements.deferedHTMLElement: constructor: explicit attributes:`, this._parameters.attributes)
+            console.debug(`AwesomeCodeElement.details.HTML_elements.defered_HTMLElement: constructor: explicit attributes:`, this._parameters.attributes)
             for (const property in this._parameters.attributes)
                 this.setAttribute(property, this._parameters.attributes[property])
         }
@@ -1152,13 +1152,13 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
     connectedCallback() {
         try {
             if (!this.acquire_parameters(this._parameters)) {
-                console.debug('AwesomeCodeElement.details.HTML_elements.deferedHTMLElement: create shadowroot slot')
+                console.debug('AwesomeCodeElement.details.HTML_elements.defered_HTMLElement: create shadowroot slot')
                 this.shadowroot_accessor = AwesomeCodeElement.details.utility.create_shadowroot_slot(
                     this, () => { this.#shadow_root_callback() }
                 )
             }
             else {
-                console.debug('AwesomeCodeElement.details.HTML_elements.deferedHTMLElement: no need for shadowroot slot')
+                console.debug('AwesomeCodeElement.details.HTML_elements.defered_HTMLElement: no need for shadowroot slot')
                 this.initialize()
             }
         }
@@ -1203,13 +1203,13 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
 
     on_critical_internal_error(error = "") {
 
-        console.error('AwesomeCodeElement.details.HTML_elements.deferedHTMLElement.on_critical_internal_error: fallback rendering (No recovery possible)', error)
+        console.error('AwesomeCodeElement.details.HTML_elements.defered_HTMLElement.on_critical_internal_error: fallback rendering (No recovery possible)', error)
 
         if (!this.isConnected)
             return
 
         let error_element = document.createElement('pre')
-            error_element.textContent = `AwesomeCodeElement.details.HTML_elements.deferedHTMLElement.on_critical_internal_error:\n\t${error || 'unknown error'}\n\t(No recovery possible)`
+            error_element.textContent = `AwesomeCodeElement.details.HTML_elements.defered_HTMLElement.on_critical_internal_error:\n\t${error || 'unknown error'}\n\t(No recovery possible)`
         // TODO: status => error + CSS style for such status
         AwesomeCodeElement.details.utility.apply_css(error_element, {
             color: "red",
@@ -1219,6 +1219,7 @@ AwesomeCodeElement.details.HTML_elements.deferedHTMLElement = class extends HTML
         this.replaceWith(error_element)
     }
 }
+
 
 // ============================
 // details: code representation
@@ -2060,7 +2061,7 @@ class animation {
     }
 }
 
-class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement {
+class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
     static named_parameters = [
         'language',
@@ -2078,7 +2079,7 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         
         if (parameters instanceof code_mvc){
         // direct initialization from code_mvc value,
-        // by-pass deferedHTMLElement
+        // by-pass defered_HTMLElement
             super()
             this.acquire_parameters = () => { return true }
             this.#code_mvc_initializer = () => parameters 
@@ -2095,6 +2096,8 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
                 }
             })
         }
+
+        this.style.whiteSpace = 'pre-wrap' // force behavior similar to HTMLPreElement
     }
     #code_mvc_initializer = undefined
 
@@ -2310,7 +2313,7 @@ class ace_cs_HTML_content_factory {
 
 // TODO: attribute change => trigger setter (proxy on attributes)
 AwesomeCodeElement.API.HTML_elements = {}
-AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement {
+AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
     static HTMLElement_name = 'ace-code-section'
     static named_parameters = [
@@ -2548,7 +2551,7 @@ AwesomeCodeElement.details.utility.customElements_define_once(
 // HTML_elements : API
 
 // AwesomeCodeElement.API.HTML_elements = {}
-// AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement { 
+// AwesomeCodeElement.API.HTML_elements.CodeSection = class CodeSection extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement { 
 // // Conjunction of `code_mvc` and `HTMLElement`
 // //                   |                \
 // //                  mvc        ace_cs_HTML_content_factoy.make_HTML_layout/integrate_panels_to
