@@ -997,18 +997,25 @@ AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInG
 
     onClickSend() {
 
-        const codeSectionElement = this.parentElement.parentElement
-        if (!(codeSectionElement instanceof AwesomeCodeElement.API.HTML_elements.CodeSection))
-            throw new Error('awesome-code-element.js: ShowInGodboltButton.onClickSend: ill-formed element: unexpected parent.parent element (must be an ace.cs)')
+        const code_mvc_value = (() => {
+            const code_mvc_HTMLelement_value = this.parentElement.parentElement
+            if (!(code_mvc_HTMLelement_value instanceof code_mvc_HTMLElement))
+                throw new Error('awesome-code-element.js: ShowInGodboltButton.onClickSend: ill-formed element: unexpected parentElement.parentElement layout (must be an ace.code_mvc_HTMLElement)')
+            const value = code_mvc_HTMLelement_value.code_mvc
+            if (!(value instanceof code_mvc))
+                throw new Error('awesome-code-element.js: ShowInGodboltButton.onClickSend: ill-formed element: unexpected parentElement.parentElement.code_mvc (must be an ace.code_mvc)')
+            return value
+        })()
+
         console.info('awesome-code-element.js: ShowInGodboltButton.onClickSend: sending request ...')
 
         const accessor = {
             get ce_options(){
-                return codeSectionElement.code_mvc.ce_options
-                    || AwesomeCodeElement.API.configuration.CE.get(codeSectionElement.code_mvc.language)
+                return code_mvc_value.model_details.ce_options
+                    || AwesomeCodeElement.API.configuration.CE.get(code_mvc_value.controler.language)
             },
             get language(){ return this.ce_options.language },
-            get code(){ return codeSectionElement.code_mvc.model_details.to_execute }
+            get code(){ return code_mvc_value.model_details.to_execute }
         }
         if (!accessor.ce_options)
             throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: missing CE configuration for language [${accessor.language}]`)
@@ -1764,6 +1771,7 @@ let accumulate_objects = (lhs, rhs) => {
     return result
 }
 
+// TODO: attribute change => trigger setter (proxy on attributes)
 class code_mvc {
 // enhanced { model, view, controler } to represent some code as a (possibly-existing) html-element
 
@@ -1784,7 +1792,7 @@ class code_mvc {
         // update CE options
         if (!this.#model.ce_options
         ||  !this.#model.ce_options.language
-        ||   this.controler.language !== this.language_policies.detector.get_language_name(this.#model.ce_options.language)
+        ||   this.controler.language !== this.controler.language_policies.detector.get_language_name(this.#model.ce_options.language)
         ){
             this.#model.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.controler.language)
             console.log(`code_mvc.#model_update_ce_options: loaded matching CE configuration for language [${this.controler.language}]: `, this.#model.ce_options)
@@ -2124,6 +2132,25 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         this.loading_animation_controler = new animation.controler({ owner: this, target: this.code_mvc.view })
         // ex: temp0.loading_animation_controler.animate_while({ promise: new Promise((resolve, reject) => setTimeout(() => { resolve() }, 1000)) })
     }
+
+    static add_buttons_to = ({ value }) => {
+
+        if (!(value instanceof code_mvc_HTMLElement))
+            throw new Error('code_mvc_HTMLElement.add_buttons_to: invalid argument type')
+
+        let copy_to_clipboard_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
+            copy_to_clipboard_button.style.zIndex = value.code_mvc.view.style.zIndex + 1
+            copy_to_clipboard_button = value.code_mvc.view.appendChild(copy_to_clipboard_button)
+
+        let CE_button = new AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt()
+            CE_button.style.zIndex = CE_button.style.zIndex + 1
+            CE_button = value.code_mvc.view.appendChild(CE_button)
+
+        value.ace_cs_buttons = {
+            copy_to_clipboard: copy_to_clipboard_button,
+            CE: CE_button
+        }
+    }
 }
 customElements.define('ace-cs-code-mvc', code_mvc_HTMLElement);
 
@@ -2278,7 +2305,7 @@ class ace_cs_HTML_content_factory {
     }
 }
 
-// TODO: attribute change => trigger setter
+// TODO: attribute change => trigger setter (proxy on attributes)
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeElement.details.HTML_elements.deferedHTMLElement {
 
@@ -2320,7 +2347,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     initialize() {
         console.debug(`AwesomeCodeElement.details.HTML_elements.CodeSection.initialize: initializing with parameters:`, this._parameters)
 
-        // this.innerHTML = ""
         this.ace_cs_panels = (() => {
 
             let [ presentation, execution ] = [
@@ -2334,19 +2360,10 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 }))
             ]
 
-            const add_buttons_to = ({ element }) => {
-                let copy_to_clipboard_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
-                    copy_to_clipboard_button.style.zIndex = element.style.zIndex + 1
-                    copy_to_clipboard_button = element.appendChild(copy_to_clipboard_button)
-
-                let CE_button = new AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt()
-                    CE_button.style.zIndex = CE_button.style.zIndex + 1
-                    CE_button = element.appendChild(CE_button)
-            }
             const initialize_panel = ({ panel }) => {
                 console.debug('panel:', panel)
                 panel = this.appendChild(panel)
-                // add_buttons_to({ element: panel.code_mvc.view })
+                code_mvc_HTMLElement.add_buttons_to({ value: panel })
             }
             [ presentation, execution ].forEach((panel) => initialize_panel({ panel: panel }))
 
@@ -2359,12 +2376,30 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         if (this._parameters.url)
             this.url = this._parameters.url // initiate loading
 
+        this.#initialize_ids()
+
         // callable once
         // delete this._parameters
         this.initialize = () => { throw new Error('AwesomeCodeElement.details.HTML_elements.CodeSection.initialize: already called') }
     }
 
-    // TODO: initialize IDs
+    static #id_generator = (() => {
+        const counter = (function*(){
+            let i = 0;
+            while (true) { yield i++; }
+        })()
+        return () => { return `cs_${counter.next().value}` }
+    })()
+    #initialize_ids(){
+    // TODO: also dedicated classes?
+        this.id = this.id || cs.#id_generator()
+        this.ace_cs_panels.presentation.id   = `${this.id}.panels.presentation`
+        this.ace_cs_panels.execution.id      = `${this.id}.panels.execution`
+        this.ace_cs_panels.presentation.ace_cs_buttons.CE.id                  = `${this.id}.panels.presentation.buttons.CE`
+        this.ace_cs_panels.presentation.ace_cs_buttons.copy_to_clipboard.id   = `${this.id}.panels.presentation.buttons.copy_to_clipboard`
+        this.ace_cs_panels.execution.ace_cs_buttons.CE.id                     = `${this.id}.panels.execution.buttons.CE`
+        this.ace_cs_panels.execution.ace_cs_buttons.copy_to_clipboard.id      = `${this.id}.panels.execution.buttons.copy_to_clipboard`
+    }
 
     #toggle_execution = false
     set toggle_execution(value) {
