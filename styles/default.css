@@ -15,6 +15,7 @@
     --spacing-large: 16px;
     --content-maxwidth: 1050px;
     --ace-cs-buttons-z-index: 2;
+    --ace-cs-code-line-height: 1.3;
 }
 
 html.light-mode {
@@ -87,7 +88,7 @@ ace-cs-code-mvc {
 
     font-family     : "Lucida Console", "Monaco", monospace;
     font-size       : 14px;
-    line-height     : 1.3;
+    line-height     : var(--ace-cs-code-line-height);
 }
 ace-cs-code-mvc > * {
     flex:       2 2 content;
@@ -97,27 +98,40 @@ ace-cs-code-mvc > * {
     left:       0px;
     width:      100%;
     margin:     0px;
-    min-height: 34px;
+    min-height: 20px;
 }
-ace-cs-code-mvc > button {
-    z-index : 2;
-    display : none; /* hidden by default */
+ace-cs-code-mvc > code {
+    display: block;
+    line-height: var(--ace-cs-code-line-height); /* calc(var(--ace-cs-code-line-height) * 2); */
+    margin-left: calc(var(--ace-cs-code-line-height) * 2px);
 }
-ace-cs-code-mvc button[is^='ace-button-'] {
+ace-cs-code-mvc > code > button[is^='ace-button-'] {
     z-index:            var(--ace-cs-buttons-z-index);
     position:           absolute;
-    top:                5px;
+
+    --spacing-size:     2px;
+    top:                var(--spacing-size);
 
     color:              var(--default-text-color);
     border:             1px solid var(--separator-color);
     border-radius:      var(--border-radius-small);
     background-color:   var(--default-background-color);
+
+    display: block;
+    height: calc(100% - calc(var(--spacing-size) * 2)); /* top is 2px */
+    width: inherit;
+    max-height: 30px;
+    max-width: 30px;
 }
-ace-cs-code-mvc button[is='ace-button-copy-to-clipboard'] {
-    right       : 5px;
+ace-cs-code-mvc > code > button[is^='ace-button-'] > * {
+    height: inherit;
+    width: inherit;
 }
-ace-cs-code-mvc button[is='ace-button-send-to-godbolt'] {
-    right       : 45px;
+ace-cs-code-mvc > code > button[is='ace-button-copy-to-clipboard'] {
+    right       : 2px;
+}
+ace-cs-code-mvc > code > button[is='ace-button-send-to-godbolt'] {
+    right       : 34px;
 }
 
 ace-code-section,
@@ -130,6 +144,7 @@ ace-code-section-demo {
     align-items     : stretch;
     box-sizing      : border-box;
     width           : 100%;
+    padding: 5px 0px 5px 0px;
 }
 /* CS: panels : left, right */
 ace-code-section        > [id*='.panels.'],
