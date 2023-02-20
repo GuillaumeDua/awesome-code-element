@@ -87,6 +87,8 @@
 // TODO: naming consistency
 // TODO: remove unused or unecessary code
 // TODO: extends HTMLElements: prefix this lib methods => `ace_cs_${NAME}` ?
+// TODO: opt-in: godbolt /api/shortener instead of ClientState ?
+// TODO: feature: add compilation/execution duration information (useful for quick-performance comparisons)
 
 // Doxygen integration quick-test
 /*
@@ -1018,7 +1020,7 @@ AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInG
             get code(){ return code_mvc_value.model_details.to_execute }
         }
         if (!accessor.ce_options)
-            throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: missing CE configuration for language [${accessor.language}]`)
+            throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: missing CE configuration for language [${code_mvc_value.controler.language}]`)
 
         console.log(AwesomeCodeElement.details.remote.CE_API.languages)
 
@@ -2079,15 +2081,22 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         // by-pass deferedHTMLElement
             super()
             this.acquire_parameters = () => { return true }
-            this.initialize = () => {
-        
-                this.code_mvc = parameters
-                this.appendChild(this.code_mvc.view)
-                this.loading_animation_controler = new animation.controler({ owner: this, target: this.code_mvc.view })
-            }
+            this.#code_mvc_initializer = () => parameters 
         }
-        else super(parameters)
+        else {
+            super(parameters)
+            this.#code_mvc_initializer = () => new code_mvc({
+                code_origin: this._parameters.code,
+                // TODO: language_policies ?
+                controler_options: {
+                    language: this._parameters.language,
+                    toggle_language_detection: this._parameters.toggle_language_detection,
+                    toggle_parsing: this._parameters.toggle_parsing
+                }
+            })
+        }
     }
+    #code_mvc_initializer = undefined
 
     acquire_parameters(parameters) {
 
@@ -2114,15 +2123,7 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
     initialize(){
         console.debug(`code_mvc_HTMLElement.initialize: parameters:`, this._parameters)
 
-        this.code_mvc = new code_mvc({
-            code_origin: this._parameters.code,
-            // TODO: language_policies ?
-            controler_options: {
-                language: this._parameters.language,
-                toggle_language_detection: this._parameters.toggle_language_detection,
-                toggle_parsing: this._parameters.toggle_parsing
-            }
-        })
+        this.code_mvc = this.#code_mvc_initializer()
         this.appendChild(this.code_mvc.view)
 
         // this as proxy to code_mvc ?
@@ -2130,6 +2131,8 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         delete this._parameters
 
         this.loading_animation_controler = new animation.controler({ owner: this, target: this.code_mvc.view })
+        code_mvc_HTMLElement.add_buttons_to({ value: this })
+
         // ex: temp0.loading_animation_controler.animate_while({ promise: new Promise((resolve, reject) => setTimeout(() => { resolve() }, 1000)) })
     }
 
@@ -2358,20 +2361,17 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                         highlighter: language_policies.highlighters.use_none
                     }
                 }))
-            ]
+            ];
 
-            const initialize_panel = ({ panel }) => {
-                console.debug('panel:', panel)
-                panel = this.appendChild(panel)
-                code_mvc_HTMLElement.add_buttons_to({ value: panel })
-            }
-            [ presentation, execution ].forEach((panel) => initialize_panel({ panel: panel }))
+            [ presentation, execution ].forEach((panel) => this.appendChild(panel));
 
             return {
                 presentation,
                 execution
             }
         })()
+
+        console.log('>>>>', this)
 
         if (this._parameters.url)
             this.url = this._parameters.url // initiate loading
