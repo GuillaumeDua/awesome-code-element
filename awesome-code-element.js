@@ -1674,7 +1674,9 @@ class code_mvc_details {
                 is_mutable : is_mutable,
                 model : (() => {
                     element = code_mvc_details.html_parser.cleanup({ element: element })
-                    return code_mvc_details.html_parser.to_code({ elements: Array.from(element.childNodes) })
+                    const result = code_mvc_details.html_parser.to_code({ elements: Array.from(element.childNodes) })
+                    element.innerHTML = ""
+                    return result
                 })(),
                 view : element
             })
@@ -1706,6 +1708,7 @@ class code_mvc_details {
                     })
                     .join('')
             })()
+            elements.forEach((element) => element.parentElement.removeChild(element))
             // return new code_mvc_details.factory.result_type({
             //     is_mutable : false,
             //     model : code_content,
@@ -2071,7 +2074,6 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
             this.initialize = () => {
         
                 this.code_mvc = parameters
-                this.innerHTML = ""
                 this.appendChild(this.code_mvc.view)
                 this.loading_animation_controler = new animation.controler({ owner: this, target: this.code_mvc.view })
             }
@@ -2113,11 +2115,7 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
                 toggle_parsing: this._parameters.toggle_parsing
             }
         })
-        this.code_mvc.view = (() => {
-        // add view as child
-            this.innerHTML = ""
-            return this.appendChild(this.code_mvc.view)
-        })()
+        this.appendChild(this.code_mvc.view)
 
         // this as proxy to code_mvc ?
 
