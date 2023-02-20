@@ -1772,7 +1772,20 @@ class code_mvc {
     #model_parser = undefined
     #model = undefined
     get model_details(){
+        this.#model_update_ce_options()
         return this.#model
+    }
+    #model_update_ce_options(){
+        if (!this.controler)
+            return
+        // update CE options
+        if (!this.#model.ce_options
+        ||  !this.#model.ce_options.language
+        ||   this.controler.language !== this.language_policies.detector.get_language_name(this.#model.ce_options.language)
+        ){
+            this.#model.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.controler.language)
+            console.log(`code_mvc.#model_update_ce_options: loaded matching CE configuration for language [${this.controler.language}]: `, this.#model.ce_options)
+        }
     }
 
     static controler_type = class {
@@ -1835,9 +1848,7 @@ class code_mvc {
         }
 
         // policies, behaviors
-        get language_policies(){
-            return this.#language_policies
-        }
+        get language_policies(){ return this.#language_policies }
         #language_policies = {
             detector: undefined,
             highlighter: undefined
@@ -1858,11 +1869,8 @@ class code_mvc {
             value = this.#language_policies.detector.get_language_name(value)
 
             // autodetect
-            if (this.toggle_language_detection){
+            if (this.toggle_language_detection)
                 this.#language = value
-                this.#on_language_changed()
-            }
-            
             return value
         }
         set language(value) {
@@ -1889,21 +1897,12 @@ class code_mvc {
                 })
                 : this.#language_policies.detector.detect_language(this.#target.model)
 
-            if (this.#language !== argument.language_name){
+            if (undefined === argument.language_name
+             || this.#language !== argument.language_name
+            ){
                 this.#language = this.#language_policies.detector.get_language_name(result.language) // note: possibly not equal to `value`
                 this.toggle_language_detection = Boolean(result.relevance <= 5)
-                this.#on_language_changed()
-            }
-        }
-
-        #on_language_changed(){
-            // update CE options
-            if (!this.#target.model_details.ce_options
-            ||  !this.#target.model_details.ce_options.language
-            ||   this.#language !== this.language_policies.detector.get_language_name(this.#target.model_details.ce_options.language)
-            ){
-                this.#target.model_details.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.#language)
-                console.log(`code_mvc.#on_language_changed: loaded matching CE configuration for language [${this.#language}]: `, this.#target.model_details.ce_options)
+                // this.#target.model_update_ce_options()
             }
         }
 
@@ -2114,12 +2113,13 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
                 toggle_parsing: this._parameters.toggle_parsing
             }
         })
-
-        this.innerHTML = ""
-        this.appendChild(this.code_mvc.view)
+        this.code_mvc.view = (() => {
+        // add view as child
+            this.innerHTML = ""
+            return this.appendChild(this.code_mvc.view)
+        })()
 
         // this as proxy to code_mvc ?
-        // TODO: url here ?
 
         delete this._parameters
 
