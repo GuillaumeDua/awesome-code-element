@@ -1061,71 +1061,71 @@ AwesomeCodeElement.details.utility.customElements_define_once(
     AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt.HTMLElement_name,
     AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt, {extends: 'button'}
 );
-AwesomeCodeElement.details.HTML_elements.LoadingAnimation = class LoadingAnimation {
+// AwesomeCodeElement.details.HTML_elements.LoadingAnimation = class LoadingAnimation {
     
-    static HTMLElement_name = 'ace-loading-animation'
+//     static HTMLElement_name = 'ace-loading-animation'
 
-    static #cache = (function(){
-    // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
-        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/resources/images/loading_animation.svg'
-        let value = document.createElement('img');
-            value.src = loading_animation_fallback_url
-            value.id = LoadingAnimation.HTMLElement_name
-            value.style.display = 'none'
-        return value
-    })()
-    static get element() {
-        return LoadingAnimation.#cache.cloneNode()
-    }
+//     static #cache = (function(){
+//     // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
+//         const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/resources/images/loading_animation.svg'
+//         let value = document.createElement('img');
+//             value.src = loading_animation_fallback_url
+//             value.id = LoadingAnimation.HTMLElement_name
+//             value.style.display = 'none'
+//         return value
+//     })()
+//     static get element() {
+//         return LoadingAnimation.#cache.cloneNode()
+//     }
 
-    static inject_into({owner, target_or_accessor }) {
-        LoadingAnimation.#inject_toggle_loading_animation({owner, target_or_accessor })
-        LoadingAnimation.#inject_animate_loading_while({owner})
-    }
+//     static inject_into({owner, target_or_accessor }) {
+//         LoadingAnimation.#inject_toggle_loading_animation({owner, target_or_accessor })
+//         LoadingAnimation.#inject_animate_loading_while({owner})
+//     }
 
-    static #inject_toggle_loading_animation({
-        owner,              // injects `owner.toggle_loading_animation`
-        target_or_accessor  // target, or a parameterless function that returns the target (preserving access after potential dereferencement)
-    }){
-        const loading_animation_element = owner.appendChild(LoadingAnimation.element)
-        const target_accessor = () => {
-            return target_or_accessor instanceof Function
-                ? target_or_accessor()
-                : target_or_accessor
-        }
+//     static #inject_toggle_loading_animation({
+//         owner,              // injects `owner.toggle_loading_animation`
+//         target_or_accessor  // target, or a parameterless function that returns the target (preserving access after potential dereferencement)
+//     }){
+//         const loading_animation_element = owner.appendChild(LoadingAnimation.element)
+//         const target_accessor = () => {
+//             return target_or_accessor instanceof Function
+//                 ? target_or_accessor()
+//                 : target_or_accessor
+//         }
 
-        const target_visible_display = target_accessor().style.display
+//         const target_visible_display = target_accessor().style.display
 
-        Object.defineProperty(owner, 'toggle_loading_animation', {
-            set: function(value){
-                target_accessor().style.display         = Boolean(value) ? 'none' : target_visible_display
-                loading_animation_element.style.display = Boolean(value) ? 'flex' : 'none'
-            },
-            get: function(){
-                return Boolean(loading_animation_element.style.display !== 'none')
-            }
-        })
-    }
-    static async #inject_animate_loading_while({owner}){
-    // injects `owner.animate_loading_while`
-        owner.animate_loading_while = (task) => {
-            owner.toggle_loading_animation = true
-            let task_result = undefined
-            try {
-                task_result = task()
-            }
-            catch (error){
-                owner.toggle_loading_animation = false
-                throw (error instanceof Error ? error : new Error(error))
-            }
-            if (task_result instanceof Promise)
-                return task_result.then(() => {
-                    owner.toggle_loading_animation = false
-                })
-            owner.toggle_loading_animation = false
-        }
-    }
-}
+//         Object.defineProperty(owner, 'toggle_loading_animation', {
+//             set: function(value){
+//                 target_accessor().style.display         = Boolean(value) ? 'none' : target_visible_display
+//                 loading_animation_element.style.display = Boolean(value) ? 'flex' : 'none'
+//             },
+//             get: function(){
+//                 return Boolean(loading_animation_element.style.display !== 'none')
+//             }
+//         })
+//     }
+//     static async #inject_animate_loading_while({owner}){
+//     // injects `owner.animate_loading_while`
+//         owner.animate_loading_while = (task) => {
+//             owner.toggle_loading_animation = true
+//             let task_result = undefined
+//             try {
+//                 task_result = task()
+//             }
+//             catch (error){
+//                 owner.toggle_loading_animation = false
+//                 throw (error instanceof Error ? error : new Error(error))
+//             }
+//             if (task_result instanceof Promise)
+//                 return task_result.then(() => {
+//                     owner.toggle_loading_animation = false
+//                 })
+//             owner.toggle_loading_animation = false
+//         }
+//     }
+// }
 AwesomeCodeElement.details.HTML_elements.defered_HTMLElement = class extends HTMLElement {
 // HTMLElements that handles defered initialization
 //  if first added to the DOM empty, then triggers initialization when a first child is attached
@@ -2321,14 +2321,21 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 new code_mvc_HTMLElement(this._parameters),
                 new code_mvc_HTMLElement(new code_mvc({
                     code_origin: '',
+                    controler_options:{
+                        language: 'bash',
+                        toggle_parsing : false,
+                        toggle_language_detection : false
+                    },
                     language_policy: {
                         detector:    language_policies.detectors.use_none,
-                        highlighter: language_policies.highlighters.use_none
+                        highlighter: language_policies.highlighters.use_hljs
                     }
                 }))
             ];
 
             [ presentation, execution ].forEach((panel) => this.appendChild(panel));
+
+            execution.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
 
             return {
                 presentation,
@@ -2371,36 +2378,35 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         if (this.#toggle_execution) {
 
-            this.cs_panels.execution.container.style.display = ''
+            this.ace_cs_panels.execution.style.display = ''
             try {
-                this.cs_panels.execution.container.animate_loading_while(this.#fetch_execution.bind(this))
+                this.ace_cs_panels.execution.loading_animation_controler.animate_while({ promise: this.#fetch_execution() })
             }
             catch(error) {
                 console.error(error)
             }
         }
         else {
-            this.cs_panels.execution.container.style.display = 'none'
+            this.ace_cs_panels.execution.style.display = 'none'
         }
     }
     get toggle_execution() { return this.#toggle_execution }
-    get is_executable() { return Boolean(this.model_details.ce_options) } // TODO: check if this CE configuration is valid
+    get is_executable() { return Boolean(this.ace_cs_panels.presentation.code_mvc.model_details.ce_options) } // TODO: check if this CE configuration is valid
     #fetch_execution() {
 
         let set_execution_content = ({ is_fetch_success, content: { value, return_code } }) => {
 
+            this.ace_cs_panels.execution.code_mvc.model = value
+
             if (!is_fetch_success) {
-                this.cs_panels.execution.container.setAttribute('status', 'error')
-                this.cs_panels.execution.content.textContent = value
+                this.ace_cs_panels.execution.setAttribute('status', 'error')
                 return
             }
-
-            this.cs_panels.execution.content.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
             // force hljs bash language (TODO: wrap into a dedicated function)
-            this.cs_panels.execution.content.innerHTML = hljs.highlightAuto(value, [ 'bash' ]).value
-            this.cs_panels.execution.content.classList = [...this.html_elements.code.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
-            this.cs_panels.execution.content.classList.add(`hljs`)
-            this.cs_panels.execution.content.classList.add(`language-bash`)
+            // this.cs_panels.execution.content.innerHTML = hljs.highlightAuto(value, [ 'bash' ]).value
+            // this.cs_panels.execution.content.classList = [...this.html_elements.code.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
+            // this.cs_panels.execution.content.classList.add(`hljs`)
+            // this.cs_panels.execution.content.classList.add(`language-bash`)
             // automated hljs language
             //  this.html_elements.execution.textContent = result.value
             //  hljs.highlightElement(this.html_elements.execution)
@@ -2408,12 +2414,12 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             // update status, used in CSS
             
             let status = return_code < 0 ? 'failure' : 'success'
-            this.html_elements.execution.setAttribute('status', status)
+            this.ace_cs_panels.execution.setAttribute('status', status)
         }
 
         // cleanup status
-        this.cs_panels.execution.container.removeAttribute('status')
-        this.cs_panels.execution.content.removeAttribute('status')
+        this.ace_cs_panels.execution.removeAttribute('status')
+        this.ace_cs_panels.execution.code_mvc.view.removeAttribute('status')
 
         if (!this.is_executable) {
 
@@ -2429,7 +2435,10 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         }
 
         // right panel: replace with result
-        return AwesomeCodeElement.details.remote.CE_API.fetch_execution_result(this.model_details.ce_options, this.model_details.to_execute)
+        return AwesomeCodeElement.details.remote.CE_API.fetch_execution_result(
+            this.ace_cs_panels.presentation.code_mvc.model_details.ce_options,
+            this.ace_cs_panels.presentation.code_mvc.model_details.to_execute
+        )
             .catch((error) => {
                 this.on_critical_internal_error(`CodeSection:fetch_execution: CE_API.fetch_execution_result: failed:\n\t[${error}]`)
             })
@@ -2439,14 +2448,13 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 let regex = new RegExp('# Compilation provided by Compiler Explorer at https://godbolt.org/\n\n(# Compiler exited with result code (-?\\d+))')
                 let regex_result = regex.exec(result)
 
-                if (regex_result === null)
-                    return {
+                return regex_result === null
+                    ? {
                         value : result,
                         error : 'unknown',
                         return_code : undefined
                     }
-                else
-                    return {
+                    : {
                         value : result.substring(regex_result[0].length - regex_result[1].length), // trim off header
                         error : undefined,
                         return_code :  regex_result.length != 3 ? undefined : parseInt(regex_result[2])
