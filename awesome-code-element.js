@@ -2348,6 +2348,7 @@ class ace_cs_HTML_content_factory {
 //  attribute change => trigger setter (proxy on attributes)
 //  id change -> reset hierarchy IDs
 // WIP: CSS error(s), execution: failure, success
+// WIP: buttons.CE -> visible if is_executable -> CSS
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
@@ -2461,7 +2462,16 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         if (this.#toggle_execution) {
 
-            this.ace_cs_panels.execution.style.display = ''
+            this.ace_cs_panels.execution.style.display = '' // TODO: CSS
+
+            if (!this.is_executable){
+                const error = `${cs.HTMLElement_name}: not executable (yet?)`
+                this.ace_cs_panels.execution.code_mvc.model = `# error: {error}`
+                this.ace_cs_panels.execution.setAttribute('status', 'error')
+                console.warn(`${error} - set(toggle_execution)`)
+                return
+            }
+            
             try             { this.ace_cs_panels.execution.loading_animation_controler.animate_while({ promise: this.#fetch_execution() }) }
             catch (error)   { console.error(error) } // TODO: throw ? internal error ?
         }
@@ -2568,13 +2578,11 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             })
         })
 
-        // execution state
-
         this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = true
         fetch_execution_result_promise.then(
             (result) => {
                this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = false
-               this.toggle_execution = this.toggle_execution
+               this.toggle_execution = this.toggle_execution // refresh execution
             },
             (error) => { 
                this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = false
