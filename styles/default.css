@@ -91,9 +91,9 @@ ace-cs-code-mvc > code {
     display: block;
     line-height: var(--ace-cs-code-line-height); /* calc(var(--ace-cs-code-line-height) * 2); */
 }
-ace-cs-code-mvc > code > * {
+/* ace-cs-code-mvc > code > * {
     margin-left: calc(var(--ace-cs-code-line-height) * 2px);
-}
+} */
 ace-cs-code-mvc > button[is^='ace-button-'] {
     z-index:            var(--ace-cs-buttons-z-index);
     position:           absolute;

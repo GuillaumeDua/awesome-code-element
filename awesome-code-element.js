@@ -89,6 +89,7 @@
 // TODO: extends HTMLElements: prefix this lib methods => `ace_cs_${NAME}` ?
 // TODO: opt-in: godbolt /api/shortener instead of ClientState ?
 // TODO: feature: add compilation/execution duration information (useful for quick-performance comparisons)
+// TODO: get [Symbol.toStringTag]()
 
 // Doxygen integration quick-test
 /*
@@ -1930,7 +1931,7 @@ class code_mvc {
     }
 
     // initialization
-    static default_arguments = {
+    static get default_arguments(){ return {
         controler_options: {
             language : undefined, // TODO: global configuration < local < in-code (ce_options)
             toggle_parsing : true,
@@ -1940,7 +1941,7 @@ class code_mvc {
             detector:    language_policies.detectors.use_hljs,
             highlighter: language_policies.highlighters.use_hljs
         }
-    }
+    }}
 
     constructor({
         code_origin,
@@ -2062,12 +2063,12 @@ class animation {
 
 class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
-    static named_parameters = [
+    static get named_parameters(){ return [
         'language',
         'toggle_parsing',
         'toggle_language_detection',
         'code'
-    ]
+    ]}
 
     constructor(parameters = {}) {
         if (typeof parameters !== "object")
@@ -2273,18 +2274,23 @@ class ace_cs_HTML_content_factory {
     }
 }
 
-// TODO: attribute change => trigger setter (proxy on attributes)
+// WIP: must set global CE configuration prior to execution
+
+// WIP: attributes
+//  attribute change => trigger setter (proxy on attributes)
+//  id change -> reset hierarchy IDs
+// WIP: CSS error(s), execution: failure, success
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
     static HTMLElement_name = 'ace-code-section'
-    static named_parameters = [
+    static get named_parameters(){ return [
         'language',
         'toggle_parsing',
         'toggle_execution',
         'url',
         'code'
-    ]
+    ]}
 
     constructor(parameters = {}){
         if (typeof parameters !== "object")
@@ -2346,6 +2352,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         if (this._parameters.url)
             this.url = this._parameters.url // initiate loading
 
+        this.toggle_execution = this._parameters.toggle_execution ?? false
+
         this.#initialize_ids()
 
         // callable once
@@ -2398,23 +2406,9 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
             this.ace_cs_panels.execution.code_mvc.model = value
 
-            if (!is_fetch_success) {
-                this.ace_cs_panels.execution.setAttribute('status', 'error')
-                return
-            }
-            // force hljs bash language (TODO: wrap into a dedicated function)
-            // this.cs_panels.execution.content.innerHTML = hljs.highlightAuto(value, [ 'bash' ]).value
-            // this.cs_panels.execution.content.classList = [...this.html_elements.code.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
-            // this.cs_panels.execution.content.classList.add(`hljs`)
-            // this.cs_panels.execution.content.classList.add(`language-bash`)
-            // automated hljs language
-            //  this.html_elements.execution.textContent = result.value
-            //  hljs.highlightElement(this.html_elements.execution)
-
-            // update status, used in CSS
-            
-            let status = return_code < 0 ? 'failure' : 'success'
-            this.ace_cs_panels.execution.setAttribute('status', status)
+            is_fetch_success
+                ? this.ace_cs_panels.execution.setAttribute('status', return_code < 0 ? 'failure' : 'success')
+                : this.ace_cs_panels.execution.setAttribute('status', 'error')
         }
 
         // cleanup status
