@@ -15,6 +15,7 @@
 
 auto main() -> int {
 // @ace::show::block::begin
+
 auto i = 42; // test
 return i;
 // @ace::show::block::end

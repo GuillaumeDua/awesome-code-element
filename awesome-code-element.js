@@ -2132,8 +2132,6 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
 
         this.loading_animation_controler = new animation.controler({ owner: this, target: this.code_mvc.view })
         code_mvc_HTMLElement.add_buttons_to({ value: this })
-
-        // ex: temp0.loading_animation_controler.animate_while({ promise: new Promise((resolve, reject) => setTimeout(() => { resolve() }, 1000)) })
     }
 
     static add_buttons_to = ({ value }) => {
@@ -2154,37 +2152,6 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
     }
 }
 customElements.define('ace-cs-code-mvc', code_mvc_HTMLElement);
-
-// (() => {
-//     let qwe = new code_mvc_HTMLElement({ code: document.getElementById('test_1') })
-//     console.log(qwe);
-
-//     [ 1,2,3,4,5 ].forEach((test_id) => {
-//         console.log(`--- TEST: ${test_id} ... ---`);
-
-//         let value = new code_mvc_HTMLElement({
-//             toggle_parsing: Boolean(test_id % 2),
-//             language: (() => {
-//                 switch(test_id){
-//                     case 1: return 'INVALID_LANGUAGE_NAME';
-//                     case 2: return 'js';
-//                     default: return undefined;
-//                 }
-//             })()
-//         })
-
-//         let pre = document.createElement('pre')
-//             pre.appendChild(value)
-//         document.body.appendChild(pre)
-
-//         value.appendChild(document.getElementById(`test_${test_id}`))
-//         console.log(value)
-
-//         let spacer = document.createElement('p')
-//             spacer.textContent = '-----'
-//         document.body.appendChild(spacer)
-//     })
-// })()
 
 // ---
 
@@ -2369,8 +2336,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             }
         })()
 
-        console.log('>>>>', this)
-
         if (this._parameters.url)
             this.url = this._parameters.url // initiate loading
 
@@ -2499,41 +2464,53 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     //  Cancel or wait for pending resource acquisition
     //  issue:  if `url` is set twice (in a short period of time), we have a race condition
     //          can be fix with some internal stat management
-        
-        // TODO:  animate_while
-
-        this.code_mvc.view.panels.left.container.toggle_loading_animation = true
-        if (this.toggle_execution)
-            this.code_mvc.view.panels.right.container.toggle_loading_animation = true
 
         this.#_url = value
 
-        let previous_execution_state = this.toggle_execution
-        this.toggle_execution = false // disabled while loading
-
-        AwesomeCodeElement.details.utility.fetch_resource(this.#_url, {
-            on_error: (error) => {
-                this.on_error(`CodeSection: network error: ${error}`)
-                this.code_mvc.view.panels.left.container.toggle_loading_animation = false
-                this.code_mvc.view.panels.right.container.toggle_loading_animation = false
-            },
-            on_success: (code) => {
-                if (!code) {
-                    this.on_error('CodeSection: fetched invalid (possibly empty) remote code')
-                }
-
-                if (this.toggle_language_detection) {
-                // use url extension as language, if valid
-                    const url_extension = AwesomeCodeElement.details.utility.get_url_extension(this.#_url)
-                    if (url_extension && this.language_policies.detector.is_valid_language(url_extension)) {
-                        this.toggle_language_detection = false
-                        this.language = url_extension
+        let fetch_execution_result_promise = new Promise((resolve, reject) => {
+            AwesomeCodeElement.details.utility.fetch_resource(this.#_url, {
+                on_error: (error) => {
+                    this.on_error(`CodeSection: network error: ${error}`)
+                    this.code_mvc.view.panels.right.container.toggle_loading_animation = false
+                    reject('on_error')
+                },
+                on_success: (code) => {
+                    if (!code) {
+                        this.on_error('CodeSection: fetched invalid (possibly empty) remote code')
+                        reject('on_success, but bad fetch result')
                     }
+    
+                    if (this.ace_cs_panels.presentation.code_mvc.controler.toggle_language_detection) {
+                    // use url extension as language, if valid
+                        const url_extension = AwesomeCodeElement.details.utility.get_url_extension(this.#_url)
+                        if (url_extension
+                         && this.ace_cs_panels.presentation.code_mvc.controler.language_policies.detector.is_valid_language(url_extension)){
+                            this.ace_cs_panels.presentation.code_mvc.controler.toggle_language_detection = false
+                            this.ace_cs_panels.presentation.code_mvc.controler.language = url_extension
+                        }
+                    }
+                    this.ace_cs_panels.presentation.code_mvc.model = code
+                    resolve('on_success')
                 }
-                this.code = code
-                this.html_elements.panels.left.toggle_loading_animation = false
-                this.toggle_execution = previous_execution_state // restore execution state
+            })
+        })
+
+        // execution state
+        const previous_toggle_execution_state = this.ace_cs_panels.execution.loading_animation_controler.toggle_animation
+        this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = false
+        fetch_execution_result_promise.then(
+            (result) => { 
+               console.log(result);
+               this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = previous_toggle_execution_state
+            },
+            (error) => { 
+               console.log(error);
+               this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = false
             }
+        );
+
+        this.ace_cs_panels.presentation.loading_animation_controler.animate_while({
+            promise: fetch_execution_result_promise
         })
     }
 }
