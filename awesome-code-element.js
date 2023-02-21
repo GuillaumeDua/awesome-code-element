@@ -2062,7 +2062,7 @@ class animation {
         }
 
         set toggle_animation(value){
-            this.#element.style.height = this.#target.clientHeight + 'px'
+            // this.#element.style.height = this.#target.clientHeight + 'px'
             this.#target.style.display  = Boolean(value) ? 'none' : this.#target_visible_display
             this.#element.style.display = Boolean(value) ? 'flex' : 'none'
         }
@@ -2569,11 +2569,12 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         })
 
         // execution state
-        const previous_toggle_execution_state = this.ace_cs_panels.execution.loading_animation_controler.toggle_animation
-        this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = false
+
+        this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = true
         fetch_execution_result_promise.then(
-            (result) => { 
-               this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = previous_toggle_execution_state
+            (result) => {
+               this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = false
+               this.toggle_execution = this.toggle_execution
             },
             (error) => { 
                this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = false
