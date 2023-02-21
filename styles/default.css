@@ -86,11 +86,18 @@ ace-cs-code-mvc {
     box-sizing      : border-box;
     width           : 100%;
 
+    overflow        : auto;
+    position        : relative;
+    top             : 0px;
+    left            : 0px;
+    width           : 100%;
+    margin          : 0px;
+
     font-family     : "Lucida Console", "Monaco", monospace;
     font-size       : 14px;
     line-height     : var(--ace-cs-code-line-height);
 }
-ace-cs-code-mvc > * {
+ace-cs-code-mvc > :not(button) {
     flex:       2 2 content;
     overflow:   auto;
     position:   relative;
@@ -99,13 +106,14 @@ ace-cs-code-mvc > * {
     width:      100%;
     margin:     0px;
     min-height: 20px;
+    white-space: pre-wrap; /* multi-lines content */
 }
 ace-cs-code-mvc > code {
     display: block;
     line-height: var(--ace-cs-code-line-height); /* calc(var(--ace-cs-code-line-height) * 2); */
     margin-left: calc(var(--ace-cs-code-line-height) * 2px);
 }
-ace-cs-code-mvc > code > button[is^='ace-button-'] {
+ace-cs-code-mvc > button[is^='ace-button-'] {
     z-index:            var(--ace-cs-buttons-z-index);
     position:           absolute;
 
@@ -123,16 +131,17 @@ ace-cs-code-mvc > code > button[is^='ace-button-'] {
     max-height: 30px;
     max-width: 30px;
 }
-ace-cs-code-mvc > code > button[is^='ace-button-'] > * {
+ace-cs-code-mvc > button[is='ace-button-copy-to-clipboard'] {
+    right       : 2px;
+}
+ace-cs-code-mvc > button[is='ace-button-send-to-godbolt'] {
+    right       : 34px;
+}
+ace-cs-code-mvc > button[is^='ace-button-'] > * {
     height: inherit;
     width: inherit;
 }
-ace-cs-code-mvc > code > button[is='ace-button-copy-to-clipboard'] {
-    right       : 2px;
-}
-ace-cs-code-mvc > code > button[is='ace-button-send-to-godbolt'] {
-    right       : 34px;
-}
+
 
 ace-code-section,
 ace-code-section-demo {
@@ -150,17 +159,6 @@ ace-code-section-demo {
 ace-code-section        > [id*='.panels.'],
 ace-code-section-demo   > [id*='.panels.'] {
     flex:       2 2 content;
-    overflow:   auto;
-    position:   relative;
-    top:        0px;
-    left:       0px;
-    width:      100%;
-    margin:     0px;
-    /* min-height: 40px; */
-
-    /*stand-alone usage (not mandatory)*/
-    border-radius: var(--border-radius-small);
-    border: 1px solid var(--separator-color);
 }
 ace-code-section      > [id$='.panels.presentation'],
 ace-code-section-demo > [id$='.panels.presentation'] {

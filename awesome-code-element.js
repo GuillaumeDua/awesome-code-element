@@ -1000,7 +1000,7 @@ AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInG
     onClickSend() {
 
         const code_mvc_value = (() => {
-            const code_mvc_HTMLelement_value = this.parentElement.parentElement
+            const code_mvc_HTMLelement_value = this.parentElement
             if (!(code_mvc_HTMLelement_value instanceof code_mvc_HTMLElement))
                 throw new Error('awesome-code-element.js: ShowInGodboltButton.onClickSend: ill-formed element: unexpected parentElement.parentElement layout (must be an ace.code_mvc_HTMLElement)')
             const value = code_mvc_HTMLelement_value.code_mvc
@@ -1219,7 +1219,6 @@ AwesomeCodeElement.details.HTML_elements.defered_HTMLElement = class extends HTM
         this.replaceWith(error_element)
     }
 }
-
 
 // ============================
 // details: code representation
@@ -2096,8 +2095,6 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
                 }
             })
         }
-
-        this.style.whiteSpace = 'pre-wrap' // force behavior similar to HTMLPreElement
     }
     #code_mvc_initializer = undefined
 
@@ -2145,12 +2142,10 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
             throw new Error('code_mvc_HTMLElement.add_buttons_to: invalid argument type')
 
         let copy_to_clipboard_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
-            copy_to_clipboard_button.style.zIndex = value.code_mvc.view.style.zIndex + 1
-            copy_to_clipboard_button = value.code_mvc.view.appendChild(copy_to_clipboard_button)
+            copy_to_clipboard_button = value.appendChild(copy_to_clipboard_button)
 
         let CE_button = new AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt()
-            CE_button.style.zIndex = CE_button.style.zIndex + 1
-            CE_button = value.code_mvc.view.appendChild(CE_button)
+            CE_button = value.appendChild(CE_button)
 
         value.ace_cs_buttons = {
             copy_to_clipboard: copy_to_clipboard_button,
