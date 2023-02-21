@@ -311,6 +311,7 @@ AwesomeCodeElement.details.containers.translation_map = class extends Map {
         return super.has(key)
     }
 }
+// TODO: as details
 AwesomeCodeElement.API.CE_ConfigurationManager = class extends AwesomeCodeElement.details.containers.translation_map {
 // similar to a Map, but use `hljs.getLanguage(key)` as a key translator
 //
@@ -347,77 +348,101 @@ AwesomeCodeElement.API.CE_ConfigurationManager = class extends AwesomeCodeElemen
 // =================
 // API.configuration
 
-AwesomeCodeElement.API.configuration = {
-    description: {
-        version:    '1.0.0',
-        name:       'awesome-code-element.js',
-        path_prefix: ((name) => {
-        // quick-fix.
-        // TODO:
-        //  local:      this function
-        //  otherwise:  path to deployed release
-            const imported_modules = Array.from(document.querySelectorAll('script[type="module"]'));
-            let result = ""
-            const find_match = (value) => {
-                let match = value.match(`(:?[^\"\']*)${name}`)
-                if (match && match.length == 2)
-                    result = match[1]
-            }
-            imported_modules
-                .map(value => value.src)
-                .forEach(find_match)
-            if (result)
+AwesomeCodeElement.API.configuration = class configuration {
+    static #value = {
+        description: {
+            version:    '1.0.0',
+            name:       'awesome-code-element.js',
+            path_prefix: ((name) => {
+            // quick-fix.
+            // TODO:
+            //  local:      this function
+            //  otherwise:  path to deployed release
+                const imported_modules = Array.from(document.querySelectorAll('script[type="module"]'));
+                let result = ""
+                const find_match = (value) => {
+                    let match = value.match(`(:?[^\"\']*)${name}`)
+                    if (match && match.length == 2)
+                        result = match[1]
+                }
+                imported_modules
+                    .map(value => value.src)
+                    .forEach(find_match)
+                if (result)
+                    return result
+
+                imported_modules
+                    .filter(value => !value.src)
+                    .map(value => value.innerText)
+                    .forEach(find_match)
                 return result
+            })('awesome-code-element.js'),
+            stylesheet_url: undefined // default: local
+        },
+        CE                                  : new AwesomeCodeElement.API.CE_ConfigurationManager,
+        CodeSection                         : {
+        // can be overrided locally
+            language        : undefined,    // autodetect
+            toggle_parsing  : true,
+            toggle_execution: false,
+            direction       : ''            // default: row
+        },
+        hljs                                : {
+            // default_theme:   If no ace-theme-selector, then this is the default one.
+            //                  Otherwise, the first valid option of the first ace-theme-selector is the default
+            default_theme   : 'tokyo-night'  // supports dark/light variations
+        },
+        compatibility                       : {
+            doxygen:                        Boolean(AwesomeCodeElement.details.dependency_manager.dependencies.doxygen.version), // default: enabled if detected
+            doxygen_awesome_css:            false,  // TODO: autodetect
+            pre_code:                       false
+        },
+        auto_hide_buttons                   : false, // TODO: rename force_ or always_
+        force_dark_light_scheme             : (() => {
+            if (Boolean(AwesomeCodeElement.details.dependency_manager.dependencies.doxygen_awesome_css_dark_mode.version))
+                return 'dark'
+            if (Boolean(AwesomeCodeElement.details.dependency_manager.dependencies.doxygen.version))
+                return 'light' // assuming doxygen does not handle light/dark-mode by default
+            return undefined // auto-detect
+        })()
+    }
+    static get value(){ return configuration.#value }
 
-            imported_modules
-                .filter(value => !value.src)
-                .map(value => value.innerText)
-                .forEach(find_match)
-            return result
-        })('awesome-code-element.js'),
-        stylesheet_url: undefined // default: local
-    },
-    CE                                  : new AwesomeCodeElement.API.CE_ConfigurationManager,
-    CodeSection                         : {
-    // can be overrided locally
-        language        : undefined,    // autodetect
-        toggle_parsing  : true,
-        toggle_execution: false,
-        direction       : ''            // default: row
-    },
-    hljs                                : {
-        // default_theme:   If no ace-theme-selector, then this is the default one.
-        //                  Otherwise, the first valid option of the first ace-theme-selector is the default
-        default_theme   : 'tokyo-night'  // supports dark/light variations
-    },
-    compatibility                       : {
-        doxygen:                        Boolean(AwesomeCodeElement.details.dependency_manager.dependencies.doxygen.version), // default: enabled if detected
-        doxygen_awesome_css:            false,  // TODO: autodetect
-        pre_code:                       false
-    },
-    auto_hide_buttons                   : false, // TODO: rename force_ or always_
-    force_dark_light_scheme             : (() => {
-        if (Boolean(AwesomeCodeElement.details.dependency_manager.dependencies.doxygen_awesome_css_dark_mode.version))
-            return 'dark'
-        if (Boolean(AwesomeCodeElement.details.dependency_manager.dependencies.doxygen.version))
-            return 'light' // assuming doxygen does not handle light/dark-mode by default
-        return undefined // auto-detect
-    })()
+    static configure(arg){
+        if (!arg)
+            throw new Error('AwesomeCodeElement.API.configuration.configure: invalid argument')
     
-}
-AwesomeCodeElement.API.configure = (arg) => {
-    if (!arg)
-        throw new Error('AwesomeCodeElement.API.configuration.configure: invalid argument')
+        if (arg.CE && arg.CE instanceof Map)
+            arg.CE = new AwesomeCodeElement.API.CE_ConfigurationManager([...arg.CE])
+        if (arg.CE && !(arg.CE instanceof AwesomeCodeElement.API.CE_ConfigurationManager))
+            throw new Error('AwesomeCodeElement.API.configure: invalid type for argument: [CE]')
+    
+        AwesomeCodeElement.details.utility.unfold_into({
+            target : configuration.#value,
+            properties : arg
+        })
 
-    if (arg.CE && arg.CE instanceof Map)
-        arg.CE = new AwesomeCodeElement.API.CE_ConfigurationManager([...arg.CE])
-    if (arg.CE && !(arg.CE instanceof AwesomeCodeElement.API.CE_ConfigurationManager))
-        throw new Error('AwesomeCodeElement.API.configure: invalid type for argument: [CE]')
+        configuration.#when_ready()
+    }
 
-    AwesomeCodeElement.details.utility.unfold_into({
-        target : AwesomeCodeElement.API.configuration,
-        properties : arg
-    })
+    static #is_ready = false
+    static get is_ready(){ return configuration.#is_ready }
+
+    static #when_ready(){
+        configuration.#is_ready = true
+        configuration.#when_ready_callbacks.forEach((handler) => handler())
+        configuration.#when_ready_callbacks = []
+    }
+    static #when_ready_callbacks = []
+    static when_ready_then({ handler }){
+
+        if (!handler || !(handler instanceof Function))
+            throw new Error('configuration.when_ready_then: invalid argument type')
+
+        if (configuration.#is_ready)
+            handler()
+        else configuration.#when_ready_callbacks.push(handler)
+    }
 }
 
 // ================
@@ -1015,7 +1040,7 @@ AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInG
         const accessor = {
             get ce_options(){
                 return code_mvc_value.model_details.ce_options
-                    || AwesomeCodeElement.API.configuration.CE.get(code_mvc_value.controler.language)
+                    || AwesomeCodeElement.API.configuration.value.CE.get(code_mvc_value.controler.language)
             },
             get language(){ return this.ce_options.language },
             get code(){ return code_mvc_value.model_details.to_execute }
@@ -1396,8 +1421,8 @@ class code_policies {
                 // TODO: (elsewhere!!!) merge local with global
                 // apply default configuration for a given - non-mandatory - language
                 // Note: global configuration can be overrided locally in the configuration
-                // if (AwesomeCodeElement.API.configuration.CE.has(language))
-                //     this.ce_options = AwesomeCodeElement.API.configuration.CE.get(language)
+                // if (AwesomeCodeElement.API.configuration.value.CE.has(language))
+                //     this.ce_options = AwesomeCodeElement.API.configuration.value.CE.get(language)
 
                 return result
             }
@@ -1774,7 +1799,6 @@ let accumulate_objects = (lhs, rhs) => {
     return result
 }
 
-// TODO: attribute change => trigger setter (proxy on attributes)
 class code_mvc {
 // enhanced { model, view, controler } to represent some code as a (possibly-existing) html-element
 
@@ -1797,7 +1821,7 @@ class code_mvc {
         ||  !this.#model.ce_options.language
         ||   this.controler.language !== this.controler.language_policies.detector.get_language_name(this.#model.ce_options.language)
         ){
-            this.#model.ce_options = AwesomeCodeElement.API.configuration.CE.get(this.controler.language)
+            this.#model.ce_options = AwesomeCodeElement.API.configuration.value.CE.get(this.controler.language)
             console.log(`code_mvc.#model_update_ce_options: loaded matching CE configuration for language [${this.controler.language}]: `, this.#model.ce_options)
         }
     }
@@ -2061,6 +2085,34 @@ class animation {
     }
 }
 
+class feature_synced_attributes {
+
+    static #observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            console.log("attributes changed:", mutation);
+            if (mutation.type === "attributes") {
+        
+                if (!mutation.target.synced_attributes.has(mutation.attributeName))
+                    throw new Error('feature_synced_attributes.#observer: invalid target.synced_attributes')
+                mutation.target.synced_attributes[mutation.attributeName] = target.getAttribute(mutation.attributeName)
+            }
+        });
+    });
+
+    static add_to({ target }){
+        if (!(target instanceof HTMLElement))
+            throw new Error('feature_synced_attributes.add_to: invalid target type')
+        if (target.synced_attributes === undefined
+         || !(target.synced_attributes instanceof Map))
+            throw new Error('feature_synced_attributes.add_to: invalid target.synced_attributes')
+
+        feature_synced_attributes.#observer.observe(target, {
+            attributeFilter: Array.from(target.synced_attributes.keys())
+        });
+    }
+}
+
+// TODO: attribute change => trigger setter (proxy on attributes)
 class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
     static get named_parameters(){ return [
@@ -2069,6 +2121,20 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         'toggle_language_detection',
         'code'
     ]}
+    get synced_attributes(){ return new Map([
+        [ 'language', {
+            get: ()      => this.code_mvc.controler.language,
+            set: (value) => this.code_mvc.controler.language = value
+        } ],
+        [ 'toggle_parsing', {
+            get: ()      => this.code_mvc.controler.toggle_parsing,
+            set: (value) => this.code_mvc.controler.toggle_parsing = value
+        }],
+        [ 'toggle_language_detection', {
+            get: ()      => this.code_mvc.controler.toggle_language_detection,
+            set: (value) => this.code_mvc.controler.toggle_language_detection = value
+        }]
+    ])}
 
     constructor(parameters = {}) {
         if (typeof parameters !== "object")
@@ -2133,6 +2199,8 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
 
         this.loading_animation_controler = new animation.controler({ owner: this, target: this.code_mvc.view })
         code_mvc_HTMLElement.add_buttons_to({ value: this })
+
+        feature_synced_attributes.add_to({ target: this })
     }
 
     static add_buttons_to = ({ value }) => {
@@ -2264,7 +2332,7 @@ class ace_cs_HTML_content_factory {
         return () => {
             // cheaper than a proper AABB to check if code's content overlap with other elements
             let functor = (
-                    AwesomeCodeElement.API.configuration.auto_hide_buttons
+                    AwesomeCodeElement.API.configuration.value.auto_hide_buttons
                 ||  AwesomeCodeElement.details.utility.is_scrolling(owner).horizontally
             )   ? auto_hide_elements
                 : no_auto_hide_elements
@@ -2352,7 +2420,14 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         if (this._parameters.url)
             this.url = this._parameters.url // initiate loading
 
-        this.toggle_execution = this._parameters.toggle_execution ?? false
+        this.toggle_execution = (() => {
+        // false, until a valid configuration is loaded
+            const value = this._parameters.toggle_execution ?? false
+            AwesomeCodeElement.API.configuration.when_ready_then({ handler: () => {
+                this.toggle_execution = value
+            } })
+            return false
+        })()
 
         this.#initialize_ids()
 
@@ -2387,12 +2462,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         if (this.#toggle_execution) {
 
             this.ace_cs_panels.execution.style.display = ''
-            try {
-                this.ace_cs_panels.execution.loading_animation_controler.animate_while({ promise: this.#fetch_execution() })
-            }
-            catch(error) {
-                console.error(error)
-            }
+            try             { this.ace_cs_panels.execution.loading_animation_controler.animate_while({ promise: this.#fetch_execution() }) }
+            catch (error)   { console.error(error) } // TODO: throw ? internal error ?
         }
         else {
             this.ace_cs_panels.execution.style.display = 'none'
@@ -2465,7 +2536,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     // TODO: Async task cancelation: 
     //  Cancel or wait for pending resource acquisition
     //  issue:  if `url` is set twice (in a short period of time), we have a race condition
-    //          can be fix with some internal stat management
+    //          can be fix with some internal state management
 
         this.#_url = value
 
@@ -2502,12 +2573,11 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = false
         fetch_execution_result_promise.then(
             (result) => { 
-               console.log(result);
                this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = previous_toggle_execution_state
             },
             (error) => { 
-               console.log(error);
                this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = false
+               this.ace_cs_panels.execution.code_mvc.model = `${cs.HTMLElement_name}.set(url): fetch failed\n${error}`
             }
         );
 
@@ -2579,7 +2649,7 @@ AwesomeCodeElement.details.utility.customElements_define_once(
 
 //         ace_cs_HTML_content_factoy.integrate_panels_to({ owner_HTMLElement: this, code_mvc_value: code_mvc_value })
         
-//         this.#_toggle_execution = this._parameters.toggle_execution || AwesomeCodeElement.API.configuration.CodeSection.toggle_execution
+//         this.#_toggle_execution = this._parameters.toggle_execution || AwesomeCodeElement.API.configuration.value.CodeSection.toggle_execution
 
 //         delete this._parameters
 //         this.initialize = () => { throw new Error('CodeSection.initialize: already called') }
@@ -2828,16 +2898,16 @@ AwesomeCodeElement.details.Style = class Style {
             stylesheet.id = Style.#stylesheet_element_id
             stylesheet.href = (() => {
                 // user-provided
-                if (AwesomeCodeElement.API.configuration.description.stylesheet_url)
-                    return AwesomeCodeElement.API.configuration.description.stylesheet_url;
+                if (AwesomeCodeElement.API.configuration.value.description.stylesheet_url)
+                    return AwesomeCodeElement.API.configuration.value.description.stylesheet_url;
 
                 // local
                 let root = (() => {
-                    let value = AwesomeCodeElement.API.configuration.description.path_prefix || ""
+                    let value = AwesomeCodeElement.API.configuration.value.description.path_prefix || ""
                     return value.replace(/\/$/, '')
                 })()
 
-                return AwesomeCodeElement.API.configuration.compatibility.doxygen
+                return AwesomeCodeElement.API.configuration.value.compatibility.doxygen
                     ? `${root}/default.css` // doxygen: assuming plain hierarchy
                     : `${root}/styles/default.css`
                 ;
@@ -2928,7 +2998,7 @@ AwesomeCodeElement.details.Theme = class Theme {
         })()
         return Boolean(theme_selector_default_option)
             ? theme_selector_default_option
-            : AwesomeCodeElement.API.configuration.hljs.default_theme
+            : AwesomeCodeElement.API.configuration.value.hljs.default_theme
     }
 
     static #stylesheet_element_id = 'code_theme_stylesheet'
@@ -3286,19 +3356,19 @@ AwesomeCodeElement.API.initialize = () => {
             ].forEach(html_component => ReplaceHTMLPlaceholders(html_component.PlaceholdersTranslation))
 
             // WIP:
-            // if (AwesomeCodeElement.API.configuration.compatibility.doxygen) {
+            // if (AwesomeCodeElement.API.configuration.value.compatibility.doxygen) {
             //     console.info(`awesome-code-element.js:initialize: doxygen compatiblity ...`)
             //     AwesomeCodeElement.API.initializers.doxygenCodeSections()
             // }
 
-            if (AwesomeCodeElement.API.configuration.compatibility.pre_code) {
+            if (AwesomeCodeElement.API.configuration.value.compatibility.pre_code) {
                 console.info(`awesome-code-element.js:initialize: existing pre-code compatiblity ...`)
                 AwesomeCodeElement.API.initializers.PreCodeHTML_elements()
             }
 
             AwesomeCodeElement.details.Style.initialize()
             AwesomeCodeElement.details.Theme.initialize({ force_dark_mode: (() => {
-                switch (AwesomeCodeElement.API.configuration.force_dark_light_scheme) {
+                switch (AwesomeCodeElement.API.configuration.value.force_dark_light_scheme) {
                     case 'light':   return false;
                     case 'dark':    return true;
                     default:        return undefined

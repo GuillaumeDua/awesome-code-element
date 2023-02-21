@@ -89,11 +89,11 @@ SOFTWARE.
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     
         <!-- awesome-code-element -->
-        <script type="module">
+        <script type="module" defer async>
 
             import ace from "../../awesome-code-element/awesome-code-element.js"
 
-            ace.API.configure({
+            ace.API.configuration.configure({
                 doxygen_awesome_css_compatibility: true,
                 hljs: {         // useless, for demo purpose
                     default_theme   : 'obsidian' // unused, as there is a valid theme-selector. (Obsidian theme does not supports dark/light variations)
@@ -115,8 +115,9 @@ SOFTWARE.
                     ]
                 ])
             })
-            console.info(`demo/index.html: ace.API.configuration:`, ace.API.configuration)
+            console.info(`demo/index.html: ace.API.configuration:`, ace.API.configuration.value)
             ace.API.initialize();
+
         </script>
     
         <!-- CS Tests utils scripts -->
@@ -131,7 +132,7 @@ SOFTWARE.
             })
         </script>
 
-        <script type="module" src="../../details/js/modules/showcase.js"></script>
+        <!-- <script type="module" src="../../details/js/modules/showcase.js"></script> -->
 
         <!-- <script src="../../../wip/design_experiment.js"></script> -->
 
