@@ -604,6 +604,8 @@ AwesomeCodeElement.details.utility = class utility {
     }
     static inject_field_proxy = function(target, property_name, { getter_payload, setter_payload } = {}) {
     // generate a proxy to a value's field, injecting optional payload
+    //  getter: post-op
+    //  setter: pre-op
 
         if (1 === (Boolean(target.__lookupSetter__(property_name) === undefined)
                 +  Boolean(target.__lookupGetter__(property_name) === undefined)
@@ -628,7 +630,7 @@ AwesomeCodeElement.details.utility = class utility {
             get: getter_payload
                 ? () => {
                     const value = target_getter()
-                    return getter_payload(value) ?? value
+                    return getter_payload(value)// ?? value
                 }
                 : () => { return target_getter() },
             set: setter_payload
@@ -637,6 +639,49 @@ AwesomeCodeElement.details.utility = class utility {
                     target_setter(value)
                 }
                 : (value) => { target_setter(value) }
+        });
+    
+        return {
+            get: _target.__lookupGetter__(property_name),
+            set: _target.__lookupSetter__(property_name)
+        }
+    }
+    static inject_on_property_change_proxy = function({ target, property_name, on_property_change } = {}) {
+    // calls `on_property_change` when target[property_name] change
+    // on_property_change: ({ argument, old_value, new_value }) => { ... }
+    //  warning: assumes target[property_name] get/set reciprocity
+
+        if (1 === (Boolean(target.__lookupSetter__(property_name) === undefined)
+                +  Boolean(target.__lookupGetter__(property_name) === undefined)
+        ))   console.warn(`utility.inject_on_property_change_proxy: target property [${target.constructor.name}.${property_name}] has a getter but no setter, or vice-versa`)
+        
+        var _target = target
+        var storage = _target[property_name]
+        const target_getter = (() => {
+            const value = _target.__lookupGetter__(property_name)
+            return value
+                ? value.bind(target)
+                : () => { return storage }
+        })()
+        const target_setter = (() => {
+            const value = _target.__lookupSetter__(property_name)
+            return value
+                ? value.bind(_target)
+                : (argument) => { storage = argument }
+        })()
+        
+        Object.defineProperty(_target, property_name, {
+            get: () => { return target_getter() },
+            set: (value) => {
+                    const old_value = _target[property_name]
+                    target_setter(value)
+                    if (old_value !== _target[property_name])
+                        on_property_change({
+                            argument: value,
+                            old_value: old_value,
+                            new_value: _target[property_name]
+                        })
+                }
         });
     
         return {
@@ -1852,7 +1897,7 @@ class code_mvc {
 
             this.#initialize_behaviors(options)
 
-            this.language = this.#language // might trigger auto-detect
+            // this.language = this.#language // might trigger auto-detect
         }
         #initialize_behaviors(options){
         // [ const | mutable ] specific behaviors
@@ -1878,6 +1923,8 @@ class code_mvc {
                         ? (value) => {
                             if (AwesomeCodeElement.details.utility.is_string(value))
                                 value = Boolean(value === 'true')
+                            if (value === this.#toggle_parsing)
+                                return
                             this.#toggle_parsing = Boolean(value)
                             this.#target.update_view()
                         }
@@ -1928,6 +1975,8 @@ class code_mvc {
 
             if (this.#language === argument.language_name && argument.is_valid)
                 return
+
+            console.trace(this.#language, argument.language_name)
 
             if (this.toggle_language_detection = !argument.is_valid)
                 console.warn(`ace.details.code.set(language): invalid input [${value}], attempting fallback detection.`)
@@ -1994,7 +2043,7 @@ class code_mvc {
             language_policy: language_policy,
             options: accumulate_objects(code_mvc.default_arguments.controler_options, controler_options)
         })
-        this.update_view()
+        this.update_view() // might trigger language auto-detect
     }
 
     #initialize_behaviors(){
@@ -2136,21 +2185,18 @@ class feature_synced_attributes {
 
 
         Array.from(target.synced_attributes.keys()).forEach((key) => {
-            AwesomeCodeElement.details.utility.inject_field_proxy(
-                target.synced_attributes.get(key),
-                key,
-                {
-                    setter_payload: (value) => {
-                        if (value !== target.getAttribute(key))
-                            target.setAttribute(key, value)
-                    }
+            AwesomeCodeElement.details.utility.inject_on_property_change_proxy({
+                target: target.synced_attributes.get(key),
+                property_name: key, 
+                on_property_change: ({ new_value }) => {
+                    console.debug('>>> property <=> attribute binding: value changed:', key, new_value)
+                    if (String(new_value) !== target.getAttribute(key))
+                        target.setAttribute(key, new_value)
                 }
-            )
+            })
         })
     }
 }
-
-
 
 // TODO: attribute change => trigger setter (proxy on attributes)
 class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
