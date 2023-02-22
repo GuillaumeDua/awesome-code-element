@@ -90,6 +90,7 @@
 // TODO: opt-in: godbolt /api/shortener instead of ClientState ?
 // TODO: feature: add compilation/execution duration information (useful for quick-performance comparisons)
 // TODO: get [Symbol.toStringTag]()
+// TODO: use synthax qwe?.asd?.zxc
 
 // Doxygen integration quick-test
 /*
@@ -643,6 +644,7 @@ AwesomeCodeElement.details.utility = class utility {
             set: _target.__lookupSetter__(property_name)
         }
     }
+    static is_string(value){ return typeof value === 'string' || value instanceof String }
 }
 AwesomeCodeElement.details.remote.CE_API = class CE_API {
 // fetch CE API informations asynchronously
@@ -1873,7 +1875,9 @@ class code_mvc {
                 Object.defineProperty(this, 'toggle_parsing', {
                     get: () => { return Boolean(this.#toggle_parsing) },
                     set: this.#target.is_mutable
-                        ? (value) => { 
+                        ? (value) => {
+                            if (AwesomeCodeElement.details.utility.is_string(value))
+                                value = Boolean(value === 'true')
                             this.#toggle_parsing = Boolean(value)
                             this.#target.update_view()
                         }
@@ -1947,7 +1951,11 @@ class code_mvc {
         // language_detection
         #toggle_parsing = undefined
         #toggle_language_detection = true
-        set toggle_language_detection(value) { this.#toggle_language_detection = value }
+        set toggle_language_detection(value) {
+            if (AwesomeCodeElement.details.utility.is_string(value))
+                value = Boolean(value === 'true')
+            this.#toggle_language_detection = Boolean(value)
+        }
         get toggle_language_detection() {
             return  this.#toggle_language_detection
                 || !this.language_policies.detector.is_valid_language(this.#language)
@@ -2089,15 +2097,30 @@ class feature_synced_attributes {
 
     static #observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
-            console.log("attributes changed:", mutation);
             if (mutation.type === "attributes") {
         
+                if (mutation.oldValue === mutation.target.getAttribute(mutation.attributeName)){
+                    console.log('>>> useless call, abort')
+                    return
+                }
                 if (!mutation.target.synced_attributes.has(mutation.attributeName))
                     throw new Error('feature_synced_attributes.#observer: invalid target.synced_attributes')
-                mutation.target.synced_attributes[mutation.attributeName] = target.getAttribute(mutation.attributeName)
+
+                console.log(mutation.attributeName, ':', mutation.target.synced_attributes.get(mutation.attributeName), ' -> ', mutation.target.getAttribute(mutation.attributeName))
+
+                feature_synced_attributes.#set_value({
+                    synced_attributes:  mutation.target.synced_attributes,
+                    attribute_name:     mutation.attributeName,
+                    value:              mutation.target.getAttribute(mutation.attributeName)
+                })
             }
         });
     });
+
+    static #set_value({ synced_attributes, attribute_name, value }){
+        let owner = synced_attributes.get(attribute_name)
+        owner[attribute_name] = value
+    }
 
     static add_to({ target }){
         if (!(target instanceof HTMLElement))
@@ -2107,10 +2130,27 @@ class feature_synced_attributes {
             throw new Error('feature_synced_attributes.add_to: invalid target.synced_attributes')
 
         feature_synced_attributes.#observer.observe(target, {
-            attributeFilter: Array.from(target.synced_attributes.keys())
+            attributeFilter: Array.from(target.synced_attributes.keys()),
+            attributeOldValue: true
         });
+
+
+        Array.from(target.synced_attributes.keys()).forEach((key) => {
+            AwesomeCodeElement.details.utility.inject_field_proxy(
+                target.synced_attributes.get(key),
+                key,
+                {
+                    setter_payload: (value) => {
+                        if (value !== target.getAttribute(key))
+                            target.setAttribute(key, value)
+                    }
+                }
+            )
+        })
     }
 }
+
+
 
 // TODO: attribute change => trigger setter (proxy on attributes)
 class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
@@ -2122,18 +2162,9 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         'code'
     ]}
     get synced_attributes(){ return new Map([
-        [ 'language', {
-            get: ()      => this.code_mvc.controler.language,
-            set: (value) => this.code_mvc.controler.language = value
-        } ],
-        [ 'toggle_parsing', {
-            get: ()      => this.code_mvc.controler.toggle_parsing,
-            set: (value) => this.code_mvc.controler.toggle_parsing = value
-        }],
-        [ 'toggle_language_detection', {
-            get: ()      => this.code_mvc.controler.toggle_language_detection,
-            set: (value) => this.code_mvc.controler.toggle_language_detection = value
-        }]
+        [ 'language', this.code_mvc.controler ],
+        [ 'toggle_parsing', this.code_mvc.controler ],
+        [ 'toggle_language_detection', this.code_mvc.controler ]
     ])}
 
     constructor(parameters = {}) {
@@ -2155,6 +2186,7 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
             this.#code_mvc_initializer = () => new code_mvc({
                 code_origin: this._parameters.code,
                 // TODO: language_policies ?
+                // this._parameters.toggle_parsing ? no_parser : ace-metadata-parser
                 controler_options: {
                     language: this._parameters.language,
                     toggle_language_detection: this._parameters.toggle_language_detection,

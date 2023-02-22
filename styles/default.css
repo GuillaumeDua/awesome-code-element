@@ -168,6 +168,10 @@ ace-code-section        > ace-cs-code-mvc > [id*='.buttons.CE']{
     z-index : var(--ace-cs-buttons-z-index);
     display : none;  /* hidden by default  */
 }
+
+/* TODO: executable: show CE button */
+/* ace-code-section        > ace-cs-code-mvc > [id*='.buttons.CE']{
+} */
 ace-code-section      > [id$='.panels.execution'], 
 ace-code-section-demo > [id$='.panels.execution'] {
     flex:       1 1 content;
@@ -185,12 +189,12 @@ ace-code-section-demo > [id$='.panels.execution'] > [id$='.execution'] {
     overflow:       auto;
     border-radius:  var(--border-radius-small)
 }
-ace-code-section      > [id$='.panels.execution'] > [id$='.execution'][status='success'],
-ace-code-section-demo > [id$='.panels.execution'] > [id$='.execution'][status='success'] {
+ace-code-section      > [id$='.panels.execution'] > [id$='.execution'][status|='success'],
+ace-code-section-demo > [id$='.panels.execution'] > [id$='.execution'][status|='success'] {
     border-top: 2px solid green;
 }
-ace-code-section      > [id$='.panels.execution'] > [id$='.execution'][status='failure'],
-ace-code-section-demo > [id$='.panels.execution'] > [id$='.execution'][status='failure'] {
+ace-code-section      > [id$='.panels.execution'] > [id$='.execution'][status|='failure'],
+ace-code-section-demo > [id$='.panels.execution'] > [id$='.execution'][status|='failure'] {
     border-top: 2px solid red;
 }
 
