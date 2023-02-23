@@ -117,10 +117,14 @@ ace-cs-code-mvc > button[is='ace-button-copy-to-clipboard'] {
 }
 ace-cs-code-mvc > button[is='ace-button-send-to-godbolt'] {
     right       : 34px;
+    display : none;  /* hidden by default  */
 }
 ace-cs-code-mvc > button[is^='ace-button-'] > * {
     height: inherit;
     width: inherit;
+}
+ace-cs-code-mvc[is_executable="true"] > button[is="ace-button-send-to-godbolt"] {
+    display     : block;
 }
 
 ace-code-section,
@@ -163,10 +167,6 @@ ace-code-section-demo > [id$='.panels.presentation'] > [id$='.code'] {
     height:     100%;
     box-sizing: border-box;
     display:    block;
-}
-ace-code-section        > ace-cs-code-mvc > [id*='.buttons.CE']{
-    z-index : var(--ace-cs-buttons-z-index);
-    display : none;  /* hidden by default  */
 }
 
 /* TODO: executable: show CE button */

@@ -91,6 +91,7 @@
 // TODO: feature: add compilation/execution duration information (useful for quick-performance comparisons)
 // TODO: get [Symbol.toStringTag]()
 // TODO: use synthax qwe?.asd?.zxc
+// TODO: avoid useless calls (get/set)
 
 // Doxygen integration quick-test
 /*
@@ -1134,71 +1135,6 @@ AwesomeCodeElement.details.utility.customElements_define_once(
     AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt.HTMLElement_name,
     AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt, {extends: 'button'}
 );
-// AwesomeCodeElement.details.HTML_elements.LoadingAnimation = class LoadingAnimation {
-    
-//     static HTMLElement_name = 'ace-loading-animation'
-
-//     static #cache = (function(){
-//     // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
-//         const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/resources/images/loading_animation.svg'
-//         let value = document.createElement('img');
-//             value.src = loading_animation_fallback_url
-//             value.id = LoadingAnimation.HTMLElement_name
-//             value.style.display = 'none'
-//         return value
-//     })()
-//     static get element() {
-//         return LoadingAnimation.#cache.cloneNode()
-//     }
-
-//     static inject_into({owner, target_or_accessor }) {
-//         LoadingAnimation.#inject_toggle_loading_animation({owner, target_or_accessor })
-//         LoadingAnimation.#inject_animate_loading_while({owner})
-//     }
-
-//     static #inject_toggle_loading_animation({
-//         owner,              // injects `owner.toggle_loading_animation`
-//         target_or_accessor  // target, or a parameterless function that returns the target (preserving access after potential dereferencement)
-//     }){
-//         const loading_animation_element = owner.appendChild(LoadingAnimation.element)
-//         const target_accessor = () => {
-//             return target_or_accessor instanceof Function
-//                 ? target_or_accessor()
-//                 : target_or_accessor
-//         }
-
-//         const target_visible_display = target_accessor().style.display
-
-//         Object.defineProperty(owner, 'toggle_loading_animation', {
-//             set: function(value){
-//                 target_accessor().style.display         = Boolean(value) ? 'none' : target_visible_display
-//                 loading_animation_element.style.display = Boolean(value) ? 'flex' : 'none'
-//             },
-//             get: function(){
-//                 return Boolean(loading_animation_element.style.display !== 'none')
-//             }
-//         })
-//     }
-//     static async #inject_animate_loading_while({owner}){
-//     // injects `owner.animate_loading_while`
-//         owner.animate_loading_while = (task) => {
-//             owner.toggle_loading_animation = true
-//             let task_result = undefined
-//             try {
-//                 task_result = task()
-//             }
-//             catch (error){
-//                 owner.toggle_loading_animation = false
-//                 throw (error instanceof Error ? error : new Error(error))
-//             }
-//             if (task_result instanceof Promise)
-//                 return task_result.then(() => {
-//                     owner.toggle_loading_animation = false
-//                 })
-//             owner.toggle_loading_animation = false
-//         }
-//     }
-// }
 AwesomeCodeElement.details.HTML_elements.defered_HTMLElement = class extends HTMLElement {
 // HTMLElements that handles defered initialization
 //  if first added to the DOM empty, then triggers initialization when a first child is attached
@@ -1857,10 +1793,25 @@ class code_mvc {
     #model_parser = undefined
     #model = undefined
     get model_details(){
-        this.#model_update_ce_options()
+        this.is_executable = this.is_executable // update configuration
         return this.#model
     }
-    #model_update_ce_options(){
+    // WIP: not updated correctly
+    get is_executable() { return Boolean(this.#model.ce_options) } // TODO: check if this CE configuration is valid
+    set is_executable(value) {
+
+        value = AwesomeCodeElement.details.utility.is_string(value)
+            ? Boolean(value === 'true')
+            : Boolean(value)
+
+        if (value === this.is_executable)
+            return
+
+        if (!value) {
+            this.#model.ce_options = undefined
+            return
+        }
+
         if (!this.controler)
             return
         // update CE options
@@ -1869,7 +1820,8 @@ class code_mvc {
         ||   this.controler.language !== this.controler.language_policies.detector.get_language_name(this.#model.ce_options.language)
         ){
             this.#model.ce_options = AwesomeCodeElement.API.configuration.value.CE.get(this.controler.language)
-            console.log(`code_mvc.#model_update_ce_options: loaded matching CE configuration for language [${this.controler.language}]: `, this.#model.ce_options)
+            // console.log(`code_mvc.#model_update_ce_options: loaded matching CE configuration for language [${this.controler.language}]: `, this.#model.ce_options)
+            console.trace(`code_mvc.set(is_executable): loaded matching CE configuration for language [${this.controler.language}]: `, this.#model.ce_options)
         }
     }
 
@@ -1921,11 +1873,12 @@ class code_mvc {
                     get: () => { return Boolean(this.#toggle_parsing) },
                     set: this.#target.is_mutable
                         ? (value) => {
-                            if (AwesomeCodeElement.details.utility.is_string(value))
-                                value = Boolean(value === 'true')
+                            value = AwesomeCodeElement.details.utility.is_string(value)
+                                ? Boolean(value === 'true')
+                                : Boolean(value)
                             if (value === this.#toggle_parsing)
                                 return
-                            this.#toggle_parsing = Boolean(value)
+                            this.#toggle_parsing = value
                             this.#target.update_view()
                         }
                         : () => { console.warn('code.set(toggle_parsing): no-op: not editable') }
@@ -1976,8 +1929,6 @@ class code_mvc {
             if (this.#language === argument.language_name && argument.is_valid)
                 return
 
-            console.trace(this.#language, argument.language_name)
-
             if (this.toggle_language_detection = !argument.is_valid)
                 console.warn(`ace.details.code.set(language): invalid input [${value}], attempting fallback detection.`)
 
@@ -1993,21 +1944,22 @@ class code_mvc {
             ){
                 this.#language = this.#language_policies.detector.get_language_name(result.language) // note: possibly not equal to `value`
                 this.toggle_language_detection = Boolean(result.relevance <= 5)
-                // this.#target.model_update_ce_options()
+                // this.is_executable = this.is_executable // refresh ce options
             }
         }
 
         // language_detection
         #toggle_parsing = undefined
         #toggle_language_detection = true
-        set toggle_language_detection(value) {
-            if (AwesomeCodeElement.details.utility.is_string(value))
-                value = Boolean(value === 'true')
-            this.#toggle_language_detection = Boolean(value)
-        }
         get toggle_language_detection() {
             return  this.#toggle_language_detection
                 || !this.language_policies.detector.is_valid_language(this.#language)
+        }
+        set toggle_language_detection(value) {
+            value = AwesomeCodeElement.details.utility.is_string(value)
+                ? Boolean(value === 'true')
+                : Boolean(value)
+            this.#toggle_language_detection = value
         }
     }
 
@@ -2142,7 +2094,7 @@ class animation {
     }
 }
 
-// TODO: as controler
+// TODO: options: { not_if_undefined: true } => remove attribute if property === undefined
 class two_way_synced_attributes_controler {
 // two-way dynamic binding: attributes <=> property accessor
 //  target: context
@@ -2223,7 +2175,6 @@ class two_way_synced_attributes_controler {
     }
 }
 
-// TODO: attribute change => trigger setter (proxy on attributes)
 class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
     static get named_parameters(){ return [
@@ -2232,11 +2183,6 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         'toggle_language_detection',
         'code'
     ]}
-    get #two_way_synced_attributes(){ return new Map([
-        [ 'language',                   this.code_mvc.controler ],
-        [ 'toggle_parsing',             this.code_mvc.controler ],
-        [ 'toggle_language_detection',  this.code_mvc.controler ]
-    ])}
 
     constructor(parameters = {}) {
         if (typeof parameters !== "object")
@@ -2305,7 +2251,12 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
 
         this.synced_attributes_controler = new two_way_synced_attributes_controler({
             target: this,
-            descriptor: this.#two_way_synced_attributes
+            descriptor: new Map([
+                [ 'language',                   this.code_mvc.controler ],
+                [ 'toggle_parsing',             this.code_mvc.controler ],
+                [ 'toggle_language_detection',  this.code_mvc.controler ],
+                [ 'is_executable',              this.code_mvc ]
+            ])
         })
     }
 
@@ -2564,13 +2515,17 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     #toggle_execution = false
     set toggle_execution(value) {
 
+        value = AwesomeCodeElement.details.utility.is_string(value)
+                ? Boolean(value === 'true')
+                : Boolean(value)
+
         this.#toggle_execution = value
 
         if (this.#toggle_execution) {
 
             this.ace_cs_panels.execution.style.display = '' // TODO: CSS
 
-            if (!this.is_executable){
+            if (!this.ace_cs_panels.presentation.code_mvc.is_executable){
                 const error = `${cs.HTMLElement_name}: not executable (yet?)`
                 this.ace_cs_panels.execution.code_mvc.model = `# error: {error}`
                 this.ace_cs_panels.execution.setAttribute('status', 'error')
@@ -2586,7 +2541,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         }
     }
     get toggle_execution() { return this.#toggle_execution }
-    get is_executable() { return Boolean(this.ace_cs_panels.presentation.code_mvc.model_details.ce_options) } // TODO: check if this CE configuration is valid
     #fetch_execution() {
 
         let set_execution_content = ({ is_fetch_success, content: { value, return_code } }) => {
@@ -2602,7 +2556,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         this.ace_cs_panels.execution.removeAttribute('status')
         this.ace_cs_panels.execution.code_mvc.view.removeAttribute('status')
 
-        if (!this.is_executable) {
+        if (!this.ace_cs_panels.presentation.code_mvc.is_executable) {
 
             let error = `CodeSection:fetch_execution: not executable.\n\tNo known valid configuration for language [${this.language}]`
             set_execution_content({
