@@ -2159,14 +2159,11 @@ class two_way_synced_attributes_controler {
             if (mutation.type === "attributes") {
         
                 if (mutation.oldValue === mutation.target.getAttribute(mutation.attributeName)){
-                    console.log('>>> useless call, abort')
                     return
                 }
                 if (!this.#descriptor.has(mutation.attributeName))
                     throw new Error(`two_way_synced_attributes_controler.#observer: invalid .#descriptor: missing key [${mutation.attributeName}]`)
-
-                console.log(mutation.attributeName, ':', this.#descriptor.get(mutation.attributeName), ' -> ', mutation.target.getAttribute(mutation.attributeName))
-
+                
                 two_way_synced_attributes_controler.#set_value({
                     descriptor:         this.#descriptor,
                     attribute_name:     mutation.attributeName,
@@ -2205,13 +2202,16 @@ class two_way_synced_attributes_controler {
             attributeOldValue: true
         });
 
-        // TODO: initial synchro
+        // initiale synchro
+        Array.from(this.#descriptor.keys()).forEach((key) => {
+            this.#target.setAttribute(key, this.#descriptor.get(key)[key])
+        })
+
         Array.from(this.#descriptor.keys()).forEach((key) => {
             AwesomeCodeElement.details.utility.inject_on_property_change_proxy({
                 target: this.#descriptor.get(key),
                 property_name: key, 
                 on_property_change: ({ new_value }) => {
-                    console.debug('>>> property <=> attribute binding: value changed:', key, new_value)
                     if (String(new_value) !== this.#target.getAttribute(key))
                         this.#target.setAttribute(key, new_value)
                 }
