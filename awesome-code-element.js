@@ -2142,23 +2142,33 @@ class animation {
     }
 }
 
-class feature_synced_attributes {
+// TODO: as controler
+class two_way_synced_attributes_controler {
+// two-way dynamic binding: attributes <=> property accessor
+//  target: context
+//  descriptor: Map of [ property_name => owner ], so mapped.get(key)[key] is the property
+// 
+// two-way equivalent to:
+//  static get observedAttributes() { return ['toggle_parsing']; }
+//  attributeChangedCallback(name, oldValue, newValue) {
+//      console.log('>>> attributeChangedCallback', name, oldValue, newValue);
+//  }
 
-    static #observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
+    #observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
             if (mutation.type === "attributes") {
         
                 if (mutation.oldValue === mutation.target.getAttribute(mutation.attributeName)){
                     console.log('>>> useless call, abort')
                     return
                 }
-                if (!mutation.target.synced_attributes.has(mutation.attributeName))
-                    throw new Error('feature_synced_attributes.#observer: invalid target.synced_attributes')
+                if (!this.#descriptor.has(mutation.attributeName))
+                    throw new Error(`two_way_synced_attributes_controler.#observer: invalid .#descriptor: missing key [${mutation.attributeName}]`)
 
-                console.log(mutation.attributeName, ':', mutation.target.synced_attributes.get(mutation.attributeName), ' -> ', mutation.target.getAttribute(mutation.attributeName))
+                console.log(mutation.attributeName, ':', this.#descriptor.get(mutation.attributeName), ' -> ', mutation.target.getAttribute(mutation.attributeName))
 
-                feature_synced_attributes.#set_value({
-                    synced_attributes:  mutation.target.synced_attributes,
+                two_way_synced_attributes_controler.#set_value({
+                    descriptor:         this.#descriptor,
                     attribute_name:     mutation.attributeName,
                     value:              mutation.target.getAttribute(mutation.attributeName)
                 })
@@ -2166,35 +2176,50 @@ class feature_synced_attributes {
         });
     });
 
-    static #set_value({ synced_attributes, attribute_name, value }){
-        let owner = synced_attributes.get(attribute_name)
+    static #set_value({ descriptor, attribute_name, value }){
+        let owner = descriptor.get(attribute_name)
         owner[attribute_name] = value
     }
 
-    static add_to({ target }){
-        if (!(target instanceof HTMLElement))
-            throw new Error('feature_synced_attributes.add_to: invalid target type')
-        if (target.synced_attributes === undefined
-         || !(target.synced_attributes instanceof Map))
-            throw new Error('feature_synced_attributes.add_to: invalid target.synced_attributes')
+    #target = undefined
+    #descriptor = undefined
 
-        feature_synced_attributes.#observer.observe(target, {
-            attributeFilter: Array.from(target.synced_attributes.keys()),
+    constructor({ target, descriptor }){
+
+        if (!target || !(target instanceof HTMLElement))
+            throw new Error('two_way_synced_attributes_controler.constructor: invalid argument `target`')
+        if (descriptor === undefined || !(descriptor instanceof Map))
+            throw new Error('two_way_synced_attributes_controler.constructor: invalid argument `descriptor`')
+        if (descriptor.size === 0)
+            throw new Error('two_way_synced_attributes_controler.constructor: empty argument `descriptor`')
+
+        this.#target = target
+        this.#descriptor = descriptor
+        this.start()
+    }
+    start(){
+        this.stop()
+
+        this.#observer.observe(this.#target, {
+            attributeFilter: Array.from(this.#descriptor.keys()),
             attributeOldValue: true
         });
 
-
-        Array.from(target.synced_attributes.keys()).forEach((key) => {
+        // TODO: initial synchro
+        Array.from(this.#descriptor.keys()).forEach((key) => {
             AwesomeCodeElement.details.utility.inject_on_property_change_proxy({
-                target: target.synced_attributes.get(key),
+                target: this.#descriptor.get(key),
                 property_name: key, 
                 on_property_change: ({ new_value }) => {
                     console.debug('>>> property <=> attribute binding: value changed:', key, new_value)
-                    if (String(new_value) !== target.getAttribute(key))
-                        target.setAttribute(key, new_value)
+                    if (String(new_value) !== this.#target.getAttribute(key))
+                        this.#target.setAttribute(key, new_value)
                 }
             })
         })
+    }
+    stop(){
+        this.#observer.disconnect()
     }
 }
 
@@ -2207,10 +2232,10 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         'toggle_language_detection',
         'code'
     ]}
-    get synced_attributes(){ return new Map([
-        [ 'language', this.code_mvc.controler ],
-        [ 'toggle_parsing', this.code_mvc.controler ],
-        [ 'toggle_language_detection', this.code_mvc.controler ]
+    get #two_way_synced_attributes(){ return new Map([
+        [ 'language',                   this.code_mvc.controler ],
+        [ 'toggle_parsing',             this.code_mvc.controler ],
+        [ 'toggle_language_detection',  this.code_mvc.controler ]
     ])}
 
     constructor(parameters = {}) {
@@ -2278,7 +2303,10 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         this.loading_animation_controler = new animation.controler({ owner: this, target: this.code_mvc.view })
         code_mvc_HTMLElement.add_buttons_to({ value: this })
 
-        feature_synced_attributes.add_to({ target: this })
+        this.synced_attributes_controler = new two_way_synced_attributes_controler({
+            target: this,
+            descriptor: this.#two_way_synced_attributes
+        })
     }
 
     static add_buttons_to = ({ value }) => {
