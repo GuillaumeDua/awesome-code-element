@@ -691,6 +691,11 @@ AwesomeCodeElement.details.utility = class utility {
         }
     }
     static is_string(value){ return typeof value === 'string' || value instanceof String }
+    static is_empty(value){
+        return Boolean(value)
+            && Object.keys(value).length === 0
+            && Object.getPrototypeOf(value) === Object.prototype
+    }
 }
 AwesomeCodeElement.details.remote.CE_API = class CE_API {
 // fetch CE API informations asynchronously
@@ -1793,11 +1798,26 @@ class code_mvc {
     #model_parser = undefined
     #model = undefined
     get model_details(){
-        this.is_executable = this.is_executable // update configuration
+        this.#model_update_ce_options()
         return this.#model
     }
-    // WIP: not updated correctly
-    get is_executable() { return Boolean(this.#model.ce_options) } // TODO: check if this CE configuration is valid
+    #model_update_ce_options(){
+
+        if (!this.controler)
+            return
+
+        if (!this.#model?.ce_options?.language
+        ||   this.controler.language !== this.controler.language_policies.detector.get_language_name(this.#model.ce_options?.language)
+        ){
+            this.#model.ce_options = AwesomeCodeElement.API.configuration.value.CE.get(this.controler.language)
+            console.info(`code_mvc.#model_update_ce_options: loaded matching CE configuration for language [${this.controler.language}]: `, this.#model.ce_options)
+        }
+    }
+    
+    get is_executable() {
+        // TODO: check if this CE configuration is valid
+        return !AwesomeCodeElement.details.utility.is_empty(this.#model.ce_options)
+    }
     set is_executable(value) {
 
         value = AwesomeCodeElement.details.utility.is_string(value)
@@ -1812,17 +1832,7 @@ class code_mvc {
             return
         }
 
-        if (!this.controler)
-            return
-        // update CE options
-        if (!this.#model.ce_options
-        ||  !this.#model.ce_options.language
-        ||   this.controler.language !== this.controler.language_policies.detector.get_language_name(this.#model.ce_options.language)
-        ){
-            this.#model.ce_options = AwesomeCodeElement.API.configuration.value.CE.get(this.controler.language)
-            // console.log(`code_mvc.#model_update_ce_options: loaded matching CE configuration for language [${this.controler.language}]: `, this.#model.ce_options)
-            console.trace(`code_mvc.set(is_executable): loaded matching CE configuration for language [${this.controler.language}]: `, this.#model.ce_options)
-        }
+        this.#model_update_ce_options()
     }
 
     static controler_type = class {
@@ -1944,7 +1954,7 @@ class code_mvc {
             ){
                 this.#language = this.#language_policies.detector.get_language_name(result.language) // note: possibly not equal to `value`
                 this.toggle_language_detection = Boolean(result.relevance <= 5)
-                // this.is_executable = this.is_executable // refresh ce options
+                this.#target.#model_update_ce_options()
             }
         }
 
@@ -2025,6 +2035,7 @@ class code_mvc {
                     : () => { return this.#model.raw },
                 set: (value) => {
                     this.#model = this.#model_parser.parse({ code: value })
+                    this.#model_update_ce_options()
                     this.update_view()
                 }
             })
@@ -2101,10 +2112,8 @@ class two_way_synced_attributes_controler {
 //  descriptor: Map of [ property_name => owner ], so mapped.get(key)[key] is the property
 // 
 // two-way equivalent to:
-//  static get observedAttributes() { return ['toggle_parsing']; }
-//  attributeChangedCallback(name, oldValue, newValue) {
-//      console.log('>>> attributeChangedCallback', name, oldValue, newValue);
-//  }
+//  static get observedAttributes() { return [ ]; }
+//  attributeChangedCallback(name, oldValue, newValue) {}
 
     #observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -2523,11 +2532,11 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         if (this.#toggle_execution) {
 
-            this.ace_cs_panels.execution.style.display = '' // TODO: CSS
+            this.ace_cs_panels.execution.style.display = '' // TODO: CSS: toggle hidden/visible
 
             if (!this.ace_cs_panels.presentation.code_mvc.is_executable){
                 const error = `${cs.HTMLElement_name}: not executable (yet?)`
-                this.ace_cs_panels.execution.code_mvc.model = `# error: {error}`
+                this.ace_cs_panels.execution.code_mvc.model = `# error: ${error}`
                 this.ace_cs_panels.execution.setAttribute('status', 'error')
                 console.warn(`${error} - set(toggle_execution)`)
                 return
