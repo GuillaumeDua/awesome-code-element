@@ -651,6 +651,7 @@ AwesomeCodeElement.details.utility = class utility {
     // calls `on_property_change` when target[property_name] change
     // on_property_change: ({ argument, old_value, new_value }) => { ... }
     //  warning: assumes target[property_name] get/set reciprocity
+    //  warning: the setter will call the getter
 
         if (1 === (Boolean(target.__lookupSetter__(property_name) === undefined)
                 +  Boolean(target.__lookupGetter__(property_name) === undefined)
@@ -672,15 +673,24 @@ AwesomeCodeElement.details.utility = class utility {
         })()
         
         Object.defineProperty(_target, property_name, {
-            get: () => { return target_getter() },
+            get: () => {
+                const result = target_getter()
+                if (result !== storage)
+                    on_property_change({
+                        old_value: storage,
+                        new_value: result
+                    })
+                return storage = result
+            },
             set: (value) => {
-                    const old_value = _target[property_name]
+                    const old_value = target_getter()
                     target_setter(value)
-                    if (old_value !== _target[property_name])
+                    storage = target_getter()
+                    if (old_value !== storage)
                         on_property_change({
                             argument: value,
                             old_value: old_value,
-                            new_value: _target[property_name]
+                            new_value: storage
                         })
                 }
         });
@@ -1801,39 +1811,33 @@ class code_mvc {
         this.#model_update_ce_options()
         return this.#model
     }
+
     #model_update_ce_options(){
-
-        if (!this.controler)
-            return
-
-        if (!this.#model?.ce_options?.language
-        ||   this.controler.language !== this.controler.language_policies.detector.get_language_name(this.#model.ce_options?.language)
-        ){
-            this.#model.ce_options = AwesomeCodeElement.API.configuration.value.CE.get(this.controler.language)
-            console.info(`code_mvc.#model_update_ce_options: loaded matching CE configuration for language [${this.controler.language}]: `, this.#model.ce_options)
-        }
+        this.is_executable // call getter
     }
     
     get is_executable() {
-        // TODO: check if this CE configuration is valid
-        return !AwesomeCodeElement.details.utility.is_empty(this.#model.ce_options)
-    }
-    set is_executable(value) {
+        
+        if (!this.controler?.language)
+            return false
 
-        value = AwesomeCodeElement.details.utility.is_string(value)
-            ? Boolean(value === 'true')
-            : Boolean(value)
+        if (this.controler.language !== this.controler.language_policies.detector.get_language_name(this.#model.ce_options?.language)){
 
-        if (value === this.is_executable)
-            return
+            if (!AwesomeCodeElement.API.configuration.is_ready)
+                return false
 
-        if (!value) {
-            this.#model.ce_options = undefined
-            return
+            console.trace(this.controler.language, this.controler.language_policies.detector.get_language_name(this.#model.ce_options?.language))
+            this.#model.ce_options = AwesomeCodeElement.API.configuration.value.CE.get(this.controler.language)
+            console.info(`code_mvc.#model_update_ce_options: loaded matching CE configuration for language [${this.controler.language}]: `, this.#model.ce_options)
         }
 
-        this.#model_update_ce_options()
+        return Boolean(
+            this.#model.ce_options
+         && !AwesomeCodeElement.details.utility.is_empty(this.#model.ce_options)
+         /* TODO: check if this CE configuration is valid */
+        )
     }
+    set is_executable(value){}
 
     static controler_type = class {
 
@@ -2006,6 +2010,10 @@ class code_mvc {
             options: accumulate_objects(code_mvc.default_arguments.controler_options, controler_options)
         })
         this.update_view() // might trigger language auto-detect
+
+        AwesomeCodeElement.API.configuration.when_ready_then({ handler: () => {
+            this.#model_update_ce_options()
+        } })
     }
 
     #initialize_behaviors(){
@@ -2173,8 +2181,10 @@ class two_way_synced_attributes_controler {
                 target: this.#descriptor.get(key),
                 property_name: key, 
                 on_property_change: ({ new_value }) => {
-                    if (String(new_value) !== this.#target.getAttribute(key))
+                    if (String(new_value) !== this.#target.getAttribute(key)) {
+                        console.log('>>> attr set', key, new_value)
                         this.#target.setAttribute(key, new_value)
+                    }
                 }
             })
         })
@@ -2414,7 +2424,6 @@ class ace_cs_HTML_content_factory {
 //  attribute change => trigger setter (proxy on attributes)
 //  id change -> reset hierarchy IDs
 // WIP: CSS error(s), execution: failure, success
-// WIP: buttons.CE -> visible if is_executable -> CSS
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
