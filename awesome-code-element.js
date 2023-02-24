@@ -1821,23 +1821,20 @@ class code_mvc {
         if (!this.controler?.language)
             return false
 
-        if (this.controler.language !== this.controler.language_policies.detector.get_language_name(this.#model.ce_options?.language)){
-
-            if (!AwesomeCodeElement.API.configuration.is_ready)
-                return false
-
-            console.trace(this.controler.language, this.controler.language_policies.detector.get_language_name(this.#model.ce_options?.language))
+        if (AwesomeCodeElement.API.configuration.is_ready
+         && this.controler.language !== this.controler.language_policies.detector.get_language_name(this.#model.ce_options?.language)
+         && AwesomeCodeElement.API.configuration.value.CE.has(this.controler.language)
+        ){  // attempt to load the appropriate ce options
             this.#model.ce_options = AwesomeCodeElement.API.configuration.value.CE.get(this.controler.language)
-            console.info(`code_mvc.#model_update_ce_options: loaded matching CE configuration for language [${this.controler.language}]: `, this.#model.ce_options)
+            console.info(`code_mvc.get(is_executable): loaded matching CE configuration for language [${this.controler.language}]: `, this.#model.ce_options)
         }
 
         return Boolean(
-            this.#model.ce_options
+            this.controler.language === this.controler.language_policies.detector.get_language_name(this.#model.ce_options?.language)
          && !AwesomeCodeElement.details.utility.is_empty(this.#model.ce_options)
-         /* TODO: check if this CE configuration is valid */
         )
     }
-    set is_executable(value){}
+    set is_executable(value){ /* used by two_way_synced_attributes_controler */ }
 
     static controler_type = class {
 
