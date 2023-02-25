@@ -1111,8 +1111,6 @@ AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInG
         if (!accessor.ce_options)
             throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: missing CE configuration for language [${code_mvc_value.controler.language}]`)
 
-        console.log(AwesomeCodeElement.details.remote.CE_API.languages)
-
         if (!AwesomeCodeElement.details.remote.CE_API.languages.includes(accessor.language))
             //      hljs    https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
             //  vs. CE      https://godbolt.org/api/languages
@@ -1813,28 +1811,8 @@ class code_mvc {
     }
 
     #model_update_ce_options(){
-        this.is_executable // call getter
+        this?.controler?.is_executable // call getter
     }
-    
-    get is_executable() {
-        
-        if (!this.controler?.language)
-            return false
-
-        if (AwesomeCodeElement.API.configuration.is_ready
-         && this.controler.language !== this.controler.language_policies.detector.get_language_name(this.#model.ce_options?.language)
-         && AwesomeCodeElement.API.configuration.value.CE.has(this.controler.language)
-        ){  // attempt to load the appropriate ce options
-            this.#model.ce_options = AwesomeCodeElement.API.configuration.value.CE.get(this.controler.language)
-            console.info(`code_mvc.get(is_executable): loaded matching CE configuration for language [${this.controler.language}]: `, this.#model.ce_options)
-        }
-
-        return Boolean(
-            this.controler.language === this.controler.language_policies.detector.get_language_name(this.#model.ce_options?.language)
-         && !AwesomeCodeElement.details.utility.is_empty(this.#model.ce_options)
-        )
-    }
-    set is_executable(value){ /* used by two_way_synced_attributes_controler */ }
 
     static controler_type = class {
 
@@ -1859,8 +1837,6 @@ class code_mvc {
                 : options.toggle_language_detection
 
             this.#initialize_behaviors(options)
-
-            // this.language = this.#language // might trigger auto-detect
         }
         #initialize_behaviors(options){
         // [ const | mutable ] specific behaviors
@@ -1972,6 +1948,27 @@ class code_mvc {
                 : Boolean(value)
             this.#toggle_language_detection = value
         }
+
+        // is_executable
+        get is_executable() {
+        
+            if (!this.language)
+                return false
+    
+            if (AwesomeCodeElement.API.configuration.is_ready
+             && this.language !== this.language_policies.detector.get_language_name(this.#target.#model.ce_options?.language)
+             && AwesomeCodeElement.API.configuration.value.CE.has(this.language)
+            ){  // attempt to load the appropriate ce options
+                this.#target.#model.ce_options = AwesomeCodeElement.API.configuration.value.CE.get(this.language)
+                console.info(`code_mvc.get(is_executable): loaded matching CE configuration for language [${this.language}]: `, this.#target.#model.ce_options)
+            }
+    
+            return Boolean(
+                this.language === this.language_policies.detector.get_language_name(this.#target.#model.ce_options?.language)
+             && !AwesomeCodeElement.details.utility.is_empty(this.#target.#model.ce_options)
+            )
+        }
+        set is_executable(value){ /* used by two_way_synced_attributes_controler */ }
     }
 
     // initialization
@@ -2271,7 +2268,7 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
                 [ 'language',                   this.code_mvc.controler ],
                 [ 'toggle_parsing',             this.code_mvc.controler ],
                 [ 'toggle_language_detection',  this.code_mvc.controler ],
-                [ 'is_executable',              this.code_mvc ]
+                [ 'is_executable',              this.code_mvc.controler ]
             ])
         })
     }
@@ -2433,6 +2430,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         'code'
     ]}
 
+    // WIP: not executable presentation: hide execution
+
     constructor(parameters = {}){
         if (typeof parameters !== "object")
             throw new Error(
@@ -2540,7 +2539,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
             this.ace_cs_panels.execution.style.display = '' // TODO: CSS: toggle hidden/visible
 
-            if (!this.ace_cs_panels.presentation.code_mvc.is_executable){
+            if (!this.ace_cs_panels.presentation.code_mvc.controler.is_executable){
                 const error = `${cs.HTMLElement_name}: not executable (yet?)`
                 this.ace_cs_panels.execution.code_mvc.model = `# error: ${error}`
                 this.ace_cs_panels.execution.setAttribute('status', 'error')
@@ -2571,7 +2570,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         this.ace_cs_panels.execution.removeAttribute('status')
         this.ace_cs_panels.execution.code_mvc.view.removeAttribute('status')
 
-        if (!this.ace_cs_panels.presentation.code_mvc.is_executable) {
+        if (!this.ace_cs_panels.presentation.code_mvc.controler.is_executable) {
 
             let error = `CodeSection:fetch_execution: not executable.\n\tNo known valid configuration for language [${this.language}]`
             set_execution_content({
