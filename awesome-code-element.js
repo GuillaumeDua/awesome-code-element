@@ -1809,7 +1809,6 @@ class code_mvc {
         this.#model_update_ce_options()
         return this.#model
     }
-
     #model_update_ce_options(){
         this?.controler?.is_executable // call getter
     }
@@ -1968,7 +1967,7 @@ class code_mvc {
              && !AwesomeCodeElement.details.utility.is_empty(this.#target.#model.ce_options)
             )
         }
-        set is_executable(value){ /* used by two_way_synced_attributes_controler */ }
+        set is_executable(value){ /* const (no-op). setter used by two_way_synced_attributes_controler to propagate update */ }
     }
 
     // initialization
@@ -2108,6 +2107,8 @@ class animation {
 }
 
 // TODO: options: { not_if_undefined: true } => remove attribute if property === undefined
+// TODO: options: { one_way, two_way}
+// TODO: options: { const/mutable=false } => one_way from model to attr
 class two_way_synced_attributes_controler {
 // two-way dynamic binding: attributes <=> property accessor
 //  target: context
@@ -2258,6 +2259,7 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         // this as proxy to code_mvc ?
 
         delete this._parameters
+        this.removeAttribute('code')
 
         this.loading_animation_controler = new animation.controler({ owner: this, target: this.code_mvc.view })
         code_mvc_HTMLElement.add_buttons_to({ value: this })
@@ -2430,7 +2432,9 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         'code'
     ]}
 
-    // WIP: not executable presentation: hide execution
+    // WIP: proxy to panels (or listeners to property changed)
+    //  - refresh execution if presentation model change
+    //  - not executable presentation: hide execution or show error message
 
     constructor(parameters = {}){
         if (typeof parameters !== "object")
@@ -2449,6 +2453,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             this._parameters[property_name] = this._parameters[property_name] || this.getAttribute(property_name) || undefined
         }
         cs.named_parameters.forEach((property_name) => load_parameter({ property_name: property_name }))
+
+        this.removeAttribute('code')
 
         this._parameters.code ||= Array.from(this.childNodes)
 
@@ -2502,6 +2508,18 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         })()
 
         this.#initialize_ids()
+
+        this.synced_attributes_controler = new two_way_synced_attributes_controler({
+            target: this,
+            descriptor: new Map([
+                // [ 'language',                   this.ace_cs_panels.presentation.code_mvc.controler ],
+                // [ 'toggle_parsing',             this.ace_cs_panels.presentation.code_mvc.controler ],
+                [ 'toggle_execution',           this ],
+                [ 'url',                        this ],
+                // [ 'toggle_language_detection',  this.ace_cs_panels.presentation.code_mvc.controler ],
+                // [ 'is_executable',              this.ace_cs_panels.presentation.code_mvc.controler ]
+            ])
+        })
 
         // callable once
         // delete this._parameters
@@ -2621,6 +2639,12 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     //  Cancel or wait for pending resource acquisition
     //  issue:  if `url` is set twice (in a short period of time), we have a race condition
     //          can be fix with some internal state management
+
+        if (value === 'undefined')
+            value = undefined
+
+        if (this.#_url === value)
+            return
 
         this.#_url = value
 
