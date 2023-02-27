@@ -653,6 +653,8 @@ AwesomeCodeElement.details.utility = class utility {
     //  warning: assumes target[property_name] get/set reciprocity
     //  warning: the setter will call the getter
 
+        // TODO: use Object.getPropertyDescriptor instead of __lookup*etter
+
         if (1 === (Boolean(target.__lookupSetter__(property_name) === undefined)
                 +  Boolean(target.__lookupGetter__(property_name) === undefined)
         ))   console.warn(`utility.inject_on_property_change_proxy: target property [${target.constructor.name}.${property_name}] has a getter but no setter, or vice-versa`)
@@ -673,6 +675,8 @@ AwesomeCodeElement.details.utility = class utility {
         })()
         
         Object.defineProperty(_target, property_name, {
+            configurable: true,
+            enumerable: true,
             get: () => {
                 const result = target_getter()
                 if (result !== storage)
@@ -2140,7 +2144,9 @@ class animation {
 
 class two_way_synced_attributes_controler {
 // two-way dynamic binding: attributes <=> property accessor
-//  target: context
+//  warning: assumes get-set reciprocity
+//
+//  target: properties context
 //  descriptors: Map of [ property_name => descriptor ],
 //      when descriptor is { target, projection? { from?, to? }, options? }
 //      so mapped.get(key).target[key] is the property
@@ -2153,8 +2159,6 @@ class two_way_synced_attributes_controler {
 // two-way equivalent to:
 //  static get observedAttributes() { return [ ]; }
 //  attributeChangedCallback(name, oldValue, newValue) {}
-
-    // WIP: avoid setter called twice when attr changed
 
     #observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -2169,7 +2173,8 @@ class two_way_synced_attributes_controler {
             
             // set value
             const value = (() => {
-                const projection = this.#descriptor.get(mutation.attributeName).projection ?? AwesomeCodeElement.details.utility.types.projections.no_op
+                const projection = this.#descriptor.get(mutation.attributeName).projection
+                                ?? AwesomeCodeElement.details.utility.types.projections.no_op
                 if (!(projection.to instanceof Function))
                     throw new Error(`two_way_synced_attributes_controler.#observer: invalid projection (missing .to function): for key [${mutation.attributeName}]`)
                 return projection.to(mutation.target.getAttribute(mutation.attributeName))
@@ -2223,7 +2228,7 @@ class two_way_synced_attributes_controler {
                 property_name: key,
                 on_property_change: ({ new_value }) => {
                     if (String(new_value) !== this.#target.getAttribute(key)) {
-                        console.log('>>> attr set', key, new_value)
+                        console.log('>>> attr set', this.#target.toString(), key, new_value)
                         this.#target.setAttribute(key, new_value)
                     }
                 }
@@ -2509,7 +2514,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         }
         cs.named_parameters.forEach((property_name) => load_parameter({ property_name: property_name }))
 
-        this.removeAttribute('code')
+        this.removeAttribute('code') // meant to only be a one-time alternative argument provider
 
         this._parameters.code ||= Array.from(this.childNodes)
 
@@ -2568,12 +2573,12 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         this.synced_attributes_controler = new two_way_synced_attributes_controler({
             target: this,
             descriptor: new Map([
-                // [ 'language',                   this.ace_cs_panels.presentation.code_mvc.controler ],
-                // [ 'toggle_parsing',             this.ace_cs_panels.presentation.code_mvc.controler ],
-                [ 'toggle_execution',   { target: this, projection: projections.boolean } ],
-                [ 'url',                { target: this } ],
-                // [ 'toggle_language_detection',  this.ace_cs_panels.presentation.code_mvc.controler ],
-                // [ 'is_executable',              this.ace_cs_panels.presentation.code_mvc.controler ]
+                [ 'toggle_execution',           { target: this, projection: projections.boolean } ],
+                [ 'url',                        { target: this } ],
+                [ 'language',                   { target: this.ace_cs_panels.presentation.code_mvc.controler } ],
+                [ 'toggle_parsing',             { target: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean } ],
+                [ 'toggle_language_detection',  { target: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean } ],
+                [ 'is_executable',              { target: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean } ]
             ])
         })
 
