@@ -2555,7 +2555,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         if (this.#toggle_execution) {
 
-            this.ace_cs_panels.execution.style.display = '' // TODO: CSS: toggle hidden/visible
+            // this.ace_cs_panels.execution.style.display = '' // TODO: CSS: toggle hidden/visible
 
             if (!this.ace_cs_panels.presentation.code_mvc.controler.is_executable){
                 const error = `${cs.HTMLElement_name}: not executable (yet?)`
@@ -2569,7 +2569,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             catch (error)   { console.error(error) } // TODO: throw ? internal error ?
         }
         else {
-            this.ace_cs_panels.execution.style.display = 'none'
+            // this.ace_cs_panels.execution.style.display = 'none'
         }
     }
     get toggle_execution() { return this.#toggle_execution }
