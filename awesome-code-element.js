@@ -500,14 +500,6 @@ AwesomeCodeElement.details.utility = class utility {
         }
     }
 
-    static customElements_define_once(name, ...args) {
-    // TODO: useless. The definition of the class still produce an invalid constructor (even if it is the same, twice)
-        if (!!customElements.get(name)) {
-            console.warn(`AwesomeCodeElement.details.utility: AwesomeCodeElement.details.utility.customElements_define_once: [${name}] is already defined`)
-            return
-        }
-        customElements.define(name, ...args);
-    }
     static unfold_into({target, properties = {}}) {
         if (!target)
             throw new Error(`AwesomeCodeElement.details.utility: invalid argument [target] with value [${target}]`)
@@ -653,65 +645,76 @@ AwesomeCodeElement.details.utility = class utility {
     //  warning: assumes target[property_name] get/set reciprocity
     //  warning: the setter will call the getter
 
-        // TODO: use Object.getPropertyDescriptor instead of __lookup*etter
+        const property_descriptor = Object.getOwnPropertyDescriptor(target, property_name)
+                                 ?? Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), property_name)
+        if (property_descriptor === undefined
+         || !property_descriptor.configurable)
+            throw new Error(`inject_on_property_change_proxy: invalid property descriptor: ${target.toString()}[${property_name}] is not configurable`)
 
-        if (1 === (Boolean(target.__lookupSetter__(property_name) === undefined)
-                +  Boolean(target.__lookupGetter__(property_name) === undefined)
-        ))   console.warn(`utility.inject_on_property_change_proxy: target property [${target.constructor.name}.${property_name}] has a getter but no setter, or vice-versa`)
-        
-        var _target = target
-        var storage = _target[property_name]
+        var storage = target[property_name]
+
         const target_getter = (() => {
-            const value = _target.__lookupGetter__(property_name)
-            return value
-                ? value.bind(target)
-                : () => { return storage }
+            if (property_descriptor.get)
+                return property_descriptor.get.bind(target)
+            return property_descriptor.value
+                ? () => { return storage }
+                : undefined
         })()
         const target_setter = (() => {
-            const value = _target.__lookupSetter__(property_name)
-            return value
-                ? value.bind(_target)
-                : (argument) => { storage = argument }
+            if (property_descriptor.set)
+                return property_descriptor.set.bind(target)
+            return property_descriptor.value
+                ? (value) => { return storage = value }
+                : undefined
         })()
-        
-        Object.defineProperty(_target, property_name, {
+
+        let descriptor = {
             configurable: true,
-            enumerable: true,
-            get: () => {
+            enumerable: true
+        }
+        if (target_getter)
+            descriptor.get = () => {
                 const result = target_getter()
+                // console.trace('proxy getter:', target.toString(), property_name, ':', storage, '->', result)
                 if (result !== storage)
                     on_property_change({
+                        origin_op: 'get',
                         old_value: storage,
                         new_value: result
                     })
                 return storage = result
-            },
-            set: (value) => {
+            }
+        if (target_setter)
+            descriptor.set = (value) => {
                     const old_value = target_getter()
                     target_setter(value)
                     storage = target_getter()
+                    // console.trace('proxy setter:', target.toString(), property_name, ':', value, old_value, '->', storage)
                     if (old_value !== storage)
                         on_property_change({
+                            origin_op: 'set',
                             argument: value,
                             old_value: old_value,
                             new_value: storage
                         })
                 }
-        });
-    
+
+        Object.defineProperty(target, property_name, descriptor);
+
         return {
             origin: {
                 get: target_getter,
                 set: target_setter
             },
             transformed: {
-                get: _target.__lookupGetter__(property_name),
-                set: _target.__lookupSetter__(property_name)
-            }
+                get: target.__lookupGetter__(property_name),
+                set: target.__lookupSetter__(property_name)
+            },
+            revoke: () => Object.defineProperty(target, property_name, property_descriptor)
         }
     }
 
-    static types = class {
+    static types = class types {
         static is_string(value){ return typeof value === 'string' || value instanceof String }
         static is_empty(value){
             return Boolean(value)
@@ -734,6 +737,10 @@ AwesomeCodeElement.details.utility = class utility {
             static float = {
                 from: (value) => { return String(value) },
                 to:   (value) => { return parseFloat(value) }
+            }
+            static string = {
+                from: (value) => { return types.is_string(value) ? value : String(value) },
+                to:   (value) => { return String(value) }
             }
         }
     }
@@ -853,117 +860,6 @@ AwesomeCodeElement.details.remote.CE_API = class CE_API {
     }
 }
 
-class type_combinator {
-
-    static is_class_definition(value){
-        return value.prototype
-            && value.prototype.constructor.toString
-            && value.prototype.constructor.toString().substring(0, 5) === 'class'
-    }
-    static is_class_value(value){
-        return value.constructor.toString
-            && value.constructor.toString().substring(0, 5) === 'class'
-    }
-
-    static get_descriptor_of = (value) => {
-    // Descriptors of value properties and prototype (handles inheritance)
-
-        if (!Boolean(value instanceof Object))
-            throw new Error('get_complete_descriptor: invalid argument')
-    
-        let result = Object.getOwnPropertyDescriptors(value)
-        const add_prototypes = (proto) => {
-
-            result = {
-                ...result,
-                ...Object.getOwnPropertyDescriptors(proto)
-            }
-            proto = Object.getPrototypeOf(proto)
-            if (proto !== undefined && proto !== Object.getPrototypeOf({}))
-                add_prototypes(proto)
-        }
-        add_prototypes(Object.getPrototypeOf(value))
-    
-        return result
-    }
-    static make_type({ features, extends_type = undefined }) {
-    
-        const change_descriptor_execution_context = ({ feature_index, property_name, property_descriptor }) => {
-    
-            if (property_descriptor.value
-                && (property_descriptor.get || property_descriptor.set))
-                throw new Error(`aggregation_factory_static.constructor: ill-formed property ${property_name} with descriptor ${descriptor}`)
-    
-            // replace the invocation context of property getter/setters & functions
-            let contextualized_descriptor = {
-                ...property_descriptor,
-                ...(property_descriptor.get ? {
-                        get: function(){ 
-                            console.log(this)
-                            return property_descriptor.get.call(this.features[feature_index])
-                        }
-                    } : {}),
-                ...(property_descriptor.set ? {
-                        set: function(value){ return property_descriptor.set.call(this.features[feature_index], value) }
-                    } : {}),
-                ...(property_descriptor.value instanceof Function ? {
-                    value: function(){ return this.features[feature_index][property_name](...arguments) }
-                    // property_descriptor.value.call(feature, ...arguments) // infinite recursion
-                } : {}),
-                ...(property_descriptor.value ? {
-                    get: function(){ return this.features[feature_index][property_name] },
-                    set: function(value){ return this.features[feature_index][property_name] = value }
-                } : {})
-            }
-            if (contextualized_descriptor.get || contextualized_descriptor.set) {
-            // prevent ill-formed descriptor
-                delete contextualized_descriptor.value
-                delete contextualized_descriptor.writable
-            }
-            return contextualized_descriptor
-        }
-    
-        class result_t extends (extends_type ?? Object) {
-            constructor(){ super() }
-            features = features.map((value) => {
-                return type_combinator.is_class_definition(value) ? new value : value
-            })
-        }
-        // Properties of instances of type result_t will redirect calls to their features set
-        Array.from(features.keys())
-            .map((feature_index) => {
-                return {
-                    feature_index: feature_index,
-                    descriptors: Object.entries(composition_factory.get_descriptor_of(new features[feature_index]))
-                        .filter(([ name, descriptor ]) => name !== 'constructor')
-                }
-            })
-            .map(({ feature_index, descriptors }) => {
-    
-                descriptors = descriptors.map(([ name, descriptor ]) => {
-                    const contextualized_descriptor = change_descriptor_execution_context({
-                        feature_index: feature_index,
-                        property_name: name,
-                        property_descriptor: descriptor
-                    })
-                    return [ name, contextualized_descriptor ]
-                })
-                return descriptors
-            })
-            .reduce((accumulator, descriptors) => {
-                return [ ...accumulator, ...descriptors ]
-            }, [])
-            .forEach(([ name, descriptor ]) => {
-                console.log('->', name, descriptor)
-                if (Object.getOwnPropertyDescriptor(result_t.prototype, name))
-                    console.warn(`aggregation_factory_static.<result_t>.constructor: overriding existing property [${name}].`)
-                Object.defineProperty(result_t.prototype, name, descriptor)
-            })
-    
-        return result_t
-    }
-}
-
 // details: logging
 AwesomeCodeElement.details.log_facility = class {
     
@@ -1071,7 +967,7 @@ AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard = class CopyT
         })
     }
 }
-AwesomeCodeElement.details.utility.customElements_define_once(
+customElements.define(
     AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard.HTMLElement_name,
     AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard, {extends: 'button'}
 );
@@ -1175,7 +1071,7 @@ AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInG
         AwesomeCodeElement.details.remote.CE_API.open_in_new_tab(data)
     }
 }
-AwesomeCodeElement.details.utility.customElements_define_once(
+customElements.define(
     AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt.HTMLElement_name,
     AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt, {extends: 'button'}
 );
@@ -1203,6 +1099,7 @@ AwesomeCodeElement.details.HTML_elements.defered_HTMLElement = class extends HTM
         }
     }
     connectedCallback() {
+
         try {
             if (!this.acquire_parameters(this._parameters)) {
                 console.debug('AwesomeCodeElement.details.HTML_elements.defered_HTMLElement: create shadowroot slot')
@@ -1849,6 +1746,8 @@ class code_mvc {
 
     static controler_type = class {
 
+        get [Symbol.toStringTag](){ return 'code_mvc.controler_type' }
+
         #target = undefined
         toggle_parsing = undefined
 
@@ -1985,11 +1884,12 @@ class code_mvc {
         // is_executable
         get is_executable() {
         
-            if (!this.language)
+            const language = this.language // avoid multiples calls to getter
+            if (!language)
                 return false
     
             if (AwesomeCodeElement.API.configuration.is_ready
-             && this.language !== this.language_policies.detector.get_language_name(this.#target.#model.ce_options?.language)
+             && language !== this.language_policies.detector.get_language_name(this.#target.#model.ce_options?.language)
              && AwesomeCodeElement.API.configuration.value.CE.has(this.language)
             ){  // attempt to load the appropriate ce options
                 this.#target.#model.ce_options = AwesomeCodeElement.API.configuration.value.CE.get(this.language)
@@ -1997,7 +1897,7 @@ class code_mvc {
             }
     
             return Boolean(
-                this.language === this.language_policies.detector.get_language_name(this.#target.#model.ce_options?.language)
+                language === this.language_policies.detector.get_language_name(this.#target.#model.ce_options?.language)
              && !AwesomeCodeElement.details.utility.types.is_empty(this.#target.#model.ce_options)
             )
         }
@@ -2069,6 +1969,8 @@ class code_mvc {
                     ? () => { return this.controler.toggle_parsing ? this.#model.to_display : this.#model.raw }
                     : () => { return this.#model.raw },
                 set: (value) => {
+                    if (value === this.#model.raw)
+                        return
                     this.#model = this.#model_parser.parse({ code: value })
                     this.#model_update_ce_options()
                     this.update_view()
@@ -2144,7 +2046,7 @@ class animation {
 
 class two_way_synced_attributes_controler {
 // two-way dynamic binding: attributes <=> property accessor
-//  warning: assumes get-set reciprocity
+//  warning: assumes get-set reciprocity. otherwise, values synced on changes is not guarantee
 //
 //  target: properties context
 //  descriptors: Map of [ property_name => descriptor ],
@@ -2184,9 +2086,12 @@ class two_way_synced_attributes_controler {
 
             if (!this.#original_accessors.has(mutation.attributeName))
                 throw new Error(`two_way_synced_attributes_controler.#observer: invalid .#original_accessors: missing key [${mutation.attributeName}]`)
+
             const accessors = this.#original_accessors.get(mutation.attributeName)
-            if (accessors.get() !== value)
-                accessors.set(value)
+            if (accessors.get
+             && accessors.set
+             && accessors.get() !== value
+            ) accessors.set(value)
         });
     });
 
@@ -2228,7 +2133,7 @@ class two_way_synced_attributes_controler {
                 property_name: key,
                 on_property_change: ({ new_value }) => {
                     if (String(new_value) !== this.#target.getAttribute(key)) {
-                        console.log('>>> attr set', this.#target.toString(), key, new_value)
+                        console.log('>>> attr set [', key, '=', new_value, '] on', this.#target.toString())
                         this.#target.setAttribute(key, new_value)
                     }
                 }
@@ -2239,7 +2144,7 @@ class two_way_synced_attributes_controler {
     stop(){
         this.#observer.disconnect()
         this.#original_accessors = new Map
-        // TODO: reset accessors with this.#original_accessors
+        // TODO: reset accessors with .revoke
     }
 }
 
@@ -2475,7 +2380,6 @@ class ace_cs_HTML_content_factory {
 // WIP: must set global CE configuration prior to execution
 
 // WIP: attributes
-//  attribute change => trigger setter (proxy on attributes)
 //  id change -> reset hierarchy IDs
 // WIP: CSS error(s), execution: failure, success
 AwesomeCodeElement.API.HTML_elements = {}
@@ -2492,6 +2396,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         'code'
     ]}
 
+    // WIP: controler + make such controler a proxy to panels code_mvc for relevant actions
     // WIP: proxy to panels (or listeners to property changed)
     //  - refresh execution if presentation model change
     //  - not executable presentation: hide execution or show error message
@@ -2569,6 +2474,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         this.#initialize_ids()
 
+        // bindings
         const projections = AwesomeCodeElement.details.utility.types.projections
         this.synced_attributes_controler = new two_way_synced_attributes_controler({
             target: this,
@@ -2580,6 +2486,14 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 [ 'toggle_language_detection',  { target: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean } ],
                 [ 'is_executable',              { target: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean } ]
             ])
+        })
+        const { origin, transformed } = AwesomeCodeElement.details.utility.inject_on_property_change_proxy({
+            target: this.ace_cs_panels.presentation.code_mvc,
+            property_name: 'model',
+            on_property_change: ({ new_value, old_value }) => {
+                if (new_value !== old_value && this.toggle_execution)
+                    this.#fetch_execution_controler.fetch()
+            }
         })
 
         // callable once
@@ -2629,6 +2543,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         #fetched_input = undefined
         fetch(){
+            console.trace('>>> fetch_execution_controler_t.fetch called')
 
             if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable){
                 const error = `${cs.HTMLElement_tagName}: not executable (yet?) - missing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
@@ -2772,7 +2687,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         })
     }
 }
-AwesomeCodeElement.details.utility.customElements_define_once(
+customElements.define(
     AwesomeCodeElement.API.HTML_elements.CodeSection.HTMLElement_tagName,
     AwesomeCodeElement.API.HTML_elements.CodeSection
 );
@@ -3363,7 +3278,7 @@ AwesomeCodeElement.API.HTML_elements.ToggleDarkModeButton = class ToggleDarkMode
         ;
     }
 }
-AwesomeCodeElement.details.utility.customElements_define_once(
+customElements.define(
     AwesomeCodeElement.API.HTML_elements.ToggleDarkModeButton.HTMLElement_name,
     AwesomeCodeElement.API.HTML_elements.ToggleDarkModeButton, {extends: 'button'}
 );
@@ -3424,7 +3339,7 @@ AwesomeCodeElement.API.HTML_elements.ThemeSelector = class ThemeSelector extends
         return () => { return `${ThemeSelector.HTMLElement_name}-${counter.next().value}` }
     })()
 }
-AwesomeCodeElement.details.utility.customElements_define_once(
+customElements.define(
     AwesomeCodeElement.API.HTML_elements.ThemeSelector.HTMLElement_name,
     AwesomeCodeElement.API.HTML_elements.ThemeSelector, { extends : 'select' }
 );

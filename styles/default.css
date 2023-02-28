@@ -149,6 +149,17 @@ ace-code-section-demo > [id$='.panels.presentation'] {
     width:      100%;
     box-sizing: border-box;
 }
+/* TODO: ace-cs-code-mvc[id$='.panels.execution'] vs. nth-child() ? */
+ace-code-section[toggle_execution='false'] > ace-cs-code-mvc[id$='.panels.execution'] /* or nth-child() */ {
+    display: none
+}
+ace-code-section[toggle_execution='true'][is_executable='false'] > ace-cs-code-mvc[id$='.panels.execution'] {
+    display: none;
+}
+ace-code-section[toggle_execution='true'] > ace-cs-code-mvc[id$='.panels.execution']{
+    display: flex
+}
+
 ace-code-section      > [id$='.panels.presentation'][status='error'],
 ace-code-section-demo > [id$='.panels.presentation'][status='error'],
 ace-code-section      > [id$='.panels.execution'][status='error'],
@@ -177,9 +188,6 @@ ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] {
     box-sizing:  border-box;
 }
 
-ace-code-section[toggle_execution='false'] > ace-cs-code-mvc[id$='.panels.execution'] /* or nth-child() */ {
-    display: none
-}
 /* display:    flex; flex-direction : column; */
 ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'],
 ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'] {
