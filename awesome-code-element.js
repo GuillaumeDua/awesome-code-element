@@ -83,6 +83,7 @@
 // TODO: wraps around a rich code editor block
 // TODO: cleanup logs
 // TODO: cleanup module: ease code navigation
+//          - class-as-namespace
 // TODO: unfold_to -> use Object.assign(a, b) ?
 // TODO: naming consistency
 // TODO: remove unused or unecessary code
@@ -649,7 +650,7 @@ AwesomeCodeElement.details.utility = class utility {
                                  ?? Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), property_name)
         if (property_descriptor === undefined
          || !property_descriptor.configurable)
-            throw new Error(`inject_on_property_change_proxy: invalid property descriptor: ${target.toString()}[${property_name}] is not configurable`)
+            throw new Error(`ace.details.utility.inject_on_property_change_proxy: invalid property descriptor: ${target.toString()}[${property_name}] is not configurable`)
 
         var storage = target[property_name]
 
@@ -715,6 +716,12 @@ AwesomeCodeElement.details.utility = class utility {
     }
 
     static types = class types {
+        static typename_of({ value }){
+            if (!(value instanceof Object))
+                throw new Error('ace.details.utility.types.typename_of: invalid argument')
+            const matches = value.toString().match(/\[object (.+)\]/)
+            return matches.length === 2 ? matches[1] : undefined
+        }
         static is_string(value){ return typeof value === 'string' || value instanceof String }
         static is_empty(value){
             return Boolean(value)
@@ -1678,40 +1685,6 @@ class code_mvc_details {
         }
     }
 }
-class NotifyPropertyChangedInterface {
-
-    _handlers = new Map
-
-    constructor(args){
-        console.debug(`NotifyPropertyChangedInterface.constructor with`, args)
-
-        if (!args)
-            return
-        if (!(args instanceof Array))
-            throw new Error('NotifyPropertyChangedInterface.constructor: invalid argument')
-
-        args.forEach((value, index) => {
-            if (!(value instanceof Array) || value.length !== 2)
-                throw new Error(`NotifyPropertyChangedInterface.constructor: invalid argument (at index ${index})`)
-            this.add_OnPropertyChangeHandler(value[0], value[1])
-        })
-    }
-
-    add_OnPropertyChangeHandler = ({property_name, handler}) => {
-        if (!(handler instanceof Function))
-            throw new Error('NotifyPropertyChangedInterface.add_OnPropertyChangeHandler: invalid argument')
-        this._handlers.set(property_name, handler)
-    }
-    remove_OnPropertyChangeHandler = ({property_name}) => {
-        this._handlers.delete(property_name)
-    }
-
-    NotifyPropertyChanged = ({property_name}) => {
-        const handler = this._handlers.get(property_name)
-        if (handler)
-            handler(property_name)
-    }
-}
 
 // TODO: put elsewhere
 let accumulate_objects = (lhs, rhs) => {
@@ -1746,7 +1719,7 @@ class code_mvc {
 
     static controler_type = class {
 
-        get [Symbol.toStringTag](){ return 'code_mvc.controler_type' }
+        get [Symbol.toStringTag](){ return `${AwesomeCodeElement.details.utility.types.typename_of({ value: this.#target })}.controler_type` }
 
         #target = undefined
         toggle_parsing = undefined
@@ -1849,7 +1822,7 @@ class code_mvc {
                 return
 
             if (this.toggle_language_detection = !argument.is_valid)
-                console.warn(`ace.details.code.set(language): invalid input [${value}], attempting fallback detection.`)
+                console.warn(`ace.details.code.language(set): invalid input [${value}], attempting fallback detection.`)
 
             const result = this.#target.is_mutable
                 ? this.#language_policies.highlighter.highlight({
@@ -1893,7 +1866,7 @@ class code_mvc {
              && AwesomeCodeElement.API.configuration.value.CE.has(this.language)
             ){  // attempt to load the appropriate ce options
                 this.#target.#model.ce_options = AwesomeCodeElement.API.configuration.value.CE.get(this.language)
-                console.info(`code_mvc.get(is_executable): loaded matching CE configuration for language [${this.language}]: `, this.#target.#model.ce_options)
+                console.info(`code_mvc.is_executable(get): loaded matching CE configuration for language [${this.language}]: `, this.#target.#model.ce_options)
             }
     
             return Boolean(
@@ -1951,7 +1924,7 @@ class code_mvc {
             : code_policies.parser.no_parser
 
         if (!code_policies.parser.check_concept(this.#model_parser))
-            throw new Error('ace.details.code.constructor: invalid argument (parser)')
+            throw new Error('ace.details.code_mvc.#initialize_behaviors: invalid argument (parser)')
 
         this.update_view = this.is_mutable
             ? () => {
@@ -2381,6 +2354,7 @@ class ace_cs_HTML_content_factory {
 
 // WIP: attributes
 //  id change -> reset hierarchy IDs
+//  toggle_execution=true with is_executable=false -> error
 // WIP: CSS error(s), execution: failure, success
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
@@ -2487,7 +2461,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 [ 'is_executable',              { target: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean } ]
             ])
         })
-        const { origin, transformed } = AwesomeCodeElement.details.utility.inject_on_property_change_proxy({
+        const { origin, transformed, revoke } = AwesomeCodeElement.details.utility.inject_on_property_change_proxy({
             target: this.ace_cs_panels.presentation.code_mvc,
             property_name: 'model',
             on_property_change: ({ new_value, old_value }) => {
@@ -2533,7 +2507,13 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     }
     get toggle_execution() { return this.#toggle_execution }
 
+    // WIP: execution when url is loaded
+    //  -> already loading, empty execution panel
+
     static fetch_execution_controler_t = class {
+
+        get [Symbol.toStringTag](){ return `${AwesomeCodeElement.details.utility.types.typename_of({ value: this.#target })}.fetch_execution_controler_t` }
+
         #target = undefined
         constructor(target){
             if (!target || !(target instanceof cs))
@@ -2543,10 +2523,13 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         #fetched_input = undefined
         fetch(){
-            console.trace('>>> fetch_execution_controler_t.fetch called')
+            if (!this.#target.#toggle_execution)
+                return
+
+            console.trace(this.toString(), '>>> fetch_execution_controler_t.fetch called')
 
             if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable){
-                const error = `${cs.HTMLElement_tagName}: not executable (yet?) - missing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
+                const error = `${cs.prototype.toString()}: not executable (yet?) - missing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
                 this.#target.ace_cs_panels.execution.code_mvc.model = `# error: ${error}`
                 this.#target.ace_cs_panels.execution.setAttribute('status', 'error')
                 console.warn(`${error} - set(toggle_execution)`)
@@ -2558,7 +2541,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             }
             this.#fetched_input = this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute
             if (this.#target.ace_cs_panels.execution.loading_animation_controler.toggle_animation){
-                console.warn(`${cs.HTMLElement_tagName}: already loading`)
+                console.warn(`${cs.prototype.toString()}: already loading`)
                 return
             }
 
@@ -2642,7 +2625,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         this.#_url = value
 
-        let fetch_execution_result_promise = new Promise((resolve, reject) => {
+        let fetch_url_result_promise = new Promise((resolve, reject) => {
+
             AwesomeCodeElement.details.utility.fetch_resource(this.#_url, {
                 on_error: (error) => {
                     this.on_error(`CodeSection: network error: ${error}`)
@@ -2671,10 +2655,10 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         })
 
         this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = true
-        fetch_execution_result_promise.then(
+        fetch_url_result_promise.then(
             (result) => {
                this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = false
-               this.toggle_execution = this.toggle_execution // refresh execution
+               this.#fetch_execution_controler.fetch()// this.toggle_execution = this.toggle_execution // refresh execution
             },
             (error) => { 
                this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = false
@@ -2683,7 +2667,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         );
 
         this.ace_cs_panels.presentation.loading_animation_controler.animate_while({
-            promise: fetch_execution_result_promise
+            promise: fetch_url_result_promise
         })
     }
 }
