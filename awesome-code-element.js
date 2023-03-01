@@ -642,6 +642,7 @@ AwesomeCodeElement.details.utility = class utility {
             set: _target.__lookupSetter__(property_name)
         }
     }
+    // WIP: proxy on proxy: how to avoid multiples getter/setter calls
     static inject_on_property_change_proxy = function({ target, property_name, on_property_change } = {}) {
     // calls `on_property_change` when target[property_name] change
     // on_property_change: ({ argument, old_value, new_value }) => { ... }
@@ -678,7 +679,7 @@ AwesomeCodeElement.details.utility = class utility {
         if (target_getter)
             descriptor.get = () => {
                 const result = target_getter()
-                // console.trace('proxy getter:', target.toString(), property_name, ':', storage, '->', result)
+                console.debug('proxy getter:', target.toString(), property_name, ':', storage, '->', result)
                 if (result !== storage)
                     on_property_change({
                         origin_op: 'get',
@@ -689,17 +690,15 @@ AwesomeCodeElement.details.utility = class utility {
             }
         if (target_setter)
             descriptor.set = (value) => {
-                    const old_value = target_getter()
                     target_setter(value)
-                    storage = target_getter()
-                    // console.trace('proxy setter:', target.toString(), property_name, ':', value, old_value, '->', storage)
-                    if (old_value !== storage)
+                    console.debug('proxy setter:', target.toString(), property_name, ':', storage, '->', value)
+                    if (value !== storage)
                         on_property_change({
                             origin_op: 'set',
-                            argument: value,
-                            old_value: old_value,
-                            new_value: storage
+                            old_value: storage,
+                            new_value: value
                         })
+                    storage = value
                 }
 
         Object.defineProperty(target, property_name, descriptor);
@@ -1139,6 +1138,8 @@ AwesomeCodeElement.details.HTML_elements.defered_HTMLElement = class extends HTM
             console.error('ace.details.defered_HTMLElement: error:', error)
             this.on_critical_internal_error(error)
         })
+
+        this.connectedCallback = () => {}
     }
 
     acquire_parameters(parameters) {
@@ -1792,7 +1793,8 @@ class code_mvc {
                 if (this.language_policies.detector.is_valid_language(this.#language))
                     return this.#language
             
-                console.info(`code_mvc.controler.get(language) : invalid language [${this.#language}], attempting fallback detections`)
+                console.trace(`code_mvc.controler.get(language) : invalid language [${this.#language}], attempting fallback detections`)
+                // console.info(`code_mvc.controler.get(language) : invalid language [${this.#language}], attempting fallback detections`)
                 return this.language_policies.detector.get_language(this.#target.view)
                     ?? this.language_policies.detector.detect_language(this.#target.#model.to_display).language
             })()
@@ -2142,14 +2144,15 @@ class two_way_synced_attributes_controler {
             attributeOldValue: true
         });
 
-        // initiale synchro
         Array.from(this.#descriptor.keys()).forEach((key) => {
             if (!this.#descriptor.get(key).target)
                 throw new Error(`two_way_synced_attributes_controler.start: invalid target for key [${key}].\n\tExpected descriptor layout: { target, projection? { from?, to? }, options? }`)
-            this.#target.setAttribute(key, this.#descriptor.get(key).target[key])
-        })
 
-        Array.from(this.#descriptor.keys()).forEach((key) => {
+            // initiale synchro
+            const value = this.#descriptor.get(key).target[key]
+            this.#target.setAttribute(key, value)
+
+            // futher synchro
             const { origin, transformed } = AwesomeCodeElement.details.utility.inject_on_property_change_proxy({
                 target: this.#descriptor.get(key).target,
                 property_name: key,
@@ -2251,7 +2254,7 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         this.synced_attributes_controler = new two_way_synced_attributes_controler({
             target: this,
             descriptor: new Map([
-                [ 'language',                   { target: this.code_mvc.controler } ],
+                [ 'language',                   { target: this.code_mvc.controler, projection: projections.string } ],
                 [ 'toggle_parsing',             { target: this.code_mvc.controler, projection: projections.boolean } ],
                 [ 'toggle_language_detection',  { target: this.code_mvc.controler, projection: projections.boolean } ],
                 [ 'is_executable',              { target: this.code_mvc.controler, projection: projections.boolean } ]
@@ -2613,7 +2616,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             console.trace(this.toString(), '>>> fetch_execution_controler_t.fetch called\n\t', this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute)
 
             if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable){
-                console.debug('>>> WIP: not executable')
                 const error = `${this.toString()}: not executable (yet?) - missing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
                 this.#target.ace_cs_panels.execution.code_mvc.model = `# error: ${error}`
                 this.#target.ace_cs_panels.execution.setAttribute('status', 'error')
