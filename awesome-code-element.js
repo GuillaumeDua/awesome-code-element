@@ -73,7 +73,8 @@
 // TODO: HTML_elements_name -> ace_${name}
 // TODO: check shadowroot-callbacks
 // TODO: dark_or_light -> color_scheme
-// TODO: console.xxxx -> replace '\n\t' by ','-separated arguments ?
+// TODO: console.xxx -> replace '\n\t' by ','-separated arguments ?
+//          -  arguments homogeneity console.xxx(this.toString(), ...)
 // TODO: remove useless funcs, class (if any)
 // TODO: awesome-code-element.js: sub-modules aggregator
 // TODO: style : px vs. em
@@ -1973,12 +1974,37 @@ class animation {
         return animation.#cache.cloneNode()
     }
 
-    static controler = class {
+    static controler = class controler {
+
+        get [Symbol.toStringTag](){ return `animation.controler` }
 
         #owner = undefined
         #target = undefined
         #target_visible_display = undefined
         #element = undefined
+
+        static counter_type = class {
+
+            #rules = undefined
+
+            constructor({ rules }){
+                if (!(rules instanceof Array))
+                    throw new Error('counter_type.constructor: invalid argument')
+                this.#rules = rules
+            }
+
+            #value = 0
+            get value(){ return this.#value }
+            set value(value){
+                this.#value = value
+                
+                this.#rules.forEach(({ condition, callback }) => {
+                    if (condition(this.#value))
+                        callback()
+                })
+            }
+        }
+        #animate_while_counter = undefined
 
         constructor({ owner, target }) {
 
@@ -1991,9 +2017,33 @@ class animation {
             this.#target_visible_display = target.style.display
 
             this.#element = this.#owner.appendChild(animation.element)
+
+            this.#animate_while_counter = new controler.counter_type({ rules: [
+                {
+                    condition: (value) => { return value === 0 },
+                    callback:  () => {
+                        if (this.toggle_animation){
+                            console.log('>>> counter_type: this.toggle_animation = false')
+                            this.toggle_animation = false
+                        }
+                    }
+                },
+                {
+                    condition: (value) => { return value !== 0 },
+                    callback:  () => {
+                        if (!this.toggle_animation){
+                            this.toggle_animation = true
+                            console.log('>>> counter_type: this.toggle_animation = true')
+                        }
+                    }
+                }
+            ]})
         }
 
         set toggle_animation(value){
+
+            console.debug('>>>', this.toString(), 'toggle_animation(set)', value)
+
             // this.#element.style.height = this.#target.clientHeight + 'px'
             this.#target.style.display  = Boolean(value) ? 'none' : this.#target_visible_display
             this.#element.style.display = Boolean(value) ? 'flex' : 'none'
@@ -2001,17 +2051,18 @@ class animation {
         get toggle_animation(){
             return Boolean(this.#element.style.display !== 'none')
         }
+
         animate_while({ promise }){
 
             if (!(promise instanceof Promise))
                 throw new Error('animation.controler.animate_while: invalid argument type')
 
             if (this.toggle_animation)
-                throw new Error('animation.controler.animate_while: already animating')
+                console.warn('animation.controler.animate_while: already animating')
 
-            this.toggle_animation = true
+            ++this.#animate_while_counter.value
             promise.then(() => {
-                this.toggle_animation = false
+                --this.#animate_while_counter.value
             })
         }
     }
@@ -2393,9 +2444,19 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         }
         cs.named_parameters.forEach((property_name) => load_parameter({ property_name: property_name }))
 
-        this.removeAttribute('code') // meant to only be a one-time alternative argument provider
+        this.removeAttribute('code') // meant to only be a one-time, alternative argument provider
 
         this._parameters.code ||= Array.from(this.childNodes)
+
+        // TODO: check if code is an empty string
+        if (this._parameters.code && this._parameters.url){
+            console.warn(
+                this.toString(), 'both parameters [code] and [url] provided.\n\tfallback behavior: use only [code]',
+                '\t\ncode = ', this._parameters.code,
+                '\t\nurl  = ', this._parameters.url
+            )
+            delete this._parameters.url
+        }
 
         // post-condition: valid code content
         const is_valid = Boolean(this._parameters.code ?? this._parameters.url)
@@ -2483,10 +2544,11 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         return () => { return `cs_${counter.next().value}` }
     })()
     #initialize_ids(){
+    // TODO: update if this.attributes[id] changes
     // TODO: also dedicated classes?
         this.id = this.id || cs.#id_generator()
-        this.ace_cs_panels.presentation.id   = `${this.id}.panels.presentation`
-        this.ace_cs_panels.execution.id      = `${this.id}.panels.execution`
+        this.ace_cs_panels.presentation.id                                    = `${this.id}.panels.presentation`
+        this.ace_cs_panels.execution.id                                       = `${this.id}.panels.execution`
         this.ace_cs_panels.presentation.ace_cs_buttons.CE.id                  = `${this.id}.panels.presentation.buttons.CE`
         this.ace_cs_panels.presentation.ace_cs_buttons.copy_to_clipboard.id   = `${this.id}.panels.presentation.buttons.copy_to_clipboard`
         this.ace_cs_panels.execution.ace_cs_buttons.CE.id                     = `${this.id}.panels.execution.buttons.CE`
@@ -2507,10 +2569,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     }
     get toggle_execution() { return this.#toggle_execution }
 
-    // WIP: execution when url is loaded
-    //  -> already loading, empty execution panel
-
     static fetch_execution_controler_t = class {
+    // warning: operations are not guarantee to be concurrency safe
 
         get [Symbol.toStringTag](){ return `${AwesomeCodeElement.details.utility.types.typename_of({ value: this.#target })}.fetch_execution_controler_t` }
 
@@ -2521,51 +2581,55 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             this.#target = target
         }
 
-        #fetched_input = undefined
+        #is_loading = false
+        get is_loading(){ return this.#is_loading }
+        // get is_loading(){ return this.#target.ace_cs_panels.execution.loading_animation_controler.toggle_animation }
+
+        #last_input = undefined
+        get last_input(){ return this.#last_input }
+
         fetch(){
+
             if (!this.#target.#toggle_execution)
                 return
 
-            console.trace(this.toString(), '>>> fetch_execution_controler_t.fetch called')
+            console.trace(this.toString(), '>>> fetch_execution_controler_t.fetch called\n\t', this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute)
 
             if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable){
-                const error = `${cs.prototype.toString()}: not executable (yet?) - missing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
+                const error = `${this.toString()}: not executable (yet?) - missing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
                 this.#target.ace_cs_panels.execution.code_mvc.model = `# error: ${error}`
                 this.#target.ace_cs_panels.execution.setAttribute('status', 'error')
                 console.warn(`${error} - set(toggle_execution)`)
                 return
             }
-            if (this.#fetched_input === this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute){
-                console.warn('cs.fetch_execution_controler_t.fetch: no-op: already fetching or fetched')
+            if (this.last_input === this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute){
+                console.warn(this.toString(), '.fetch: no-op: already fetching or fetched')
                 return
             }
-            this.#fetched_input = this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute
-            if (this.#target.ace_cs_panels.execution.loading_animation_controler.toggle_animation){
-                console.warn(`${cs.prototype.toString()}: already loading`)
+            this.#last_input = this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute
+            if (this.is_loading){
+                console.warn(this.toString(), 'already loading')
                 return
             }
 
             try             { this.#target.ace_cs_panels.execution.loading_animation_controler.animate_while({ promise: this.#make_fetch_promise() }) }
-            catch (error)   { console.error(error) } // TODO: throw ? internal error ?
+            catch (error)   { console.error(error) } // TODO: throw ? target internal error ?
         }
         #make_fetch_promise() {
 
-            let set_execution_content = ({ is_fetch_success, content: { value, return_code } }) => {
+            this.#is_loading = true
+
+            const set_execution_content = ({ is_fetch_success, content: { value, return_code } }) => {
     
                 this.#target.ace_cs_panels.execution.code_mvc.model = value
     
                 is_fetch_success
                     ? this.#target.ace_cs_panels.execution.setAttribute('status', return_code < 0 ? 'failure' : 'success')
                     : this.#target.ace_cs_panels.execution.setAttribute('status', 'error')
+
+                this.#is_loading = false
             }
-    
-            // cleanup status
-            this.#target.ace_cs_panels.execution.removeAttribute('status')
-            this.#target.ace_cs_panels.execution.code_mvc.view.removeAttribute('status')
-    
-            if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable) {
-    
-                let error = `CodeSection:fetch_execution: not executable.\n\tNo known valid configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
+            const set_error = ({ error }) => {
                 set_execution_content({
                     is_fetch_success : false,
                     content : {
@@ -2576,21 +2640,26 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 throw new Error(error)
             }
     
+            // cleanup status
+            this.#target.ace_cs_panels.execution.removeAttribute('status')
+            this.#target.ace_cs_panels.execution.code_mvc.view.removeAttribute('status')
+    
+            if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable) {
+                const error = `CodeSection:fetch_execution: not executable.\n\tNo known valid configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
+                set_error({ error: error })
+            }
+    
             // execution panel: replace with result
             return AwesomeCodeElement.details.remote.CE_API.fetch_execution_result(
                 this.#target.ace_cs_panels.presentation.code_mvc.model_details.ce_options,
                 this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute
             )
-                .catch((error) => {
-                    this.#target.on_critical_internal_error(`CodeSection:fetch_execution: CE_API.fetch_execution_result: failed:\n\t[${error}]`)
-                })
                 .then((result) => {
-    
                     // CE header: parse & remove
                     let regex = new RegExp('# Compilation provided by Compiler Explorer at https://godbolt.org/\n\n(# Compiler exited with result code (-?\\d+))')
                     let regex_result = regex.exec(result)
     
-                    return regex_result === null
+                    const content = regex_result === null
                         ? {
                             value : result,
                             error : 'unknown',
@@ -2601,9 +2670,13 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                             error : undefined,
                             return_code :  regex_result.length != 3 ? undefined : parseInt(regex_result[2])
                         }
+                    set_execution_content({ is_fetch_success : true, content : content })
                 })
-                .then((result) => {
-                    set_execution_content({ is_fetch_success : true, content : result })
+                .catch((error) => {
+                    error = `CodeSection:fetch_execution: CE_API.fetch_execution_result: failed:\n\t[${error}]`
+                    set_error({ error: error })
+                    // this.#target.on_critical_internal_error(`CodeSection:fetch_execution: CE_API.fetch_execution_result: failed:\n\t[${error}]`)
+                    // this.#is_loading = false
                 })
         }
     }
@@ -2654,21 +2727,17 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             })
         })
 
-        this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = true
+        this.ace_cs_panels.presentation.loading_animation_controler.animate_while({ promise: fetch_url_result_promise })
+        this.ace_cs_panels.execution.loading_animation_controler.animate_while({ promise: fetch_url_result_promise })
+
         fetch_url_result_promise.then(
             (result) => {
-               this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = false
                this.#fetch_execution_controler.fetch()// this.toggle_execution = this.toggle_execution // refresh execution
             },
             (error) => { 
-               this.ace_cs_panels.execution.loading_animation_controler.toggle_animation = false
                this.ace_cs_panels.execution.code_mvc.model = `${cs.HTMLElement_tagName}.set(url): fetch failed\n${error}`
             }
         );
-
-        this.ace_cs_panels.presentation.loading_animation_controler.animate_while({
-            promise: fetch_url_result_promise
-        })
     }
 }
 customElements.define(
