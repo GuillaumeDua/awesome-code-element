@@ -94,6 +94,7 @@
 // TODO: get [Symbol.toStringTag]()
 // TODO: use synthax qwe?.asd?.zxc
 // TODO: avoid useless calls (get/set)
+// TODO: test all network errors (url, execution)
 
 // Doxygen integration quick-test
 /*
@@ -1099,6 +1100,7 @@ AwesomeCodeElement.details.HTML_elements.defered_HTMLElement = class extends HTM
 
         this.#acquire_parameters_impl(parameters)
 
+        // TODO: useless ?
         // explicit, user-provided attributes
         if (this._parameters.attributes) {
             console.debug(`AwesomeCodeElement.details.HTML_elements.defered_HTMLElement: constructor: explicit attributes:`, this._parameters.attributes)
@@ -1106,13 +1108,22 @@ AwesomeCodeElement.details.HTML_elements.defered_HTMLElement = class extends HTM
                 this.setAttribute(property, this._parameters.attributes[property])
         }
     }
+    #initialization_promise = undefined
+    get initialization_promise(){
+        return this.#initialization_promise
+    }
     connectedCallback() {
 
-        try {
+        const initialize_when_ready = () => {
+
             if (!this.acquire_parameters(this._parameters)) {
                 console.debug('AwesomeCodeElement.details.HTML_elements.defered_HTMLElement: create shadowroot slot')
                 this.shadowroot_accessor = AwesomeCodeElement.details.utility.create_shadowroot_slot(
-                    this, () => { this.#shadow_root_callback() }
+                    this, () => {
+                        if (!this.acquire_parameters(this._parameters))
+                            throw new Error('acquire_parameters failed (no detailed informations)')
+                        this.initialize()
+                    }
                 )
             }
             else {
@@ -1120,32 +1131,16 @@ AwesomeCodeElement.details.HTML_elements.defered_HTMLElement = class extends HTM
                 this.initialize()
             }
         }
-        catch (error) {
+        this.#initialization_promise = new Promise((resolve, reject) => {
+            initialize_when_ready()
+            resolve()
+        })
+        .catch((error) => {
             console.error('ace.details.defered_HTMLElement: error:', error)
             this.on_critical_internal_error(error)
-        }
+        })
     }
-    #shadow_root_callback() {
-    // defered initialization
-        let error = (() => {
-            try {
-                return this.acquire_parameters(this._parameters)
-                    ? undefined
-                    : 'acquire_parameters failed (no detailed informations)'
-            }
-            catch (error) {
-                return error
-            }
-        })()
 
-        // this.shadowroot_accessor.remove()
-
-        if (error) {
-            this.on_critical_internal_error(error)
-            return
-        }
-        this.initialize()
-    }
     acquire_parameters(parameters) {
     // acquire parameters for defered initialization
     // store everything
@@ -1720,7 +1715,7 @@ class code_mvc {
 
     static controler_type = class {
 
-        get [Symbol.toStringTag](){ return `${AwesomeCodeElement.details.utility.types.typename_of({ value: this.#target })}.controler_type` }
+        get [Symbol.toStringTag](){ return `code_mvc.controler_type` }
 
         #target = undefined
         toggle_parsing = undefined
@@ -1799,7 +1794,7 @@ class code_mvc {
             
                 console.info(`code_mvc.controler.get(language) : invalid language [${this.#language}], attempting fallback detections`)
                 return this.language_policies.detector.get_language(this.#target.view)
-                    ?? this.language_policies.detector.detect_language(this.#target.model).language
+                    ?? this.language_policies.detector.detect_language(this.#target.#model.to_display).language
             })()
             value = this.#language_policies.detector.get_language_name(value)
 
@@ -1857,19 +1852,22 @@ class code_mvc {
 
         // is_executable
         get is_executable() {
-        
+
+            if (!this.#target.#model.to_execute)
+                return false
+
             const language = this.language // avoid multiples calls to getter
             if (!language)
                 return false
     
             if (AwesomeCodeElement.API.configuration.is_ready
              && language !== this.language_policies.detector.get_language_name(this.#target.#model.ce_options?.language)
-             && AwesomeCodeElement.API.configuration.value.CE.has(this.language)
+             && AwesomeCodeElement.API.configuration.value.CE.has(language)
             ){  // attempt to load the appropriate ce options
-                this.#target.#model.ce_options = AwesomeCodeElement.API.configuration.value.CE.get(this.language)
-                console.info(`code_mvc.is_executable(get): loaded matching CE configuration for language [${this.language}]: `, this.#target.#model.ce_options)
+                this.#target.#model.ce_options = AwesomeCodeElement.API.configuration.value.CE.get(language)
+                console.info(`code_mvc.is_executable(get): loaded matching CE configuration for language [${language}]: `, this.#target.#model.ce_options)
             }
-    
+
             return Boolean(
                 language === this.language_policies.detector.get_language_name(this.#target.#model.ce_options?.language)
              && !AwesomeCodeElement.details.utility.types.is_empty(this.#target.#model.ce_options)
@@ -2232,8 +2230,7 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         if (is_valid)
             this.acquire_parameters = () => { throw new Error('code_mvc_HTMLElement.acquire_parameters: already called') }
 
-        console.debug(`code_mvc_HTMLElement.acquire_parameters ... ${is_valid}`, this._parameters)
-
+        console.debug(`${this.toString()}.acquire_parameters ... ${is_valid}`, this._parameters)
         return is_valid
     }
     initialize(){
@@ -2451,17 +2448,19 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         // TODO: check if code is an empty string
         if (this._parameters.code && this._parameters.url){
             console.warn(
-                this.toString(), 'both parameters [code] and [url] provided.\n\tfallback behavior: use only [code]',
+                this.toString(), 'both parameters [code] and [url] provided.\n\tfallback behavior: use only [url]',
                 '\t\ncode = ', this._parameters.code,
                 '\t\nurl  = ', this._parameters.url
             )
-            delete this._parameters.url
+            delete this._parameters.code
+            this.innerHTML = ''
         }
 
         // post-condition: valid code content
         const is_valid = Boolean(this._parameters.code ?? this._parameters.url)
         if (is_valid)
             this.acquire_parameters = () => { throw new Error('CodeSection.acquire_parameters: already called') }
+        console.log(this.toString(), 'initialize', is_valid)
         return is_valid
     }
     initialize() {
@@ -2470,7 +2469,20 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         this.ace_cs_panels = (() => {
 
             let [ presentation, execution ] = [
-                new code_mvc_HTMLElement(this._parameters),
+                // new code_mvc_HTMLElement(this._parameters),
+                new code_mvc_HTMLElement(new code_mvc({
+                    code_origin: this._parameters.code,
+                    controler_options:{
+                        language: this._parameters.language,
+                        toggle_parsing: this._parameters.toggle_parsing,
+                        toggle_language_detection: this._parameters.toggle_language_detection
+                    }
+                    // auto:
+                    // language_policy: {
+                    //     detector:    language_policies.detectors.use_hljs,
+                    //     highlighter: language_policies.highlighters.use_hljs
+                    // }
+                })),
                 new code_mvc_HTMLElement(new code_mvc({
                     code_origin: '',
                     controler_options:{
@@ -2497,6 +2509,10 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         if (this._parameters.url)
             this.url = this._parameters.url // initiate loading
+            // this.ace_cs_panels.presentation.initialization_promise.then(() => {
+            //     this.url = this._parameters.url // initiate loading
+            // })
+        
 
         this.toggle_execution = (() => {
         // false, until a valid configuration is loaded
@@ -2526,7 +2542,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             target: this.ace_cs_panels.presentation.code_mvc,
             property_name: 'model',
             on_property_change: ({ new_value, old_value }) => {
-                if (new_value !== old_value && this.toggle_execution)
+                console.trace('model changed: ', new_value, old_value)
+                if (new_value && new_value !== old_value && this.toggle_execution)
                     this.#fetch_execution_controler.fetch()
             }
         })
@@ -2572,7 +2589,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     static fetch_execution_controler_t = class {
     // warning: operations are not guarantee to be concurrency safe
 
-        get [Symbol.toStringTag](){ return `${AwesomeCodeElement.details.utility.types.typename_of({ value: this.#target })}.fetch_execution_controler_t` }
+        get [Symbol.toStringTag](){ return `cs.fetch_execution_controler_t` }
 
         #target = undefined
         constructor(target){
@@ -2596,6 +2613,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             console.trace(this.toString(), '>>> fetch_execution_controler_t.fetch called\n\t', this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute)
 
             if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable){
+                console.debug('>>> WIP: not executable')
                 const error = `${this.toString()}: not executable (yet?) - missing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
                 this.#target.ace_cs_panels.execution.code_mvc.model = `# error: ${error}`
                 this.#target.ace_cs_panels.execution.setAttribute('status', 'error')
@@ -2703,13 +2721,12 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             AwesomeCodeElement.details.utility.fetch_resource(this.#_url, {
                 on_error: (error) => {
                     this.on_error(`CodeSection: network error: ${error}`)
-                    this.code_mvc.view.panels.right.container.toggle_loading_animation = false
                     reject('on_error')
                 },
                 on_success: (code) => {
                     if (!code) {
                         this.on_error('CodeSection: fetched invalid (possibly empty) remote code')
-                        reject('on_success, but bad fetch result')
+                        reject('success, but invalid fetch result')
                     }
     
                     if (this.ace_cs_panels.presentation.code_mvc.controler.toggle_language_detection) {
