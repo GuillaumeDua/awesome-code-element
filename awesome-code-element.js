@@ -2124,14 +2124,15 @@ class two_way_synced_attributes_controler {
             const value = projection.to(mutation.target.getAttribute(mutation.attributeName))
             const accessors = this.#original_accessors.get(mutation.attributeName)
             if (mutation.oldValue !== mutation.target.getAttribute(mutation.attributeName)
-             && accessors.set)
+             && accessors.set && accessors.get)
             {
-                console.log('Attributes MutationObserver:', mutation.attributeName, ':',
-                    mutation.oldValue, '->', mutation.target.getAttribute(mutation.attributeName)
-                )
                 const updated_value = (() => { accessors.set(value); return accessors.get(value) })()
                 // setter with transformation
                 if (projection.from(updated_value) !== mutation.target.getAttribute(mutation.attributeName))
+                    console.log('Attributes MutationObserver: propagate changed to self attr:', mutation.attributeName, ':',
+                        mutation.oldValue, '->', mutation.target.getAttribute(mutation.attributeName),
+                        ':', projection.from(updated_value)
+                    )
                     mutation.target.setAttribute(mutation.attributeName, updated_value)
             }
 
