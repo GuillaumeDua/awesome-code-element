@@ -680,38 +680,38 @@ AwesomeCodeElement.details.utility = class utility {
         }
         if (target_getter)
             descriptor.get = () => {
-                const result = target_getter()
-                console.debug('proxy %cgetter:', 'color:blue', target.toString(), property_name, ':', storage, '->', result)
 
-                const notify_property_changed = result === storage ? undefined : {
+                const result = target_getter()
+                if (result === storage) return result
+
+                const notify_property_changed = {
                     origin_op: 'get',
+                    property_name: property_name,
                     old_value: storage,
                     new_value: result
                 }
                 storage = result
+                console.debug('proxy %cgetter:', 'color:green', target.toString(), notify_property_changed)
+                on_property_change(notify_property_changed)
 
-                if (notify_property_changed)
-                    on_property_change(notify_property_changed)
                 return storage
             }
         if (target_setter)
             descriptor.set = (value) => {
 
-                    console.debug('proxy %csetter:', 'color:red', target.toString(), property_name, ':', storage, '->', value)
-
                     if (value === storage) return
 
                     target_setter(value)
 
-                    const notify_property_changed = value === storage ? undefined : {
+                    const notify_property_changed = {
                         origin_op: 'set',
+                        property_name: property_name,
                         old_value: storage,
                         new_value: value
                     }
                     storage = value
-
-                    if (notify_property_changed)
-                        on_property_change(notify_property_changed)
+                    console.debug('proxy %csetter:', 'color:red', target.toString(), notify_property_changed)
+                    on_property_change(notify_property_changed)
                 }
 
         Object.defineProperty(target, property_name, descriptor);
@@ -2053,10 +2053,6 @@ class animation {
         }
 
         set toggle_animation(value){
-
-            console.debug('>>>', this.toString(), 'toggle_animation(set)', value)
-
-            // this.#element.style.height = this.#target.clientHeight + 'px'
             this.#target.style.display  = Boolean(value) ? 'none' : this.#target_visible_display
             this.#element.style.display = Boolean(value) ? 'flex' : 'none'
         }
@@ -2081,7 +2077,6 @@ class animation {
 }
 
 // TODO: attributes names -> replace '_' by '-' (valid HTML)
-
 class two_way_synced_attributes_controler {
 // two-way dynamic binding: attributes <=> property accessor
 //  warning: assumes get-set reciprocity. otherwise, values synced on changes is not guarantee
@@ -2121,25 +2116,24 @@ class two_way_synced_attributes_controler {
                 throw new Error(`two_way_synced_attributes_controler.#observer: invalid .#original_accessors: missing key [${mutation.attributeName}]`)
 
             // propagate change to setter
-            const value = projection.to(mutation.target.getAttribute(mutation.attributeName))
             const accessors = this.#original_accessors.get(mutation.attributeName)
             if (mutation.oldValue !== mutation.target.getAttribute(mutation.attributeName)
              && accessors.set && accessors.get)
             {
-                const updated_value = (() => { accessors.set(value); return accessors.get(value) })()
+                const updated_value = (() => {
+                    const value = projection.to(mutation.target.getAttribute(mutation.attributeName))
+                    accessors.set(value)
+                    return accessors.get(value)
+                })()
                 // setter with transformation
                 if (projection.from(updated_value) !== mutation.target.getAttribute(mutation.attributeName))
-                    console.log('Attributes MutationObserver: propagate changed to self attr:', mutation.attributeName, ':',
+                    console.debug('MutationObserver %c(attributes)', 'color:darkorange',
+                        ': propagate change to self attr:', mutation.attributeName, ':',
                         mutation.oldValue, '->', mutation.target.getAttribute(mutation.attributeName),
                         ':', projection.from(updated_value)
                     )
                     mutation.target.setAttribute(mutation.attributeName, updated_value)
             }
-
-            // if (accessors.get
-            //  && accessors.set
-            //  && accessors.get() !== value
-            // ) accessors.set(value)
         });
     });
 
@@ -2182,7 +2176,7 @@ class two_way_synced_attributes_controler {
                 property_name: key,
                 on_property_change: ({ new_value }) => {
                     if (String(new_value) !== this.#target.getAttribute(key)) {
-                        console.log('>>>', this.#target.toString(), '[', key, '] changed, propagate to attr set [', this.#target.getAttribute(key), '=', String(new_value), ']')
+                        console.debug('%cproperty_change_proxy', 'color:DarkSlateBlue ', this.#target.toString(), '[', key, '] changed, propagate to attr set [', this.#target.getAttribute(key), '->', String(new_value), ']')
                         this.#target.setAttribute(key, new_value)
                     }
                 }
@@ -2429,8 +2423,7 @@ class ace_cs_HTML_content_factory {
 
 // WIP: attributes
 //  id change -> reset hierarchy IDs
-//  toggle_execution=true with is_executable=false -> error
-// WIP: CSS error(s), execution: failure, success
+// TODO: presentation.view is mutable and the user changed the textContent -> update model
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
@@ -2764,6 +2757,11 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                             this.ace_cs_panels.presentation.code_mvc.controler.language = url_extension
                         }
                     }
+                    
+                    // setTimeout(() => { // simulate slow network for test purpose
+                    //     this.ace_cs_panels.presentation.code_mvc.model = code
+                    //     resolve('on_success')
+                    // }, 2000)
                     this.ace_cs_panels.presentation.code_mvc.model = code
                     resolve('on_success')
                 }
