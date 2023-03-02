@@ -2128,9 +2128,9 @@ class two_way_synced_attributes_controler {
                 // setter with transformation
                 if (projection.from(updated_value) !== mutation.target.getAttribute(mutation.attributeName))
                     console.debug('MutationObserver %c(attributes)', 'color:darkorange',
-                        ': propagate change to self attr:', mutation.attributeName, ':',
+                        ':', mutation.target.toString(), '[', mutation.attributeName, '] propagates to attr (self) [',
                         mutation.oldValue, '->', mutation.target.getAttribute(mutation.attributeName),
-                        ':', projection.from(updated_value)
+                        '] as [', projection.from(updated_value), ']'
                     )
                     mutation.target.setAttribute(mutation.attributeName, updated_value)
             }
@@ -2176,7 +2176,8 @@ class two_way_synced_attributes_controler {
                 property_name: key,
                 on_property_change: ({ new_value }) => {
                     if (String(new_value) !== this.#target.getAttribute(key)) {
-                        console.debug('%cproperty_change_proxy', 'color:DarkSlateBlue ', this.#target.toString(), '[', key, '] changed, propagate to attr set [', this.#target.getAttribute(key), '->', String(new_value), ']')
+                        console.debug('%cproperty_change_proxy', 'color:DarkSlateBlue ',
+                            this.#target.toString(), '[', key, '] propagates to attr [', this.#target.getAttribute(key), '->', String(new_value), ']')
                         this.#target.setAttribute(key, new_value)
                     }
                 }
@@ -2547,6 +2548,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         // bindings
         const projections = AwesomeCodeElement.details.utility.types.projections
+        // TODO: proxies on proxies: avoid duplicate calls
         this.synced_attributes_controler = new two_way_synced_attributes_controler({
             target: this,
             properties_descriptor: new Map([
@@ -2562,7 +2564,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             target: this.ace_cs_panels.presentation.code_mvc,
             property_name: 'model',
             on_property_change: ({ new_value, old_value }) => {
-                console.trace('model changed: ', new_value, old_value)
                 if (new_value && new_value !== old_value && this.toggle_execution)
                     this.#fetch_execution_controler.fetch()
             }
@@ -2629,8 +2630,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
             if (!this.#target.#toggle_execution)
                 return
-
-            console.trace(this.toString(), '>>> fetch_execution_controler_t.fetch called\n\t', this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute)
 
             if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable){
                 const error = `${this.toString()}: not executable (yet?) - missing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
