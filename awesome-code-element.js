@@ -1997,24 +1997,17 @@ class animation {
 
         static counter_type = class {
 
-            #rules = undefined
+            #on_value_changed = undefined
 
-            constructor({ rules }){
-                if (!(rules instanceof Array))
+            constructor({ on_value_changed }){
+                if (!on_value_changed || !(on_value_changed instanceof Function))
                     throw new Error('counter_type.constructor: invalid argument')
-                this.#rules = rules
+                this.#on_value_changed = on_value_changed
             }
 
             #value = 0
             get value(){ return this.#value }
-            set value(value){
-                this.#value = value
-                
-                this.#rules.forEach(({ condition, callback }) => {
-                    if (condition(this.#value))
-                        callback()
-                })
-            }
+            set value(value){ this.#on_value_changed(this.#value = value) }
         }
         #animate_while_counter = undefined
 
@@ -2030,26 +2023,15 @@ class animation {
 
             this.#element = this.#owner.appendChild(animation.element)
 
-            this.#animate_while_counter = new controler.counter_type({ rules: [
-                {
-                    condition: (value) => { return value === 0 },
-                    callback:  () => {
-                        if (this.toggle_animation){
-                            console.log('>>> counter_type: this.toggle_animation = false')
-                            this.toggle_animation = false
-                        }
-                    }
-                },
-                {
-                    condition: (value) => { return value !== 0 },
-                    callback:  () => {
-                        if (!this.toggle_animation){
-                            this.toggle_animation = true
-                            console.log('>>> counter_type: this.toggle_animation = true')
-                        }
-                    }
+            this.#animate_while_counter = new controler.counter_type({ on_value_changed: (value) => {
+
+                if (value === 0 && this.toggle_animation){
+                    this.toggle_animation = false
+                    return
                 }
-            ]})
+                if (value !== 0 && !this.toggle_animation)
+                    this.toggle_animation = true
+            }})
         }
 
         set toggle_animation(value){
