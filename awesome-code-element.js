@@ -643,6 +643,7 @@ AwesomeCodeElement.details.utility = class utility {
         }
     }
     // WIP: proxy on proxy: how to avoid multiples getter/setter calls
+    // TODO: proxy ?
     static inject_on_property_change_proxy = function({ target, property_name, on_property_change } = {}) {
     // calls `on_property_change` when target[property_name] change
     // on_property_change: ({ argument, old_value, new_value }) => { ... }
@@ -656,6 +657,7 @@ AwesomeCodeElement.details.utility = class utility {
             throw new Error(`ace.details.utility.inject_on_property_change_proxy: invalid property descriptor: ${target.toString()}[${property_name}] is not configurable`)
 
         var storage = target[property_name]
+        delete target[property_name]
 
         const target_getter = (() => {
             if (property_descriptor.get)
@@ -678,27 +680,38 @@ AwesomeCodeElement.details.utility = class utility {
         }
         if (target_getter)
             descriptor.get = () => {
+
                 const result = target_getter()
-                console.debug('proxy getter:', target.toString(), property_name, ':', storage, '->', result)
-                if (result !== storage)
-                    on_property_change({
-                        origin_op: 'get',
-                        old_value: storage,
-                        new_value: result
-                    })
-                return storage = result
+                if (result === storage) return result
+
+                const notify_property_changed = {
+                    origin_op: 'get',
+                    property_name: property_name,
+                    old_value: storage,
+                    new_value: result
+                }
+                storage = result
+                console.debug('proxy %cgetter:', 'color:green', target.toString(), notify_property_changed)
+                on_property_change(notify_property_changed)
+
+                return storage
             }
         if (target_setter)
             descriptor.set = (value) => {
+
+                    if (value === storage) return
+
                     target_setter(value)
-                    console.debug('proxy setter:', target.toString(), property_name, ':', storage, '->', value)
-                    if (value !== storage)
-                        on_property_change({
-                            origin_op: 'set',
-                            old_value: storage,
-                            new_value: value
-                        })
+
+                    const notify_property_changed = {
+                        origin_op: 'set',
+                        property_name: property_name,
+                        old_value: storage,
+                        new_value: value
+                    }
                     storage = value
+                    console.debug('proxy %csetter:', 'color:red', target.toString(), notify_property_changed)
+                    on_property_change(notify_property_changed)
                 }
 
         Object.defineProperty(target, property_name, descriptor);
@@ -1792,9 +1805,8 @@ class code_mvc {
             let value = (() => {
                 if (this.language_policies.detector.is_valid_language(this.#language))
                     return this.#language
-            
-                console.trace(`code_mvc.controler.get(language) : invalid language [${this.#language}], attempting fallback detections`)
-                // console.info(`code_mvc.controler.get(language) : invalid language [${this.#language}], attempting fallback detections`)
+
+                console.info(`code_mvc.controler.get(language) : invalid language [${this.#language}], attempting fallback detections`)
                 return this.language_policies.detector.get_language(this.#target.view)
                     ?? this.language_policies.detector.detect_language(this.#target.#model.to_display).language
             })()
@@ -1825,7 +1837,7 @@ class code_mvc {
             const result = this.#target.is_mutable
                 ? this.#language_policies.highlighter.highlight({
                     code_element: this.#target.view,
-                    language: this.toggle_language_detection ? undefined : argument.language_name
+                    language: this.#toggle_language_detection ? undefined : argument.language_name
                 })
                 : this.#language_policies.detector.detect_language(this.#target.model)
 
@@ -1858,7 +1870,7 @@ class code_mvc {
             if (!this.#target.#model.to_execute)
                 return false
 
-            const language = this.language // avoid multiples calls to getter
+            const language = this.#language// this.language // avoid multiples calls to getter
             if (!language)
                 return false
     
@@ -1985,24 +1997,17 @@ class animation {
 
         static counter_type = class {
 
-            #rules = undefined
+            #on_value_changed = undefined
 
-            constructor({ rules }){
-                if (!(rules instanceof Array))
+            constructor({ on_value_changed }){
+                if (!on_value_changed || !(on_value_changed instanceof Function))
                     throw new Error('counter_type.constructor: invalid argument')
-                this.#rules = rules
+                this.#on_value_changed = on_value_changed
             }
 
             #value = 0
             get value(){ return this.#value }
-            set value(value){
-                this.#value = value
-                
-                this.#rules.forEach(({ condition, callback }) => {
-                    if (condition(this.#value))
-                        callback()
-                })
-            }
+            set value(value){ this.#on_value_changed(this.#value = value) }
         }
         #animate_while_counter = undefined
 
@@ -2018,33 +2023,18 @@ class animation {
 
             this.#element = this.#owner.appendChild(animation.element)
 
-            this.#animate_while_counter = new controler.counter_type({ rules: [
-                {
-                    condition: (value) => { return value === 0 },
-                    callback:  () => {
-                        if (this.toggle_animation){
-                            console.log('>>> counter_type: this.toggle_animation = false')
-                            this.toggle_animation = false
-                        }
-                    }
-                },
-                {
-                    condition: (value) => { return value !== 0 },
-                    callback:  () => {
-                        if (!this.toggle_animation){
-                            this.toggle_animation = true
-                            console.log('>>> counter_type: this.toggle_animation = true')
-                        }
-                    }
+            this.#animate_while_counter = new controler.counter_type({ on_value_changed: (value) => {
+
+                if (value === 0 && this.toggle_animation){
+                    this.toggle_animation = false
+                    return
                 }
-            ]})
+                if (value !== 0 && !this.toggle_animation)
+                    this.toggle_animation = true
+            }})
         }
 
         set toggle_animation(value){
-
-            console.debug('>>>', this.toString(), 'toggle_animation(set)', value)
-
-            // this.#element.style.height = this.#target.clientHeight + 'px'
             this.#target.style.display  = Boolean(value) ? 'none' : this.#target_visible_display
             this.#element.style.display = Boolean(value) ? 'flex' : 'none'
         }
@@ -2068,6 +2058,7 @@ class animation {
     }
 }
 
+// TODO: attributes names -> replace '_' by '-' (valid HTML)
 class two_way_synced_attributes_controler {
 // two-way dynamic binding: attributes <=> property accessor
 //  warning: assumes get-set reciprocity. otherwise, values synced on changes is not guarantee
@@ -2097,25 +2088,34 @@ class two_way_synced_attributes_controler {
             if (!this.#descriptor.has(mutation.attributeName))
                 throw new Error(`two_way_synced_attributes_controler.#observer: invalid .#descriptor: missing key [${mutation.attributeName}]`)
             
-            // set value
-            const value = (() => {
-                const projection = this.#descriptor.get(mutation.attributeName).projection
-                                ?? AwesomeCodeElement.details.utility.types.projections.no_op
-                if (!(projection.to instanceof Function))
-                    throw new Error(`two_way_synced_attributes_controler.#observer: invalid projection (missing .to function): for key [${mutation.attributeName}]`)
-                return projection.to(mutation.target.getAttribute(mutation.attributeName))
-            })()
-
-            // console.debug('attr MutationObserver: ', mutation.attributeName, value)
+            // projection
+            const projection = this.#descriptor.get(mutation.attributeName).projection
+                            ?? AwesomeCodeElement.details.utility.types.projections.no_op
+            if (!(projection.to instanceof Function))
+                throw new Error(`two_way_synced_attributes_controler.#observer: invalid projection (missing .to function): for key [${mutation.attributeName}]`)
 
             if (!this.#original_accessors.has(mutation.attributeName))
                 throw new Error(`two_way_synced_attributes_controler.#observer: invalid .#original_accessors: missing key [${mutation.attributeName}]`)
 
+            // propagate change to setter
             const accessors = this.#original_accessors.get(mutation.attributeName)
-            if (accessors.get
-             && accessors.set
-             && accessors.get() !== value
-            ) accessors.set(value)
+            if (mutation.oldValue !== mutation.target.getAttribute(mutation.attributeName)
+             && accessors.set && accessors.get)
+            {
+                const updated_value = (() => {
+                    const value = projection.to(mutation.target.getAttribute(mutation.attributeName))
+                    accessors.set(value)
+                    return accessors.get(value)
+                })()
+                // setter with transformation
+                if (projection.from(updated_value) !== mutation.target.getAttribute(mutation.attributeName))
+                    console.debug('MutationObserver %c(attributes)', 'color:darkorange',
+                        ':', mutation.target.toString(), '[', mutation.attributeName, '] propagates to attr (self) [',
+                        mutation.oldValue, '->', mutation.target.getAttribute(mutation.attributeName),
+                        '] as [', projection.from(updated_value), ']'
+                    )
+                    mutation.target.setAttribute(mutation.attributeName, updated_value)
+            }
         });
     });
 
@@ -2123,17 +2123,17 @@ class two_way_synced_attributes_controler {
     #descriptor = undefined
     #original_accessors = undefined
 
-    constructor({ target, descriptor }){
+    constructor({ target, properties_descriptor }){
 
         if (!target || !(target instanceof HTMLElement))
             throw new Error('two_way_synced_attributes_controler.constructor: invalid argument `target`')
-        if (descriptor === undefined || !(descriptor instanceof Map))
+        if (properties_descriptor === undefined || !(properties_descriptor instanceof Map))
             throw new Error('two_way_synced_attributes_controler.constructor: invalid argument `descriptor`')
-        if (descriptor.size === 0)
+        if (properties_descriptor.size === 0)
             throw new Error('two_way_synced_attributes_controler.constructor: empty argument `descriptor`')
 
         this.#target = target
-        this.#descriptor = descriptor
+        this.#descriptor = properties_descriptor
         this.start()
     }
     start(){
@@ -2158,7 +2158,8 @@ class two_way_synced_attributes_controler {
                 property_name: key,
                 on_property_change: ({ new_value }) => {
                     if (String(new_value) !== this.#target.getAttribute(key)) {
-                        console.log('>>> attr set [', key, '=', new_value, '] on', this.#target.toString())
+                        console.debug('%cproperty_change_proxy', 'color:DarkSlateBlue ',
+                            this.#target.toString(), '[', key, '] propagates to attr [', this.#target.getAttribute(key), '->', String(new_value), ']')
                         this.#target.setAttribute(key, new_value)
                     }
                 }
@@ -2253,7 +2254,7 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         const projections = AwesomeCodeElement.details.utility.types.projections
         this.synced_attributes_controler = new two_way_synced_attributes_controler({
             target: this,
-            descriptor: new Map([
+            properties_descriptor: new Map([
                 [ 'language',                   { target: this.code_mvc.controler, projection: projections.string } ],
                 [ 'toggle_parsing',             { target: this.code_mvc.controler, projection: projections.boolean } ],
                 [ 'toggle_language_detection',  { target: this.code_mvc.controler, projection: projections.boolean } ],
@@ -2405,8 +2406,7 @@ class ace_cs_HTML_content_factory {
 
 // WIP: attributes
 //  id change -> reset hierarchy IDs
-//  toggle_execution=true with is_executable=false -> error
-// WIP: CSS error(s), execution: failure, success
+// TODO: presentation.view is mutable and the user changed the textContent -> update model
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
@@ -2530,9 +2530,10 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         // bindings
         const projections = AwesomeCodeElement.details.utility.types.projections
+        // TODO: proxies on proxies: avoid duplicate calls
         this.synced_attributes_controler = new two_way_synced_attributes_controler({
             target: this,
-            descriptor: new Map([
+            properties_descriptor: new Map([
                 [ 'toggle_execution',           { target: this, projection: projections.boolean } ],
                 [ 'url',                        { target: this } ],
                 [ 'language',                   { target: this.ace_cs_panels.presentation.code_mvc.controler } ],
@@ -2545,7 +2546,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             target: this.ace_cs_panels.presentation.code_mvc,
             property_name: 'model',
             on_property_change: ({ new_value, old_value }) => {
-                console.trace('model changed: ', new_value, old_value)
                 if (new_value && new_value !== old_value && this.toggle_execution)
                     this.#fetch_execution_controler.fetch()
             }
@@ -2612,8 +2612,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
             if (!this.#target.#toggle_execution)
                 return
-
-            console.trace(this.toString(), '>>> fetch_execution_controler_t.fetch called\n\t', this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute)
 
             if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable){
                 const error = `${this.toString()}: not executable (yet?) - missing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
@@ -2740,6 +2738,11 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                             this.ace_cs_panels.presentation.code_mvc.controler.language = url_extension
                         }
                     }
+                    
+                    // setTimeout(() => { // simulate slow network for test purpose
+                    //     this.ace_cs_panels.presentation.code_mvc.model = code
+                    //     resolve('on_success')
+                    // }, 2000)
                     this.ace_cs_panels.presentation.code_mvc.model = code
                     resolve('on_success')
                 }
