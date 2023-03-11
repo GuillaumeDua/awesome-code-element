@@ -136,6 +136,63 @@ SOFTWARE.
 
         <!-- <script src="../../../wip/make_proxy_to.js"></script> -->
 
+        <script>
+
+function define_bound_attributes_properties({ target, properties_descriptor }) {
+
+    if (!target || !(target instanceof HTMLElement) || !(properties_descriptor instanceof Array))
+        throw new Error('define_bound_attributes_properties: invalid argument')
+
+    // TODO: translation from property name to valid attribute name
+
+    properties_descriptor.forEach(descriptor => {
+
+        let {name, projection} = descriptor
+
+        projection ??= {
+            from: (value) => { return value },
+            to:   (value) => { return value },
+        };
+
+        const initiale_value = target[name];
+        Object.defineProperty(target, name, {
+            get: ()      => { return projection.from(target.getAttribute(name)); },
+            set: (value) => { target.setAttribute(name, projection.to(value))},
+            enumerable: true,
+            configurable: false
+        });
+        if (initiale_value !== undefined)
+            target[name] = initiale_value
+    });
+}
+
+class MyCustomElement extends HTMLElement {
+    constructor() {
+        super();
+
+        const int_projection = {
+            from: (value) => { return parseInt(value) },
+            to:   (value) => { try{ return value.toString() } catch(error){ return "undefined" } },
+        }
+
+        define_bound_attributes_properties({
+            target: this,
+            properties_descriptor: [
+                { name: 'foo', projection: int_projection },
+                { name: 'bar '}
+            ]
+        });
+    }
+
+    static get observedAttributes() {
+        return ['foo', 'bar'];
+    }
+}
+
+customElements.define('my-custom-element', MyCustomElement);
+
+        </script>
+
     </head>
 <body>
 
@@ -150,7 +207,9 @@ SOFTWARE.
 
 WIP: multiples useless calls
 
-<ace-code-section toggle_parsing="true" toggle_execution="true" url="../../details/resources/code_content/execute_customCE_show_line_block.cpp"></ace-code-section>
+<!-- <ace-code-section toggle_parsing="true" toggle_execution="true" url="../../details/resources/code_content/execute_customCE_show_line_block.cpp"></ace-code-section> -->
+
+<my-custom-element></my-custom-element>
 
 <!-- <ace-cs-code-mvc>
 int main()

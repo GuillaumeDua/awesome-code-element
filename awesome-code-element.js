@@ -43,12 +43,14 @@
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
+// TODO: name: not `ace` (already exists: Ajax.org Cloud9 Editor)
 // TODO: Documentation
 // TODO: decoupled highlighter
 //  - highlightjs
 //  - https://github.com/EnlighterJS/EnlighterJS
 // TODO: compatibility with Marp
-//
+// TODO: interface with [CodeMirror](https://codemirror.net/)
+// -----
 // TODO: test behavior without theme selector   (provide default behavior)
 // TODO: not mandatory dependency to doxygen    (WIP)
 // TODO: highlightjs makes clickable code elements not clickable anymore. Fix that ?
@@ -95,18 +97,9 @@
 // TODO: use synthax qwe?.asd?.zxc
 // TODO: avoid useless calls (get/set)
 // TODO: test all network errors (url, execution)
-
-// Doxygen integration quick-test
-/*
-import('./awesome-code-element.js').then(m => ace = m)
-	.then(() => {
-        let value = document.querySelector('div[class=fragment]')
-        console.debug('before', value)
-        let replacement = new ace.default.API.HTML_elements.CodeSection({ code: value })
-        value.replaceWith(replacement)
-        console.debug('after', replacement)
-    })
-*/
+// TODO: online/offline
+//          - offline: local CE, existing dependencies
+//          - online: at least one dependency is not local
 
 export { AwesomeCodeElement as default }
 
@@ -503,6 +496,15 @@ AwesomeCodeElement.details.utility = class utility {
         }
     }
 
+    static accumulate_objects = (lhs, rhs) => {
+        let result = { ...lhs }
+        
+        const keys = new Set([ ...Object.keys(lhs), ...Object.keys(rhs) ])
+        keys.forEach((key) => {
+            result[key] = rhs[key] ?? lhs[key]
+        })
+        return result
+    }
     static unfold_into({target, properties = {}}) {
         if (!target)
             throw new Error(`AwesomeCodeElement.details.utility: invalid argument [target] with value [${target}]`)
@@ -712,7 +714,7 @@ AwesomeCodeElement.details.utility = class utility {
                     storage = value
                     console.debug('proxy %csetter:', 'color:red', target.toString(), notify_property_changed)
                     on_property_change(notify_property_changed)
-                }
+            }
 
         Object.defineProperty(target, property_name, descriptor);
 
@@ -1696,23 +1698,12 @@ class code_mvc_details {
     }
 }
 
-// TODO: put elsewhere
-let accumulate_objects = (lhs, rhs) => {
-    let result = { ...lhs }
-    
-    const keys = new Set([ ...Object.keys(lhs), ...Object.keys(rhs)])
-    keys.forEach((key) => {
-        result[key] = rhs[key] ?? lhs[key]
-    })
-    return result
-}
-
 class code_mvc {
 // enhanced { model, view, controler } to represent some code as a (possibly-existing) html-element
 
     get [Symbol.toStringTag](){ return 'code_mvc' }
 
-    is_mutable = undefined
+    is_mutable = undefined // is_owning
     view = undefined
     model = undefined
     controler = undefined
@@ -1920,7 +1911,7 @@ class code_mvc {
         this.controler = new code_mvc.controler_type({
             target: this,
             language_policy: language_policy,
-            options: accumulate_objects(code_mvc.default_arguments.controler_options, controler_options)
+            options: AwesomeCodeElement.details.utility.accumulate_objects(code_mvc.default_arguments.controler_options, controler_options)
         })
         this.update_view() // might trigger language auto-detect
 
