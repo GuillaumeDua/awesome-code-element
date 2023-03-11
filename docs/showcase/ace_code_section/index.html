@@ -154,25 +154,32 @@ function define_bound_attributes_properties({ target, properties_descriptor }) {
             to:   (value) => { return value },
         };
 
-        const initiale_value = target[name];
+        const initiale_value = target[name]
+        if (name in target)
+            delete target[name]
+
         Object.defineProperty(target, name, {
-            get: ()      => { return projection.from(target.getAttribute(name)); },
-            set: (value) => { target.setAttribute(name, projection.to(value))},
+            get()      { return projection.from(this.getAttribute(name)); },
+            set(value) { console.log('set:', value, projection.to(value)); this.setAttribute(name, 42)},
             enumerable: true,
             configurable: false
         });
-        if (initiale_value !== undefined)
-            target[name] = initiale_value
+        // TODO: once connected
+        // if (typeof initiale_value !== 'undefined')
+        //     target[name] = initiale_value
     });
 }
 
 class MyCustomElement extends HTMLElement {
+
+    foo = 42
+
     constructor() {
         super();
 
         const int_projection = {
-            from: (value) => { return parseInt(value) },
-            to:   (value) => { try{ return value.toString() } catch(error){ return "undefined" } },
+            from: (value) => { try { return parseInt(value)  } catch(error){ return NaN } },
+            to:   (value) => { if (value.toString) return value.toString(); return 'NaN'},
         }
 
         define_bound_attributes_properties({
@@ -204,8 +211,6 @@ customElements.define('my-custom-element', MyCustomElement);
 <ace-code-section toggle_parsing="true" toggle_execution="true">
     int main(){ return 42; }
 </ace-code-section> -->
-
-WIP: multiples useless calls
 
 <!-- <ace-code-section toggle_parsing="true" toggle_execution="true" url="../../details/resources/code_content/execute_customCE_show_line_block.cpp"></ace-code-section> -->
 
