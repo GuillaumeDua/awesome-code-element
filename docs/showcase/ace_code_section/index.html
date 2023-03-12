@@ -142,6 +142,8 @@ function define_bound_attributes_properties({ target, properties_descriptor }) {
 
     if (!target || !(target instanceof HTMLElement) || !(properties_descriptor instanceof Array))
         throw new Error('define_bound_attributes_properties: invalid argument')
+    if (!target.isConnected)
+        throw new Error('define_bound_attributes_properties: target is not connected')
 
     // TODO: translation from property name to valid attribute name
 
@@ -155,28 +157,50 @@ function define_bound_attributes_properties({ target, properties_descriptor }) {
         };
 
         const initiale_value = target[name]
+        const initiale_descriptor = Object.getOwnPropertyDescriptor(target, name)
+            ||  Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), name)                         
+            || {}
+
+        console.log(name, initiale_descriptor)
+
+        const new_descriptor = {
+            enumerable: true,
+            configurable: true,
+            get: initiale_descriptor.get || initiale_descriptor.value
+                ? function(){ return projection.from(this.getAttribute(name)); }
+                : undefined,
+            set: initiale_descriptor.set || initiale_descriptor.value
+                ? function(value){ console.log('set:', value, projection.to(value)); this.setAttribute(name, projection.to(value))}
+                : undefined
+        }
+
         if (name in target)
             delete target[name]
 
-        Object.defineProperty(target, name, {
-            get()      { return projection.from(this.getAttribute(name)); },
-            set(value) { console.log('set:', value, projection.to(value)); this.setAttribute(name, 42)},
-            enumerable: true,
-            configurable: false
-        });
-        // TODO: once connected
-        // if (typeof initiale_value !== 'undefined')
-        //     target[name] = initiale_value
+        Object.defineProperty(target, name, new_descriptor);
+
+        if (typeof initiale_value === 'undefined')
+            return
+
+        if (target.isConnected)
+            target.setAttribute(name, initiale_value)
+            // target[name] = initiale_value
     });
 }
 
 class MyCustomElement extends HTMLElement {
 
-    foo = 42
+    a = 42
+    #b = 1
+    get b(){ return this.#b}
+    set b(value){ this.#b = value }
+    get c(){ return 13 }
 
     constructor() {
         super();
+    }
 
+    connectedCallback(){
         const int_projection = {
             from: (value) => { try { return parseInt(value)  } catch(error){ return NaN } },
             to:   (value) => { if (value.toString) return value.toString(); return 'NaN'},
@@ -185,14 +209,18 @@ class MyCustomElement extends HTMLElement {
         define_bound_attributes_properties({
             target: this,
             properties_descriptor: [
-                { name: 'foo', projection: int_projection },
-                { name: 'bar '}
+                { name: 'a', projection: int_projection },
+                { name: 'b'},
+                { name: 'c'}
             ]
         });
     }
 
     static get observedAttributes() {
-        return ['foo', 'bar'];
+        return ['a', 'b', 'c'];
+    }
+    attributeChangedCallback(name, oldValue, newValue) {
+        // TODO
     }
 }
 
