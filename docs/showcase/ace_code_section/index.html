@@ -161,8 +161,6 @@ function define_bound_attributes_properties({ target, properties_descriptor }) {
             ||  Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), name)                         
             || {}
 
-        console.log(name, initiale_descriptor)
-
         const new_descriptor = {
             enumerable: true,
             configurable: true,
@@ -181,10 +179,7 @@ function define_bound_attributes_properties({ target, properties_descriptor }) {
 
         if (typeof initiale_value === 'undefined')
             return
-
-        if (target.isConnected)
-            target.setAttribute(name, initiale_value)
-            // target[name] = initiale_value
+        target.setAttribute(name, initiale_value)
     });
 }
 
@@ -219,8 +214,16 @@ class MyCustomElement extends HTMLElement {
     static get observedAttributes() {
         return ['a', 'b', 'c'];
     }
-    attributeChangedCallback(name, oldValue, newValue) {
-        // TODO
+    attributeChangedCallback(name, old_value, new_value) {
+
+        if (!(name in this)) return
+        if (old_value === new_value) return
+
+        const descriptor = Object.getOwnPropertyDescriptor(this, name)
+        console.log('attributeChangedCallback', name, '->', old_value, new_value)
+
+        // read-only property, reset the value
+        // this.setAttribute(name, old_value); // result in infinite recursion
     }
 }
 
