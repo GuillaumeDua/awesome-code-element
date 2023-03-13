@@ -156,30 +156,52 @@ function define_bound_attributes_properties({ target, properties_descriptor }) {
             to:   (value) => { return value },
         };
 
-        const initiale_value = target[name]
         const initiale_descriptor = Object.getOwnPropertyDescriptor(target, name)
             ||  Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), name)                         
             || {}
 
-        const new_descriptor = {
-            enumerable: true,
-            configurable: true,
-            get: initiale_descriptor.get || initiale_descriptor.value
-                ? function(){ return projection.from(this.getAttribute(name)); }
-                : undefined,
-            set: initiale_descriptor.set || initiale_descriptor.value
-                ? function(value){ console.log('set:', value, projection.to(value)); this.setAttribute(name, projection.to(value))}
-                : undefined
-        }
-
+        const initiale_value = target[name]
         if (name in target)
             delete target[name]
 
-        Object.defineProperty(target, name, new_descriptor);
+        // updates
+        const property_traits = {
+            readable: initiale_descriptor.get || initiale_descriptor.value,
+            writable: initiale_descriptor.set || initiale_descriptor.value,
+            get readonly() { return this.readable && !this.writable },
+            get writeonly(){ return this.writable && !this.readable },
+        }
+        Object.defineProperty(target, name, {
+            enumerable: true,
+            configurable: true,
+            get: property_traits.readable
+                ? function(){ return projection.from(this.getAttribute(name)); }
+                : undefined,
+            set: property_traits.writable
+                ? function(value){ console.log('set', name, ':', value, '->', projection.to(value)); this.setAttribute(name, projection.to(value))}
+                : undefined
+        });
 
+        // initiale value
         if (typeof initiale_value === 'undefined')
             return
         target.setAttribute(name, initiale_value)
+
+        // read-only attribute
+        if (property_traits.readonly) {
+            const observer = new MutationObserver((mutationsList) => {
+                for (let mutation of mutationsList) {
+
+                    console.log('intercept invalid mutation:', mutation.attributeName, ':', mutation.oldValue, '->', mutation.target.getAttribute(mutation.attributeName))
+
+                    // invalid op, reset previous value
+                    observer.disconnect()
+                    mutation.target.setAttribute(mutation.attributeName, mutation.oldValue)
+                    observer.observe(mutation.target, { attributeFilter: [ name ], attributeOldValue: true });
+                }
+            });
+            observer.observe(target, { attributeFilter: [ name ], attributeOldValue: true });
+        }
     });
 }
 
@@ -190,6 +212,7 @@ class MyCustomElement extends HTMLElement {
     get b(){ return this.#b}
     set b(value){ this.#b = value }
     get c(){ return 13 }
+    set d(value){ console.log('>>> d set to', value) }
 
     constructor() {
         super();
@@ -206,24 +229,10 @@ class MyCustomElement extends HTMLElement {
             properties_descriptor: [
                 { name: 'a', projection: int_projection },
                 { name: 'b'},
-                { name: 'c'}
+                { name: 'c'},
+                { name: 'd'},
             ]
         });
-    }
-
-    static get observedAttributes() {
-        return ['a', 'b', 'c'];
-    }
-    attributeChangedCallback(name, old_value, new_value) {
-
-        if (!(name in this)) return
-        if (old_value === new_value) return
-
-        const descriptor = Object.getOwnPropertyDescriptor(this, name)
-        console.log('attributeChangedCallback', name, '->', old_value, new_value)
-
-        // read-only property, reset the value
-        // this.setAttribute(name, old_value); // result in infinite recursion
     }
 }
 
