@@ -175,10 +175,21 @@ function define_bound_attributes_properties({ target, properties_descriptor }) {
             enumerable: true,
             configurable: true,
             get: property_traits.readable
-                ? function(){ return projection.from(this.getAttribute(name)); }
+                ? function(){
+                    if (initiale_descriptor.set)
+                        initiale_descriptor.set(value)
+                    return projection.from(this.getAttribute(name));
+                }
                 : undefined,
             set: property_traits.writable
-                ? function(value){ console.log('set', name, ':', value, '->', projection.to(value)); this.setAttribute(name, projection.to(value))}
+                ? function(value){
+                    console.log('set', name, ':', target[name], '->', value, '(', projection.to(value), ')' );
+                    // if (value === target[name])
+                    //     return
+                    if (initiale_descriptor.set)
+                        initiale_descriptor.set(value)
+                    this.setAttribute(name, projection.to(value))
+                }
                 : undefined
         });
 
@@ -187,21 +198,22 @@ function define_bound_attributes_properties({ target, properties_descriptor }) {
             return
         target.setAttribute(name, initiale_value)
 
-        // read-only attribute
-        if (property_traits.readonly) {
-            const observer = new MutationObserver((mutationsList) => {
-                for (let mutation of mutationsList) {
+        const observer = new MutationObserver((mutationsList) => {
+            for (let mutation of mutationsList) {
 
-                    console.log('intercept invalid mutation:', mutation.attributeName, ':', mutation.oldValue, '->', mutation.target.getAttribute(mutation.attributeName))
+                console.log('intercept invalid mutation:', mutation.attributeName, ':', mutation.oldValue, '->', mutation.target.getAttribute(mutation.attributeName))
 
-                    // invalid op, reset previous value
+                if (property_traits.readonly){
+                // read-only attribute, reset previous value
                     observer.disconnect()
                     mutation.target.setAttribute(mutation.attributeName, mutation.oldValue)
                     observer.observe(mutation.target, { attributeFilter: [ name ], attributeOldValue: true });
                 }
-            });
-            observer.observe(target, { attributeFilter: [ name ], attributeOldValue: true });
-        }
+                if (property_traits.writable)
+                    initiale_descriptor.set(value)
+            }
+        });
+        observer.observe(target, { attributeFilter: [ name ], attributeOldValue: true });
     });
 }
 
@@ -213,6 +225,7 @@ class MyCustomElement extends HTMLElement {
     set b(value){ this.#b = value }
     get c(){ return 13 }
     set d(value){ console.log('>>> d set to', value) }
+    get e()     { console.log('>>> e get') }
 
     constructor() {
         super();
@@ -231,6 +244,7 @@ class MyCustomElement extends HTMLElement {
                 { name: 'b'},
                 { name: 'c'},
                 { name: 'd'},
+                { name: 'e'},
             ]
         });
     }
