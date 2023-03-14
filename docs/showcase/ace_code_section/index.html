@@ -186,9 +186,10 @@ function define_bound_attributes_properties({ target, properties_descriptor }) {
             configurable: true,
             get: property_traits.readable
                 ? function(){
-                    if (initiale_descriptor.set)
-                        initiale_descriptor.set(value)
-                    return projection.from(this.getAttribute(name));
+                    const value = projection.from(this.getAttribute(name))
+                    // if (initiale_descriptor.set)
+                    //     initiale_descriptor.set(value)
+                    return value;
                 }
                 : undefined,
             set: property_traits.writable
@@ -196,8 +197,8 @@ function define_bound_attributes_properties({ target, properties_descriptor }) {
                     console.log('set', name, ':', target[name], '->', value, '(', projection.to(value), ')' );
                     // if (value === target[name])
                     //     return
-                    if (initiale_descriptor.set)
-                        initiale_descriptor.set(value)
+                    // if (initiale_descriptor.set)
+                    //     initiale_descriptor.set(value)
                     this.setAttribute(name, projection.to(value))
                 }
                 : undefined
@@ -207,6 +208,7 @@ function define_bound_attributes_properties({ target, properties_descriptor }) {
         if (typeof initiale_value !== 'undefined')
             target.setAttribute(name, initiale_value)
 
+        // TODO: only one observer for all properties ?
         const observer = new MutationObserver((mutationsList) => {
             for (let mutation of mutationsList) {
 
