@@ -1,48 +1,106 @@
 
 // IDEA: controler as a public-exposed proxy to monitored values ?
 
-function inject_property_proxy({target, property_name}){
-    
-    const descriptor = Object.getOwnPropertyDescriptor(target, property_name) || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), property_name) || {}
-    if (!descriptor.configurable)
-        throw new Error(`inject_property_proxy: [${property_name}] is not configurable`)
+class get_set_cb {
+    static inject_property_proxy({target, property_name}){
+        
+        const descriptor = Object.getOwnPropertyDescriptor(target, property_name) || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), property_name) || {}
+        if (!descriptor.configurable)
+            throw new Error(`inject_property_proxy: [${property_name}] is not configurable`)
 
-    // TODO: as parameter
-    // TODO: only one "on_value_changed" callback ?
-    const getter_payload = (value) => { console.log('proxy', property_name, ': get with value = [', value, ']') }
-    const setter_payload = (value) => { console.log('proxy', property_name, ': set with value = [', value, ']') }
+        // TODO: as parameter
+        // TODO: only one "on_value_changed" callback ?
+        const getter_payload = (value) => { console.log('proxy', property_name, ': get with value = [', value, ']') }
+        const setter_payload = (value) => { console.log('proxy', property_name, ': set with value = [', value, ']') }
 
-    const getter = (() => {
-        if (descriptor.get)
-            return function(){
-                const value = descriptor.get.call(this);
-                getter_payload(value);
-                return value
+        const getter = (() => {
+            if (descriptor.get)
+                return function(){
+                    const value = descriptor.get.call(this);
+                    getter_payload(value);
+                    return value
+                }
+            if (descriptor.value)
+                return function(){ getter_payload(descriptor.value); return descriptor.value }
+            return undefined
+        })()
+        const setter = (() => {
+            if (descriptor.set)
+                return function(value){ setter_payload(value); return descriptor.set.call(this, value); }
+            if (descriptor.value)
+                return function(value){ setter_payload(value); descriptor.value = value }
+            return undefined
+        })()
+
+        Object.defineProperty(target, property_name, {
+            get: getter,
+            set: setter
+        });
+
+        return {
+            revoke: () => { Object.defineProperty(target, property_name, descriptor) }
+        }
+    }
+}
+class on_property_changed {
+    static inject_property_proxy({target, property_name}){
+        
+        const descriptor = Object.getOwnPropertyDescriptor(target, property_name) || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), property_name) || {}
+        if (!descriptor.configurable)
+            throw new Error(`inject_property_proxy: [${property_name}] is not configurable`)
+
+        // TODO: as parameter
+        const payload_impl = (value) => { console.log('proxy for [', property_name, '] with value = [', value, ']') }
+        let storage = undefined
+        const payload = (value) => {
+            if (value !== storage){
+                storage = value
+                payload_impl(value)
             }
-        if (descriptor.value)
-            return function(){ getter_payload(descriptor.value); return descriptor.value }
-        return undefined
-    })()
-    const setter = (() => {
-        if (descriptor.set)
-            return function(value){ setter_payload(value); return descriptor.set.call(this, value); }
-        if (descriptor.value)
-            return function(value){ setter_payload(value); descriptor.value = value }
-        return undefined
-    })()
+        }
 
-    Object.defineProperty(target, property_name, {
-        get: getter,
-        set: setter
-    });
+        const getter = (() => {
+            if (descriptor.get)
+                return function(){
+                    const value = descriptor.get.call(this);
+                    payload(value);
+                    return value
+                }
+            if (descriptor.value)
+                return function(){ payload(descriptor.value); return descriptor.value }
+            return undefined
+        })()
+        const setter = (() => {
+            if (descriptor.set)
+                return function(value){
+                    descriptor.set.call(this, value);
+                    payload(descriptor.get.call(this))
+                }
+            if (descriptor.value)
+                return function(value){
+                    descriptor.value = value
+                    payload(value);
+                }
+            return undefined
+        })()
 
-    return {
-        revoke: () => { Object.defineProperty(target, property_name, descriptor) }
+        Object.defineProperty(target, property_name, {
+            get: getter,
+            set: setter
+        });
+
+        // spread initiale value, if any
+        target[property_name]
+
+        return {
+            revoke: () => { Object.defineProperty(target, property_name, descriptor) }
+        }
     }
 }
 
 type = class {
-    #a = 42
+
+    #a = 21
     get a(){ return this.#a * 2 }
 
     b = 42
@@ -52,16 +110,24 @@ type = class {
     get d(){ return this.#d }
     set d(value){ this.#d = value }
 
-    #e = 42
+    #e = 21
     get e(){ return this.#e * 2 }
     set e(value){ this.#e = value / 2 }
+
+    #f = undefined
+    get f(){ return this.#f }
+    set f(value){ this.#f = (value + '').toUpperCase()  }
 }
 value = new type
-inject_property_proxy({ target: value, property_name: 'a' })
-inject_property_proxy({ target: value, property_name: 'b' })
-inject_property_proxy({ target: value, property_name: 'c' })
-inject_property_proxy({ target: value, property_name: 'd' })
-inject_property_proxy({ target: value, property_name: 'e' })
+
+const impl = on_property_changed
+
+impl.inject_property_proxy({ target: value, property_name: 'a' })
+impl.inject_property_proxy({ target: value, property_name: 'b' })
+impl.inject_property_proxy({ target: value, property_name: 'c' })
+impl.inject_property_proxy({ target: value, property_name: 'd' })
+impl.inject_property_proxy({ target: value, property_name: 'e' })
+impl.inject_property_proxy({ target: value, property_name: 'f' })
 
 
 
