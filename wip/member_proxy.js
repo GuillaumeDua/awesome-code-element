@@ -2,7 +2,7 @@
 // IDEA: controler as a public-exposed proxy to monitored values ?
 
 class on_property_changed {
-    static inject_property_proxy({target, property_name, callback }){
+    static inject_property_proxy({ target, property_name, callback }){
         
         if (!target || !property_name || !callback)
             throw new Error('inject_property_proxy: invalid argument')
@@ -14,7 +14,7 @@ class on_property_changed {
         let storage = undefined
         const payload = (value) => {
             if (value !== storage){
-                console.log('proxy for [', property_name, '] with value = [', value, '](', typeof value, ') with storage=[', storage, ']')
+                console.debug('proxy for [', property_name, '] with value = [', value, '](', typeof value, ') with storage=[', storage, '](', typeof storage, ')')
                 storage = value
                 callback(value)
             }

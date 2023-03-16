@@ -255,7 +255,7 @@ class new_impl {
                 to:   (value) => { return value + '' },
             };
 
-            const callback = (value) => {
+            const on_property_change_sync_with_attribute = (value) => {
             // update attribute
                 if (value !== projection.from(target.getAttribute(name))){
                     console.log('define_bound_attributes_properties.callback: [', name, '] => [', value, '](', typeof value, ')')
@@ -264,7 +264,11 @@ class new_impl {
                     
             }
             // TODO?: projection on this proxy (avoid redundant callback trigger with different types)
-            const { revoke, bypass, initiale_descriptor } = on_property_changed.inject_property_proxy({target: target, property_name: name, callback: callback })
+            const { revoke, bypass, initiale_descriptor } = on_property_changed.inject_property_proxy({
+                target: target,
+                property_name: name,
+                callback: on_property_change_sync_with_attribute
+            })
 
             const property_traits = {
                 readable: Boolean(initiale_descriptor.get || initiale_descriptor.value),
@@ -290,12 +294,14 @@ class new_impl {
                     const while_disconnected_then = (action) => {
                     // read-only attribute, reset previous value
                     // warning: can result in race conditions
+                    // TODO: process pending records ? MutationObserver.`takeRecords`
                         observer.disconnect()
                         action()
                         observer.observe(mutation.target, { attributeFilter: [ name ], attributeOldValue: true });
                     }
                     while_disconnected_then(() => {
                         if (property_traits.readonly){
+                            console.warn('define_bound_attributes_properties: property', name, ' is readonly, reject value', value)
                             mutation.target.setAttribute(mutation.attributeName, mutation.oldValue)
                             return
                         }
@@ -317,6 +323,7 @@ class MyCustomElement extends HTMLElement {
     get a(){ return this.#a * 2 }
 
     b = 42
+
     set c(value){}
 
     // c is undefined on purpose
