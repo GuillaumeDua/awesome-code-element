@@ -297,24 +297,21 @@ class new_impl {
                         'intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value,
                         '[', property_traits.readonly ? 'REJECTED' : 'ACCEPTED', ']'
                     )
-
-                    // impl_1: ok, but trigger mutation twice (see else-branch)
-                    if (property_traits.readonly){
+                    
+                    const while_disconnected_then = (action) => {
                     // read-only attribute, reset previous value
                     // warning: can result in race conditions
                         observer.disconnect()
-                        mutation.target.setAttribute(mutation.attributeName, mutation.oldValue)
+                        action()
                         observer.observe(mutation.target, { attributeFilter: [ name ], attributeOldValue: true });
                     }
-                    else { // writable
-                        // console.log('getter', property_traits.getter, ', setter', property_traits.setter)
-                        // if (property_traits.getter)
-                        //     console.log(property_traits.getter())
-                        // if (property_traits.setter)
-                        //     property_traits.setter(value)
-                        // then disconnect -> set attr to getter if any -> observe
-                        target[name] = value
-                    }
+                    while_disconnected_then(() => {
+                        if (property_traits.readonly)
+                            mutation.target.setAttribute(mutation.attributeName, mutation.oldValue)
+                        if (property_traits.setter)
+                            property_traits.setter(value)
+                        mutation.target.setAttribute(mutation.attributeName, property_traits.getter ? property_traits.getter() : value)
+                    })
                 }
             });
             observer.observe(target, { attributeFilter: [ name ], attributeOldValue: true });
