@@ -233,6 +233,7 @@ class old_impl {
     }
 }
 class new_impl {
+    // TODO: { way: up, down, two_way }
     static define_bound_attributes_properties({ target, properties_descriptor }){
     // NB: projections reciprocity is assumed
 
@@ -263,27 +264,15 @@ class new_impl {
                     
             }
             // TODO?: projection on this proxy (avoid redundant callback trigger with different types)
-            const { revoke, initiale_descriptor } = on_property_changed.inject_property_proxy({target: target, property_name: name, callback: callback })
+            const { revoke, bypass, initiale_descriptor } = on_property_changed.inject_property_proxy({target: target, property_name: name, callback: callback })
 
             const property_traits = {
                 readable: Boolean(initiale_descriptor.get || initiale_descriptor.value),
                 writable: Boolean(initiale_descriptor.set || initiale_descriptor.value),
                 get readonly() { return Boolean(this.readable && !this.writable) },
                 get writeonly(){ return Boolean(this.writable && !this.readable) },
-                getter: (() => {
-                    if (initiale_descriptor.get)
-                        return function(){ return initiale_descriptor.get.call(target); }
-                    if (initiale_descriptor.value)
-                        return function(){ return initiale_descriptor.value }
-                    return undefined
-                })(),
-                setter: (() => {
-                    if (initiale_descriptor.set)
-                        return function(value){ initiale_descriptor.set.call(target, value); }
-                    if (initiale_descriptor.value)
-                        return function(value){ initiale_descriptor.value = value }
-                    return undefined
-                })()
+                getter: bypass.getter?.bind(target),
+                setter: bypass.setter?.bind(target)
             }
 
             const observer = new MutationObserver((mutationsList) => {
@@ -306,11 +295,14 @@ class new_impl {
                         observer.observe(mutation.target, { attributeFilter: [ name ], attributeOldValue: true });
                     }
                     while_disconnected_then(() => {
-                        if (property_traits.readonly)
+                        if (property_traits.readonly){
                             mutation.target.setAttribute(mutation.attributeName, mutation.oldValue)
-                        if (property_traits.setter)
+                            return
+                        }
+                        if (property_traits.setter){
                             property_traits.setter(value)
-                        mutation.target.setAttribute(mutation.attributeName, property_traits.getter ? property_traits.getter() : value)
+                            mutation.target.setAttribute(mutation.attributeName, property_traits.getter ? property_traits.getter() : value)
+                        }
                     })
                 }
             });
