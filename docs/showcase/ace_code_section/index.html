@@ -138,100 +138,6 @@ SOFTWARE.
 
         <script>
 
-class old_impl {
-    static define_bound_attributes_properties({ target, properties_descriptor }) {
-
-        if (!target || !(target instanceof HTMLElement) || !(properties_descriptor instanceof Array))
-            throw new Error('define_bound_attributes_properties: invalid argument')
-        if (!target.isConnected)
-            throw new Error('define_bound_attributes_properties: target is not connected')
-
-        // TODO: translation from property name to valid attribute name
-
-        properties_descriptor.forEach(descriptor => {
-
-            let {name, projection} = descriptor
-
-            projection ??= {
-                from: (value) => { return value },
-                to:   (value) => { return value },
-            };
-
-            const initiale_descriptor = Object.getOwnPropertyDescriptor(target, name)
-                ||  Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), name)                         
-                || {}
-            if (!initiale_descriptor.configurable)
-                throw new Error(`define_bound_attributes_properties: property [${name}] is not configurable`)
-
-            const initiale_value = target[name]
-            if (name in target)
-                delete target[name]
-
-            // updates
-            const property_accessors = {
-                get: initiale_descriptor.get ?? (initiale_descriptor.value
-                    ? function(){ return initiale_descriptor.value }
-                    : undefined),
-                set: initiale_descriptor.set ?? (initiale_descriptor.value
-                    ? function(value){ initiale_descriptor.value = value }
-                    : undefined)
-            }
-            const property_traits = {
-                readable: Boolean(initiale_descriptor.get || initiale_descriptor.value),
-                writable: Boolean(initiale_descriptor.set || initiale_descriptor.value),
-                get readonly() { return Boolean(this.readable && !this.writable) },
-                get writeonly(){ return Boolean(this.writable && !this.readable) },
-            }
-            Object.defineProperty(target, name, {
-                enumerable: true,
-                configurable: true,
-                get: property_traits.readable
-                    ? function(){
-                        const value = projection.from(this.getAttribute(name))
-                        // if (initiale_descriptor.set)
-                        //     initiale_descriptor.set(value)
-                        return value;
-                    }
-                    : undefined,
-                set: property_traits.writable
-                    ? function(value){
-                        console.log('set', name, ':', target[name], '->', value, '(', projection.to(value), ')' );
-                        // if (value === target[name])
-                        //     return
-                        // if (initiale_descriptor.set)
-                        //     initiale_descriptor.set(value)
-                        this.setAttribute(name, projection.to(value))
-                    }
-                    : undefined
-            });
-
-            // initiale value
-            if (typeof initiale_value !== 'undefined')
-                target.setAttribute(name, initiale_value)
-
-            // TODO: only one observer for all properties ?
-            const observer = new MutationObserver((mutationsList) => {
-                for (let mutation of mutationsList) {
-
-                    const value = mutation.target.getAttribute(mutation.attributeName)
-                    console.log('intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value)
-
-                    if (property_traits.readonly){
-                    // read-only attribute, reset previous value
-                        observer.disconnect()
-                        mutation.target.setAttribute(mutation.attributeName, mutation.oldValue)
-                        observer.observe(mutation.target, { attributeFilter: [ name ], attributeOldValue: true });
-                    }
-                    // if (property_traits.writable)
-                    console.log(property_accessors)
-                    if (property_accessors.set)
-                        property_accessors.set(value)
-                }
-            });
-            observer.observe(target, { attributeFilter: [ name ], attributeOldValue: true });
-        });
-    }
-}
 class new_impl {
     // TODO: { way: up, down, two_way }
     static define_bound_attributes_properties({ target, properties_descriptor }){
@@ -244,7 +150,7 @@ class new_impl {
 
         // todo: return `revoke`+`observer.disconnect()` to caller
 
-        properties_descriptor.forEach(descriptor => {
+        let result = properties_descriptor.map(descriptor => {
 
             let { name, projection } = descriptor
             if (!name || !(name in target))
@@ -255,31 +161,19 @@ class new_impl {
                 to:   (value) => { return value + '' },
             };
 
-            const on_property_change_sync_with_attribute = (value) => {
-            // update attribute
-                if (value !== projection.from(target.getAttribute(name))){
-                    console.log('define_bound_attributes_properties.callback: [', name, '] => [', value, '](', typeof value, ')')
-                    target.setAttribute(name, projection.to(value))
-                }
-                    
-            }
-            // TODO?: projection on this proxy (avoid redundant callback trigger with different types)
-            const { revoke, bypass, initiale_descriptor } = on_property_changed.inject_property_proxy({
-                target: target,
-                property_name: name,
-                callback: on_property_change_sync_with_attribute
-            })
+            let property_traits = undefined
+            let observer = undefined
 
-            const property_traits = {
-                readable: Boolean(initiale_descriptor.get || initiale_descriptor.value),
-                writable: Boolean(initiale_descriptor.set || initiale_descriptor.value),
-                get readonly() { return Boolean(this.readable && !this.writable) },
-                get writeonly(){ return Boolean(this.writable && !this.readable) },
-                getter: bypass.getter?.bind(target),
-                setter: bypass.setter?.bind(target)
+            const suspend_observer_while = (action) => {
+            // read-only attribute, reset previous value
+            // warning: can result in race conditions
+            // TODO: process pending records ? MutationObserver.`takeRecords`
+                observer.disconnect()
+                action()
+                observer.observe(target, { attributeFilter: [ name ], attributeOldValue: true });
             }
 
-            const observer = new MutationObserver((mutationsList) => {
+            observer = new MutationObserver((mutationsList) => {
                 for (let mutation of mutationsList) {
 
                     if (mutation.oldValue === mutation.target.getAttribute(mutation.attributeName))
@@ -291,15 +185,7 @@ class new_impl {
                         '[', property_traits.readonly ? 'REJECTED' : 'ACCEPTED', ']'
                     )
                     
-                    const while_disconnected_then = (action) => {
-                    // read-only attribute, reset previous value
-                    // warning: can result in race conditions
-                    // TODO: process pending records ? MutationObserver.`takeRecords`
-                        observer.disconnect()
-                        action()
-                        observer.observe(mutation.target, { attributeFilter: [ name ], attributeOldValue: true });
-                    }
-                    while_disconnected_then(() => {
+                    suspend_observer_while(() => {
                         if (property_traits.readonly){
                             console.warn('define_bound_attributes_properties: property', name, ' is readonly, reject value', value)
                             mutation.target.setAttribute(mutation.attributeName, mutation.oldValue)
@@ -313,7 +199,48 @@ class new_impl {
                 }
             });
             observer.observe(target, { attributeFilter: [ name ], attributeOldValue: true });
+
+            const on_property_change_sync_with_attribute = (value) => {
+            // update attribute
+                if (value !== projection.from(target.getAttribute(name))){
+                    console.log('define_bound_attributes_properties.callback: [', name, '] => [', value, '](', typeof value, ')')
+                    suspend_observer_while(() => target.setAttribute(name, projection.to(value)))
+                }
+            }
+            // TODO?: projection on this proxy (avoid redundant callback trigger with different types)
+            const { revoke, bypass, initiale_descriptor } = on_property_changed.inject_property_proxy({
+                target: target,
+                property_name: name,
+                callback: on_property_change_sync_with_attribute
+            })
+            property_traits = {
+                readable: Boolean(initiale_descriptor.get || initiale_descriptor.value),
+                writable: Boolean(initiale_descriptor.set || initiale_descriptor.value),
+                get readonly() { return Boolean(this.readable && !this.writable) },
+                get writeonly(){ return Boolean(this.writable && !this.readable) },
+                getter: bypass.getter?.bind(target),
+                setter: bypass.setter?.bind(target)
+            }
+
+            return {
+                property_name: name,
+                revoke: () => {
+                    revoke()
+                    observer.disconnect()
+                }
+            }
         })
+        .reduce((accumulator, arg) => {
+            const { property_name, revoke } = arg
+            accumulator[property_name] = revoke
+            return accumulator
+        }, {})
+
+        result.revoke = () => {
+            Object.keys(result).forEach((key) => result[key]())
+        }
+
+        return result
     }
 }
 
@@ -351,7 +278,7 @@ class MyCustomElement extends HTMLElement {
         }
 
         const impl = new_impl
-        impl.define_bound_attributes_properties({
+        const revoker = impl.define_bound_attributes_properties({
             target: this,
             properties_descriptor: [
                 { name: 'a', projection: int_projection },
@@ -363,6 +290,7 @@ class MyCustomElement extends HTMLElement {
                 // TODO: test non-existing (defualt behavior: plain value or error ?)
             ]
         });
+        console.log(revoker)
     }
 }
 
