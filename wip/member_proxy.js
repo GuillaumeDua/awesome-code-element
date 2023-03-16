@@ -11,6 +11,8 @@ class on_property_changed {
         if (!descriptor.configurable)
             throw new Error(`inject_property_proxy: [${property_name}] is not configurable`)
 
+        console.debug('>>> debug descriptor', property_name, descriptor)
+
         let storage = undefined
         const payload = (value) => {
             if (value !== storage){

@@ -270,6 +270,20 @@ class new_impl {
                 writable: Boolean(initiale_descriptor.set || initiale_descriptor.value),
                 get readonly() { return Boolean(this.readable && !this.writable) },
                 get writeonly(){ return Boolean(this.writable && !this.readable) },
+                getter: (() => {
+                    if (initiale_descriptor.get)
+                        return function(){ return initiale_descriptor.get.call(target); }
+                    if (initiale_descriptor.value)
+                        return function(){ return initiale_descriptor.value }
+                    return undefined
+                })(),
+                setter: (() => {
+                    if (initiale_descriptor.set)
+                        return function(value){ initiale_descriptor.set.call(target, value); }
+                    if (initiale_descriptor.value)
+                        return function(value){ initiale_descriptor.value = value }
+                    return undefined
+                })()
             }
 
             const observer = new MutationObserver((mutationsList) => {
@@ -279,20 +293,28 @@ class new_impl {
                         continue
 
                     const value = projection.from(mutation.target.getAttribute(mutation.attributeName))
-                    console.log('intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value)
+                    console.log(
+                        'intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value,
+                        '[', property_traits.readonly ? 'REJECTED' : 'ACCEPTED', ']'
+                    )
 
+                    // impl_1: ok, but trigger mutation twice (see else-branch)
                     if (property_traits.readonly){
                     // read-only attribute, reset previous value
+                    // warning: can result in race conditions
                         observer.disconnect()
                         mutation.target.setAttribute(mutation.attributeName, mutation.oldValue)
                         observer.observe(mutation.target, { attributeFilter: [ name ], attributeOldValue: true });
                     }
-
-                    target[name] = value
-                    // if (property_traits.writable)
-                    // console.log(property_accessors)
-                    // if (property_accessors.set)
-                    //     property_accessors.set(value)
+                    else { // writable
+                        // console.log('getter', property_traits.getter, ', setter', property_traits.setter)
+                        // if (property_traits.getter)
+                        //     console.log(property_traits.getter())
+                        // if (property_traits.setter)
+                        //     property_traits.setter(value)
+                        // then disconnect -> set attr to getter if any -> observe
+                        target[name] = value
+                    }
                 }
             });
             observer.observe(target, { attributeFilter: [ name ], attributeOldValue: true });
@@ -339,8 +361,8 @@ class MyCustomElement extends HTMLElement {
                 { name: 'a', projection: int_projection },
                 { name: 'b', projection: int_projection },
                 { name: 'c'},
-                { name: 'd', projection: int_projection},
-                { name: 'e'},
+                { name: 'd', projection: int_projection },
+                { name: 'e', projection: int_projection},
                 { name: 'f'},
                 // TODO: test non-existing (defualt behavior: plain value or error ?)
             ]
