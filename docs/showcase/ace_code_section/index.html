@@ -142,6 +142,8 @@ class synced_attributes_controler{
     #target = undefined
     #properties_descriptor = undefined
     #options = undefined
+    
+    properties_accessor = []
 
     static get default_options(){
         return {
@@ -158,7 +160,7 @@ class synced_attributes_controler{
 
     constructor({ target, properties_descriptor, options }){
     // target: valid HTMLElement
-    // properties_descriptor: { owner?, name, projection?.{from,to} }
+    // properties_descriptor: { owner?, name, projection?.{from?,to?} }
     // options: { create_undefined_properties }
 
         if (!target || !(target instanceof HTMLElement))
@@ -172,215 +174,118 @@ class synced_attributes_controler{
 
         if (this.#options.start_after_construction)
             this.start()
-        console.log(this.#options)
     }
 
     start(){
+        this.stop()
+
         if (!this.#target.isConnected)
             throw new Error('synced_attributes_controler: target is not connected')
 
         this.#properties_descriptor.forEach((property_descriptor) => this.#initialize_one_property(property_descriptor))
     }
+    stop(){
+        this.properties_accessor.forEach((accessor) => accessor.revoke())
+        this.properties_accessor = new Array
+    }
 
-    #make_attribute_mutation_observer({ projection, property_traits }){
+    #initialize_attribute_mutation_observer({ accessor }){
 
-        let observer = undefined
-
-        const suspend_observer_while = (action) => {
-        // read-only attribute, reset previous value
-        //  warning: can result in race conditions
-        //  TODO: process pending records ? MutationObserver.`takeRecords`
-            observer.disconnect()
-            action()
-            observer.observe(this.#target, { attributeFilter: [ name ], attributeOldValue: true });
-        }
-
-        observer = new MutationObserver((mutationsList) => {
+        accessor.observer = undefined
+        accessor.observer = new MutationObserver((mutationsList) => {
             for (let mutation of mutationsList) {
 
                 if (mutation.oldValue === mutation.target.getAttribute(mutation.attributeName))
                     continue
 
-                const value = projection.from(mutation.target.getAttribute(mutation.attributeName))
+                const value = accessor.projection.from(mutation.target.getAttribute(mutation.attributeName))
                 console.log(
                     'intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value,
-                    '[', property_traits.readonly ? 'REJECTED' : 'ACCEPTED', ']'
+                    '[', accessor.property_traits.readonly ? 'REJECTED' : 'ACCEPTED', ']'
                 )
                 
-                suspend_observer_while(() => {
-                    if (property_traits.readonly){
-                        console.warn('define_bound_attributes_properties: property', name, ' is readonly, reject value', value)
+                accessor.observer.suspend_observer_while(() => {
+                    if (accessor.property_traits.readonly){
+                        console.warn('define_bound_attributes_properties: property', accessor.name, ' is readonly, reject value', value)
                         mutation.target.setAttribute(mutation.attributeName, mutation.oldValue)
                         return
                     }
-                    if (property_traits.setter){
-                        property_traits.setter(value)
-                        mutation.target.setAttribute(mutation.attributeName, property_traits.getter ? property_traits.getter() : value)
+                    if (accessor.property_traits.setter){
+                        accessor.property_traits.setter(value)
+                        mutation.target.setAttribute(
+                            mutation.attributeName,
+                            accessor.property_traits.getter ? accessor.property_traits.getter() : value
+                        )
                     }
                 })
             }
         });
-        observer.observe(this.#target, { attributeFilter: [ name ], attributeOldValue: true });
-
-        return {
-            observer: observer,
-            suspend_observer_while: suspend_observer_while
+        accessor.observer.suspend_observer_while = (action) => {
+        // read-only attribute, reset previous value
+        //  warning: can result in race conditions
+        //  TODO: process pending records ? MutationObserver.`takeRecords`
+            accessor.observer.disconnect()
+            action()
+            accessor.observer.observe(this.#target, { attributeFilter: [ accessor.name ], attributeOldValue: true });
         }
+        accessor.observer.observe(this.#target, { attributeFilter: [ accessor.name ], attributeOldValue: true });
     }
     #initialize_one_property({ owner, name, projection }){
 
-        owner ??= this.#target
-
-        if (!name || !(name in owner))
+        if (!name)
             throw new Error('synced_attributes_controler: invalid property descriptor')
 
-        projection ??= synced_attributes_controler.default_projection
+        let accessor = this.properties_accessor[name] = {
+            name: name,
+            owner: owner ?? this.#target,
+            projection: { ...synced_attributes_controler.default_projection, ...projection },
+            property_traits: undefined
+        }
+        if (!(name in accessor.owner)){
+            delete this.properties_accessor[name]
+            throw new Error(`synced_attributes_controler: missing property [${name}] in [${accessor.owner}]`)
+        }
 
-        let property_traits = undefined
-        const { observer, suspend_observer_while } = this.#make_attribute_mutation_observer({ projection: projection, property_traits: property_traits })
+        // attributes to property changes
+        this.#initialize_attribute_mutation_observer({ accessor: accessor })
 
+        // property to attributes changes
         const on_property_change_sync_with_attribute = (value) => {
         // update attribute
-            if (value !== projection.from(this.#target.getAttribute(name))){
+            if (value !== accessor.projection.from(this.#target.getAttribute(name))){
             // or String(value) !== target.getAttribute(name) ?
                 console.log('define_bound_attributes_properties.callback: [', name, '] => [', value, '](', typeof value, ')')
-                suspend_observer_while(() => this.#target.setAttribute(name, projection.to(value)))
+                accessor.observer.suspend_observer_while(() => this.#target.setAttribute(name, accessor.projection.to(value)))
             }
         }
         // TODO?: projection on this proxy (avoid redundant callback trigger with different types)
         const { revoke, bypass, initiale_descriptor } = on_property_changed.inject_property_proxy({
-            target: owner,
+            target: accessor.owner,
             property_name: name,
             callback: on_property_change_sync_with_attribute
         })
-        property_traits = {
+        accessor.property_traits = { // used by `make_attribute_mutation_observer`
             readable: Boolean(initiale_descriptor.get || initiale_descriptor.value),
             writable: Boolean(initiale_descriptor.set || initiale_descriptor.value),
             get readonly() { return Boolean(this.readable && !this.writable) },
             get writeonly(){ return Boolean(this.writable && !this.readable) },
-            getter: bypass.getter?.bind(owner),
-            setter: bypass.setter?.bind(owner)
+            getter: bypass.getter?.bind(accessor.owner),
+            setter: bypass.setter?.bind(accessor.owner)
         }
 
-        return {
-            property_name: name,
-            revoke: () => {
-                revoke()
-                observer.disconnect()
-            }
+        accessor.revoke = () => {
+            revoke()
+            accessor.observer.disconnect()
         }
+        return accessor
     }
 }
 
-class new_impl {
-
-    // TODO: { way: up, down, two_way }
-    static define_bound_attributes_properties({ target, properties_descriptor }){
-    // NB: properties_descriptor.projections.{from, to} reciprocity is assumed
-    // properties_descriptor{ owner, name, projection? }
-
-        if (!target || !(target instanceof HTMLElement))
-            throw new Error('define_bound_attributes_properties: invalid argument `target`')
-        if (!target.isConnected)
-            throw new Error('define_bound_attributes_properties: target is not connected')
-        if (!(properties_descriptor instanceof Array) || properties_descriptor.size === 0)
-            throw new Error('define_bound_attributes_properties: invalid argument `properties_descriptor`')
-
-        let result = properties_descriptor.map(descriptor => {
-
-            let { owner, name, projection } = descriptor
-            if (!name || !(name in target))
-                throw new Error('define_bound_attributes_properties: invalid property descriptor')
-
-            projection ??= {
-                from: (value) => { return value },
-                to:   (value) => { return value + '' },
-            };
-
-            let property_traits = undefined
-            let observer = undefined
-
-            const suspend_observer_while = (action) => {
-            // read-only attribute, reset previous value
-            //  warning: can result in race conditions
-            //  TODO: process pending records ? MutationObserver.`takeRecords`
-                observer.disconnect()
-                action()
-                observer.observe(target, { attributeFilter: [ name ], attributeOldValue: true });
-            }
-
-            observer = new MutationObserver((mutationsList) => {
-                for (let mutation of mutationsList) {
-
-                    if (mutation.oldValue === mutation.target.getAttribute(mutation.attributeName))
-                        continue
-
-                    const value = projection.from(mutation.target.getAttribute(mutation.attributeName))
-                    console.log(
-                        'intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value,
-                        '[', property_traits.readonly ? 'REJECTED' : 'ACCEPTED', ']'
-                    )
-                    
-                    suspend_observer_while(() => {
-                        if (property_traits.readonly){
-                            console.warn('define_bound_attributes_properties: property', name, ' is readonly, reject value', value)
-                            mutation.target.setAttribute(mutation.attributeName, mutation.oldValue)
-                            return
-                        }
-                        if (property_traits.setter){
-                            property_traits.setter(value)
-                            mutation.target.setAttribute(mutation.attributeName, property_traits.getter ? property_traits.getter() : value)
-                        }
-                    })
-                }
-            });
-            observer.observe(target, { attributeFilter: [ name ], attributeOldValue: true });
-
-            const on_property_change_sync_with_attribute = (value) => {
-            // update attribute
-                if (value !== projection.from(target.getAttribute(name))){
-                // or String(value) !== target.getAttribute(name) ?
-                    console.log('define_bound_attributes_properties.callback: [', name, '] => [', value, '](', typeof value, ')')
-                    suspend_observer_while(() => target.setAttribute(name, projection.to(value)))
-                }
-            }
-            // TODO?: projection on this proxy (avoid redundant callback trigger with different types)
-            const { revoke, bypass, initiale_descriptor } = on_property_changed.inject_property_proxy({
-                target: target,
-                property_name: name,
-                callback: on_property_change_sync_with_attribute
-            })
-            property_traits = {
-                readable: Boolean(initiale_descriptor.get || initiale_descriptor.value),
-                writable: Boolean(initiale_descriptor.set || initiale_descriptor.value),
-                get readonly() { return Boolean(this.readable && !this.writable) },
-                get writeonly(){ return Boolean(this.writable && !this.readable) },
-                getter: bypass.getter?.bind(target),
-                setter: bypass.setter?.bind(target)
-            }
-
-            return {
-                property_name: name,
-                revoke: () => {
-                    revoke()
-                    observer.disconnect()
-                }
-            }
-        })
-        .reduce((accumulator, arg) => {
-            const { property_name, revoke } = arg
-            accumulator[property_name] = revoke
-            return accumulator
-        }, {})
-
-        result.revoke = () => {
-            Object.keys(result).forEach((key) => result[key]())
-        }
-
-        return result
-    }
+class MyCustomElement_child extends HTMLElement{
+    constructor() { super(); }
+    z = 42
 }
-
+customElements.define('my-custom-element-child', MyCustomElement_child);
 class MyCustomElement extends HTMLElement {
 
     increase_a_storage_value(){ ++this.#a }
@@ -390,8 +295,6 @@ class MyCustomElement extends HTMLElement {
     b = 42
 
     set c(value){}
-
-    // c is undefined on purpose
 
     #d = 42
     get d(){ return this.#d }
@@ -405,15 +308,15 @@ class MyCustomElement extends HTMLElement {
     get f(){ return this.#f }
     set f(value){ this.#f = (value + '').toUpperCase()  }
 
-    constructor() {
-        super();
-    }
+    constructor() { super(); }
 
     connectedCallback(){
         const int_projection = {
             from: (value) => { try { return parseInt(value)  } catch(error){ return NaN } },
             to:   (value) => { if (value.toString) return value.toString(); return 'NaN'},
         }
+
+        let child = this.appendChild(document.createElement('my-custom-element-child'))
 
         let controler = new synced_attributes_controler({
             target: this,
@@ -424,9 +327,11 @@ class MyCustomElement extends HTMLElement {
                 { name: 'd', projection: int_projection },
                 { name: 'e', projection: int_projection},
                 { name: 'f'},
+                { name: 'z', owner: child }
                 // TODO: test non-existing (defualt behavior: plain value or error ?)
             ]
         });
+        console.log(controler)
 
         // const impl = new_impl
         // const revoker = impl.define_bound_attributes_properties({
