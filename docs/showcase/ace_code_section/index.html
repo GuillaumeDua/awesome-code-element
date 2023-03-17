@@ -141,14 +141,12 @@ SOFTWARE.
 class new_impl {
     // TODO: { way: up, down, two_way }
     static define_bound_attributes_properties({ target, properties_descriptor }){
-    // NB: projections reciprocity is assumed
+    // NB: properties_descriptor.projections.{from, to} reciprocity is assumed
 
         if (!target || !(target instanceof HTMLElement) || !(properties_descriptor instanceof Array))
             throw new Error('define_bound_attributes_properties: invalid argument')
         if (!target.isConnected)
             throw new Error('define_bound_attributes_properties: target is not connected')
-
-        // todo: return `revoke`+`observer.disconnect()` to caller
 
         let result = properties_descriptor.map(descriptor => {
 
@@ -166,8 +164,8 @@ class new_impl {
 
             const suspend_observer_while = (action) => {
             // read-only attribute, reset previous value
-            // warning: can result in race conditions
-            // TODO: process pending records ? MutationObserver.`takeRecords`
+            //  warning: can result in race conditions
+            //  TODO: process pending records ? MutationObserver.`takeRecords`
                 observer.disconnect()
                 action()
                 observer.observe(target, { attributeFilter: [ name ], attributeOldValue: true });
@@ -246,6 +244,7 @@ class new_impl {
 
 class MyCustomElement extends HTMLElement {
 
+    increase_a_storage_value(){ ++this.#a }
     #a = 21
     get a(){ return this.#a * 2 }
 
