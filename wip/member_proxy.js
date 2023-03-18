@@ -230,6 +230,17 @@ class synced_attributes_controler{
 class MyCustomElement_child extends HTMLElement{
     constructor() { super(); }
     z = 42
+
+    proxied_twice = 42
+
+    connectedCallback(){
+        let controler = new synced_attributes_controler({
+            target: this,
+            properties_descriptor: [
+                { name: 'proxied_twice' }
+            ]
+        });
+    }
 }
 customElements.define('my-custom-element-child', MyCustomElement_child);
 class MyCustomElement extends HTMLElement {
@@ -273,8 +284,8 @@ class MyCustomElement extends HTMLElement {
                 { name: 'd', projection: int_projection },
                 { name: 'e', projection: int_projection},
                 { name: 'f'},
-                { name: 'z', owner: child }
-                // TODO: test non-existing (defualt behavior: plain value or error ?)
+                { name: 'z', owner: child },
+                { name: 'proxied_twice', owner: child } // limitation: child.setAttribute('proxied_twice', value) won't reflect on parent's attribute
             ]
         });
         console.log(controler)
