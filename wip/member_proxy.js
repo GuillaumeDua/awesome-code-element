@@ -16,14 +16,14 @@ function property_accessor(owner, property_name){
         descriptor: descriptor,
         get: (() => {
             if (descriptor.get)
-                return () => descriptor.get.bind(owner)
+                return descriptor.get.bind(owner)
             if (descriptor.value)
                 return () => storage
             return undefined
         })(),
         set: (() => {
             if (descriptor.set)
-                return (value) => descriptor.set.bind(owner)(value)
+                return descriptor.set.bind(owner)
             if (descriptor.value)
                 return (value) => storage = value
             return undefined
@@ -39,7 +39,6 @@ function bind_values(descriptors){
     const accessors = descriptors.map(({owner, property_name}) => {
         return property_accessor(owner, property_name)
     })
-    console.log(accessors)
 
     descriptors.forEach(({owner, property_name}, index) => {
         const others = accessors.filter((elem, elem_index) => elem_index != index)
@@ -50,6 +49,7 @@ function bind_values(descriptors){
                 return accessors[index].get()
             },
             set: (value) => {
+                console.log('bind_values: set:', value)
                 accessors[index].set(value)
                 notify_others(value)
             }
@@ -68,6 +68,14 @@ const { revoke } = bind_values([
     { owner: owner_a, property_name: 'value' },
     { owner: owner_b, property_name: 'value' },
 ])
+
+// qwe = { a : 'toto'}
+// bind_values([
+//     { owner: qwe, property_name: 'a' },
+//     { owner: temp0.attributes.item('id'), property_name: 'value' }
+// ])
+
+
 
 // ---
 
