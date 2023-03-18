@@ -84,6 +84,205 @@ class on_property_changed {
         }
     }
 }
+class synced_attributes_controler{
+    #target = undefined
+    #properties_descriptor = undefined
+    #options = undefined
+    
+    properties_accessor = {}
+
+    static get default_options(){
+        return {
+            start_after_construction: true,
+            create_undefined_properties: false
+        }
+    }
+    static get default_projection(){
+        return {
+            from: (value) => { return value },
+            to:   (value) => { return value + '' },
+        }
+    }
+
+    constructor({ target, properties_descriptor, options }){
+    // target: valid HTMLElement
+    // properties_descriptor: { owner?, name, projection?.{from?,to?} }
+    // options: { create_undefined_properties }
+
+        if (!target || !(target instanceof HTMLElement))
+            throw new Error('synced_attributes_controler: invalid argument `target`')
+        if (!(properties_descriptor instanceof Array) || properties_descriptor.size === 0)
+            throw new Error('synced_attributes_controler: invalid argument `properties_descriptor`')
+
+        this.#target = target
+        this.#properties_descriptor = properties_descriptor
+        this.#options = { ...synced_attributes_controler.default_options, ...options }
+
+        if (this.#options.start_after_construction)
+            this.start()
+    }
+
+    start(){
+        this.stop()
+
+        if (!this.#target.isConnected)
+            throw new Error('synced_attributes_controler: target is not connected')
+
+        this.#properties_descriptor.forEach((property_descriptor) => this.#initialize_one_property(property_descriptor))
+    }
+    stop(){
+        Object.values(this.properties_accessor).forEach((accessor) => accessor.revoke())
+        this.properties_accessor = {}
+    }
+
+    #initialize_attribute_mutation_observer({ accessor }){
+
+        accessor.observer = undefined
+        accessor.observer = new MutationObserver((mutationsList) => {
+            for (let mutation of mutationsList) {
+
+                if (mutation.oldValue === mutation.target.getAttribute(mutation.attributeName))
+                    continue
+
+                const value = accessor.projection.from(mutation.target.getAttribute(mutation.attributeName))
+                console.log(
+                    'intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value,
+                    '[', accessor.property_traits.readonly ? 'REJECTED' : 'ACCEPTED', ']'
+                )
+                
+                accessor.observer.suspend_observer_while(() => {
+                    if (accessor.property_traits.readonly){
+                        console.warn('define_bound_attributes_properties: property', accessor.name, ' is readonly, reject value', value)
+                        mutation.target.setAttribute(mutation.attributeName, mutation.oldValue)
+                        return
+                    }
+                    if (accessor.property_traits.setter){
+                        accessor.property_traits.setter(value)
+                        mutation.target.setAttribute(
+                            mutation.attributeName,
+                            accessor.property_traits.getter ? accessor.property_traits.getter() : value
+                        )
+                    }
+                })
+            }
+        });
+        accessor.observer.suspend_observer_while = (action) => {
+        // read-only attribute, reset previous value
+        //  warning: can result in race conditions
+        //  TODO: process pending records ? MutationObserver.`takeRecords`
+            accessor.observer.disconnect()
+            action()
+            accessor.observer.observe(this.#target, { attributeFilter: [ accessor.name ], attributeOldValue: true });
+        }
+        accessor.observer.observe(this.#target, { attributeFilter: [ accessor.name ], attributeOldValue: true });
+    }
+    #initialize_one_property({ owner, name, projection }){
+
+        if (!name)
+            throw new Error('synced_attributes_controler: invalid property descriptor')
+
+        let accessor = this.properties_accessor[name] = {
+            name: name,
+            owner: owner ?? this.#target,
+            projection: { ...synced_attributes_controler.default_projection, ...projection },
+            property_traits: undefined
+        }
+        if (!(name in accessor.owner) && !this.#options.create_undefined_properties)
+            throw new Error(`synced_attributes_controler: missing property [${name}] in [${accessor.owner}]. use option [create_undefined_properties] to force creation`)
+
+        // attributes to property changes
+        this.#initialize_attribute_mutation_observer({ accessor: accessor })
+
+        // property to attributes changes
+        const on_property_change_sync_with_attribute = (value) => {
+        // update attribute
+            if (value !== accessor.projection.from(this.#target.getAttribute(name))){
+            // or String(value) !== target.getAttribute(name) ?
+                console.log('define_bound_attributes_properties.callback: [', name, '] => [', value, '](', typeof value, ')')
+                accessor.observer.suspend_observer_while(() => this.#target.setAttribute(name, accessor.projection.to(value)))
+            }
+        }
+        // TODO?: projection on this proxy (avoid redundant callback trigger with different types)
+        const { revoke, bypass, initiale_descriptor } = on_property_changed.inject_property_proxy({
+            target: accessor.owner,
+            property_name: name,
+            callback: on_property_change_sync_with_attribute
+        })
+        accessor.property_traits = { // used by `make_attribute_mutation_observer`
+            readable: Boolean(initiale_descriptor.get || initiale_descriptor.value),
+            writable: Boolean(initiale_descriptor.set || initiale_descriptor.value),
+            get readonly() { return Boolean(this.readable && !this.writable) },
+            get writeonly(){ return Boolean(this.writable && !this.readable) },
+            getter: bypass.getter?.bind(accessor.owner),
+            setter: bypass.setter?.bind(accessor.owner)
+        }
+
+        accessor.revoke = () => {
+            revoke()
+            accessor.observer.disconnect()
+        }
+        return accessor
+    }
+}
+
+// local test ---
+
+class MyCustomElement_child extends HTMLElement{
+    constructor() { super(); }
+    z = 42
+}
+customElements.define('my-custom-element-child', MyCustomElement_child);
+class MyCustomElement extends HTMLElement {
+
+    increase_a_storage_value(){ ++this.#a }
+    #a = 21
+    get a(){ return this.#a * 2 }
+
+    b = 42
+
+    set c(value){}
+
+    #d = 42
+    get d(){ return this.#d }
+    set d(value){ this.#d = value }
+
+    #e = 21
+    get e(){ return this.#e * 2 }
+    set e(value){ this.#e = value / 2 }
+
+    #f = undefined
+    get f(){ return this.#f }
+    set f(value){ this.#f = (value + '').toUpperCase()  }
+
+    constructor() { super(); }
+
+    connectedCallback(){
+        const int_projection = {
+            from: (value) => { try { return parseInt(value)  } catch(error){ return NaN } },
+            to:   (value) => { if (value.toString) return value.toString(); return 'NaN'},
+        }
+
+        let child = this.appendChild(document.createElement('my-custom-element-child'))
+
+        let controler = new synced_attributes_controler({
+            target: this,
+            properties_descriptor: [
+                { name: 'a', projection: int_projection },
+                { name: 'b', projection: int_projection },
+                { name: 'c'},
+                { name: 'd', projection: int_projection },
+                { name: 'e', projection: int_projection},
+                { name: 'f'},
+                { name: 'z', owner: child }
+                // TODO: test non-existing (defualt behavior: plain value or error ?)
+            ]
+        });
+        console.log(controler)
+    }
+}
+customElements.define('my-custom-element', MyCustomElement);
+
+// old impl ---
 
 // TODO: { way: up, down, two_way }
 function define_bound_attributes_properties({ target, properties_descriptor }){
