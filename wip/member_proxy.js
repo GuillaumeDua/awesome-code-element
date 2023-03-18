@@ -69,7 +69,8 @@ class on_property_changed {
                         payload(value);
                     }
                 return undefined
-            })()
+            })(),
+            configurable: true
         }
 
         Object.defineProperty(target, property_name, new_descriptor);

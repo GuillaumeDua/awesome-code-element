@@ -143,12 +143,12 @@ class synced_attributes_controler{
     #properties_descriptor = undefined
     #options = undefined
     
-    properties_accessor = []
+    properties_accessor = {}
 
     static get default_options(){
         return {
             start_after_construction: true,
-            create_undefined_properties: true
+            create_undefined_properties: false
         }
     }
     static get default_projection(){
@@ -185,8 +185,8 @@ class synced_attributes_controler{
         this.#properties_descriptor.forEach((property_descriptor) => this.#initialize_one_property(property_descriptor))
     }
     stop(){
-        this.properties_accessor.forEach((accessor) => accessor.revoke())
-        this.properties_accessor = new Array
+        Object.values(this.properties_accessor).forEach((accessor) => accessor.revoke())
+        this.properties_accessor = {}
     }
 
     #initialize_attribute_mutation_observer({ accessor }){
@@ -241,10 +241,8 @@ class synced_attributes_controler{
             projection: { ...synced_attributes_controler.default_projection, ...projection },
             property_traits: undefined
         }
-        if (!(name in accessor.owner)){
-            delete this.properties_accessor[name]
-            throw new Error(`synced_attributes_controler: missing property [${name}] in [${accessor.owner}]`)
-        }
+        if (!(name in accessor.owner) && !this.#options.create_undefined_properties)
+            throw new Error(`synced_attributes_controler: missing property [${name}] in [${accessor.owner}]. use option [create_undefined_properties] to force creation`)
 
         // attributes to property changes
         this.#initialize_attribute_mutation_observer({ accessor: accessor })
