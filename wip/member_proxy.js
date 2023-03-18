@@ -1,6 +1,15 @@
 
 // IDEA: controler as a public-exposed proxy to monitored values ?
 
+function merge_functions(lhs, rhs){
+    let origin = lhs
+    lhs = function(){
+        origin.apply(this, arguments)
+        rhs.apply(this, arguments)
+    }
+    return lhs
+}
+
 class on_property_changed {
     static inject_property_proxy({ target, property_name, callback }){
     
@@ -10,6 +19,11 @@ class on_property_changed {
         const descriptor = Object.getOwnPropertyDescriptor(target, property_name) || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), property_name) || {}
         if (!descriptor.configurable)
             throw new Error(`inject_property_proxy: [${property_name}] is not configurable`)
+
+        // already proxied
+        let proxied_payload = descriptor.get?.proxy_payload || descriptor.set?.proxy_payload
+        // TODO: bypass should still trigger `proxied_payload`
+
 
         let storage = undefined
         const payload = (value) => {
@@ -47,15 +61,12 @@ class on_property_changed {
         }
         const new_descriptor = {
             get: (() => {
-                if (descriptor.get){
-                    if (descriptor.get.is_proxy)
-                        console.log('>>> proxy on proxy !!!', property_name)
+                if (descriptor.get)
                     return function(){
                         const value = descriptor.get.call(this);
                         payload(value);
                         return value
                     }
-                }
                 if (descriptor.value)
                     return function(){ payload(descriptor.value); return descriptor.value }
                 return undefined
@@ -73,16 +84,17 @@ class on_property_changed {
                     }
                 return undefined
             })(),
-            configurable: true
+            configurable: true,
         }
+        Object.defineProperty(target, property_name, new_descriptor);
 
         // annotation
         if (new_descriptor.get)
-            new_descriptor.get.is_proxy = true
+            new_descriptor.get.proxy_payload = payload
         if (new_descriptor.set)
-            new_descriptor.set.is_proxy = true
+            new_descriptor.set.proxy_payload = payload
+        // existing_proxy_payload = payload // update payload
 
-        Object.defineProperty(target, property_name, new_descriptor);
         // spread initiale value, if any
         target[property_name]
 
