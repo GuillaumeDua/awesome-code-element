@@ -33,16 +33,21 @@ function property_accessor(owner, property_name){
 
 function bind_values(descriptors){
 
-    if (!(descriptors instanceof Array))
+    if (!(descriptors instanceof Array) || descriptors.length === 0)
         throw new Error('bind_values: invalid argument')
 
     const accessors = descriptors.map(({owner, property_name}) => {
+        if (!owner || !property_name)
+            throw new Error('bind_values: ill-formed argument element')
         return property_accessor(owner, property_name)
     })
+
+    let initializer = undefined
 
     descriptors.forEach(({owner, property_name}, index) => {
         const others = accessors.filter((elem, elem_index) => elem_index != index)
         const notify_others = (value) => others.forEach((accessor) => accessor.set(value))
+        initializer ??= () => { notify_others(accessors[index].get()) }
 
         Object.defineProperty(owner, property_name, {
             get: () => {
@@ -55,6 +60,9 @@ function bind_values(descriptors){
             }
         })
     })
+
+    // initial value
+    initializer()
 
     return {
         revoke: () => accessors.forEach(({owner, property_name, descriptor}) => Object.defineProperty(owner, property_name, descriptor))
@@ -72,7 +80,7 @@ const { revoke } = bind_values([
 // qwe = { a : 'toto'}
 // bind_values([
 //     { owner: qwe, property_name: 'a' },
-//     { owner: temp0.attributes.item('id'), property_name: 'value' }
+//     { owner: document.getElementsByTagName('awesome_code_element_test-utility-toolbar')[0].attributes.item('id'), property_name: 'value' }
 // ])
 
 
