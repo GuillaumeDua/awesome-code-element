@@ -1,6 +1,76 @@
 
 // IDEA: controler as a public-exposed proxy to monitored values ?
 
+function property_accessor(owner, property_name){
+
+    if (!owner || !property_name || !(property_name in owner))
+        throw new Error('property_accessor: invalid argument')
+
+    const descriptor = Object.getOwnPropertyDescriptor(owner, property_name) || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(owner), property_name) || {}
+
+    let storage = descriptor.value // descriptor.value is mutable but mutating it has no effect on the original property's configuration
+
+    return {
+        owner: owner,
+        property_name: property_name,
+        descriptor: descriptor,
+        get: (() => {
+            if (descriptor.get)
+                return () => descriptor.get.bind(owner)
+            if (descriptor.value)
+                return () => storage
+            return undefined
+        })(),
+        set: (() => {
+            if (descriptor.set)
+                return (value) => descriptor.set.bind(owner)(value)
+            if (descriptor.value)
+                return (value) => storage = value
+            return undefined
+        })()
+    }
+}
+
+function bind_values(descriptors){
+
+    if (!(descriptors instanceof Array))
+        throw new Error('bind_values: invalid argument')
+
+    const accessors = descriptors.map(({owner, property_name}) => {
+        return property_accessor(owner, property_name)
+    })
+    console.log(accessors)
+
+    descriptors.forEach(({owner, property_name}, index) => {
+        const others = accessors.filter((elem, elem_index) => elem_index != index)
+        const notify_others = (value) => others.forEach((accessor) => accessor.set(value))
+
+        Object.defineProperty(owner, property_name, {
+            get: () => {
+                return accessors[index].get()
+            },
+            set: (value) => {
+                accessors[index].set(value)
+                notify_others(value)
+            }
+        })
+    })
+
+    return {
+        revoke: () => accessors.forEach(({owner, property_name, descriptor}) => Object.defineProperty(owner, property_name, descriptor))
+    }
+}
+
+owner_a = { value: 42, name:'a' }
+owner_b = { value: 42, name:'b' }
+
+const { revoke } = bind_values([
+    { owner: owner_a, property_name: 'value' },
+    { owner: owner_b, property_name: 'value' },
+])
+
+// ---
+
 function merge_functions(lhs, rhs){
     let origin = lhs
     lhs = function(){
@@ -21,9 +91,11 @@ class on_property_changed {
             throw new Error(`inject_property_proxy: [${property_name}] is not configurable`)
 
         // already proxied
-        let proxied_payload = descriptor.get?.proxy_payload || descriptor.set?.proxy_payload
-        // TODO: bypass should still trigger `proxied_payload`
-
+        let proxy_payload = descriptor.get?.proxy_payload || descriptor.set?.proxy_payload
+        if (proxy_payload) {
+            console.log('>>> proxied_payload:', property_name)
+            callback = merge_functions(callback, proxy_payload)
+        }
 
         let storage = undefined
         const payload = (value) => {
@@ -55,6 +127,8 @@ class on_property_changed {
                     return function(value){
                         descriptor.value = value
                         storage = value
+                        console.log('>>> bypass setter:', property_name, ' => ', value)
+                        console.log('>>> proxy_payload:', proxy_payload)
                     }
                 return undefined
             })()
