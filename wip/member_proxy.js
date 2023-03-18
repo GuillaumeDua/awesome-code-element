@@ -47,12 +47,15 @@ class on_property_changed {
         }
         const new_descriptor = {
             get: (() => {
-                if (descriptor.get)
+                if (descriptor.get){
+                    if (descriptor.get.is_proxy)
+                        console.log('>>> proxy on proxy !!!', property_name)
                     return function(){
                         const value = descriptor.get.call(this);
                         payload(value);
                         return value
                     }
+                }
                 if (descriptor.value)
                     return function(){ payload(descriptor.value); return descriptor.value }
                 return undefined
@@ -72,6 +75,12 @@ class on_property_changed {
             })(),
             configurable: true
         }
+
+        // annotation
+        if (new_descriptor.get)
+            new_descriptor.get.is_proxy = true
+        if (new_descriptor.set)
+            new_descriptor.set.is_proxy = true
 
         Object.defineProperty(target, property_name, new_descriptor);
         // spread initiale value, if any
@@ -270,7 +279,7 @@ class MyCustomElement extends HTMLElement {
     connectedCallback(){
         const int_projection = {
             from: (value) => { try { return parseInt(value)  } catch(error){ return NaN } },
-            to:   (value) => { if (value.toString) return value.toString(); return 'NaN'},
+            to:   (value) => { return value.toString ? value.toString() : 'NaN' },
         }
 
         let child = this.appendChild(document.createElement('my-custom-element-child'))
