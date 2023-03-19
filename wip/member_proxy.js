@@ -23,7 +23,7 @@ function property_accessor(owner, property_name){
         })(),
         set: (() => {
             if (descriptor.set)
-                return descriptor.set.bind(owner)
+                return (value) => descriptor.set.bind(owner)(value)
             if (descriptor.value)
                 return (value) => storage = value
             return undefined
@@ -44,28 +44,41 @@ function bind_values(descriptors){
 
     let initializer = undefined
 
-    descriptors.forEach(({owner, property_name}, index) => {
+    const result = descriptors.map(({owner, property_name}, index) => {
         const others = accessors.filter((elem, elem_index) => elem_index != index)
         const notify_others = (value) => others.forEach((accessor) => accessor.set(value))
         initializer ??= () => { notify_others(accessors[index].get()) }
 
         Object.defineProperty(owner, property_name, {
             get: () => {
-                return accessors[index].get()
+                const value = accessors[index].get()
+                console.log('bind_values: get:', value)
+                return value
             },
             set: (value) => {
                 console.log('bind_values: set:', value)
                 accessors[index].set(value)
                 notify_others(value)
-            }
+            },
+            configurable: true
         })
+
+        return {
+            owner: owner,
+            property_name: property_name,
+            revoke: () => Object.defineProperty(owner, property_name, accessors[index].descriptor),
+            notify_others: notify_others,
+            get: accessors[index].get,
+            set: accessors[index].set
+        }
     })
 
     // initial value
     initializer()
 
     return {
-        revoke: () => accessors.forEach(({owner, property_name, descriptor}) => Object.defineProperty(owner, property_name, descriptor))
+        revoke: () => accessors.forEach(({owner, property_name, descriptor}) => Object.defineProperty(owner, property_name, descriptor)),
+        per_properties: result
     }
 }
 
@@ -77,12 +90,31 @@ const { revoke } = bind_values([
     { owner: owner_b, property_name: 'value' },
 ])
 
-// qwe = { a : 'toto'}
-// bind_values([
-//     { owner: qwe, property_name: 'a' },
-//     { owner: document.getElementsByTagName('awesome_code_element_test-utility-toolbar')[0].attributes.item('id'), property_name: 'value' }
-// ])
+function make_attribute_ref(owner, attribute_name){
+    return {
+        is_ref: true,
+        get[attribute_name]() {
+            return owner.getAttribute(attribute_name);
+        },
+        set[attribute_name](arg) {
+            owner.setAttribute(attribute_name, arg);
+        }
+        // TODO: mutation observer
+    };
+}
 
+function test(){
+    qwe = { a : 'toto'}
+    elem = document.getElementsByTagName('awesome_code_element_test-utility-toolbar')[0];
+
+    binder = bind_values([
+        { owner: qwe, property_name: 'a' },
+        { owner: make_attribute_ref(elem, 'id'), property_name: 'id' }
+    ])
+
+    elem.setAttribute('id', 'NEW_ID') // WIP: disconnected attr here
+    // elem.attributes[id] !== id_storage
+}
 
 
 // ---
