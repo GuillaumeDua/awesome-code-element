@@ -1,6 +1,4 @@
 
-// IDEA: controler as a public-exposed proxy to monitored values ?
-
 function property_accessor(owner, property_name){
 
     if (!owner || !property_name || !(property_name in owner))
@@ -31,92 +29,6 @@ function property_accessor(owner, property_name){
     }
 }
 
-function bind_values(descriptors){
-
-    if (!(descriptors instanceof Array) || descriptors.length === 0)
-        throw new Error('bind_values: invalid argument')
-
-    const accessors = descriptors.map(({owner, property_name}) => {
-        if (!owner || !property_name)
-            throw new Error('bind_values: ill-formed argument element')
-        return property_accessor(owner, property_name)
-    })
-
-    let initializer = undefined
-
-    const result = descriptors.map(({owner, property_name}, index) => {
-        const others = accessors.filter((elem, elem_index) => elem_index != index)
-        const notify_others = (value) => others.forEach((accessor) => accessor.set(value))
-        initializer ??= () => { notify_others(accessors[index].get()) }
-
-        Object.defineProperty(owner, property_name, {
-            get: () => {
-                const value = accessors[index].get()
-                console.log('bind_values: get:', value)
-                return value
-            },
-            set: (value) => {
-                console.log('bind_values: set:', value)
-                accessors[index].set(value)
-                notify_others(value)
-            },
-            configurable: true
-        })
-
-        return {
-            owner: owner,
-            property_name: property_name,
-            revoke: () => Object.defineProperty(owner, property_name, accessors[index].descriptor),
-            notify_others: notify_others,
-            get: accessors[index].get,
-            set: accessors[index].set
-        }
-    })
-
-    // initial value
-    initializer()
-
-    return {
-        revoke: () => accessors.forEach(({owner, property_name, descriptor}) => Object.defineProperty(owner, property_name, descriptor)),
-        per_properties: result
-    }
-}
-
-owner_a = { value: 42, name:'a' }
-owner_b = { value: 42, name:'b' }
-
-const { revoke } = bind_values([
-    { owner: owner_a, property_name: 'value' },
-    { owner: owner_b, property_name: 'value' },
-])
-
-function make_attribute_ref(owner, attribute_name){
-    return {
-        is_ref: true,
-        get[attribute_name]() {
-            return owner.getAttribute(attribute_name);
-        },
-        set[attribute_name](arg) {
-            owner.setAttribute(attribute_name, arg);
-        }
-        // TODO: mutation observer
-    };
-}
-
-function test(){
-    qwe = { a : 'toto'}
-    elem = document.getElementsByTagName('awesome_code_element_test-utility-toolbar')[0];
-
-    binder = bind_values([
-        { owner: qwe, property_name: 'a' },
-        { owner: make_attribute_ref(elem, 'id'), property_name: 'id' }
-    ])
-
-    elem.setAttribute('id', 'NEW_ID') // WIP: disconnected attr here
-    // elem.attributes[id] !== id_storage
-}
-
-
 // ---
 
 function merge_functions(lhs, rhs){
@@ -138,17 +50,10 @@ class on_property_changed {
         if (!descriptor.configurable)
             throw new Error(`inject_property_proxy: [${property_name}] is not configurable`)
 
-        // already proxied
-        let proxy_payload = descriptor.get?.proxy_payload || descriptor.set?.proxy_payload
-        if (proxy_payload) {
-            console.log('>>> proxied_payload:', property_name)
-            callback = merge_functions(callback, proxy_payload)
-        }
-
         let storage = undefined
         const payload = (value) => {
             if (value !== storage){
-                console.debug('proxy for [', property_name, '] with value = [', value, '](', typeof value, ') with storage=[', storage, '](', typeof storage, ')')
+                console.debug('proxy for [', property_name, '] with value = [', value, '](', typeof value, ') with storage=[', storage, '](', typeof storage, '), target=', target)
                 storage = value
                 callback(value)
             }
@@ -175,8 +80,6 @@ class on_property_changed {
                     return function(value){
                         descriptor.value = value
                         storage = value
-                        console.log('>>> bypass setter:', property_name, ' => ', value)
-                        console.log('>>> proxy_payload:', proxy_payload)
                     }
                 return undefined
             })()
@@ -209,13 +112,6 @@ class on_property_changed {
             configurable: true,
         }
         Object.defineProperty(target, property_name, new_descriptor);
-
-        // annotation
-        if (new_descriptor.get)
-            new_descriptor.get.proxy_payload = payload
-        if (new_descriptor.set)
-            new_descriptor.set.proxy_payload = payload
-        // existing_proxy_payload = payload // update payload
 
         // spread initiale value, if any
         target[property_name]
@@ -299,8 +195,8 @@ class synced_attributes_controler{
                         mutation.target.setAttribute(mutation.attributeName, mutation.oldValue)
                         return
                     }
-                    if (accessor.property_traits.setter){
-                        accessor.property_traits.setter(value)
+                    if (accessor.property_traits.bypass.setter){
+                        accessor.property_traits.bypass.setter(value) // by-pass
                         mutation.target.setAttribute(
                             mutation.attributeName,
                             accessor.property_traits.getter ? accessor.property_traits.getter() : value
@@ -341,7 +237,7 @@ class synced_attributes_controler{
         // update attribute
             if (value !== accessor.projection.from(this.#target.getAttribute(name))){
             // or String(value) !== target.getAttribute(name) ?
-                console.log('define_bound_attributes_properties.callback: [', name, '] => [', value, '](', typeof value, ')')
+                console.log('define_bound_attributes_properties.callback: [', name, '] => [', value, '](', typeof value, ') !=', accessor.projection.from(this.#target.getAttribute(name)))
                 accessor.observer.suspend_observer_while(() => this.#target.setAttribute(name, accessor.projection.to(value)))
             }
         }
@@ -356,8 +252,12 @@ class synced_attributes_controler{
             writable: Boolean(initiale_descriptor.set || initiale_descriptor.value),
             get readonly() { return Boolean(this.readable && !this.writable) },
             get writeonly(){ return Boolean(this.writable && !this.readable) },
-            getter: bypass.getter?.bind(accessor.owner),
-            setter: bypass.setter?.bind(accessor.owner)
+            bypass: {
+                getter: bypass.getter?.bind(accessor.owner),
+                setter: bypass.setter?.bind(accessor.owner)
+            },
+            getter: () => { return accessor.owner[name] },
+            setter: (value) => { return accessor.owner[name] = value },
         }
 
         accessor.revoke = () => {
