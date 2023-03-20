@@ -1,7 +1,7 @@
 
 
-function make_attribute_controler(target, attribute_name, payload){
-    let observer = !payload ? undefined : (() => {
+function make_attribute_controler({target, attribute_name, on_value_changed}){
+    let observer = !on_value_changed ? undefined : (() => {
         let observer = undefined
         observer = new MutationObserver((mutationsList) => {
             for (let mutation of mutationsList) {
@@ -10,11 +10,8 @@ function make_attribute_controler(target, attribute_name, payload){
                 if (mutation.oldValue === value)
                     continue
 
-                console.log(
-                    'intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value
-                )
-                
-                observer.suspend_while(() => payload(value))
+                console.log('intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value)
+                observer.suspend_while(() => on_value_changed(value))
             }
         });
         observer.suspend_while = (action) => {
@@ -25,26 +22,21 @@ function make_attribute_controler(target, attribute_name, payload){
             observer.observe(target, { attributeFilter: [ attribute_name ], attributeOldValue: true });
         }
         observer.observe(target, { attributeFilter: [ attribute_name ], attributeOldValue: true });
-
         return observer
     })()
 
     return {
+        is_proxy: true,
         get value() {
             const value = target.getAttribute(attribute_name)
-            observer.suspend_while(() => {
-                target.setAttribute(attribute_name, value)
-                payload?.call(value)
-            })
+            observer.suspend_while(() => target.setAttribute(attribute_name, value))
         },
         set value(value){
             if (value + '' != target.getAttribute(attribute_name)){
-                observer.suspend_while(() => {
-                    target.setAttribute(attribute_name, value)
-                    payload?.call(value)
-                })
+                observer.suspend_while(() => target.setAttribute(attribute_name, value))
             }
-        }
+        },
+        revoke: () => { console.log('attr mutation observer: disconnecting...'); observer.disconnect() }
     }
 }
 
@@ -105,7 +97,7 @@ function bind_values(descriptors){
                 return value
             },
             set: (value) => {
-                console.log('bind_values: set:', value)
+                console.log('bind_values: set:', value, '| target=[', owner, ']')
                 accessors[index].set(value)
                 notify_others(value)
             },
@@ -115,7 +107,11 @@ function bind_values(descriptors){
         return {
             owner: owner,
             property_name: property_name,
-            revoke: () => Object.defineProperty(owner, property_name, accessors[index].descriptor),
+            revoke: () => {
+                Object.defineProperty(owner, property_name, accessors[index].descriptor)
+                if (owner?.is_proxy && owner?.revoke)
+                    owner.revoke()
+            },
             notify_others: notify_others,
             get: accessors[index].get,
             set: accessors[index].set
@@ -126,21 +122,22 @@ function bind_values(descriptors){
     initializer()
 
     return {
-        revoke: () => accessors.forEach(({owner, property_name, descriptor}) => Object.defineProperty(owner, property_name, descriptor)),
+        revoke: () => result.forEach(({owner, property_name, revoke}) => revoke()),
         per_properties: result
     }
 }
 
-// document.getElementsByTagName('my-custom-element')[0].attributes
 function test(){
-    elem = document.getElementsByTagName('my-custom-element')[0]
+    elem_1 = document.getElementsByTagName('my-custom-element')[0]
+    elem_2 = document.getElementsByTagName('awesome_code_element_test-utility-toolbar')[0]
     qwe = { a : '42' }
-    // make_attribute_controler(elem, 'toto', (value) => { qwe.a = value })
 
-    elem_controler = make_attribute_controler(elem, 'toto', (value) => { qwe.a = value })
+    elem_1_controler = make_attribute_controler({ target: elem_1, attribute_name: 'toto', on_value_changed:  (value) => { qwe.a = value } })
+    elem_2_controler = make_attribute_controler({ target: elem_2, attribute_name: 'id',   on_value_changed:  (value) => { qwe.a = value } })
 
     binder = bind_values([
         { owner: qwe, property_name: 'a' },
-        { owner: elem_controler, property_name: 'value' }
+        { owner: elem_1_controler, property_name: 'value' },
+        { owner: elem_2_controler, property_name: 'value' }
     ])
 }
