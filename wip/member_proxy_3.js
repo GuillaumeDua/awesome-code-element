@@ -1,12 +1,16 @@
 
-function attribute_accessor({ target, attribute_name, on_value_changed }){
+// TODO: homogeneous [ attribute, property ]_accessor with on_value_changed callback
+// TODO: assumes that on_value_changed is by default protected into duplicated notifications/broadcast
+// TODO: on_value_changed -> handles projection ?
 
-    if (!target || !(target instanceof HTMLElement) || !attribute_name)
+function make_attribute_bound_adapter({ target, attribute_name, on_value_changed }){
+
+    if (!target || !(target instanceof HTMLElement) || !attribute_name || !on_value_changed)
     // !target.hasAttribute(attribute_name)
-        throw new Error('attribute_accessor: invalid argument')
+        throw new Error('attribute_bound_adapter: invalid argument')
     attribute_name = attribute_name.replace(/\s+/g, '_') // whitespace are not valid in attributes names
 
-    let observer = !on_value_changed ? undefined : (() => {
+    let observer = (() => {
         let observer = undefined
         observer = new MutationObserver((mutationsList) => {
             for (let mutation of mutationsList) {
@@ -32,23 +36,24 @@ function attribute_accessor({ target, attribute_name, on_value_changed }){
 
     return {
         is_proxy: true,
-        get value(){
+        get: () => {
             const value = target.getAttribute(attribute_name)
-            observer?.suspend_while(() => target.setAttribute(attribute_name, value))
+            return value
         },
-        set value(value){
+        set: (value) => {
+            console.log('make_attribute_bound_adapter: set:', value)
             if (value + '' != target.getAttribute(attribute_name)){
-                observer?.suspend_while(() => target.setAttribute(attribute_name, value))
+                observer.suspend_while(() => target.setAttribute(attribute_name, value))
             }
         },
-        revoke: () => { observer?.disconnect() }
+        revoke: () => { observer.disconnect() }
     }
 }
 
-function property_accessor({ owner, property_name }){
+function make_property_bound_adapter({ owner, property_name, on_value_changed }){
 // uniform access to properties. for descriptor= { get and/or set, value }
     if (!owner || !property_name || !(property_name in owner))
-        throw new Error('property_accessor: invalid argument')
+        throw new Error('make_property_bound_adapter: invalid argument')
 
     const descriptor = Object.getOwnPropertyDescriptor(owner, property_name) || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(owner), property_name) || {}
 
@@ -60,16 +65,30 @@ function property_accessor({ owner, property_name }){
         descriptor: descriptor,
         get: (() => {
             if (descriptor.get)
-                return descriptor.get.bind(owner)
+                return () => { 
+                    const value = descriptor.get.call(owner)()
+                    on_value_changed(value)
+                    return value
+                }
             if ('value' in descriptor)
-                return () => storage
+                return () => {
+                    on_value_changed(storage)
+                    return storage
+                }
             return undefined
         })(),
         set: (() => {
             if (descriptor.set)
-                return descriptor.set.bind(owner)
+                return (value) => {
+                    console.log('make_property_bound_adapter: set:', value)
+                    descriptor.set.call(owner, value)
+                    on_value_changed(descriptor.get ? descriptor.get.call(owner)() : value)
+                }
             if ('value' in descriptor)
-                return (value) => storage = value
+                return (value) => {
+                    storage = value
+                    on_value_changed(storage)
+                }
             return undefined
         })()
     }
@@ -80,11 +99,27 @@ function bind_values({ descriptors }){
     if (!(descriptors instanceof Array) || descriptors.length === 0)
         throw new Error('bind_values: invalid argument')
 
-    const accessors = descriptors.map(({owner, property_name}) => {
-        if (!owner || !property_name)
+    let notifiers = undefined
+    const accessors = descriptors.map(({owner, property_name, attribute_name}, index) => {
+        if (!owner || (!property_name && !attribute_name))
             throw new Error('bind_values: ill-formed argument element')
-        return property_accessor({ owner: owner, property_name: property_name })
+
+        let notify_others = (value) => notifiers[index]
+        return property_name
+            ? make_property_bound_adapter ({ owner: owner, property_name: property_name   , on_value_changed: notify_others })
+            : make_attribute_bound_adapter({ target: owner, attribute_name: attribute_name, on_value_changed: notify_others })
     })
+    notifiers = accessors.reduce(
+        (accumulator, {owner, property_name, attribute_name}, index) => {
+            const others = accessors.filter((elem, elem_index) => elem_index != index)
+            const notify_others = (value) => others.forEach((accessor) => accessor.set(value))
+            accumulator.push(notify_others)
+            return accumulator
+        }, []
+    )
+
+    console.log(accessors)
+    return accessors
 
     // special case: extend existing data-binding
     const rebinding_element_index = accessors.findIndex(({ owner, property_name }, index) => accessors[index].descriptor?.get?.bound_to)
@@ -140,6 +175,13 @@ function bind_values({ descriptors }){
     return { revoke: revoke }
 }
 
+// ---
+
+function make_attribute_bindable_adapter({ element, attribute_name }){
+    let bindable = attribute_accessor({ target: element, attribute_name: attribute_name })
+    return { owner: bindable, property_name: 'value' }
+}
+
 function test(){
     elem_1 = document.getElementsByTagName('my-custom-element')[0]
     qwe = { a: '42' }
@@ -164,17 +206,20 @@ function test(){
 }
 function test_2(){
 // scenario: data-source is get-only
+// MVE of code_mvc.controler.is_executable
 
     only_get = { storage: 0, get a(){ return ++this.storage } }
     value = { a : 42 }
 
     binder = bind_values({ descriptors: [
-        { owner: only_get, property_name: 'a' },
+        // { owner: only_get, property_name: 'a' },
         { owner: value, property_name: 'a' },
+        { owner: document.getElementsByTagName('my-custom-element')[0], attribute_name: 'is_executable' }
+        // make_attribute_bindable_adapter({ element: document.getElementsByTagName('my-custom-element')[0], attribute_name: 'is_executable' })
     ]})
 
-    only_get.a // update value to 2
-    console.log('>>> 2 === ', value.a)
+    // only_get.a // update value to 2
+    // console.log(2 === value.a ? 'SUCCESS' : `FAILURE with value.a=[${value.a}]`)
 }
 
 // TODO: projections
