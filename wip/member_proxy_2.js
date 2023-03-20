@@ -1,6 +1,10 @@
 
 
-function make_attribute_controler({target, attribute_name, on_value_changed}){
+function attribute_accessor({target, attribute_name, on_value_changed}){
+
+    if (!target || !(target instanceof HTMLElement) || !attribute_name || !target.hasAttribute(attribute_name))
+        throw new Error('attribute_accessor: invalid argument')
+
     let observer = !on_value_changed ? undefined : (() => {
         let observer = undefined
         observer = new MutationObserver((mutationsList) => {
@@ -27,22 +31,20 @@ function make_attribute_controler({target, attribute_name, on_value_changed}){
 
     return {
         is_proxy: true,
-        get value() {
+        get value(){
             const value = target.getAttribute(attribute_name)
-            observer.suspend_while(() => target.setAttribute(attribute_name, value))
+            observer?.suspend_while(() => target.setAttribute(attribute_name, value))
         },
         set value(value){
             if (value + '' != target.getAttribute(attribute_name)){
-                observer.suspend_while(() => target.setAttribute(attribute_name, value))
+                observer?.suspend_while(() => target.setAttribute(attribute_name, value))
             }
         },
-        revoke: () => { console.log('attr mutation observer: disconnecting...'); observer.disconnect() }
+        revoke: () => { observer?.disconnect() }
     }
 }
 
-// ---
-
-function property_accessor(owner, property_name){
+function property_accessor({owner, property_name}){
 
     if (!owner || !property_name || !(property_name in owner))
         throw new Error('property_accessor: invalid argument')
@@ -58,21 +60,21 @@ function property_accessor(owner, property_name){
         get: (() => {
             if (descriptor.get)
                 return descriptor.get.bind(owner)
-            if (descriptor.value)
+            if ('value' in descriptor)
                 return () => storage
             return undefined
         })(),
         set: (() => {
             if (descriptor.set)
-                return (value) => descriptor.set.bind(owner)(value)
-            if (descriptor.value)
+                return descriptor.set.bind(owner)
+            if ('value' in descriptor)
                 return (value) => storage = value
             return undefined
         })()
     }
 }
 
-function bind_values(descriptors){
+function bind_values({ descriptors }){
 
     if (!(descriptors instanceof Array) || descriptors.length === 0)
         throw new Error('bind_values: invalid argument')
@@ -80,12 +82,12 @@ function bind_values(descriptors){
     const accessors = descriptors.map(({owner, property_name}) => {
         if (!owner || !property_name)
             throw new Error('bind_values: ill-formed argument element')
-        return property_accessor(owner, property_name)
+        return property_accessor({ owner: owner, property_name: property_name })
     })
 
     let initializer = undefined
 
-    const result = descriptors.map(({owner, property_name}, index) => {
+    const products = descriptors.map(({owner, property_name}, index) => {
         const others = accessors.filter((elem, elem_index) => elem_index != index)
         const notify_others = (value) => others.forEach((accessor) => accessor.set(value))
         initializer ??= () => { notify_others(accessors[index].get()) }
@@ -105,39 +107,41 @@ function bind_values(descriptors){
         })
 
         return {
-            owner: owner,
-            property_name: property_name,
+            // owner: owner,
+            // property_name: property_name,
             revoke: () => {
                 Object.defineProperty(owner, property_name, accessors[index].descriptor)
                 if (owner?.is_proxy && owner?.revoke)
                     owner.revoke()
             },
-            notify_others: notify_others,
-            get: accessors[index].get,
-            set: accessors[index].set
+            // notify_others: notify_others,
+            // get: accessors[index].get,
+            // set: accessors[index].set
         }
     })
 
     // initial value
     initializer()
 
-    return {
-        revoke: () => result.forEach(({owner, property_name, revoke}) => revoke()),
-        per_properties: result
-    }
+    return { revoke: () => products.forEach(({ revoke }) => revoke()) }
 }
 
 function test(){
     elem_1 = document.getElementsByTagName('my-custom-element')[0]
     elem_2 = document.getElementsByTagName('awesome_code_element_test-utility-toolbar')[0]
-    qwe = { a : '42' }
+    qwe = { a: '42' }
+    asd = { b: undefined }
 
-    elem_1_controler = make_attribute_controler({ target: elem_1, attribute_name: 'toto', on_value_changed:  (value) => { qwe.a = value } })
-    elem_2_controler = make_attribute_controler({ target: elem_2, attribute_name: 'id',   on_value_changed:  (value) => { qwe.a = value } })
+    elem_1_controler = attribute_accessor({ target: elem_1, attribute_name: 'toto', on_value_changed:  (value) => { qwe.a = value } })
+    elem_2_controler = attribute_accessor({ target: elem_2, attribute_name: 'id',   on_value_changed:  (value) => { qwe.a = value } })
 
-    binder = bind_values([
+    binder = bind_values({ descriptors: [
         { owner: qwe, property_name: 'a' },
+        { owner: asd, property_name: 'b' },
         { owner: elem_1_controler, property_name: 'value' },
         { owner: elem_2_controler, property_name: 'value' }
-    ])
+    ]})
 }
+
+// TODO: projections
+// TODO: valid attribute name
