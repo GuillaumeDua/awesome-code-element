@@ -86,53 +86,59 @@ function bind_values({ descriptors }){
         return property_accessor({ owner: owner, property_name: property_name })
     })
 
+    // special case: extend existing data-binding
+    const rebinding_element_index = accessors.findIndex(({ owner, property_name }, index) => accessors[index].descriptor?.get?.bound_to)
+    if (rebinding_element_index != -1){
+        console.log('is_bound to ', accessors[rebinding_element_index].descriptor?.get?.bound_to)
+        const { bound_descriptors, revoke } = accessors[rebinding_element_index].descriptor.get.bound_to
+
+        revoke()
+        return bind_values({ descriptors: [...bound_descriptors, ...descriptors]})
+    }
+
+    // common case: create new data-binding
     let initializer = undefined
 
-    const products = descriptors.map(({owner, property_name}, index) => {
+    let revoke_all = undefined
+    const products = descriptors.map(({ owner, property_name }, index) => {
         const others = accessors.filter((elem, elem_index) => elem_index != index)
         const notify_others = (value) => others.forEach((accessor) => accessor.set(value))
         initializer ??= () => { notify_others(accessors[index].get()) }
 
         Object.defineProperty(owner, property_name, {
             get: () => {
-                const value = accessors[index].get()
+                const value = accessors[index]?.get()
                 console.log('bind_values: get:', value)
                 return value
             },
             set: (value) => {
                 console.log('bind_values: set:', value, '| target=[', owner, ']')
-                accessors[index].set(value)
+                accessors[index]?.set(value)
                 notify_others(value)
             },
             configurable: true
         })
 
         return {
-            // owner: owner,
-            // property_name: property_name,
             revoke: () => {
                 Object.defineProperty(owner, property_name, accessors[index].descriptor)
                 if (owner?.is_proxy && owner?.revoke)
                     owner.revoke()
-            },
-            // notify_others: notify_others,
-            // get: accessors[index].get,
-            // set: accessors[index].set
+            }
         }
+    })
+
+    const revoke = () => products.forEach(({ revoke }) => revoke())
+
+    // tag data-binding
+    descriptors.forEach(({owner, property_name}, index) => {
+        Object.getOwnPropertyDescriptor(owner, property_name).get.bound_to = { bound_descriptors: descriptors, revoke: revoke }
     })
 
     // initial value
     initializer()
 
-    const revoke = () => products.forEach(({ revoke }) => revoke())
-    return {
-        revoke: revoke,
-        add_values: ({ new_descriptors }) => {
-            revoke()
-            descriptors = [ ...descriptors, ...new_descriptors ]
-            return bind_values({ descriptors: descriptors })
-        }
-    }
+    return { revoke: revoke }
 }
 
 function test(){
@@ -149,12 +155,15 @@ function test(){
     ]})
 
     // ---
+
     elem_2 = document.getElementsByTagName('my-custom-element-child')[0]
     elem_2_controler = attribute_accessor({ target: elem_2, attribute_name: 'toto', on_value_changed:  (value) => { qwe.a = value } })
-    binder = binder.add_values({ new_descriptors: [
+    binder_2 = bind_values({ descriptors: [
+        { owner: qwe, property_name: 'a' },
         { owner: elem_2_controler, property_name: 'value' }
     ]})
 }
 
 // TODO: projections
 // TODO: valid attribute name
+// TODO: property: get || set and vice-versa
