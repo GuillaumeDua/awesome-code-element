@@ -1,9 +1,10 @@
 
-
 function attribute_accessor({target, attribute_name, on_value_changed}){
 
-    if (!target || !(target instanceof HTMLElement) || !attribute_name || !target.hasAttribute(attribute_name))
+    if (!target || !(target instanceof HTMLElement) || !attribute_name)
+    // !target.hasAttribute(attribute_name)
         throw new Error('attribute_accessor: invalid argument')
+    attribute_name = attribute_name.replace(/\s+/g, '_') // whitespace are not valid in attributes names
 
     let observer = !on_value_changed ? undefined : (() => {
         let observer = undefined
@@ -123,22 +124,34 @@ function bind_values({ descriptors }){
     // initial value
     initializer()
 
-    return { revoke: () => products.forEach(({ revoke }) => revoke()) }
+    const revoke = () => products.forEach(({ revoke }) => revoke())
+    return {
+        revoke: revoke,
+        add_values: ({ new_descriptors }) => {
+            revoke()
+            descriptors = [ ...descriptors, ...new_descriptors ]
+            return bind_values({ descriptors: descriptors })
+        }
+    }
 }
 
 function test(){
     elem_1 = document.getElementsByTagName('my-custom-element')[0]
-    elem_2 = document.getElementsByTagName('awesome_code_element_test-utility-toolbar')[0]
     qwe = { a: '42' }
     asd = { b: undefined }
 
     elem_1_controler = attribute_accessor({ target: elem_1, attribute_name: 'toto', on_value_changed:  (value) => { qwe.a = value } })
-    elem_2_controler = attribute_accessor({ target: elem_2, attribute_name: 'id',   on_value_changed:  (value) => { qwe.a = value } })
 
     binder = bind_values({ descriptors: [
         { owner: qwe, property_name: 'a' },
         { owner: asd, property_name: 'b' },
         { owner: elem_1_controler, property_name: 'value' },
+    ]})
+
+    // ---
+    elem_2 = document.getElementsByTagName('my-custom-element-child')[0]
+    elem_2_controler = attribute_accessor({ target: elem_2, attribute_name: 'toto', on_value_changed:  (value) => { qwe.a = value } })
+    binder = binder.add_values({ new_descriptors: [
         { owner: elem_2_controler, property_name: 'value' }
     ]})
 }
