@@ -1,12 +1,15 @@
 
+// TODO: projections
+// TODO: property: get || set and vice-versa
+// TODO: on_value_changed -> handles projection ?
+
 class data_binder {
 
     static make_attribute_bound_adapter({ target, attribute_name, on_value_changed }){
 
-        if (!target || !(target instanceof HTMLElement) || !attribute_name || !on_value_changed)
-        // !target.hasAttribute(attribute_name)
-            throw new Error('attribute_bound_adapter: invalid argument')
         attribute_name = attribute_name.replace(/\s+/g, '_') // whitespace are not valid in attributes names
+        if (!target || !(target instanceof HTMLElement) || !attribute_name || !on_value_changed)
+            throw new Error('attribute_bound_adapter: invalid argument')
     
         let observer = (() => {
             let observer = undefined
@@ -103,8 +106,22 @@ class data_binder {
         if (!(descriptors instanceof Array) || descriptors.length === 0)
             throw new Error('data_binder.make_binding: invalid argument')
     
+        // special case: rebinding
+        const previous_binding = (({owner, property_name}) => {
+            const descriptor = Object.getOwnPropertyDescriptor(owner, property_name)
+            return descriptor.get?.data_binding || descriptor.set?.data_binding
+        })(descriptors[0])
+
+        if (previous_binding)
+            return previous_binding.extend_binding(descriptors)
+        
+        // normal case
         let notifiers = undefined
+        let last_notified_value = undefined
         let notify_others = (element_index, value) => {
+            if (last_notified_value === value)
+                return
+            last_notified_value = value
             const callback = notifiers[element_index]
             callback(value)
         }
@@ -116,17 +133,37 @@ class data_binder {
                 ? data_binder.make_property_bound_adapter ({ owner: owner,  property_name: property_name  , on_value_changed: notify_others.bind(this, index) })
                 : data_binder.make_attribute_bound_adapter({ target: owner, attribute_name: attribute_name, on_value_changed: notify_others.bind(this, index) })
         })
-        notifiers = accessors.reduce(
-            (accumulator, {owner, property_name, attribute_name}, index) => {
-                const others = accessors.filter((elem, elem_index) => elem_index != index)
-                const notify_others = (value) => others.forEach((accessor) => accessor.initiale?.set(value))
-                accumulator.push(notify_others)
-                return accumulator
-            }, []
-        )
+        notifiers = accessors.map((accessor, index) => {
+            const others = accessors.filter((elem, elem_index) => elem_index != index)
+            const notify_others = (value) => others.forEach((accessor) => accessor.initiale?.set(value))
+            return notify_others
+        })
+
+        // tag binding
+        accessors
+            .filter(({ owner, property_name, attribute_name }) => undefined !== property_name)
+            .forEach(({ owner, property_name, initiale, revoke }, index) => {
+                const descriptor = Object.getOwnPropertyDescriptor(owner, property_name)
+
+                // const bound_to = accessors.filter((elem, bound_index) => index !== bound_index)
+                const data_binding = {
+                    extend_binding: (new_descriptors) => {
+                        if (!(new_descriptors instanceof Array))
+                            throw new Error('data_binder.make_binding: extend_binding: invalid argument')
+                        accessors.forEach(({revoke}) => revoke())
+                        console.warn('extend_binding: from', descriptors, 'to', new_descriptors)
+                        return data_binder.make_binding({ descriptors: [ ...descriptors, ...new_descriptors ]})
+                    }
+                }
+
+                if (descriptor.get) descriptor.get.data_binding = data_binding
+                if (descriptor.set) descriptor.set.bound_to = data_binding
+            })
 
         // spread initiale value
         notifiers[0](accessors[0].initiale.get())
+
+        return { revoke: () => accessors.forEach((accessor) => accessor.revoke()) }
     }
 }
 
@@ -143,6 +180,13 @@ function test(){
         { owner: value, property_name: 'a' },
         { owner: elem,  attribute_name: 'is_executable' }
     ]})
+
+    value_2 = { b : 13 }
+    // binder = data_binder.make_binding({ descriptors: [
+    //     // { owner: only_get, property_name: 'a' },
+    //     { owner: value,   property_name: 'a' },
+    //     { owner: value_2, property_name: 'b' }
+    // ]})
 
     // only_get.a // update value to 2
     // console.log(2 === value.a ? 'SUCCESS' : `FAILURE with value.a=[${value.a}]`)
