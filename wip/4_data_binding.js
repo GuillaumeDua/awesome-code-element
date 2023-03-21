@@ -124,6 +124,9 @@ class data_binder {
                 return accumulator
             }, []
         )
+
+        // spread initiale value
+        notifiers[0](accessors[0].initiale.get())
     }
 }
 
