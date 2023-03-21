@@ -20,7 +20,8 @@ function make_attribute_bound_adapter({ target, attribute_name, on_value_changed
                     continue
 
                 console.log('intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value)
-                observer.suspend_while(() => on_value_changed(value))
+                //observer.suspend_while(() => on_value_changed(value))
+                on_value_changed(value)
             }
         });
         observer.suspend_while = (action) => {
@@ -41,18 +42,21 @@ function make_attribute_bound_adapter({ target, attribute_name, on_value_changed
             return value
         },
         set: (value) => {
-            console.log('make_attribute_bound_adapter: set:', value)
+            console.log('make_attribute_bound_adapter: set:',  target.getAttribute(attribute_name), ' => ', value)
             if (value + '' != target.getAttribute(attribute_name)){
                 observer.suspend_while(() => target.setAttribute(attribute_name, value))
+                on_value_changed(value)
             }
+            return value
         },
+        update: (value) => observer.suspend_while(() => target.setAttribute(attribute_name, value)),
         revoke: () => { observer.disconnect() }
     }
 }
 
 function make_property_bound_adapter({ owner, property_name, on_value_changed }){
 // uniform access to properties. for descriptor= { get and/or set, value }
-    if (!owner || !property_name || !(property_name in owner))
+    if (!owner || !property_name || !(property_name in owner) || !on_value_changed)
         throw new Error('make_property_bound_adapter: invalid argument')
 
     const descriptor = Object.getOwnPropertyDescriptor(owner, property_name) || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(owner), property_name) || {}
@@ -90,7 +94,14 @@ function make_property_bound_adapter({ owner, property_name, on_value_changed })
                     on_value_changed(storage)
                 }
             return undefined
-        })()
+        })(),
+        update: (() => {
+            if (descriptor.set)
+                return (value) => descriptor.set.call(owner, value)
+            if ('value' in descriptor)
+                return (value) => storage = value
+            return undefined
+        })(),
     }
 }
 
@@ -100,26 +111,52 @@ function bind_values({ descriptors }){
         throw new Error('bind_values: invalid argument')
 
     let notifiers = undefined
+    let notify_others = (element_index, value) => {
+        const callback = notifiers[element_index]
+        callback(value)
+    }
     const accessors = descriptors.map(({owner, property_name, attribute_name}, index) => {
         if (!owner || (!property_name && !attribute_name))
             throw new Error('bind_values: ill-formed argument element')
 
-        let notify_others = (value) => notifiers[index]
         return property_name
-            ? make_property_bound_adapter ({ owner: owner, property_name: property_name   , on_value_changed: notify_others })
-            : make_attribute_bound_adapter({ target: owner, attribute_name: attribute_name, on_value_changed: notify_others })
+            ? make_property_bound_adapter ({ owner: owner, property_name: property_name   , on_value_changed: notify_others.bind(this, index) })
+            : make_attribute_bound_adapter({ target: owner, attribute_name: attribute_name, on_value_changed: notify_others.bind(this, index) })
     })
     notifiers = accessors.reduce(
         (accumulator, {owner, property_name, attribute_name}, index) => {
             const others = accessors.filter((elem, elem_index) => elem_index != index)
-            const notify_others = (value) => others.forEach((accessor) => accessor.set(value))
+            const notify_others = (value) => others.forEach((accessor) => accessor.update(value))
             accumulator.push(notify_others)
             return accumulator
         }, []
     )
 
-    console.log(accessors)
-    return accessors
+    console.log('accessors:', accessors)
+    console.log('notifiers:', notifiers)
+
+    const products = descriptors.map(({ owner, property_name }, index) => {
+
+        const accessor = accessors[index]
+
+        if (accessor?.is_proxy)
+            return { revoke: () => accessor?.revoke?.call() }
+
+        console.log('proxy on:', owner, property_name)
+
+        Object.defineProperty(owner, property_name, {
+            get: accessor?.get,
+            set: accessor?.set,
+            configurable: true
+        })
+
+        return { revoke: () => Object.defineProperty(owner, property_name, accessor.descriptor) }
+    })
+
+    // spread initiale value
+    notify_others(0, accessors[0].get())
+
+    return { revoke: products.forEach(({ revoke }) => revoke()) }
 
     // special case: extend existing data-binding
     const rebinding_element_index = accessors.findIndex(({ owner, property_name }, index) => accessors[index].descriptor?.get?.bound_to)
@@ -134,7 +171,7 @@ function bind_values({ descriptors }){
     let initializer = undefined
 
     let revoke_all = undefined
-    const products = descriptors.map(({ owner, property_name }, index) => {
+     products = descriptors.map(({ owner, property_name }, index) => {
         const others = accessors.filter((elem, elem_index) => elem_index != index)
         const notify_others = (value) => others.forEach((accessor) => accessor.set(value))
         initializer ??= () => { notify_others(accessors[index].get()) }
@@ -177,11 +214,6 @@ function bind_values({ descriptors }){
 
 // ---
 
-function make_attribute_bindable_adapter({ element, attribute_name }){
-    let bindable = attribute_accessor({ target: element, attribute_name: attribute_name })
-    return { owner: bindable, property_name: 'value' }
-}
-
 function test(){
     elem_1 = document.getElementsByTagName('my-custom-element')[0]
     qwe = { a: '42' }
@@ -210,12 +242,12 @@ function test_2(){
 
     only_get = { storage: 0, get a(){ return ++this.storage } }
     value = { a : 42 }
+    elem = document.getElementsByTagName('my-custom-element')[0]
 
     binder = bind_values({ descriptors: [
         // { owner: only_get, property_name: 'a' },
         { owner: value, property_name: 'a' },
-        { owner: document.getElementsByTagName('my-custom-element')[0], attribute_name: 'is_executable' }
-        // make_attribute_bindable_adapter({ element: document.getElementsByTagName('my-custom-element')[0], attribute_name: 'is_executable' })
+        { owner: elem,  attribute_name: 'is_executable' }
     ]})
 
     // only_get.a // update value to 2
