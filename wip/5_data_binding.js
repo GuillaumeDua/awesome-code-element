@@ -172,15 +172,31 @@ class data_binder{
 
 // ---
 
-function test(){
-// scenario: data-source is get-only
-// MVE of code_mvc.controler.is_executable
+function test_only_get(){
 
     only_get = { storage: 0, get a(){ return ++this.storage } }
     value = { a : 42 }
     elem = document.getElementsByTagName('my-custom-element')[0]
 
-    // // { owner: only_get, property_name: 'a' },
+    binder = data_binder.bind_attr({ 
+        data_source: { owner: only_get, property_name: 'a' },
+        attributes: [
+            { target: elem,  attribute_name: 'a' }
+        ]
+    })
+
+    binder = data_binder.bind_attr({
+        data_source: { owner: only_get, property_name: 'a' },
+        attributes: [
+            { target: elem,  attribute_name: 'b' }
+        ]
+    })
+}
+function test_simple(){
+
+    only_get = { storage: 0, get a(){ return ++this.storage } }
+    value = { a : 42 }
+    elem = document.getElementsByTagName('my-custom-element')[0]
 
     binder = data_binder.bind_attr({ 
         data_source: { owner: value, property_name: 'a' },
@@ -195,16 +211,4 @@ function test(){
             { target: elem,  attribute_name: 'b' }
         ]
     })
-
-    // value_2 = { b : 13 }
-    // binder = data_binder.make_binding({ descriptors: [
-    //     // { owner: only_get, property_name: 'a' },
-    //     { owner: value,   property_name: 'a' },
-    //     { owner: value_2, property_name: 'b' },
-    //     { owner: elem,    attribute_name: 'b' },
-    //     { owner: elem,    attribute_name: 'c' }
-    // ]})
-
-    // only_get.a // update value to 2
-    // console.log(2 === value.a ? 'SUCCESS' : `FAILURE with value.a=[${value.a}]`)
 }
