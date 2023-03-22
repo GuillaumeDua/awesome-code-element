@@ -1,7 +1,7 @@
 
 class data_binder{
 
-    static #make_attribute_bound_adapter({ target, attribute_name, on_value_changed }){
+    static #make_attribute_bound_adapter({ target, attribute_name, on_value_changed, is_source_rdonly }){
 
         attribute_name = attribute_name.replace(/\s+/g, '_') // whitespace are not valid in attributes names
         if (!target || !(target instanceof HTMLElement) || !attribute_name || !on_value_changed)
@@ -17,8 +17,14 @@ class data_binder{
                         continue
     
                     console.log('intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value)
-                    //observer.suspend_while(() => on_value_changed(value))
-                    on_value_changed(value)
+
+                    if (is_source_rdonly){
+                    // reset to old value
+                        observer.suspend_while(() => target.setAttribute(attribute_name, mutation.oldValue))
+                        console.warn('data_binder.bound_attribute_adapter: data-source is read-only, canceling requested attr change [', mutation.oldValue, '->', value, ']')
+                    }
+                    else
+                        on_value_changed(value)
                 }
             });
             observer.suspend_while = (action) => {
@@ -126,9 +132,14 @@ class data_binder{
             return data_binder.#make_property_bound_adapter({ owner: owner, property_name: property_name, on_value_changed: notify_others.bind(this, 0) })
         })(data_source)
         const attributes_adapters = attributes.map(({target, attribute_name}, index) => {
-            return data_binder.#make_attribute_bound_adapter({ target: target, attribute_name: attribute_name, on_value_changed: notify_others.bind(this, index + 1) })
+            return data_binder.#make_attribute_bound_adapter({
+                target: target,
+                attribute_name: attribute_name,
+                on_value_changed: notify_others.bind(this, index + 1),
+                is_source_rdonly: Boolean(source_adapter.initiale.set === undefined)
+            })
         })
-        
+
         // notification: broadcasters
         const accessors = [ source_adapter, ...attributes_adapters ];
         notifiers = accessors.map((accessor, index) => {
@@ -143,9 +154,6 @@ class data_binder{
             const bound_attributes = attributes
             const data_binding = {
                 extend_binding: ({ attributes }) => {
-
-                    // TODO: data_source === data_source
-                    console.log(attributes)
 
                     if (!(attributes instanceof Array) || attributes.length === 0)
                         throw new Error('data_binder.make_binding: extend_binding: invalid argument')
@@ -171,6 +179,9 @@ class data_binder{
 }
 
 // ---
+
+// TODO: elem.setAttribute('a', 222) => warning "no set op" + reset previous value
+// TODO: projection
 
 function test_only_get(){
 
