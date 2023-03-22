@@ -98,10 +98,20 @@ class data_binder{
     }
 
     static bind_attr({ data_source, attributes }){
+
         if (!data_source || !attributes || !(attributes instanceof Array) || attributes.length === 0)
             throw new Error('data_binder: bind_attr: invalid argument')
 
-        // notifications/broadcast
+        // special case: rebinding (first element)
+        const previous_binding = (({owner, property_name}) => {
+            const descriptor = Object.getOwnPropertyDescriptor(owner, property_name)
+            return descriptor.get?.data_binding || descriptor.set?.data_binding
+        })(data_source)
+
+        if (previous_binding)
+            return previous_binding.extend_binding({ attributes: attributes })
+
+        // notifications
         let notifiers = undefined
         let last_notified_value = undefined
         let notify_others = (element_index, value) => {
@@ -119,12 +129,39 @@ class data_binder{
             return data_binder.#make_attribute_bound_adapter({ target: target, attribute_name: attribute_name, on_value_changed: notify_others.bind(this, index + 1) })
         })
         
-        const accessors = [ source_adapter, ...attributes_adapters ]
+        // notification: broadcasters
+        const accessors = [ source_adapter, ...attributes_adapters ];
         notifiers = accessors.map((accessor, index) => {
             const others = accessors.filter((elem, elem_index) => elem_index != index)
             const notify_others = (value) => others.forEach((accessor) => accessor.initiale?.set(value))
             return notify_others
-        })
+        });
+
+        // tag binding
+        (({owner, property_name}) => {
+            const descriptor = Object.getOwnPropertyDescriptor(owner, property_name)
+            const bound_attributes = attributes
+            const data_binding = {
+                extend_binding: ({ attributes }) => {
+
+                    // TODO: data_source === data_source
+                    console.log(attributes)
+
+                    if (!(attributes instanceof Array) || attributes.length === 0)
+                        throw new Error('data_binder.make_binding: extend_binding: invalid argument')
+
+                    accessors.forEach(({revoke}) => revoke())
+
+                    console.warn('extend_binding: from', bound_attributes, 'to', [ ...bound_attributes, ...attributes ])
+                    return data_binder.bind_attr({
+                        data_source: data_source,
+                        attributes: [ ...bound_attributes, ...attributes ]
+                    })
+                }
+            }
+            if (descriptor.get) descriptor.get.data_binding = data_binding
+            if (descriptor.set) descriptor.set.bound_to = data_binding
+        })(source_adapter)
 
         // spread data_source initiale value
         notifiers[0](accessors[0].initiale.get())
@@ -143,6 +180,8 @@ function test(){
     value = { a : 42 }
     elem = document.getElementsByTagName('my-custom-element')[0]
 
+    // // { owner: only_get, property_name: 'a' },
+
     binder = data_binder.bind_attr({ 
         data_source: { owner: value, property_name: 'a' },
         attributes: [
@@ -150,11 +189,12 @@ function test(){
         ]
     })
 
-    // binder = data_binder.make_binding({ descriptors: [
-    //     // { owner: only_get, property_name: 'a' },
-    //     { owner: value, property_name: 'a' },
-    //     { owner: elem,  attribute_name: 'b' }
-    // ]})
+    binder = data_binder.bind_attr({
+        data_source: { owner: value, property_name: 'a' },
+        attributes: [
+            { target: elem,  attribute_name: 'b' }
+        ]
+    })
 
     // value_2 = { b : 13 }
     // binder = data_binder.make_binding({ descriptors: [
