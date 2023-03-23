@@ -883,6 +883,239 @@ AwesomeCodeElement.details.remote.CE_API = class CE_API {
     }
 }
 
+class data_binder{
+
+    static get default_projection(){
+        return {
+            from: (value) => { return value },
+            to:   (value) => { return value + '' },
+        }
+    }
+
+    static get_property_descriptor({ owner, property_name }){
+        return Object.getOwnPropertyDescriptor(owner, property_name)
+            || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(owner), property_name)
+            || {}
+    }
+
+    static #make_attribute_bound_adapter({ target, attribute_name, on_value_changed, is_source_rdonly }){
+
+        attribute_name = attribute_name.replace(/\s+/g, '_') // whitespace are not valid in attributes names
+        if (!target || !(target instanceof HTMLElement) || !attribute_name || !on_value_changed)
+            throw new Error('data_binder.#make_attribute_bound_adapter: invalid argument')
+    
+        let observer = (() => {
+            let observer = undefined
+            observer = new MutationObserver((mutationsList) => {
+                for (let mutation of mutationsList) {
+    
+                    const value = mutation.target.getAttribute(mutation.attributeName)
+                    if (mutation.oldValue === value)
+                        continue
+    
+                    // console.debug('intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value)
+
+                    if (is_source_rdonly){
+                    // reset to old value
+                        observer.suspend_while(() => target.setAttribute(attribute_name, mutation.oldValue))
+                        console.warn('data_binder.bound_attribute_adapter: data-source is read-only, canceling requested attr change [', mutation.oldValue, '->', value, ']')
+                    }
+                    else
+                        on_value_changed(value)
+                }
+            });
+            observer.suspend_while = (action) => {
+            //  warning: can result in race conditions
+            //  TODO: process pending records ? MutationObserver.`takeRecords`
+                observer.disconnect()
+                action()
+                observer.observe(target, { attributeFilter: [ attribute_name ], attributeOldValue: true });
+            }
+            observer.observe(target, { attributeFilter: [ attribute_name ], attributeOldValue: true });
+            return observer
+        })()
+    
+        return {
+            owner: target,
+            attribute_name: attribute_name,
+            initiale: {
+                get: () => target.getAttribute(attribute_name),
+                set: (value) => observer.suspend_while(() => target.setAttribute(attribute_name, value))
+            },
+            revoke: () => { observer.disconnect() }
+        }
+    }
+    
+    static #make_property_bound_adapter({ owner, property_name, on_value_changed }){
+    // uniform access to properties. for descriptor= { get and/or set, value }
+        if (!owner || !property_name || !(property_name in owner) || !on_value_changed)
+            throw new Error('data_binder.#make_property_bound_adapter: invalid argument')
+    
+        const descriptor = data_binder.get_property_descriptor({ owner: owner, property_name: property_name })
+    
+        let storage = descriptor.value // descriptor.value is mutable but mutating it has no effect on the original property's configuration
+    
+        const initiale = {
+            get: (() => {
+                if (descriptor.get)
+                    return descriptor.get.bind(owner)
+                if ('value' in descriptor)
+                    return () => storage
+                return undefined
+            })(),
+            set: (() => {
+                if (descriptor.set)
+                    return descriptor.set.bind(owner)
+                if ('value' in descriptor)
+                    return (value) => storage = value
+                return undefined
+            })()
+        }
+
+        const getter = initiale.get
+            ? () => { 
+                const value = initiale.get()
+                on_value_changed(value)
+                return value
+            }
+            : undefined
+        const setter = initiale.set
+            ? (value) => {
+                initiale.set(value)
+                on_value_changed(initiale.get ? initiale.get() : value)
+            }
+            : undefined
+
+        Object.defineProperty(owner, property_name, {
+            get: getter,
+            set: setter,
+            configurable: true
+        })
+
+        return {
+            owner: owner,
+            property_name: property_name,
+            initiale: initiale,
+            revoke: () => Object.defineProperty(owner, property_name, descriptor),
+        }
+    }
+
+    static bind_attr({ data_source, attributes, projection }){
+    // bind one data-source to {1,} attributes
+
+        if (!data_source || !attributes || !(attributes instanceof Array) || attributes.length === 0)
+            throw new Error('data_binder.bind_attr: invalid argument')
+
+        projection ??= data_binder.default_projection
+
+        // special case: rebinding (extending existing binding)
+        const previous_binding = (({owner, property_name}) => {
+            const descriptor = data_binder.get_property_descriptor({ owner: owner, property_name: property_name })
+            return descriptor.get?.data_binding || descriptor.set?.data_binding
+        })(data_source)
+
+        if (previous_binding)
+            return previous_binding.extend_binding({
+                attributes: attributes,
+                projection: projection
+            })
+
+        // notifications
+        let notifiers = undefined
+        let last_notified_value = undefined
+        let notify_others = (element_index, value) => {
+            if (last_notified_value === value)
+                return
+            last_notified_value = value
+            const callback = notifiers[element_index]
+            callback(value)
+        }
+
+        const source_adapter = (({owner, property_name}) => {
+            return data_binder.#make_property_bound_adapter({
+                owner: owner,
+                property_name: property_name,
+                on_value_changed: notify_others.bind(this, 0)
+            })
+        })(data_source)
+        const attributes_adapters = attributes.map(({target, attribute_name}, index) => {
+            return data_binder.#make_attribute_bound_adapter({
+                target: target,
+                attribute_name: attribute_name,
+                on_value_changed: notify_others.bind(this, index + 1),
+                is_source_rdonly: Boolean(source_adapter.initiale.set === undefined)
+            })
+        })
+
+        // notification: broadcasters
+        const accessors = [ source_adapter, ...attributes_adapters ];
+        notifiers = [
+            (value) => attributes_adapters.forEach((accessor) => accessor.initiale?.set(projection.to(value))),
+            ...attributes_adapters.map((accessor, index) => {
+
+                const others = attributes_adapters.filter((elem, elem_index) => elem_index != index)
+                const notify_others = (value) => {
+                    source_adapter.initiale?.set(projection.from(value))
+                    others.forEach((accessor) => accessor.initiale?.set(value))
+                }
+                return notify_others
+            })
+        ];
+
+        // tag binding
+        (({owner, property_name}) => {
+            const descriptor = data_binder.get_property_descriptor({ owner: owner, property_name: property_name })
+            const bound_attributes = attributes
+            const data_binding = {
+                extend_binding: ({ attributes, projection }) => {
+
+                    if (!(attributes instanceof Array) || attributes.length === 0)
+                        throw new Error('data_binder.make_binding: extend_binding: invalid argument')
+
+                    accessors.forEach(({revoke}) => revoke())
+
+                    console.warn('extend_binding: from', bound_attributes, 'to', [ ...bound_attributes, ...attributes ])
+                    return data_binder.bind_attr({
+                        data_source: data_source,
+                        attributes: [ ...bound_attributes, ...attributes ],
+                        projection: projection
+                    })
+                }
+            }
+            if (descriptor.get) descriptor.get.data_binding = data_binding
+            if (descriptor.set) descriptor.set.data_binding = data_binding
+        })(source_adapter)
+
+        // spread data_source initiale value
+        if (accessors[0].initiale.get === undefined){
+            console.warn('data_binder.bind_attr: data-source is write-only. Initiale value is undefined.')
+            notifiers[0](undefined)
+        }
+        else notifiers[0](accessors[0].initiale.get())
+
+        return { revoke: () => accessors.forEach((accessor) => accessor.revoke()) }
+    }
+    static synced_attr_view_controler({ target, data_sources }){
+    // make target[attr] view-controler to data-source
+        
+        if (!target || !(target instanceof HTMLElement)
+            || !data_sources || !(data_sources instanceof Array) || data_sources.length === 0
+        ) throw new Error('make_attr_binding: invalid argument')
+    
+        return data_sources.map(({ owner, property_name, projection }) => {
+    
+            const { revoke } = data_binder.bind_attr({ 
+                data_source: { owner: owner, property_name: property_name },
+                attributes: [
+                    { target: target,  attribute_name: property_name },
+                ],
+                projection: projection
+            })
+            return revoke
+        })
+    }
+}
+
 // details: logging
 AwesomeCodeElement.details.log_facility = class {
     
@@ -1878,7 +2111,7 @@ class code_mvc {
              && !AwesomeCodeElement.details.utility.types.is_empty(this.#target.#model.ce_options)
             )
         }
-        set is_executable(value){ /* const (no-op). setter used by two_way_synced_attributes_controler to propagate update */ }
+        // set is_executable(value){ /* const (no-op). setter used by two_way_synced_attributes_controler to propagate update */ }
     }
 
     // initialization
@@ -2049,122 +2282,6 @@ class animation {
     }
 }
 
-// TODO: attributes names -> replace '_' by '-' (valid HTML)
-class two_way_synced_attributes_controler {
-// two-way dynamic binding: attributes <=> property accessor
-//  warning: assumes get-set reciprocity. otherwise, values synced on changes is not guarantee
-//
-//  target: properties context
-//  descriptors: Map of [ property_name => descriptor ],
-//      when descriptor is { target, projection? { from?, to? }, options? }
-//      so mapped.get(key).target[key] is the property
-//  projections: apply transformation from/to
-//
-// TODO: options: { not_if_undefined: true } => remove attribute if property === undefined
-// TODO: options: { one_way, two_way }
-// TODO: options: { const/mutable=false } => one_way from model to attr
-// 
-// two-way equivalent to:
-//  static get observedAttributes() { return [ ]; }
-//  attributeChangedCallback(name, oldValue, newValue) {}
-
-    #observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-
-            if (mutation.type !== "attributes")
-                return
-        
-            if (mutation.oldValue === mutation.target.getAttribute(mutation.attributeName))
-                return
-            if (!this.#descriptor.has(mutation.attributeName))
-                throw new Error(`two_way_synced_attributes_controler.#observer: invalid .#descriptor: missing key [${mutation.attributeName}]`)
-            
-            // projection
-            const projection = this.#descriptor.get(mutation.attributeName).projection
-                            ?? AwesomeCodeElement.details.utility.types.projections.no_op
-            if (!(projection.to instanceof Function))
-                throw new Error(`two_way_synced_attributes_controler.#observer: invalid projection (missing .to function): for key [${mutation.attributeName}]`)
-
-            if (!this.#original_accessors.has(mutation.attributeName))
-                throw new Error(`two_way_synced_attributes_controler.#observer: invalid .#original_accessors: missing key [${mutation.attributeName}]`)
-
-            // propagate change to setter
-            const accessors = this.#original_accessors.get(mutation.attributeName)
-            if (mutation.oldValue !== mutation.target.getAttribute(mutation.attributeName)
-             && accessors.set && accessors.get)
-            {
-                const updated_value = (() => {
-                    const value = projection.to(mutation.target.getAttribute(mutation.attributeName))
-                    accessors.set(value)
-                    return accessors.get(value)
-                })()
-                // setter with transformation
-                if (projection.from(updated_value) !== mutation.target.getAttribute(mutation.attributeName))
-                    console.debug('MutationObserver %c(attributes)', 'color:darkorange',
-                        ':', mutation.target.toString(), '[', mutation.attributeName, '] propagates to attr (self) [',
-                        mutation.oldValue, '->', mutation.target.getAttribute(mutation.attributeName),
-                        '] as [', projection.from(updated_value), ']'
-                    )
-                    mutation.target.setAttribute(mutation.attributeName, updated_value)
-            }
-        });
-    });
-
-    #target = undefined
-    #descriptor = undefined
-    #original_accessors = undefined
-
-    constructor({ target, properties_descriptor }){
-
-        if (!target || !(target instanceof HTMLElement))
-            throw new Error('two_way_synced_attributes_controler.constructor: invalid argument `target`')
-        if (properties_descriptor === undefined || !(properties_descriptor instanceof Map))
-            throw new Error('two_way_synced_attributes_controler.constructor: invalid argument `descriptor`')
-        if (properties_descriptor.size === 0)
-            throw new Error('two_way_synced_attributes_controler.constructor: empty argument `descriptor`')
-
-        this.#target = target
-        this.#descriptor = properties_descriptor
-        this.start()
-    }
-    start(){
-        this.stop()
-
-        this.#observer.observe(this.#target, {
-            attributeFilter: Array.from(this.#descriptor.keys()),
-            attributeOldValue: true
-        });
-
-        Array.from(this.#descriptor.keys()).forEach((key) => {
-            if (!this.#descriptor.get(key).target)
-                throw new Error(`two_way_synced_attributes_controler.start: invalid target for key [${key}].\n\tExpected descriptor layout: { target, projection? { from?, to? }, options? }`)
-
-            // initiale synchro
-            const value = this.#descriptor.get(key).target[key]
-            this.#target.setAttribute(key, value)
-
-            // futher synchro
-            const { origin, transformed } = AwesomeCodeElement.details.utility.inject_on_property_change_proxy({
-                target: this.#descriptor.get(key).target,
-                property_name: key,
-                on_property_change: ({ new_value }) => {
-                    if (String(new_value) !== this.#target.getAttribute(key)) {
-                        console.debug('%cproperty_change_proxy', 'color:DarkSlateBlue ',
-                            this.#target.toString(), '[', key, '] propagates to attr [', this.#target.getAttribute(key), '->', String(new_value), ']')
-                        this.#target.setAttribute(key, new_value)
-                    }
-                }
-            })
-            this.#original_accessors.set(key, origin)
-        })
-    }
-    stop(){
-        this.#observer.disconnect()
-        this.#original_accessors = new Map
-        // TODO: reset accessors with .revoke
-    }
-}
-
 class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
     static get HTMLElement_tagName() { return 'ace-cs-code-mvc' }
@@ -2243,14 +2360,14 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         code_mvc_HTMLElement.add_buttons_to({ value: this })
 
         const projections = AwesomeCodeElement.details.utility.types.projections
-        this.synced_attributes_controler = new two_way_synced_attributes_controler({
+        data_binder.synced_attr_view_controler({
             target: this,
-            properties_descriptor: new Map([
-                [ 'language',                   { target: this.code_mvc.controler, projection: projections.string } ],
-                [ 'toggle_parsing',             { target: this.code_mvc.controler, projection: projections.boolean } ],
-                [ 'toggle_language_detection',  { target: this.code_mvc.controler, projection: projections.boolean } ],
-                [ 'is_executable',              { target: this.code_mvc.controler, projection: projections.boolean } ]
-            ])
+            data_sources: [
+                { property_name: 'language',                    owner: this.code_mvc.controler, projection: projections.string },
+                { property_name: 'toggle_parsing',              owner: this.code_mvc.controler, projection: projections.boolean },
+                { property_name: 'toggle_language_detection',   owner: this.code_mvc.controler, projection: projections.boolean },
+                { property_name: 'is_executable',               owner: this.code_mvc.controler, projection: projections.boolean },
+            ]
         })
     }
 
@@ -2521,17 +2638,16 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         // bindings
         const projections = AwesomeCodeElement.details.utility.types.projections
-        // TODO: proxies on proxies: avoid duplicate calls
-        this.synced_attributes_controler = new two_way_synced_attributes_controler({
+        data_binder.synced_attr_view_controler({
             target: this,
-            properties_descriptor: new Map([
-                [ 'toggle_execution',           { target: this, projection: projections.boolean } ],
-                [ 'url',                        { target: this } ],
-                [ 'language',                   { target: this.ace_cs_panels.presentation.code_mvc.controler } ],
-                [ 'toggle_parsing',             { target: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean } ],
-                [ 'toggle_language_detection',  { target: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean } ],
-                [ 'is_executable',              { target: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean } ]
-            ])
+            data_sources: [
+                { property_name: 'toggle_execution',           owner: this,                                               projection: projections.boolean },
+                { property_name: 'url',                        owner: this },
+                { property_name: 'language',                   owner: this.ace_cs_panels.presentation.code_mvc.controler },
+                { property_name: 'toggle_parsing',             owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean },
+                { property_name: 'toggle_language_detection',  owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean },
+                { property_name: 'is_executable',              owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean }
+            ]
         })
         const { origin, transformed, revoke } = AwesomeCodeElement.details.utility.inject_on_property_change_proxy({
             target: this.ace_cs_panels.presentation.code_mvc,

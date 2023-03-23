@@ -211,26 +211,25 @@ class data_binder{
 
         return { revoke: () => accessors.forEach((accessor) => accessor.revoke()) }
     }
-}
-
-function make_attr_bindings({ target, data_sources }){
-// make target[attr] view-controler to data-source
-
-    if (!target || !(target instanceof HTMLElement)
-     || !data_sources || !(data_sources instanceof Array) || data_sources.length === 0
-    ) throw new Error('make_attr_binding: invalid argument')
-
-    return data_sources.map(({ owner, property_name, projection }) => {
-
-        const { revoke } = data_binder.bind_attr({ 
-            data_source: { owner: owner, property_name: property_name },
-            attributes: [
-                { target: target,  attribute_name: property_name },
-            ],
-            projection: projection
+    static synced_attr_view_controler({ target, data_sources }){
+    // make target[attr] view-controler to data-source
+        
+        if (!target || !(target instanceof HTMLElement)
+            || !data_sources || !(data_sources instanceof Array) || data_sources.length === 0
+        ) throw new Error('make_attr_binding: invalid argument')
+    
+        return data_sources.map(({ owner, property_name, projection }) => {
+    
+            const { revoke } = data_binder.bind_attr({ 
+                data_source: { owner: owner, property_name: property_name },
+                attributes: [
+                    { target: target,  attribute_name: property_name },
+                ],
+                projection: projection
+            })
+            return revoke
         })
-        return revoke
-    })
+    }
 }
 
 // ---
@@ -308,7 +307,7 @@ function test_make_attr_bindings(){
     value_2 = { get c(){ return 3 } }
     value_3 = { set d(value){ if (typeof value !== 'number') throw new Error('invalid data type') } }
 
-    make_attr_bindings({
+    data_binder.synced_attr_view_controler({
         target: elem,
         data_sources: [
             { owner: value_1, property_name: 'a' },
@@ -318,6 +317,22 @@ function test_make_attr_bindings(){
                 from: (value) => Number(value),
                 to:   (value) => value
             } },
+        ]
+    })
+}
+function test_altered_model(){
+
+    elem = document.getElementsByTagName('my-custom-element')[0]
+    value = {
+        storage: 'INITIAL_VALUE',
+        get a(){ return this.storage },
+        set a(value){ this.storage = (value + '').toUpperCase() }
+    }
+
+    data_binder.synced_attr_view_controler({
+        target: elem,
+        data_sources: [
+            { owner: value, property_name: 'a' }
         ]
     })
 }
