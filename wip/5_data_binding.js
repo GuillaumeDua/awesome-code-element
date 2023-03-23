@@ -1,6 +1,13 @@
 
 class data_binder{
 
+    static get default_projection(){
+        return {
+            from: (value) => { return value },
+            to:   (value) => { return value + '' },
+        }
+    }
+
     static #make_attribute_bound_adapter({ target, attribute_name, on_value_changed, is_source_rdonly }){
 
         attribute_name = attribute_name.replace(/\s+/g, '_') // whitespace are not valid in attributes names
@@ -103,19 +110,24 @@ class data_binder{
         }
     }
 
-    static bind_attr({ data_source, attributes }){
+    static bind_attr({ data_source, attributes, projection }){
 
         if (!data_source || !attributes || !(attributes instanceof Array) || attributes.length === 0)
             throw new Error('data_binder: bind_attr: invalid argument')
 
-        // special case: rebinding (first element)
+        projection ??= data_binder.default_projection
+
+        // special case: rebinding (extending existing binding)
         const previous_binding = (({owner, property_name}) => {
             const descriptor = Object.getOwnPropertyDescriptor(owner, property_name)
             return descriptor.get?.data_binding || descriptor.set?.data_binding
         })(data_source)
 
         if (previous_binding)
-            return previous_binding.extend_binding({ attributes: attributes })
+            return previous_binding.extend_binding({
+                attributes: attributes,
+                projection: projection
+            })
 
         // notifications
         let notifiers = undefined
@@ -129,7 +141,11 @@ class data_binder{
         }
 
         const source_adapter = (({owner, property_name}) => {
-            return data_binder.#make_property_bound_adapter({ owner: owner, property_name: property_name, on_value_changed: notify_others.bind(this, 0) })
+            return data_binder.#make_property_bound_adapter({
+                owner: owner,
+                property_name: property_name,
+                on_value_changed: notify_others.bind(this, 0)
+            })
         })(data_source)
         const attributes_adapters = attributes.map(({target, attribute_name}, index) => {
             return data_binder.#make_attribute_bound_adapter({
@@ -142,18 +158,31 @@ class data_binder{
 
         // notification: broadcasters
         const accessors = [ source_adapter, ...attributes_adapters ];
-        notifiers = accessors.map((accessor, index) => {
-            const others = accessors.filter((elem, elem_index) => elem_index != index)
-            const notify_others = (value) => others.forEach((accessor) => accessor.initiale?.set(value))
-            return notify_others
-        });
+        notifiers = [
+            (value) => attributes_adapters.forEach((accessor) => accessor.initiale?.set(projection.to(value))),
+            ...attributes_adapters.map((accessor, index) => {
+
+                const others = attributes_adapters.filter((elem, elem_index) => elem_index != index)
+                const notify_others = (value) => {
+                    source_adapter.initiale?.set(projection.from(value))
+                    others.forEach((accessor) => accessor.initiale?.set(value))
+                }
+                return notify_others
+            })
+        ];
+
+        // notifiers = accessors.map((accessor, index) => {
+        //     const others = accessors.filter((elem, elem_index) => elem_index != index)
+        //     const notify_others = (value) => others.forEach((accessor) => accessor.initiale?.set(value))
+        //     return notify_others
+        // });
 
         // tag binding
         (({owner, property_name}) => {
             const descriptor = Object.getOwnPropertyDescriptor(owner, property_name)
             const bound_attributes = attributes
             const data_binding = {
-                extend_binding: ({ attributes }) => {
+                extend_binding: ({ attributes, projection }) => {
 
                     if (!(attributes instanceof Array) || attributes.length === 0)
                         throw new Error('data_binder.make_binding: extend_binding: invalid argument')
@@ -163,12 +192,13 @@ class data_binder{
                     console.warn('extend_binding: from', bound_attributes, 'to', [ ...bound_attributes, ...attributes ])
                     return data_binder.bind_attr({
                         data_source: data_source,
-                        attributes: [ ...bound_attributes, ...attributes ]
+                        attributes: [ ...bound_attributes, ...attributes ],
+                        projection: projection
                     })
                 }
             }
             if (descriptor.get) descriptor.get.data_binding = data_binding
-            if (descriptor.set) descriptor.set.bound_to = data_binding
+            if (descriptor.set) descriptor.set.data_binding = data_binding
         })(source_adapter)
 
         // spread data_source initiale value
@@ -179,9 +209,6 @@ class data_binder{
 }
 
 // ---
-
-// TODO: elem.setAttribute('a', 222) => warning "no set op" + reset previous value
-// TODO: projection
 
 function test_only_get(){
 
@@ -205,14 +232,13 @@ function test_only_get(){
 }
 function test_simple(){
 
-    only_get = { storage: 0, get a(){ return ++this.storage } }
     value = { a : 42 }
     elem = document.getElementsByTagName('my-custom-element')[0]
 
     binder = data_binder.bind_attr({ 
         data_source: { owner: value, property_name: 'a' },
         attributes: [
-            { target: elem,  attribute_name: 'a' }
+            { target: elem,  attribute_name: 'a' },
         ]
     })
 
@@ -221,5 +247,32 @@ function test_simple(){
         attributes: [
             { target: elem,  attribute_name: 'b' }
         ]
+    })
+}
+function test_projection(){
+
+    value = { a : 42 }
+    elem = document.getElementsByTagName('my-custom-element')[0]
+
+    binder = data_binder.bind_attr({ 
+        data_source: { owner: value, property_name: 'a' },
+        attributes: [
+            { target: elem,  attribute_name: 'a' },
+        ]
+        // projection: {
+        //     from: (value) => Number(value),
+        //     to:   (value) => value + ''
+        // }
+    })
+
+    binder = data_binder.bind_attr({
+        data_source: { owner: value, property_name: 'a' },
+        attributes: [
+            { target: elem,  attribute_name: 'b' }
+        ],
+        projection: {
+            from: (value) => Number(value),
+            to:   (value) => value + ''
+        }
     })
 }
