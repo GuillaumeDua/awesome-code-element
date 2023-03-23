@@ -23,7 +23,7 @@ class data_binder{
                     if (mutation.oldValue === value)
                         continue
     
-                    console.log('intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value)
+                    // console.debug('intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value)
 
                     if (is_source_rdonly){
                     // reset to old value
@@ -111,6 +111,7 @@ class data_binder{
     }
 
     static bind_attr({ data_source, attributes, projection }){
+    // bind one data-source to {1,} attributes
 
         if (!data_source || !attributes || !(attributes instanceof Array) || attributes.length === 0)
             throw new Error('data_binder.bind_attr: invalid argument')
@@ -213,6 +214,7 @@ class data_binder{
 }
 
 function make_attr_bindings({ target, data_sources }){
+// make target[attr] view-controler to data-source
 
     if (!target || !(target instanceof HTMLElement)
      || !data_sources || !(data_sources instanceof Array) || data_sources.length === 0
@@ -223,8 +225,9 @@ function make_attr_bindings({ target, data_sources }){
         const { revoke } = data_binder.bind_attr({ 
             data_source: { owner: owner, property_name: property_name },
             attributes: [
-                { target: target,  attribute_name: property_name, projection: projection },
-            ]
+                { target: target,  attribute_name: property_name },
+            ],
+            projection: projection
         })
         return revoke
     })
@@ -303,7 +306,7 @@ function test_make_attr_bindings(){
     elem = document.getElementsByTagName('my-custom-element')[0]
     value_1 = { a: 1, b:2 }
     value_2 = { get c(){ return 3 } }
-    value_3 = { set d(value){} }
+    value_3 = { set d(value){ if (typeof value !== 'number') throw new Error('invalid data type') } }
 
     make_attr_bindings({
         target: elem,
@@ -311,7 +314,10 @@ function test_make_attr_bindings(){
             { owner: value_1, property_name: 'a' },
             { owner: value_1, property_name: 'b' },
             { owner: value_2, property_name: 'c' },
-            { owner: value_3, property_name: 'd' },
+            { owner: value_3, property_name: 'd', projection: {
+                from: (value) => Number(value),
+                to:   (value) => value
+            } },
         ]
     })
 }
