@@ -693,7 +693,7 @@ AwesomeCodeElement.details.utility = class utility {
                     new_value: result
                 }
                 storage = result
-                console.debug('proxy %cgetter:', 'color:green', target.toString(), notify_property_changed)
+                // console.debug('proxy %cgetter:', 'color:green', target.toString(), notify_property_changed)
                 on_property_change(notify_property_changed)
 
                 return storage
@@ -712,7 +712,7 @@ AwesomeCodeElement.details.utility = class utility {
                         new_value: value
                     }
                     storage = value
-                    console.debug('proxy %csetter:', 'color:red', target.toString(), notify_property_changed)
+                    // console.debug('proxy %csetter:', 'color:red', target.toString(), notify_property_changed)
                     on_property_change(notify_property_changed)
             }
 
@@ -898,10 +898,10 @@ class data_binder{
             || {}
     }
 
-    static #make_attribute_bound_adapter({ target, attribute_name, on_value_changed, is_source_rdonly }){
+    static #make_attribute_bound_adapter({ target, attribute_name, on_value_changed }){
 
         attribute_name = attribute_name.replace(/\s+/g, '_') // whitespace are not valid in attributes names
-        if (!target || !(target instanceof HTMLElement) || !attribute_name || !on_value_changed)
+        if (!target || !(target instanceof HTMLElement) || !attribute_name)
             throw new Error('data_binder.#make_attribute_bound_adapter: invalid argument')
     
         let observer = (() => {
@@ -915,13 +915,17 @@ class data_binder{
     
                     // console.debug('intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value)
 
-                    if (is_source_rdonly){
+                    if (on_value_changed)
+                        on_value_changed(value)
+                    else{
                     // reset to old value
                         observer.suspend_while(() => target.setAttribute(attribute_name, mutation.oldValue))
-                        console.warn('data_binder.bound_attribute_adapter: data-source is read-only, canceling requested attr change [', mutation.oldValue, '->', value, ']')
+                        console.warn(
+                            'data_binder.bound_attribute_adapter: data-source is read-only',
+                            '\n\tcanceling requested attr change [', mutation.oldValue, '->', value, ']',
+                            '\n\tinspect property [', attribute_name, '] of target', target
+                        )
                     }
-                    else
-                        on_value_changed(value)
                 }
             });
             observer.suspend_while = (action) => {
@@ -1020,48 +1024,26 @@ class data_binder{
                 projection: projection
             })
 
-        // notifications
-        let notifiers = undefined
-        let last_notified_value = undefined
-        let notify_others = (element_index, value) => {
-            if (last_notified_value === value)
-                return
-            last_notified_value = value
-            const callback = notifiers[element_index]
-            callback(value)
-        }
-
+        let attributes_adapters = undefined
+        const broadcast_to_attributes = (value) => attributes_adapters.forEach((accessor) => accessor.initiale.set(value))
         const source_adapter = (({owner, property_name}) => {
             return data_binder.#make_property_bound_adapter({
                 owner: owner,
                 property_name: property_name,
-                on_value_changed: notify_others.bind(this, 0)
+                on_value_changed: broadcast_to_attributes
             })
         })(data_source)
-        const attributes_adapters = attributes.map(({target, attribute_name}, index) => {
+        attributes_adapters = attributes.map(({target, attribute_name}, index) => {
             return data_binder.#make_attribute_bound_adapter({
                 target: target,
                 attribute_name: attribute_name,
-                on_value_changed: notify_others.bind(this, index + 1),
-                is_source_rdonly: Boolean(source_adapter.initiale.set === undefined)
+                on_value_changed: source_adapter.initiale.set
+                    ? (value) => data_source.owner[data_source.property_name] = projection.from(value) // update overrided model (will then broadcast to attributes)
+                    : undefined // data-source is read-only
             })
         })
 
-        // notification: broadcasters
         const accessors = [ source_adapter, ...attributes_adapters ];
-        notifiers = [
-            (value) => attributes_adapters.forEach((accessor) => accessor.initiale?.set(projection.to(value))),
-            ...attributes_adapters.map((accessor, index) => {
-
-                const others = attributes_adapters.filter((elem, elem_index) => elem_index != index)
-                const notify_others = (value) => {
-                    source_adapter.initiale?.set(projection.from(value))
-                    others.forEach((accessor) => accessor.initiale?.set(value))
-                }
-                return notify_others
-            })
-        ];
-
         // tag binding
         (({owner, property_name}) => {
             const descriptor = data_binder.get_property_descriptor({ owner: owner, property_name: property_name })
@@ -1087,11 +1069,11 @@ class data_binder{
         })(source_adapter)
 
         // spread data_source initiale value
-        if (accessors[0].initiale.get === undefined){
+        if (source_adapter.initiale.get === undefined){
             console.warn('data_binder.bind_attr: data-source is write-only. Initiale value is undefined.')
-            notifiers[0](undefined)
+            broadcast_to_attributes(undefined)
         }
-        else notifiers[0](accessors[0].initiale.get())
+        else broadcast_to_attributes(source_adapter.initiale.get())
 
         return { revoke: () => accessors.forEach((accessor) => accessor.revoke()) }
     }

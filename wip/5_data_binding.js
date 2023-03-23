@@ -8,6 +8,12 @@ class data_binder{
         }
     }
 
+    static get_property_descriptor({ owner, property_name }){
+        return Object.getOwnPropertyDescriptor(owner, property_name)
+            || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(owner), property_name)
+            || {}
+    }
+
     static #make_attribute_bound_adapter({ target, attribute_name, on_value_changed }){
 
         attribute_name = attribute_name.replace(/\s+/g, '_') // whitespace are not valid in attributes names
@@ -30,7 +36,11 @@ class data_binder{
                     else{
                     // reset to old value
                         observer.suspend_while(() => target.setAttribute(attribute_name, mutation.oldValue))
-                        console.warn('data_binder.bound_attribute_adapter: data-source is read-only, canceling requested attr change [', mutation.oldValue, '->', value, ']')
+                        console.warn(
+                            'data_binder.bound_attribute_adapter: data-source is read-only\n',
+                            '\tcanceling requested attr change [', mutation.oldValue, '->', value, ']',
+                            '\tinspect property', attribute_name, ' of target', target
+                        )
                     }
                 }
             });
@@ -61,7 +71,7 @@ class data_binder{
         if (!owner || !property_name || !(property_name in owner) || !on_value_changed)
             throw new Error('data_binder.#make_property_bound_adapter: invalid argument')
     
-        const descriptor = Object.getOwnPropertyDescriptor(owner, property_name) || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(owner), property_name) || {}
+        const descriptor = data_binder.get_property_descriptor({ owner: owner, property_name: property_name })
     
         let storage = descriptor.value // descriptor.value is mutable but mutating it has no effect on the original property's configuration
     
@@ -120,7 +130,7 @@ class data_binder{
 
         // special case: rebinding (extending existing binding)
         const previous_binding = (({owner, property_name}) => {
-            const descriptor = Object.getOwnPropertyDescriptor(owner, property_name)
+            const descriptor = data_binder.get_property_descriptor({ owner: owner, property_name: property_name })
             return descriptor.get?.data_binding || descriptor.set?.data_binding
         })(data_source)
 
@@ -152,7 +162,7 @@ class data_binder{
         const accessors = [ source_adapter, ...attributes_adapters ];
         // tag binding
         (({owner, property_name}) => {
-            const descriptor = Object.getOwnPropertyDescriptor(owner, property_name)
+            const descriptor = data_binder.get_property_descriptor({ owner: owner, property_name: property_name })
             const bound_attributes = attributes
             const data_binding = {
                 extend_binding: ({ attributes, projection }) => {
