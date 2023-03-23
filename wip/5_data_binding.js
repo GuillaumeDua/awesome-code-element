@@ -8,7 +8,7 @@ class data_binder{
         }
     }
 
-    static #make_attribute_bound_adapter({ target, attribute_name, on_value_changed, is_source_rdonly }){
+    static #make_attribute_bound_adapter({ target, attribute_name, on_value_changed }){
 
         attribute_name = attribute_name.replace(/\s+/g, '_') // whitespace are not valid in attributes names
         if (!target || !(target instanceof HTMLElement) || !attribute_name || !on_value_changed)
@@ -25,13 +25,13 @@ class data_binder{
     
                     // console.debug('intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value)
 
-                    if (is_source_rdonly){
+                    if (on_value_changed)
+                        on_value_changed(value)
+                    else{
                     // reset to old value
                         observer.suspend_while(() => target.setAttribute(attribute_name, mutation.oldValue))
                         console.warn('data_binder.bound_attribute_adapter: data-source is read-only, canceling requested attr change [', mutation.oldValue, '->', value, ']')
                     }
-                    else
-                        on_value_changed(value)
                 }
             });
             observer.suspend_while = (action) => {
@@ -133,7 +133,7 @@ class data_binder{
         // notifications
         let notifiers = undefined
         let last_notified_value = undefined
-        let notify_others = (element_index, value) => {
+        let update_attributes = (element_index, value) => {
             if (last_notified_value === value)
                 return
             last_notified_value = value
@@ -145,15 +145,16 @@ class data_binder{
             return data_binder.#make_property_bound_adapter({
                 owner: owner,
                 property_name: property_name,
-                on_value_changed: notify_others.bind(this, 0)
+                on_value_changed: update_attributes.bind(this, 0)
             })
         })(data_source)
         const attributes_adapters = attributes.map(({target, attribute_name}, index) => {
             return data_binder.#make_attribute_bound_adapter({
                 target: target,
                 attribute_name: attribute_name,
-                on_value_changed: notify_others.bind(this, index + 1),
-                is_source_rdonly: Boolean(source_adapter.initiale.set === undefined)
+                on_value_changed: source_adapter.initiale.set
+                    ? (value) => data_source.owner[data_source.property_name] = value // update overrided model (will broadcast to attributes)
+                    : undefined // data-source is read-only
             })
         })
 
@@ -171,12 +172,6 @@ class data_binder{
                 return notify_others
             })
         ];
-
-        // notifiers = accessors.map((accessor, index) => {
-        //     const others = accessors.filter((elem, elem_index) => elem_index != index)
-        //     const notify_others = (value) => others.forEach((accessor) => accessor.initiale?.set(value))
-        //     return notify_others
-        // });
 
         // tag binding
         (({owner, property_name}) => {
