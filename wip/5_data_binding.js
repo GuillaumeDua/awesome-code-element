@@ -113,7 +113,7 @@ class data_binder{
     static bind_attr({ data_source, attributes, projection }){
 
         if (!data_source || !attributes || !(attributes instanceof Array) || attributes.length === 0)
-            throw new Error('data_binder: bind_attr: invalid argument')
+            throw new Error('data_binder.bind_attr: invalid argument')
 
         projection ??= data_binder.default_projection
 
@@ -202,10 +202,32 @@ class data_binder{
         })(source_adapter)
 
         // spread data_source initiale value
-        notifiers[0](accessors[0].initiale.get())
+        if (accessors[0].initiale.get === undefined){
+            console.warn('data_binder.bind_attr: data-source is write-only. Initiale value is undefined.')
+            notifiers[0](undefined)
+        }
+        else notifiers[0](accessors[0].initiale.get())
 
         return { revoke: () => accessors.forEach((accessor) => accessor.revoke()) }
     }
+}
+
+function make_attr_bindings({ target, data_sources }){
+
+    if (!target || !(target instanceof HTMLElement)
+     || !data_sources || !(data_sources instanceof Array) || data_sources.length === 0
+    ) throw new Error('make_attr_binding: invalid argument')
+
+    return data_sources.map(({ owner, property_name, projection }) => {
+
+        const { revoke } = data_binder.bind_attr({ 
+            data_source: { owner: owner, property_name: property_name },
+            attributes: [
+                { target: target,  attribute_name: property_name, projection: projection },
+            ]
+        })
+        return revoke
+    })
 }
 
 // ---
@@ -257,7 +279,7 @@ function test_projection(){
     binder = data_binder.bind_attr({ 
         data_source: { owner: value, property_name: 'a' },
         attributes: [
-            { target: elem,  attribute_name: 'a' },
+            { target: elem, attribute_name: 'a' },
         ]
         // projection: {
         //     from: (value) => Number(value),
@@ -268,11 +290,28 @@ function test_projection(){
     binder = data_binder.bind_attr({
         data_source: { owner: value, property_name: 'a' },
         attributes: [
-            { target: elem,  attribute_name: 'b' }
+            { target: elem, attribute_name: 'b' }
         ],
         projection: {
             from: (value) => Number(value),
             to:   (value) => value + ''
         }
+    })
+}
+function test_make_attr_bindings(){
+
+    elem = document.getElementsByTagName('my-custom-element')[0]
+    value_1 = { a: 1, b:2 }
+    value_2 = { get c(){ return 3 } }
+    value_3 = { set d(value){} }
+
+    make_attr_bindings({
+        target: elem,
+        data_sources: [
+            { owner: value_1, property_name: 'a' },
+            { owner: value_1, property_name: 'b' },
+            { owner: value_2, property_name: 'c' },
+            { owner: value_3, property_name: 'd' },
+        ]
     })
 }
