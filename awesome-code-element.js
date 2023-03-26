@@ -580,21 +580,26 @@ AwesomeCodeElement.details.utility = class utility {
         }
     }
     static fetch_resource(url, { on_error, on_success }) {
+    // TODO: AddEventListener("abort", ...)
+    // TODO: report progress
+    // if (event.lengthComputable)
+    //  const percentComplete = (event.loaded / event.total) * 100;
 
         let xhr = new XMLHttpRequest();
             xhr.open('GET', url);
             xhr.onerror = function() {
-                on_error(`AwesomeCodeElement.details.utility.fetch_resource: network error on url [${url}]`)
+                on_error(`ace.details.utility.fetch_resource: network error on url [${url}]`)
             };
             xhr.onload = function() {
 
                 if (xhr.status != 200) {
-                    on_error(`AwesomeCodeElement.details.utility.fetch_resource: bad request status ${xhr.status} on url [${url}]`)
+                    on_error(`ace.details.utility.fetch_resource: bad request status ${xhr.status} on url [${url}]`)
                     return;
                 }
                 on_success(xhr.responseText)
             };
             xhr.send();
+        return xhr;
     }
     static make_incremental_counter_generator = function*(){
         let i = 0;
@@ -1388,17 +1393,19 @@ AwesomeCodeElement.details.HTML_elements.defered_HTMLElement = class extends HTM
 
     on_critical_internal_error(error = "") {
 
-        console.error('AwesomeCodeElement.details.HTML_elements.defered_HTMLElement.on_critical_internal_error: fallback rendering (No recovery possible)', error)
+        console.error('ace.details.HTML_elements.defered_HTMLElement.on_critical_internal_error: fallback rendering (No recovery possible)\n\t', error)
 
         if (!this.isConnected)
             return
 
         let error_element = document.createElement('pre')
-            error_element.textContent = `AwesomeCodeElement.details.HTML_elements.defered_HTMLElement.on_critical_internal_error:\n\t${error || 'unknown error'}\n\t(No recovery possible)`
+            error_element.textContent = `ace.details.HTML_elements.defered_HTMLElement.on_critical_internal_error:\n\t${error || 'unknown error'}\n\t(No recovery possible)`
         // TODO: status => error + CSS style for such status
         AwesomeCodeElement.details.utility.apply_css(error_element, {
             color: "red",
             border : "2px solid red"
+            // overflow-wrap: break-word;
+            // word-break: break-all;
         })
         this.innerHTML = ""
         this.replaceWith(error_element)
@@ -2816,13 +2823,13 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
             AwesomeCodeElement.details.utility.fetch_resource(this.#_url, {
                 on_error: (error) => {
-                    this.on_error(`CodeSection: network error: ${error}`)
-                    reject('on_error')
+                    this.on_critical_internal_error(`ace.cs.set(url): network error:\n\t\t${error}`)
+                    reject('ace.cs.set(url) -> on_error')
                 },
                 on_success: (code) => {
                     if (!code) {
                         this.on_error('CodeSection: fetched invalid (possibly empty) remote code')
-                        reject('success, but invalid fetch result')
+                        reject('ace.cs.set(url) -> success, but invalid fetch result')
                     }
     
                     if (this.ace_cs_panels.presentation.code_mvc.controler.toggle_language_detection) {
@@ -2840,15 +2847,12 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                     //     resolve('on_success')
                     // }, 2000)
                     this.ace_cs_panels.presentation.code_mvc.model = code
-                    resolve('on_success')
+                    resolve('ace.cs.set(url) -> on_success')
                 }
             })
         })
-
-        this.ace_cs_panels.presentation.loading_animation_controler.animate_while({ promise: fetch_url_result_promise })
-        this.ace_cs_panels.execution.loading_animation_controler.animate_while({ promise: fetch_url_result_promise })
-
-        fetch_url_result_promise.then(
+        .catch((error) => this.on_critical_internal_error(`ace.cs.set(url): network exception\n\t\t${error}`))
+        .then(
             (result) => {
                this.#fetch_execution_controler.fetch()// this.toggle_execution = this.toggle_execution // refresh execution
             },
@@ -2856,6 +2860,9 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                this.ace_cs_panels.execution.code_mvc.model = `${cs.HTMLElement_tagName}.set(url): fetch failed\n${error}`
             }
         );
+
+        this.ace_cs_panels.presentation.loading_animation_controler.animate_while({ promise: fetch_url_result_promise })
+        this.ace_cs_panels.execution.loading_animation_controler.animate_while({ promise: fetch_url_result_promise })
     }
 }
 customElements.define(
