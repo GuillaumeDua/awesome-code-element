@@ -1054,9 +1054,10 @@ class data_binder{
                     if (!(attributes instanceof Array) || attributes.length === 0)
                         throw new Error('data_binder.make_binding: extend_binding: invalid argument')
 
+                    // console.debug('extend_binding: from', bound_attributes, 'to', [ ...bound_attributes, ...attributes ])
+
                     accessors.forEach(({revoke}) => revoke())
 
-                    console.warn('extend_binding: from', bound_attributes, 'to', [ ...bound_attributes, ...attributes ])
                     return data_binder.bind_attr({
                         data_source: data_source,
                         attributes: [ ...bound_attributes, ...attributes ],
@@ -2536,7 +2537,13 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         this.removeAttribute('code') // meant to only be a one-time, alternative argument provider
 
-        this._parameters.code ||= Array.from(this.childNodes)
+        this._parameters.code ||= (() => {
+            const nodes = Array.from(this.childNodes)
+            return nodes.length === 0
+               || (nodes.length === 1 && nodes[0].nodeType === Node.TEXT_NODE && /^\s+$/g.test(nodes[0].textContent))
+               ? undefined
+               : nodes
+        })()
 
         // TODO: check if code is an empty string
         if (this._parameters.code && this._parameters.url){
