@@ -94,12 +94,13 @@
 // TODO: opt-in: godbolt /api/shortener instead of ClientState ?
 // TODO: feature: add compilation/execution duration information (useful for quick-performance comparisons)
 // TODO: get [Symbol.toStringTag]()
-// TODO: use synthax qwe?.asd?.zxc
+// TODO: use synthax qwe?.asd?.zxc rather than ternary expressions
 // TODO: avoid useless calls (get/set)
 // TODO: test all network errors (url, execution)
 // TODO: online/offline
 //          - offline: local CE, existing dependencies
 //          - online: at least one dependency is not local
+// TODO: log debug sub-channels/contexts
 
 export { AwesomeCodeElement as default }
 
@@ -1156,7 +1157,11 @@ AwesomeCodeElement.details.log_facility = class {
 {   // development settings
     if (location.hostname !== 'localhost')
         AwesomeCodeElement.details.log_facility.disable(['log', 'debug', 'trace'])
-    console.info(`AwesomeCodeElement.details.log_facility: channels enabled: [${AwesomeCodeElement.details.log_facility.enabled}], disabled: [${AwesomeCodeElement.details.log_facility.disabled}]`)
+    console.info(
+        'ace.details.log_facility:',
+        `\n\tchannels enabled : [${AwesomeCodeElement.details.log_facility.enabled}]`,
+        `\n\tchannels disabled: [${AwesomeCodeElement.details.log_facility.disabled}]`
+    )
 }
 
 // ======================
@@ -2567,7 +2572,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         const is_valid = Boolean(this._parameters.code ?? this._parameters.url)
         if (is_valid)
             this.acquire_parameters = () => { throw new Error('CodeSection.acquire_parameters: already called') }
-        console.log(this.toString(), 'initialize', is_valid)
         return is_valid
     }
     initialize() {
@@ -2621,13 +2625,17 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             // })
         
 
-        this.toggle_execution = (() => {
-        // false, until a valid configuration is loaded
+        this.toggle_execution = false; // false, until a valid configuration is loaded
+        (() => {
+        // not an IIFE assignement to avoid race
             const value = this._parameters.toggle_execution ?? false
+
+            if (AwesomeCodeElement.API.configuration.is_ready)
+                return this.toggle_execution = value
             AwesomeCodeElement.API.configuration.when_ready_then({ handler: () => {
+                console.debug(`>>> AwesomeCodeElement.API.configuration.when_ready_then: this.toggle_execution = ${value}`)
                 this.toggle_execution = value
             } })
-            return false
         })()
 
         this.#initialize_ids()
@@ -2637,11 +2645,11 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         data_binder.synced_attr_view_controler({
             target: this,
             data_sources: [
-                { property_name: 'toggle_execution',           owner: this,                                               projection: projections.boolean },
                 { property_name: 'url',                        owner: this },
                 { property_name: 'language',                   owner: this.ace_cs_panels.presentation.code_mvc.controler },
                 { property_name: 'toggle_parsing',             owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean },
                 { property_name: 'toggle_language_detection',  owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean },
+                { property_name: 'toggle_execution',           owner: this,                                               projection: projections.boolean },
                 { property_name: 'is_executable',              owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean }
             ]
         })
@@ -2827,6 +2835,9 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                     reject('ace.cs.set(url) -> on_error')
                 },
                 on_success: (code) => {
+
+                    // TODO: this.on_error impl (soft error)
+
                     if (!code) {
                         this.on_error('CodeSection: fetched invalid (possibly empty) remote code')
                         reject('ace.cs.set(url) -> success, but invalid fetch result')
@@ -2854,9 +2865,20 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         .catch((error) => this.on_critical_internal_error(`ace.cs.set(url): network exception\n\t\t${error}`))
         .then(
             (result) => {
-               this.#fetch_execution_controler.fetch()// this.toggle_execution = this.toggle_execution // refresh execution
+                // presentation panel: use url extension as language, if valid
+                const presentation_controler = this.ace_cs_panels.presentation.code_mvc.controler;
+                if (presentation_controler.toggle_language_detection) {
+                    const url_extension = AwesomeCodeElement.details.utility.get_url_extension(this.#_url)
+                    if (url_extension && presentation_controler.language_policies.detector.is_valid_language(url_extension)) {
+                        presentation_controler.toggle_language_detection = false
+                        presentation_controler.language = url_extension
+                    }
+                }
+                // execution panel: fetch execution result
+                this.#fetch_execution_controler.fetch()
             },
             (error) => { 
+                // TODO: soft errors
                this.ace_cs_panels.execution.code_mvc.model = `${cs.HTMLElement_tagName}.set(url): fetch failed\n${error}`
             }
         );

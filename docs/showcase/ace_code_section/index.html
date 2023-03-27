@@ -139,13 +139,189 @@ SOFTWARE.
 
     <awesome_code_element_test-utility-toolbar></awesome_code_element_test-utility-toolbar>
 
+    WIP:
+    - soft errors (non-critical, recovery possible)
+
+    <ul>
+        <li>
+        <h3>code-section : empty (will wait for content), user-provided id</h3>
+        <ace-showcase-wrapper>
+            <!--<ace-code-section id="my_custom_cs_id"></ace-code-section>-->
+        </ace-showcase-wrapper>
+        <button style="margin-top: 10px;" onclick="
+            const code = document.getElementById('cs_1').ace_cs_panels.presentation.code_mvc.model; // equivalent here to document.getElementById('cs_0').textContent
+            document.getElementById('my_custom_cs_id').textContent = code
+            this.style.display = 'none'
+        ">
+            <b style="color:green">Click me !</b> <i>(load content, trigger defered initialization)</i>
+        </button>
+        </li>
+    
+        <li>
+            <h3>code-section : text content, with language detection</h3>
+            <div class="note">
+                    <h4>&#9432; Note:</h4>
+                    <pre>Currently, C++ trailing-return-type is considered as an illegale synthax by highlight-js
+    See the issue <a href="https://github.com/highlightjs/highlight.js/issues/3673">here (highlight.js/issues/3673)</a>.
+    In such case, a fallback detection strategy is then used, but is not likely to be appropriate</pre>
+            </div>
+            
+            <ul><li>
+                <h3>code-section : text content (language detection <b style="color:red">failure</b>)</h3>
+                <ace-showcase-wrapper>
+                    <!--<ace-code-section>auto main() -> int { return 42; }</ace-code-section>-->
+                </ace-showcase-wrapper>
+            </li></ul>
+        
+            <ul><li>
+            <h3>code-section : text content (language detection <b style="color:green">success</b>)</h3>
+            <ace-showcase-wrapper>
+                <!--<ace-code-section>int main() { return 42; }</ace-code-section>-->
+            </ace-showcase-wrapper>
+            </li></ul>
+        </li>
+    
+        <li>
+        <h3>code-section : text content (large)</h3>
+        <ace-showcase-wrapper>
+            <!--<ace-code-section language="cpp">
+    auto main() -> int { return 42; } // this is a pretty long comment, so it should triggers small-rendering behavior, as well as horizontal-scrolling, depending on your window size ... otherwise, why would such extra-long comment exists ? .................................................................................................................. ?
+    </ace-code-section>-->
+        </ace-showcase-wrapper>
+        </li>
+    
+        <li>
+        <h3>code-section : text content + language attribute</h3>
+        <ace-showcase-wrapper>
+            <!--<ace-code-section language="cpp">auto main() -> int { return 42; }</ace-code-section>-->
+        </ace-showcase-wrapper>
+        </li>
+    
+        <li>
+        <h3>code-section : language + code attributes</h3>
+        <ace-showcase-wrapper>
+            <!--<ace-code-section language="cpp" code="auto main() -> int { return 42; }"></ace-code-section>-->
+        </ace-showcase-wrapper>
+        </li>
+    
+        <li>
+        <h3>code-section : url (external code)</h3>
+    
+            <ul><li>
             <h3>network: <b style="color:red">unreachable</b></h3>
             <ace-showcase-wrapper>
                 <!--<ace-code-section url="/DOES_NOT_EXISTS"></ace-code-section>-->
             </ace-showcase-wrapper>
             </li></ul>
     
-   
+            <ul><li>
+            <h3>network: <b style="color:green">reachable</b></h3>
+            <ace-showcase-wrapper>
+                <!--<ace-code-section url="../../details/resources/code_content/noexecute_show_block.cpp"></ace-code-section>-->
+            </ace-showcase-wrapper>
+            </li></ul>
+    
+            <ul><li>
+            <h3>network: <b style="color:green">reachable</b>, immediatly executed</h3>
+            <ace-showcase-wrapper>
+                <!--<ace-code-section toggle_execution="true" url="../../details/resources/code_content/noexecute_show_block.cpp"></ace-code-section>-->
+            </ace-showcase-wrapper>
+            </li></ul>
+        </li>
+    
+        <li>
+            <h3>code-section : language, execution</h3>
+    
+            <ul><li>
+            <h3>compilation <b style="color:green">success</b></h3>
+    <ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
+    #include <iostream>
+    auto main() -> int {
+        auto i = 42;
+        std::cout << "some console output";
+        return i;
+    }                       
+    </ace-code-section>--></ace-showcase-wrapper>
+            </li></ul>
+    
+            <ul><li>
+            <h3>compilation <b style="color:red">error</b></h3>
+    <ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
+    #include <iostream>
+    auto main() -> int {
+        auto i = ; // invalid synthax: missing rhs value in assignement
+        std::cout << "some console output";
+        return i;
+    }                       
+    </ace-code-section>--></ace-showcase-wrapper>
+    <div class="note">
+        <h4>&#9432; Note:</h4>
+        <pre>Relevant error status:
+        <b>JS:</b>  <code>cs_element.html_elements.execution.getAttribute('status') === 'failure'</code>
+        <b>CSS:</b> <code>ace-code-section > [id$='.panels.right'] > [id$='.execution'][status='failure']</code></pre>
+    </div>
+            </li></ul>
+    
+            <ul><li>
+    <h3><b style="color:red">error</b> : missing configuration (c vs. cpp)</h3>
+    <ace-showcase-wrapper><!--<ace-code-section language="c" toggle_execution="true">
+    int main() {
+        return 42;
+    }                       
+    </ace-code-section>--></ace-showcase-wrapper>
+    <div class="note">
+        <h4>&#9432; Note:</h4>
+        <pre>Relevant error status:
+        <b>JS:</b>  <code>cs_element.html_elements.panels.right.getAttribute('status') === 'error'</code>
+        <b>CSS:</b> <code>ace-code-section > [id$='.panels.right'][status='error']</code></pre>
+    </div>
+            </li></ul>
+           
+        </li>
+    
+        <li>
+            <h3>code-section : language, execution, column orientation</h3>
+    <ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true" direction="column"> 
+    #include <iostream>
+    auto main() -> int {
+        auto i = 42;
+        std::cout << "some console output";
+        return i;
+    }                       
+    </ace-code-section>--></ace-showcase-wrapper>
+            <div class="note">
+                <h4>&#9432; Note:</h4>
+                <pre>Alternatively, setting the style value <code>style="flex-direction: column"</code> also works</pre>
+            </div>
+    
+        </li>
+    
+        <li>
+            <h3>code-section : parsing (render and/or execute only what is relevant for the audience)</h3>
+    <ace-showcase-wrapper><!--<ace-code-section toggle_parsing="true">
+        THIS IS REMOVED // @awesome-code-element::skip::line
+    #include <iostream>
+    auto main() -> int {    
+                        // @awesome-code-element::show::block::begin
+    auto i = 42; // test ----------------------------------------
+    std::cout << "some console output";
+    return i;
+                        // @awesome-code-element::show::block::end
+    }                       
+        THIS IS REMOVED TOO // @awesome-code-element::skip::line
+    </ace-code-section>--></ace-showcase-wrapper>
+        </li>
+    
+        <li>
+            <h3>code-section : language + parsing + execution</h3>
+    <ace-showcase-wrapper><!--<ace-code-section toggle_parsing="true" toggle_execution="true">
+        THIS IS REMOVED // @awesome-code-element::skip::line
+    #include <iostream>
+    auto main() -> int {    
+                        // @awesome-code-element::show::block::begin
+    auto i = 42; // test ----------------------------------------
+    std::cout << "some console output";
+    return i;
 
 </body>
 </html>
