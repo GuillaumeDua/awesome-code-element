@@ -140,8 +140,11 @@ SOFTWARE.
     <awesome_code_element_test-utility-toolbar></awesome_code_element_test-utility-toolbar>
 
     WIP: Error management (presentation, execution)
-    - toggle execution -> when not executable, display anyway (error case)
+    - toggle execution -> when not executable, display anyway (error case. ex: missing configuration)
     - soft errors (non-critical, recovery possible)
+    - css: red border, etc.
+    - critical errors less critical (make it recoverable in some way)
+    WIP: Parsing disabled ?
 
     <ul>
         <li>
@@ -159,7 +162,7 @@ SOFTWARE.
         </li>
     
         <li>
-            <h3>code-section : text content, with language detection</h3>
+            <h3>code-section : text content, with language detection (<b style='color:orange'>auto</b>)</h3>
             <div class="note">
                     <h4>&#9432; Note:</h4>
                     <pre>Currently, C++ trailing-return-type is considered as an illegale synthax by highlight-js
@@ -168,7 +171,7 @@ SOFTWARE.
             </div>
             
             <ul><li>
-                <h3>code-section : text content (language detection <b style="color:red">failure</b>)</h3>
+                <h3>code-section : text content (language detection <b style="color:red">failure</b>: no syntax highlighting)</h3>
                 <ace-showcase-wrapper>
                     <!--<ace-code-section>auto main() -> int { return 42; }</ace-code-section>-->
                 </ace-showcase-wrapper>
@@ -236,44 +239,44 @@ SOFTWARE.
             <ul><li>
             <h3>compilation <b style="color:green">success</b></h3>
     <ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
-    #include <iostream>
-    auto main() -> int {
-        auto i = 42;
-        std::cout << "some console output";
-        return i;
-    }                       
+#include <iostream>
+auto main() -> int {
+    auto i = 42;
+    std::cout << "some console output";
+    return i;
+}                       
     </ace-code-section>--></ace-showcase-wrapper>
             </li></ul>
     
             <ul><li>
-            <h3>compilation <b style="color:red">error</b></h3>
-    <ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
-    #include <iostream>
-    auto main() -> int {
-        auto i = ; // invalid synthax: missing rhs value in assignement
-        std::cout << "some console output";
-        return i;
-    }                       
-    </ace-code-section>--></ace-showcase-wrapper>
+            <h3>compilation <b style="color:orange">error</b></h3>
+<ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
+#include <iostream>
+auto main() -> int {
+    auto i = ; // invalid synthax: missing rhs value in assignement
+    std::cout << "some console output";
+    return i;
+}                       
+</ace-code-section>--></ace-showcase-wrapper>
     <div class="note">
         <h4>&#9432; Note:</h4>
         <pre>Relevant error status:
-        <b>JS:</b>  <code>cs_element.html_elements.execution.getAttribute('status') === 'failure'</code>
-        <b>CSS:</b> <code>ace-code-section > [id$='.panels.right'] > [id$='.execution'][status='failure']</code></pre>
+        <b>JS:</b>  <code>ace_cs_element.ace_cs_panels.execution.getAttribute('status') === 'failure'</code>
+        <b>CSS:</b> <code>ace-code-section > ace-cs-code-mvc[id$='.panels.execution'][status|='failure']</code></pre>
     </div>
             </li></ul>
     
             <ul><li>
     <h3><b style="color:red">error</b> : missing configuration (c vs. cpp)</h3>
-    <ace-showcase-wrapper><!--<ace-code-section language="c" toggle_execution="true">
-    int main() {
-        return 42;
-    }                       
-    </ace-code-section>--></ace-showcase-wrapper>
+<ace-showcase-wrapper><!--<ace-code-section language="c" toggle_execution="true">
+int main() {
+    return 42;
+}                       
+</ace-code-section>--></ace-showcase-wrapper>
     <div class="note">
         <h4>&#9432; Note:</h4>
         <pre>Relevant error status:
-        <b>JS:</b>  <code>cs_element.html_elements.panels.right.getAttribute('status') === 'error'</code>
+        <b>JS:</b>  <code>ace_cs_element.ace_cs_panels.panels.right.getAttribute('status') === 'error'</code>
         <b>CSS:</b> <code>ace-code-section > [id$='.panels.right'][status='error']</code></pre>
     </div>
             </li></ul>
@@ -282,14 +285,14 @@ SOFTWARE.
     
         <li>
             <h3>code-section : language, execution, column orientation</h3>
-    <ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true" direction="column"> 
-    #include <iostream>
-    auto main() -> int {
-        auto i = 42;
-        std::cout << "some console output";
-        return i;
-    }                       
-    </ace-code-section>--></ace-showcase-wrapper>
+<ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true" direction="column"> 
+#include <iostream>
+auto main() -> int {
+    auto i = 42;
+    std::cout << "some console output";
+    return i;
+}                       
+</ace-code-section>--></ace-showcase-wrapper>
             <div class="note">
                 <h4>&#9432; Note:</h4>
                 <pre>Alternatively, setting the style value <code>style="flex-direction: column"</code> also works</pre>

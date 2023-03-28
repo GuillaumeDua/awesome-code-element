@@ -139,7 +139,7 @@ ace-code-section-demo {
     width           : 100%;
     padding: 5px 0px 5px 0px;
 }
-/* CS: panels : left, right */
+/* ace.cs: panels : left, right */
 ace-code-section        > [id*='.panels.'],
 ace-code-section-demo   > [id*='.panels.'] {
     flex:       2 2 content;
@@ -160,7 +160,7 @@ ace-code-section[toggle_execution='true'] > ace-cs-code-mvc[id$='.panels.executi
     display: flex
 }
 
-ace-code-section      > [id$='.panels.presentation'][status='error'],
+/* ace-code-section      > [id$='.panels.presentation'][status='error'],
 ace-code-section-demo > [id$='.panels.presentation'][status='error'],
 ace-code-section      > [id$='.panels.execution'][status='error'],
 ace-code-section-demo > [id$='.panels.execution'][status='error'] {
@@ -170,7 +170,7 @@ ace-code-section-demo > [id$='.panels.execution'][status='error'] {
 ace-code-section      > [id$='.panels.execution'][status='error'] > [id$='.execution'],
 ace-code-section-demo > [id$='.panels.execution'][status='error'] > [id$='.execution'] {
     color:red;
-}
+} */
 
 ace-code-section      > [id$='.panels.presentation'] > [id$='.code'],
 ace-code-section-demo > [id$='.panels.presentation'] > [id$='.code'] {
@@ -188,7 +188,6 @@ ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] {
     box-sizing:  border-box;
 }
 
-/* display:    flex; flex-direction : column; */
 ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'],
 ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'] {
     display:        block;
@@ -198,13 +197,24 @@ ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execut
     overflow:       auto;
     border-radius:  var(--border-radius-small)
 }
-ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'][status|='success'],
-ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'][status|='success'] {
+
+/* style */
+ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'][status|='success'],
+ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='success'] {
     border-top: 2px solid green;
 }
-ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'][status|='failure'],
-ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'][status|='failure'] {
+ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'][status|='failure'],
+ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='failure'] {
+    border-top: 2px solid orange;
+}
+ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'][status|='error'],
+ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='error'],
+ace-code-section      > ace-cs-code-mvc[id$='.panels.presentation'][status|='error'],
+ace-code-section-demo > ace-cs-code-mvc[id$='.panels.presentation'][status|='error'] {
     border-top: 2px solid red;
+}
+ace-code-section[direction='column']{
+    flex-direction: column;
 }
 
 /* TODO: right-panel copy-to-clipboard does not hide anymore */

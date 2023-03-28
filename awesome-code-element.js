@@ -101,6 +101,7 @@
 //          - offline: local CE, existing dependencies
 //          - online: at least one dependency is not local
 // TODO: log debug sub-channels/contexts
+// TODO: custom hljs language for execution output ? (and reduce "poor language relevance" noise)
 
 export { AwesomeCodeElement as default }
 
@@ -2623,7 +2624,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             // this.ace_cs_panels.presentation.initialization_promise.then(() => {
             //     this.url = this._parameters.url // initiate loading
             // })
-        
 
         this.toggle_execution = false; // false, until a valid configuration is loaded
         (() => {
