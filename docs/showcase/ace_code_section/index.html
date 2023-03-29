@@ -303,33 +303,75 @@ auto main() -> int {
         <li>
             <h3>code-section : parsing (render and/or execute only what is relevant for the audience)</h3>
 <ace-showcase-wrapper><!--<ace-code-section toggle_parsing="true">
-    THIS IS REMOVED // @awesome-code-element::skip::line
+    THIS IS REMOVED (from presentation and execution) // @ace::skip::line
 #include <iostream>
 auto main() -> int {    
-                    // @awesome-code-element::show::block::begin
-auto i = 42; // test ----------------------------------------
+                    // @ace::show::block::begin
+auto i = 42; // presentation starts here
 std::cout << "some console output";
-return i;
-                    // @awesome-code-element::show::block::end
+return i; // presentation ends here
+                    // @ace::show::block::end
 }                       
-    THIS IS REMOVED TOO // @awesome-code-element::skip::line
+    THIS IS REMOVED TOO // @ace::skip::line
 </ace-code-section>--></ace-showcase-wrapper>
         </li>
-    
+            
         <li>
             <h3>code-section : language + parsing + execution</h3>
 <ace-showcase-wrapper><!--<ace-code-section toggle_parsing="true" toggle_execution="true">
-    THIS IS REMOVED // @awesome-code-element::skip::line
+    THIS IS REMOVED (from presentation and execution) // @ace::skip::line
 #include <iostream>
 auto main() -> int {    
-                    // @awesome-code-element::show::block::begin
+                    // @ace::show::block::begin
 auto i = 42; // test ----------------------------------------
 std::cout << "some console output";
 return i;
+                    // @ace::show::block::end
+}                       
+    THIS IS REMOVED TOO // @ace::skip::line
 </ace-code-section>--></ace-showcase-wrapper>
-
         </li>
-    </ul>
+            
+    <li>
+        <h3>code-section : mixing html entities and regular chars (&lt;, &gt;, &quot;, &amp;)</h3>
+<ace-showcase-wrapper><!--<ace-code-section language="cpp" toggle_execution="true">
+#include <vector>
+#include &lt;iostream&gt;
+int main() {
+    auto i = 42;
+    auto b = 42 < 13 || 42 > 13;
+    
+    std::cout << ((int*)&b < &i) << (i > b) << (i >> b);
+    std::cin>>i;
+    std::cout
+        <<"&<>42&"
+        &lt;< "'&lt;, &lt;, \&quot, &&amp;'&quot;;
+    return (i <=> (int)b) == 0;
+}
+</ace-code-section> --></ace-showcase-wrapper>
+    </li>
+    <li>
+        <div class="note">
+            <h4 style="color: red">&#9432; Issue:</h4>
+            <pre>There is currently an issue with escaped sequences of characters (help welcome)
+- godbolt API /clientstate call works well
+- but not api/compiler/.../compile
+            </pre>
+        </div>
+    </li>
+
+    <li>
+        <h3>code-section : critical <b style="color:red">error</b> (no recovery possible)</h3>
+        <div class="note">
+            <h4>&#9432; Note:</h4>
+            <pre>Such error is quite hard to illustrate with an example.
+Mostly likely scenari are either a critical network while calling the Compiler-Explorer API,
+or some input code used in conjunction with <code>toggle_parsing="true"</code>, which breaks the meta-data parser
+            </pre>
+        </div>
+    </li>
+
+</ul>
 
 </body>
 </html>

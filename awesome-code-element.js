@@ -80,7 +80,6 @@
 // TODO: remove useless funcs, class (if any)
 // TODO: awesome-code-element.js: sub-modules aggregator
 // TODO: style : px vs. em
-// TODO: listener for CSS attribute change, properly calling setters ? (language, toggle_execution, toggle_parsing, orientation)
 // TODO: get rid of jquery ? -> document.querySelector
 //      - check $.getScript for script loading
 // TODO: wraps around a rich code editor block
