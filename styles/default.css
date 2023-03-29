@@ -207,12 +207,24 @@ ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'][status|='failur
 ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='failure'] {
     border-top: 2px solid orange;
 }
-ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'][status|='error'],
-ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='error'],
-ace-code-section      > ace-cs-code-mvc[id$='.panels.presentation'][status|='error'],
-ace-code-section-demo > ace-cs-code-mvc[id$='.panels.presentation'][status|='error'] {
-    border-top: 2px solid red;
+ace-cs-code-mvc[status|='error']{
+    border: 2px solid red;
+    color: red;
 }
+ace-cs-code-mvc[status|='error'] > * {
+    visibility: hidden;
+}
+/* WIP */
+ace-cs-status-display {
+    visibility: hidden;
+}
+ace-cs-code-mvc[status|='error'] > ace-cs-status-display {
+    visibility: visible;
+}
+
+/* ace-cs-code-mvc[status|='error']::before {
+    content: 'test';
+} */
 ace-code-section[direction='column']{
     flex-direction: column;
 }

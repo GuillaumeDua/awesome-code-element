@@ -2382,6 +2382,33 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
             CE: CE_button
         }
     }
+
+    // status: error|success|failure tracking/display
+    #status = {
+        value: 'unknown',
+        message: ''
+    }
+    set status({ value, message }){
+        
+        if (!value)
+            throw new Error('ace.code_mvc_HTMLElement.status(set): invalid argument')
+        
+        const last_status = this.#status;
+        this.#status = {
+            value: value,
+            message: message
+        }
+
+        if (!this.isConnected)
+            return
+
+        this.setAttribute('status', value)
+        if (value.startsWith('error')){
+            // css hides childrens
+            // ... but status/message display ?
+        }
+    }
+    get status(){ return this.#status }
 }
 customElements.define(code_mvc_HTMLElement.HTMLElement_tagName, code_mvc_HTMLElement);
 
@@ -2610,7 +2637,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
             [ presentation, execution ].forEach((panel) => this.appendChild(panel));
 
-            execution.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
+            execution.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/';
 
             return {
                 presentation,
@@ -2726,7 +2753,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable){
                 const error = `${this.toString()}: not executable (yet?) - missing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
                 this.#target.ace_cs_panels.execution.code_mvc.model = `# error: ${error}`
-                this.#target.ace_cs_panels.execution.setAttribute('status', 'error')
+                this.#target.ace_cs_panels.execution.setAttribute('status', 'error-not-executable')
                 console.warn(`${error} - set(toggle_execution)`)
                 return
             }
@@ -2752,8 +2779,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 this.#target.ace_cs_panels.execution.code_mvc.model = value
     
                 is_fetch_success
-                    ? this.#target.ace_cs_panels.execution.setAttribute('status', return_code < 0 ? 'failure' : 'success')
-                    : this.#target.ace_cs_panels.execution.setAttribute('status', 'error')
+                    ? this.#target.ace_cs_panels.execution.setAttribute('status', `${return_code < 0 ? 'failure' : 'success'}-compilation`)
+                    : this.#target.ace_cs_panels.execution.setAttribute('status', 'error-compilation')
 
                 this.#is_loading = false
             }
