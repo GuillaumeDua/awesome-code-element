@@ -91,6 +91,18 @@ ace-cs-code-mvc > code {
     display: block;
     line-height: var(--ace-cs-code-line-height); /* calc(var(--ace-cs-code-line-height) * 2); */
 }
+/* error rendering */
+ace-cs-code-mvc[status|='error'] > :not(ace-cs-status-display) {
+    display: none !important;
+}
+ace-cs-status-display {
+    display: none;
+}
+ace-cs-code-mvc[status|='error'] > ace-cs-status-display {
+    display: block;
+    color: red;
+    border: 2px solid red;
+}
 /* ace-cs-code-mvc > code > * {
     margin-left: calc(var(--ace-cs-code-line-height) * 2px);
 } */
@@ -137,7 +149,7 @@ ace-code-section-demo {
     align-items     : stretch;
     box-sizing      : border-box;
     width           : 100%;
-    padding: 5px 0px 5px 0px;
+    /* padding: 5px 0px 5px 0px; */
 }
 /* ace.cs: panels : left, right */
 ace-code-section        > [id*='.panels.'],
@@ -159,18 +171,6 @@ ace-code-section[toggle_execution='true'][is_executable='false'] > ace-cs-code-m
 ace-code-section[toggle_execution='true'] > ace-cs-code-mvc[id$='.panels.execution']{
     display: flex
 }
-
-/* ace-code-section      > [id$='.panels.presentation'][status='error'],
-ace-code-section-demo > [id$='.panels.presentation'][status='error'],
-ace-code-section      > [id$='.panels.execution'][status='error'],
-ace-code-section-demo > [id$='.panels.execution'][status='error'] {
-    border: 1px solid red;
-    color:red;
-}
-ace-code-section      > [id$='.panels.execution'][status='error'] > [id$='.execution'],
-ace-code-section-demo > [id$='.panels.execution'][status='error'] > [id$='.execution'] {
-    color:red;
-} */
 
 ace-code-section      > [id$='.panels.presentation'] > [id$='.code'],
 ace-code-section-demo > [id$='.panels.presentation'] > [id$='.code'] {
@@ -206,20 +206,6 @@ ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='succes
 ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'][status|='failure'],
 ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='failure'] {
     border-top: 2px solid orange;
-}
-ace-cs-code-mvc[status|='error']{
-    border: 2px solid red;
-    color: red;
-}
-ace-cs-code-mvc[status|='error'] > * {
-    visibility: hidden;
-}
-/* WIP */
-ace-cs-status-display {
-    visibility: hidden;
-}
-ace-cs-code-mvc[status|='error'] > ace-cs-status-display {
-    visibility: visible;
 }
 
 /* ace-cs-code-mvc[status|='error']::before {

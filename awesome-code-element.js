@@ -2277,6 +2277,29 @@ class animation {
     }
 }
 
+class status_display extends HTMLElement {
+    
+    static get HTMLElement_tagName() { return 'ace-cs-status-display' }
+    get [Symbol.toStringTag](){ return status_display.HTMLElement_tagName }
+
+    #value = 'unknown'
+    #message = ''
+
+    set({ value, message }){
+        this.#value = value
+        this.#message = message
+
+        this.textContent = `[${value}]${message ? ': ' : ''}${message}`
+    }
+    get(){
+        return {
+            value: this.#value,
+            message: this.#message
+        }
+    }
+}
+customElements.define(status_display.HTMLElement_tagName, status_display);
+
 class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
     static get HTMLElement_tagName() { return 'ace-cs-code-mvc' }
@@ -2343,6 +2366,7 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
     initialize(){
         console.debug(`code_mvc_HTMLElement.initialize: parameters:`, this._parameters)
 
+        this.status_display = this.appendChild(new status_display)
         this.code_mvc = this.#code_mvc_initializer()
         this.appendChild(this.code_mvc.view)
 
@@ -2403,12 +2427,9 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
             return
 
         this.setAttribute('status', value)
-        if (value.startsWith('error')){
-            // css hides childrens
-            // ... but status/message display ?
-        }
+        this.status_display.set(this.#status)
     }
-    get status(){ return this.#status }
+    get status(){ return this.status_display.get() }
 }
 customElements.define(code_mvc_HTMLElement.HTMLElement_tagName, code_mvc_HTMLElement);
 
