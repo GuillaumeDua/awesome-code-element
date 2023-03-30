@@ -2289,7 +2289,7 @@ class status_display extends HTMLElement {
         this.#value = value
         this.#message = message
 
-        this.textContent = `[${value}]${message ? ': ' : ''}${message}`
+        this.textContent = `[${value}]${message ? ':\n' : ''}${message}`
     }
     get(){
         return {
@@ -2297,6 +2297,9 @@ class status_display extends HTMLElement {
             message: this.#message
         }
     }
+
+    get value(){ return this.#value }
+    get message(){ return this.#message }
 }
 customElements.define(status_display.HTMLElement_tagName, status_display);
 
@@ -2388,6 +2391,12 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
                 { property_name: 'is_executable',               owner: this.code_mvc.controler, projection: projections.boolean },
             ]
         })
+        // data_binder.bind_attr({ 
+        //     data_source: { owner: this.status_display, property_name: 'value' },
+        //     attributes: [
+        //         { target: this,  attribute_name: 'status' },
+        //     ]
+        // })
     }
 
     static add_buttons_to = ({ value }) => {
@@ -2408,26 +2417,16 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
     }
 
     // status: error|success|failure tracking/display
-    #status = {
-        value: 'unknown',
-        message: ''
-    }
     set status({ value, message }){
         
         if (!value)
             throw new Error('ace.code_mvc_HTMLElement.status(set): invalid argument')
-        
-        const last_status = this.#status;
-        this.#status = {
-            value: value,
-            message: message
-        }
 
         if (!this.isConnected)
             return
 
         this.setAttribute('status', value)
-        this.status_display.set(this.#status)
+        this.status_display.set({ value: value, message: message })
     }
     get status(){ return this.status_display.get() }
 }
@@ -2679,10 +2678,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
             if (AwesomeCodeElement.API.configuration.is_ready)
                 return this.toggle_execution = value
-            AwesomeCodeElement.API.configuration.when_ready_then({ handler: () => {
-                console.debug(`>>> AwesomeCodeElement.API.configuration.when_ready_then: this.toggle_execution = ${value}`)
-                this.toggle_execution = value
-            } })
+            AwesomeCodeElement.API.configuration.when_ready_then({ handler: () => this.toggle_execution })
         })()
 
         this.#initialize_ids()
@@ -2772,9 +2768,12 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 return
 
             if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable){
-                const error = `${this.toString()}: not executable (yet?) - missing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
-                this.#target.ace_cs_panels.execution.code_mvc.model = `# error: ${error}`
-                this.#target.ace_cs_panels.execution.setAttribute('status', 'error-not-executable')
+                const error = `${this.toString()}: not executable (yet?)\n\tmissing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
+                const execution_panel = this.#target.ace_cs_panels.execution
+                execution_panel.status = {
+                    value: 'error-not-executable',
+                    message: `${error}`
+                }
                 console.warn(`${error} - set(toggle_execution)`)
                 return
             }
@@ -2795,30 +2794,28 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
             this.#is_loading = true
 
-            const set_execution_content = ({ is_fetch_success, content: { value, return_code } }) => {
+            const set_execution_content = ({ content: { value, return_code } }) => {
     
-                this.#target.ace_cs_panels.execution.code_mvc.model = value
-    
-                is_fetch_success
-                    ? this.#target.ace_cs_panels.execution.setAttribute('status', `${return_code < 0 ? 'failure' : 'success'}-compilation`)
-                    : this.#target.ace_cs_panels.execution.setAttribute('status', 'error-compilation')
-
+                const execution_panel = this.#target.ace_cs_panels.execution
+                execution_panel.code_mvc.model = value
+                execution_panel.status = {
+                    value: `${return_code < 0 ? 'failure' : 'success'}-compilation`,
+                    message: `compilation: ${return_code < 0 ? 'failure' : 'success'}`
+                }
                 this.#is_loading = false
             }
             const set_error = ({ error }) => {
-                set_execution_content({
-                    is_fetch_success : false,
-                    content : {
-                        return_code: -1,
-                        value: error
-                    }
-                })
-                throw new Error(error)
+                const execution_panel = this.#target.ace_cs_panels.execution
+                execution_panel.status = {
+                    value: 'error-compilation',
+                    message: `compilation failed with error:\n\t${error}`
+                }
+                this.#is_loading = false
             }
     
             // cleanup status
-            this.#target.ace_cs_panels.execution.removeAttribute('status')
-            this.#target.ace_cs_panels.execution.code_mvc.view.removeAttribute('status')
+            // this.#target.ace_cs_panels.execution.removeAttribute('status')
+            // this.#target.ace_cs_panels.execution.code_mvc.view.removeAttribute('status')
     
             if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable) {
                 const error = `CodeSection:fetch_execution: not executable.\n\tNo known valid configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
@@ -2846,7 +2843,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                             error : undefined,
                             return_code :  regex_result.length != 3 ? undefined : parseInt(regex_result[2])
                         }
-                    set_execution_content({ is_fetch_success : true, content : content })
+                    set_execution_content({ content : content })
                 })
                 .catch((error) => {
                     error = `CodeSection:fetch_execution: CE_API.fetch_execution_result: failed:\n\t[${error}]`
