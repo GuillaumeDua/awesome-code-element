@@ -101,6 +101,7 @@
 //          - online: at least one dependency is not local
 // TODO: log debug sub-channels/contexts
 // TODO: custom hljs language for execution output ? (and reduce "poor language relevance" noise)
+// TODO: ace.cs: change url dynamically (attr binding)
 
 export { AwesomeCodeElement as default }
 
@@ -2874,17 +2875,17 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         let fetch_url_result_promise = new Promise((resolve, reject) => {
 
             AwesomeCodeElement.details.utility.fetch_resource(this.#_url, {
-                on_error: (error) => {
-                    this.on_critical_internal_error(`ace.cs.set(url): network error:\n\t\t${error}`)
-                    reject('ace.cs.set(url) -> on_error')
-                },
+                on_error: (error) => reject({
+                    value: 'error-network-invalid-url',
+                    message: `ace.cs.set(url): network error:\n\t${error}`
+                }),
                 on_success: (code) => {
 
-                    // TODO: this.on_error impl (soft error)
-
                     if (!code) {
-                        this.on_error('CodeSection: fetched invalid (possibly empty) remote code')
-                        reject('ace.cs.set(url) -> success, but invalid fetch result')
+                        reject({
+                            value: 'error-network-invalid-fetched-code',
+                            message: `ace.cs.set(url): network error:\n\tfetched invalid (possibly empty) result\n\tcode=[${code}]`
+                        })
                     }
     
                     if (this.ace_cs_panels.presentation.code_mvc.controler.toggle_language_detection) {
@@ -2906,7 +2907,19 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 }
             })
         })
-        .catch((error) => this.on_critical_internal_error(`ace.cs.set(url): network exception\n\t\t${error}`))
+        .catch((error) => {
+
+            const { value, message } = error
+            value ??= 'error-network-unknown'
+            message ??= 'ace.cs.set(url): network error:\n\tunknown'
+
+            const presentation_panel = this.ace_cs_panels.presentation
+            presentation_panel.status = {
+                value: value,
+                message: message
+            }
+            console.error(presentation_panel.status.message)
+        })
         .then(
             (result) => {
                 // presentation panel: use url extension as language, if valid
@@ -2922,8 +2935,11 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 this.#fetch_execution_controler.fetch()
             },
             (error) => { 
-                // TODO: soft errors
-               this.ace_cs_panels.execution.code_mvc.model = `${cs.HTMLElement_tagName}.set(url): fetch failed\n${error}`
+               const presentation_panel = this.ace_cs_panels.presentation
+                presentation_panel.status = {
+                    value: 'error-network-fetch-failed',
+                    message: `${cs.HTMLElement_tagName}.set(url): fetch failed\n\t${error}`
+                }
             }
         );
 
