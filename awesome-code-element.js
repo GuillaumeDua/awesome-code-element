@@ -2856,25 +2856,37 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     }
     #fetch_execution_controler = new cs.fetch_execution_controler_t(this)
 
-    #_url = undefined
-    get url() { return this.#_url }
+    #url = undefined
+    get url() { return this.#url }
     set url(value) {
     // TODO: Async task cancelation: 
     //  Cancel or wait for pending resource acquisition
     //  issue:  if `url` is set twice (in a short period of time), we have a race condition
     //          can be fix with some internal state management
 
-        if (value === 'undefined')
+        if (!value || value === 'undefined')
             value = undefined
-
-        if (this.#_url === value)
+        if (this.#url === value)
             return
 
-        this.#_url = value
+        this.#url = value
+
+        const presentation_panel = this.ace_cs_panels.presentation
+        if (!this.#url){
+            presentation_panel.status = {
+                value: 'error-network-invalid-url',
+                message: `ace.cs.set(url): network error:\n\tinvalid or empty url`
+            }
+            return
+        }
+        presentation_panel.status = {
+            value: 'network-fetching',
+            message: `ace.cs.set(url): fetching:\n\turl = [${this.#url}]`
+        }
 
         let fetch_url_result_promise = new Promise((resolve, reject) => {
 
-            AwesomeCodeElement.details.utility.fetch_resource(this.#_url, {
+            AwesomeCodeElement.details.utility.fetch_resource(this.#url, {
                 on_error: (error) => reject({
                     value: 'error-network-invalid-url',
                     message: `ace.cs.set(url): network error:\n\t${error}`
@@ -2890,7 +2902,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     
                     if (this.ace_cs_panels.presentation.code_mvc.controler.toggle_language_detection) {
                     // use url extension as language, if valid
-                        const url_extension = AwesomeCodeElement.details.utility.get_url_extension(this.#_url)
+                        const url_extension = AwesomeCodeElement.details.utility.get_url_extension(this.#url)
                         if (url_extension
                          && this.ace_cs_panels.presentation.code_mvc.controler.language_policies.detector.is_valid_language(url_extension)){
                             this.ace_cs_panels.presentation.code_mvc.controler.toggle_language_detection = false
@@ -2902,6 +2914,13 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                     //     this.ace_cs_panels.presentation.code_mvc.model = code
                     //     resolve('on_success')
                     // }, 2000)
+
+                    // update status with success
+                    presentation_panel.status = {
+                        value: 'success-network-fetch',
+                        message: `ace.cs.set(url): network success:\n\tfetched [${this.url}]`
+                    }
+                    // update model
                     this.ace_cs_panels.presentation.code_mvc.model = code
                     resolve('ace.cs.set(url) -> on_success')
                 }
@@ -2913,7 +2932,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             value ??= 'error-network-unknown'
             message ??= 'ace.cs.set(url): network error:\n\tunknown'
 
-            const presentation_panel = this.ace_cs_panels.presentation
             presentation_panel.status = {
                 value: value,
                 message: message
@@ -2923,9 +2941,9 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         .then(
             (result) => {
                 // presentation panel: use url extension as language, if valid
-                const presentation_controler = this.ace_cs_panels.presentation.code_mvc.controler;
+                const presentation_controler = presentation_panel.code_mvc.controler;
                 if (presentation_controler.toggle_language_detection) {
-                    const url_extension = AwesomeCodeElement.details.utility.get_url_extension(this.#_url)
+                    const url_extension = AwesomeCodeElement.details.utility.get_url_extension(this.#url)
                     if (url_extension && presentation_controler.language_policies.detector.is_valid_language(url_extension)) {
                         presentation_controler.toggle_language_detection = false
                         presentation_controler.language = url_extension
@@ -2935,7 +2953,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 this.#fetch_execution_controler.fetch()
             },
             (error) => { 
-               const presentation_panel = this.ace_cs_panels.presentation
                 presentation_panel.status = {
                     value: 'error-network-fetch-failed',
                     message: `${cs.HTMLElement_tagName}.set(url): fetch failed\n\t${error}`
