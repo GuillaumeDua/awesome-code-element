@@ -51,7 +51,7 @@ img.ace-animation{
     /* height              : 100%; */
     box-sizing          : border-box;
     /* display             : none */
-    flex:       2 2 content;
+    flex:       1 1 content;
 }   /* hidden by default */
 
 /* CS */
@@ -77,7 +77,7 @@ ace-cs-code-mvc {
     line-height     : var(--ace-cs-code-line-height);
 }
 ace-cs-code-mvc > :not(button) {
-    flex:       2 2 content;
+    /* flex:       2 2 content; */
     overflow:   auto;
     position:   relative;
     top:        0px;
@@ -90,6 +90,21 @@ ace-cs-code-mvc > :not(button) {
 ace-cs-code-mvc > code {
     display: block;
     line-height: var(--ace-cs-code-line-height); /* calc(var(--ace-cs-code-line-height) * 2); */
+}
+/* error rendering */
+ace-cs-code-mvc[status|='error'] > :not(ace-cs-status-display) {
+    display: none !important;
+}
+ace-cs-status-display {
+    display: none;
+}
+ace-cs-code-mvc[status|='error'] > ace-cs-status-display {
+    display: block;
+    color: red;
+    border: 2px solid red;
+    overflow-wrap: break-word;
+    /* overflow-block: scroll; */
+    white-space: pre-wrap;
 }
 /* ace-cs-code-mvc > code > * {
     margin-left: calc(var(--ace-cs-code-line-height) * 2px);
@@ -137,12 +152,12 @@ ace-code-section-demo {
     align-items     : stretch;
     box-sizing      : border-box;
     width           : 100%;
-    padding: 5px 0px 5px 0px;
+    /* padding: 5px 0px 5px 0px; */
 }
-/* CS: panels : left, right */
+/* ace.cs: panels : left, right */
 ace-code-section        > [id*='.panels.'],
 ace-code-section-demo   > [id*='.panels.'] {
-    flex:       2 2 content;
+    flex:       1 1 fit-content;
 }
 ace-code-section      > [id$='.panels.presentation'],
 ace-code-section-demo > [id$='.panels.presentation'] {
@@ -160,18 +175,6 @@ ace-code-section[toggle_execution='true'] > ace-cs-code-mvc[id$='.panels.executi
     display: flex
 }
 
-ace-code-section      > [id$='.panels.presentation'][status='error'],
-ace-code-section-demo > [id$='.panels.presentation'][status='error'],
-ace-code-section      > [id$='.panels.execution'][status='error'],
-ace-code-section-demo > [id$='.panels.execution'][status='error'] {
-    border: 1px solid red;
-    color:red;
-}
-ace-code-section      > [id$='.panels.execution'][status='error'] > [id$='.execution'],
-ace-code-section-demo > [id$='.panels.execution'][status='error'] > [id$='.execution'] {
-    color:red;
-}
-
 ace-code-section      > [id$='.panels.presentation'] > [id$='.code'],
 ace-code-section-demo > [id$='.panels.presentation'] > [id$='.code'] {
     width:      auto;
@@ -182,30 +185,36 @@ ace-code-section-demo > [id$='.panels.presentation'] > [id$='.code'] {
 
 ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'], 
 ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] {
-    flex:       1 1 content;
+    /* flex:       1 1 content; */
     display:     flex;
     align-items: stretch;
     box-sizing:  border-box;
 }
 
-/* display:    flex; flex-direction : column; */
 ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'],
 ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'] {
     display:        block;
     width:          100%;
     overflow:       auto;
     margin:         inherit;
-    overflow:       auto;
     border-radius:  var(--border-radius-small)
 }
-ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'][status|='success'],
-ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'][status|='success'] {
+
+/* style */
+ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'][status|='success'],
+ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='success'] {
     border-top: 2px solid green;
 }
-ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'][status|='failure'],
-ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'][status|='failure'] {
-    border-top: 2px solid red;
+ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'][status|='failure'],
+ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='failure'] {
+    border-top: 2px solid orange;
+}
+
+/* ace-cs-code-mvc[status|='error']::before {
+    content: 'test';
+} */
+ace-code-section[direction='column']{
+    flex-direction: column;
 }
 
 /* TODO: right-panel copy-to-clipboard does not hide anymore */
-/* TODO: wtf: good execution -> red color */

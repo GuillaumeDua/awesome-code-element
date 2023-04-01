@@ -43,12 +43,14 @@
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
+// TODO: name: not `ace` (already exists: Ajax.org Cloud9 Editor)
 // TODO: Documentation
 // TODO: decoupled highlighter
 //  - highlightjs
 //  - https://github.com/EnlighterJS/EnlighterJS
 // TODO: compatibility with Marp
-//
+// TODO: interface with [CodeMirror](https://codemirror.net/)
+// -----
 // TODO: test behavior without theme selector   (provide default behavior)
 // TODO: not mandatory dependency to doxygen    (WIP)
 // TODO: highlightjs makes clickable code elements not clickable anymore. Fix that ?
@@ -78,7 +80,6 @@
 // TODO: remove useless funcs, class (if any)
 // TODO: awesome-code-element.js: sub-modules aggregator
 // TODO: style : px vs. em
-// TODO: listener for CSS attribute change, properly calling setters ? (language, toggle_execution, toggle_parsing, orientation)
 // TODO: get rid of jquery ? -> document.querySelector
 //      - check $.getScript for script loading
 // TODO: wraps around a rich code editor block
@@ -92,21 +93,15 @@
 // TODO: opt-in: godbolt /api/shortener instead of ClientState ?
 // TODO: feature: add compilation/execution duration information (useful for quick-performance comparisons)
 // TODO: get [Symbol.toStringTag]()
-// TODO: use synthax qwe?.asd?.zxc
+// TODO: use synthax qwe?.asd?.zxc rather than ternary expressions
 // TODO: avoid useless calls (get/set)
 // TODO: test all network errors (url, execution)
-
-// Doxygen integration quick-test
-/*
-import('./awesome-code-element.js').then(m => ace = m)
-	.then(() => {
-        let value = document.querySelector('div[class=fragment]')
-        console.debug('before', value)
-        let replacement = new ace.default.API.HTML_elements.CodeSection({ code: value })
-        value.replaceWith(replacement)
-        console.debug('after', replacement)
-    })
-*/
+// TODO: online/offline
+//          - offline: local CE, existing dependencies
+//          - online: at least one dependency is not local
+// TODO: log debug sub-channels/contexts
+// TODO: custom hljs language for execution output ? (and reduce "poor language relevance" noise)
+// TODO: ace.cs: change url dynamically (attr binding)
 
 export { AwesomeCodeElement as default }
 
@@ -503,6 +498,15 @@ AwesomeCodeElement.details.utility = class utility {
         }
     }
 
+    static accumulate_objects = (lhs, rhs) => {
+        let result = { ...lhs }
+        
+        const keys = new Set([ ...Object.keys(lhs), ...Object.keys(rhs) ])
+        keys.forEach((key) => {
+            result[key] = rhs[key] ?? lhs[key]
+        })
+        return result
+    }
     static unfold_into({target, properties = {}}) {
         if (!target)
             throw new Error(`AwesomeCodeElement.details.utility: invalid argument [target] with value [${target}]`)
@@ -578,21 +582,26 @@ AwesomeCodeElement.details.utility = class utility {
         }
     }
     static fetch_resource(url, { on_error, on_success }) {
+    // TODO: AddEventListener("abort", ...)
+    // TODO: report progress
+    // if (event.lengthComputable)
+    //  const percentComplete = (event.loaded / event.total) * 100;
 
         let xhr = new XMLHttpRequest();
             xhr.open('GET', url);
             xhr.onerror = function() {
-                on_error(`AwesomeCodeElement.details.utility.fetch_resource: network error on url [${url}]`)
+                on_error(`ace.details.utility.fetch_resource: network error on url [${url}]`)
             };
             xhr.onload = function() {
 
                 if (xhr.status != 200) {
-                    on_error(`AwesomeCodeElement.details.utility.fetch_resource: bad request status ${xhr.status} on url [${url}]`)
+                    on_error(`ace.details.utility.fetch_resource: bad request status ${xhr.status} on url [${url}]`)
                     return;
                 }
                 on_success(xhr.responseText)
             };
             xhr.send();
+        return xhr;
     }
     static make_incremental_counter_generator = function*(){
         let i = 0;
@@ -691,7 +700,7 @@ AwesomeCodeElement.details.utility = class utility {
                     new_value: result
                 }
                 storage = result
-                console.debug('proxy %cgetter:', 'color:green', target.toString(), notify_property_changed)
+                // console.debug('proxy %cgetter:', 'color:green', target.toString(), notify_property_changed)
                 on_property_change(notify_property_changed)
 
                 return storage
@@ -710,9 +719,9 @@ AwesomeCodeElement.details.utility = class utility {
                         new_value: value
                     }
                     storage = value
-                    console.debug('proxy %csetter:', 'color:red', target.toString(), notify_property_changed)
+                    // console.debug('proxy %csetter:', 'color:red', target.toString(), notify_property_changed)
                     on_property_change(notify_property_changed)
-                }
+            }
 
         Object.defineProperty(target, property_name, descriptor);
 
@@ -881,6 +890,222 @@ AwesomeCodeElement.details.remote.CE_API = class CE_API {
     }
 }
 
+class data_binder{
+
+    static get default_projection(){
+        return {
+            from: (value) => { return value },
+            to:   (value) => { return value + '' },
+        }
+    }
+
+    static get_property_descriptor({ owner, property_name }){
+        return Object.getOwnPropertyDescriptor(owner, property_name)
+            || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(owner), property_name)
+            || {}
+    }
+
+    static #make_attribute_bound_adapter({ target, attribute_name, on_value_changed }){
+
+        attribute_name = attribute_name.replace(/\s+/g, '_') // whitespace are not valid in attributes names
+        if (!target || !(target instanceof HTMLElement) || !attribute_name)
+            throw new Error('data_binder.#make_attribute_bound_adapter: invalid argument')
+    
+        let observer = (() => {
+            let observer = undefined
+            observer = new MutationObserver((mutationsList) => {
+                for (let mutation of mutationsList) {
+    
+                    const value = mutation.target.getAttribute(mutation.attributeName)
+                    if (mutation.oldValue === value)
+                        continue
+    
+                    // console.debug('intercept mutation:', mutation.attributeName, ':', mutation.oldValue, '->', value)
+
+                    if (on_value_changed)
+                        on_value_changed(value)
+                    else{
+                    // reset to old value
+                        observer.suspend_while(() => target.setAttribute(attribute_name, mutation.oldValue))
+                        console.warn(
+                            'data_binder.bound_attribute_adapter: data-source is read-only',
+                            '\n\tcanceling requested attr change [', mutation.oldValue, '->', value, ']',
+                            '\n\tinspect property [', attribute_name, '] of target', target
+                        )
+                    }
+                }
+            });
+            observer.suspend_while = (action) => {
+            //  warning: can result in race conditions
+            //  TODO: process pending records ? MutationObserver.`takeRecords`
+                observer.disconnect()
+                action()
+                observer.observe(target, { attributeFilter: [ attribute_name ], attributeOldValue: true });
+            }
+            observer.observe(target, { attributeFilter: [ attribute_name ], attributeOldValue: true });
+            return observer
+        })()
+    
+        return {
+            owner: target,
+            attribute_name: attribute_name,
+            initiale: {
+                get: () => target.getAttribute(attribute_name),
+                set: (value) => observer.suspend_while(() => target.setAttribute(attribute_name, value))
+            },
+            revoke: () => { observer.disconnect() }
+        }
+    }
+    
+    static #make_property_bound_adapter({ owner, property_name, on_value_changed }){
+    // uniform access to properties. for descriptor= { get and/or set, value }
+        if (!owner || !property_name || !(property_name in owner) || !on_value_changed)
+            throw new Error('data_binder.#make_property_bound_adapter: invalid argument')
+    
+        const descriptor = data_binder.get_property_descriptor({ owner: owner, property_name: property_name })
+    
+        let storage = descriptor.value // descriptor.value is mutable but mutating it has no effect on the original property's configuration
+    
+        const initiale = {
+            get: (() => {
+                if (descriptor.get)
+                    return descriptor.get.bind(owner)
+                if ('value' in descriptor)
+                    return () => storage
+                return undefined
+            })(),
+            set: (() => {
+                if (descriptor.set)
+                    return descriptor.set.bind(owner)
+                if ('value' in descriptor)
+                    return (value) => storage = value
+                return undefined
+            })()
+        }
+
+        const getter = initiale.get
+            ? () => { 
+                const value = initiale.get()
+                on_value_changed(value)
+                return value
+            }
+            : undefined
+        const setter = initiale.set
+            ? (value) => {
+                initiale.set(value)
+                on_value_changed(initiale.get ? initiale.get() : value)
+            }
+            : undefined
+
+        Object.defineProperty(owner, property_name, {
+            get: getter,
+            set: setter,
+            configurable: true
+        })
+
+        return {
+            owner: owner,
+            property_name: property_name,
+            initiale: initiale,
+            revoke: () => Object.defineProperty(owner, property_name, descriptor),
+        }
+    }
+
+    static bind_attr({ data_source, attributes, projection }){
+    // bind one data-source to {1,} attributes
+
+        if (!data_source || !attributes || !(attributes instanceof Array) || attributes.length === 0)
+            throw new Error('data_binder.bind_attr: invalid argument')
+
+        projection ??= data_binder.default_projection
+
+        // special case: rebinding (extending existing binding)
+        const previous_binding = (({owner, property_name}) => {
+            const descriptor = data_binder.get_property_descriptor({ owner: owner, property_name: property_name })
+            return descriptor.get?.data_binding || descriptor.set?.data_binding
+        })(data_source)
+
+        if (previous_binding)
+            return previous_binding.extend_binding({
+                attributes: attributes,
+                projection: projection
+            })
+
+        let attributes_adapters = undefined
+        const broadcast_to_attributes = (value) => attributes_adapters.forEach((accessor) => accessor.initiale.set(value))
+        const source_adapter = (({owner, property_name}) => {
+            return data_binder.#make_property_bound_adapter({
+                owner: owner,
+                property_name: property_name,
+                on_value_changed: broadcast_to_attributes
+            })
+        })(data_source)
+        attributes_adapters = attributes.map(({target, attribute_name}, index) => {
+            return data_binder.#make_attribute_bound_adapter({
+                target: target,
+                attribute_name: attribute_name,
+                on_value_changed: source_adapter.initiale.set
+                    ? (value) => data_source.owner[data_source.property_name] = projection.from(value) // update overrided model (will then broadcast to attributes)
+                    : undefined // data-source is read-only
+            })
+        })
+
+        const accessors = [ source_adapter, ...attributes_adapters ];
+        // tag binding
+        (({owner, property_name}) => {
+            const descriptor = data_binder.get_property_descriptor({ owner: owner, property_name: property_name })
+            const bound_attributes = attributes
+            const data_binding = {
+                extend_binding: ({ attributes, projection }) => {
+
+                    if (!(attributes instanceof Array) || attributes.length === 0)
+                        throw new Error('data_binder.make_binding: extend_binding: invalid argument')
+
+                    // console.debug('extend_binding: from', bound_attributes, 'to', [ ...bound_attributes, ...attributes ])
+
+                    accessors.forEach(({revoke}) => revoke())
+
+                    return data_binder.bind_attr({
+                        data_source: data_source,
+                        attributes: [ ...bound_attributes, ...attributes ],
+                        projection: projection
+                    })
+                }
+            }
+            if (descriptor.get) descriptor.get.data_binding = data_binding
+            if (descriptor.set) descriptor.set.data_binding = data_binding
+        })(source_adapter)
+
+        // spread data_source initiale value
+        if (source_adapter.initiale.get === undefined){
+            console.warn('data_binder.bind_attr: data-source is write-only. Initiale value is undefined.')
+            broadcast_to_attributes(undefined)
+        }
+        else broadcast_to_attributes(source_adapter.initiale.get())
+
+        return { revoke: () => accessors.forEach((accessor) => accessor.revoke()) }
+    }
+    static synced_attr_view_controler({ target, data_sources }){
+    // make target[attr] view-controler to data-source
+        
+        if (!target || !(target instanceof HTMLElement)
+            || !data_sources || !(data_sources instanceof Array) || data_sources.length === 0
+        ) throw new Error('make_attr_binding: invalid argument')
+    
+        return data_sources.map(({ owner, property_name, projection }) => {
+    
+            const { revoke } = data_binder.bind_attr({ 
+                data_source: { owner: owner, property_name: property_name },
+                attributes: [
+                    { target: target,  attribute_name: property_name },
+                ],
+                projection: projection
+            })
+            return revoke
+        })
+    }
+}
+
 // details: logging
 AwesomeCodeElement.details.log_facility = class {
     
@@ -933,7 +1158,11 @@ AwesomeCodeElement.details.log_facility = class {
 {   // development settings
     if (location.hostname !== 'localhost')
         AwesomeCodeElement.details.log_facility.disable(['log', 'debug', 'trace'])
-    console.info(`AwesomeCodeElement.details.log_facility: channels enabled: [${AwesomeCodeElement.details.log_facility.enabled}], disabled: [${AwesomeCodeElement.details.log_facility.disabled}]`)
+    console.info(
+        'ace.details.log_facility:',
+        `\n\tchannels enabled : [${AwesomeCodeElement.details.log_facility.enabled}]`,
+        `\n\tchannels disabled: [${AwesomeCodeElement.details.log_facility.disabled}]`
+    )
 }
 
 // ======================
@@ -1170,17 +1399,19 @@ AwesomeCodeElement.details.HTML_elements.defered_HTMLElement = class extends HTM
 
     on_critical_internal_error(error = "") {
 
-        console.error('AwesomeCodeElement.details.HTML_elements.defered_HTMLElement.on_critical_internal_error: fallback rendering (No recovery possible)', error)
+        console.error('ace.details.HTML_elements.defered_HTMLElement.on_critical_internal_error: fallback rendering (No recovery possible)\n\t', error)
 
         if (!this.isConnected)
             return
 
         let error_element = document.createElement('pre')
-            error_element.textContent = `AwesomeCodeElement.details.HTML_elements.defered_HTMLElement.on_critical_internal_error:\n\t${error || 'unknown error'}\n\t(No recovery possible)`
+            error_element.textContent = `ace.details.HTML_elements.defered_HTMLElement.on_critical_internal_error:\n\t${error || 'unknown error'}\n\t(No recovery possible)`
         // TODO: status => error + CSS style for such status
         AwesomeCodeElement.details.utility.apply_css(error_element, {
             color: "red",
             border : "2px solid red"
+            // overflow-wrap: break-word;
+            // word-break: break-all;
         })
         this.innerHTML = ""
         this.replaceWith(error_element)
@@ -1696,23 +1927,12 @@ class code_mvc_details {
     }
 }
 
-// TODO: put elsewhere
-let accumulate_objects = (lhs, rhs) => {
-    let result = { ...lhs }
-    
-    const keys = new Set([ ...Object.keys(lhs), ...Object.keys(rhs)])
-    keys.forEach((key) => {
-        result[key] = rhs[key] ?? lhs[key]
-    })
-    return result
-}
-
 class code_mvc {
 // enhanced { model, view, controler } to represent some code as a (possibly-existing) html-element
 
     get [Symbol.toStringTag](){ return 'code_mvc' }
 
-    is_mutable = undefined
+    is_mutable = undefined // is_owning
     view = undefined
     model = undefined
     controler = undefined
@@ -1887,7 +2107,7 @@ class code_mvc {
              && !AwesomeCodeElement.details.utility.types.is_empty(this.#target.#model.ce_options)
             )
         }
-        set is_executable(value){ /* const (no-op). setter used by two_way_synced_attributes_controler to propagate update */ }
+        // set is_executable(value){ /* const (no-op). setter used by two_way_synced_attributes_controler to propagate update */ }
     }
 
     // initialization
@@ -1920,7 +2140,7 @@ class code_mvc {
         this.controler = new code_mvc.controler_type({
             target: this,
             language_policy: language_policy,
-            options: accumulate_objects(code_mvc.default_arguments.controler_options, controler_options)
+            options: AwesomeCodeElement.details.utility.accumulate_objects(code_mvc.default_arguments.controler_options, controler_options)
         })
         this.update_view() // might trigger language auto-detect
 
@@ -2058,121 +2278,31 @@ class animation {
     }
 }
 
-// TODO: attributes names -> replace '_' by '-' (valid HTML)
-class two_way_synced_attributes_controler {
-// two-way dynamic binding: attributes <=> property accessor
-//  warning: assumes get-set reciprocity. otherwise, values synced on changes is not guarantee
-//
-//  target: properties context
-//  descriptors: Map of [ property_name => descriptor ],
-//      when descriptor is { target, projection? { from?, to? }, options? }
-//      so mapped.get(key).target[key] is the property
-//  projections: apply transformation from/to
-//
-// TODO: options: { not_if_undefined: true } => remove attribute if property === undefined
-// TODO: options: { one_way, two_way }
-// TODO: options: { const/mutable=false } => one_way from model to attr
-// 
-// two-way equivalent to:
-//  static get observedAttributes() { return [ ]; }
-//  attributeChangedCallback(name, oldValue, newValue) {}
+class status_display extends HTMLElement {
+    
+    static get HTMLElement_tagName() { return 'ace-cs-status-display' }
+    get [Symbol.toStringTag](){ return status_display.HTMLElement_tagName }
 
-    #observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
+    #value = 'unknown'
+    #message = ''
 
-            if (mutation.type !== "attributes")
-                return
-        
-            if (mutation.oldValue === mutation.target.getAttribute(mutation.attributeName))
-                return
-            if (!this.#descriptor.has(mutation.attributeName))
-                throw new Error(`two_way_synced_attributes_controler.#observer: invalid .#descriptor: missing key [${mutation.attributeName}]`)
-            
-            // projection
-            const projection = this.#descriptor.get(mutation.attributeName).projection
-                            ?? AwesomeCodeElement.details.utility.types.projections.no_op
-            if (!(projection.to instanceof Function))
-                throw new Error(`two_way_synced_attributes_controler.#observer: invalid projection (missing .to function): for key [${mutation.attributeName}]`)
+    set({ value, message }){
+        this.#value = value
+        this.#message = message
 
-            if (!this.#original_accessors.has(mutation.attributeName))
-                throw new Error(`two_way_synced_attributes_controler.#observer: invalid .#original_accessors: missing key [${mutation.attributeName}]`)
-
-            // propagate change to setter
-            const accessors = this.#original_accessors.get(mutation.attributeName)
-            if (mutation.oldValue !== mutation.target.getAttribute(mutation.attributeName)
-             && accessors.set && accessors.get)
-            {
-                const updated_value = (() => {
-                    const value = projection.to(mutation.target.getAttribute(mutation.attributeName))
-                    accessors.set(value)
-                    return accessors.get(value)
-                })()
-                // setter with transformation
-                if (projection.from(updated_value) !== mutation.target.getAttribute(mutation.attributeName))
-                    console.debug('MutationObserver %c(attributes)', 'color:darkorange',
-                        ':', mutation.target.toString(), '[', mutation.attributeName, '] propagates to attr (self) [',
-                        mutation.oldValue, '->', mutation.target.getAttribute(mutation.attributeName),
-                        '] as [', projection.from(updated_value), ']'
-                    )
-                    mutation.target.setAttribute(mutation.attributeName, updated_value)
-            }
-        });
-    });
-
-    #target = undefined
-    #descriptor = undefined
-    #original_accessors = undefined
-
-    constructor({ target, properties_descriptor }){
-
-        if (!target || !(target instanceof HTMLElement))
-            throw new Error('two_way_synced_attributes_controler.constructor: invalid argument `target`')
-        if (properties_descriptor === undefined || !(properties_descriptor instanceof Map))
-            throw new Error('two_way_synced_attributes_controler.constructor: invalid argument `descriptor`')
-        if (properties_descriptor.size === 0)
-            throw new Error('two_way_synced_attributes_controler.constructor: empty argument `descriptor`')
-
-        this.#target = target
-        this.#descriptor = properties_descriptor
-        this.start()
+        this.textContent = `[${value}]${message ? ':\n' : ''}${message}`
     }
-    start(){
-        this.stop()
-
-        this.#observer.observe(this.#target, {
-            attributeFilter: Array.from(this.#descriptor.keys()),
-            attributeOldValue: true
-        });
-
-        Array.from(this.#descriptor.keys()).forEach((key) => {
-            if (!this.#descriptor.get(key).target)
-                throw new Error(`two_way_synced_attributes_controler.start: invalid target for key [${key}].\n\tExpected descriptor layout: { target, projection? { from?, to? }, options? }`)
-
-            // initiale synchro
-            const value = this.#descriptor.get(key).target[key]
-            this.#target.setAttribute(key, value)
-
-            // futher synchro
-            const { origin, transformed } = AwesomeCodeElement.details.utility.inject_on_property_change_proxy({
-                target: this.#descriptor.get(key).target,
-                property_name: key,
-                on_property_change: ({ new_value }) => {
-                    if (String(new_value) !== this.#target.getAttribute(key)) {
-                        console.debug('%cproperty_change_proxy', 'color:DarkSlateBlue ',
-                            this.#target.toString(), '[', key, '] propagates to attr [', this.#target.getAttribute(key), '->', String(new_value), ']')
-                        this.#target.setAttribute(key, new_value)
-                    }
-                }
-            })
-            this.#original_accessors.set(key, origin)
-        })
+    get(){
+        return {
+            value: this.#value,
+            message: this.#message
+        }
     }
-    stop(){
-        this.#observer.disconnect()
-        this.#original_accessors = new Map
-        // TODO: reset accessors with .revoke
-    }
+
+    get value(){ return this.#value }
+    get message(){ return this.#message }
 }
+customElements.define(status_display.HTMLElement_tagName, status_display);
 
 class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
@@ -2240,6 +2370,7 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
     initialize(){
         console.debug(`code_mvc_HTMLElement.initialize: parameters:`, this._parameters)
 
+        this.status_display = this.appendChild(new status_display)
         this.code_mvc = this.#code_mvc_initializer()
         this.appendChild(this.code_mvc.view)
 
@@ -2252,15 +2383,21 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         code_mvc_HTMLElement.add_buttons_to({ value: this })
 
         const projections = AwesomeCodeElement.details.utility.types.projections
-        this.synced_attributes_controler = new two_way_synced_attributes_controler({
+        data_binder.synced_attr_view_controler({
             target: this,
-            properties_descriptor: new Map([
-                [ 'language',                   { target: this.code_mvc.controler, projection: projections.string } ],
-                [ 'toggle_parsing',             { target: this.code_mvc.controler, projection: projections.boolean } ],
-                [ 'toggle_language_detection',  { target: this.code_mvc.controler, projection: projections.boolean } ],
-                [ 'is_executable',              { target: this.code_mvc.controler, projection: projections.boolean } ]
-            ])
+            data_sources: [
+                { property_name: 'language',                    owner: this.code_mvc.controler, projection: projections.string },
+                { property_name: 'toggle_parsing',              owner: this.code_mvc.controler, projection: projections.boolean },
+                { property_name: 'toggle_language_detection',   owner: this.code_mvc.controler, projection: projections.boolean },
+                { property_name: 'is_executable',               owner: this.code_mvc.controler, projection: projections.boolean },
+            ]
         })
+        // data_binder.bind_attr({ 
+        //     data_source: { owner: this.status_display, property_name: 'value' },
+        //     attributes: [
+        //         { target: this,  attribute_name: 'status' },
+        //     ]
+        // })
     }
 
     static add_buttons_to = ({ value }) => {
@@ -2279,6 +2416,20 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
             CE: CE_button
         }
     }
+
+    // status: error|success|failure tracking/display
+    set status({ value, message }){
+        
+        if (!value)
+            throw new Error('ace.code_mvc_HTMLElement.status(set): invalid argument')
+
+        if (!this.isConnected)
+            return
+
+        this.setAttribute('status', value)
+        this.status_display.set({ value: value, message: message })
+    }
+    get status(){ return this.status_display.get() }
 }
 customElements.define(code_mvc_HTMLElement.HTMLElement_tagName, code_mvc_HTMLElement);
 
@@ -2446,7 +2597,13 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         this.removeAttribute('code') // meant to only be a one-time, alternative argument provider
 
-        this._parameters.code ||= Array.from(this.childNodes)
+        this._parameters.code ||= (() => {
+            const nodes = Array.from(this.childNodes)
+            return nodes.length === 0
+               || (nodes.length === 1 && nodes[0].nodeType === Node.TEXT_NODE && /^\s+$/g.test(nodes[0].textContent))
+               ? undefined
+               : nodes
+        })()
 
         // TODO: check if code is an empty string
         if (this._parameters.code && this._parameters.url){
@@ -2463,7 +2620,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         const is_valid = Boolean(this._parameters.code ?? this._parameters.url)
         if (is_valid)
             this.acquire_parameters = () => { throw new Error('CodeSection.acquire_parameters: already called') }
-        console.log(this.toString(), 'initialize', is_valid)
         return is_valid
     }
     initialize() {
@@ -2502,7 +2658,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
             [ presentation, execution ].forEach((panel) => this.appendChild(panel));
 
-            execution.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/'
+            execution.title = 'Compilation provided by Compiler Explorer at https://godbolt.org/';
 
             return {
                 presentation,
@@ -2515,32 +2671,32 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             // this.ace_cs_panels.presentation.initialization_promise.then(() => {
             //     this.url = this._parameters.url // initiate loading
             // })
-        
 
-        this.toggle_execution = (() => {
-        // false, until a valid configuration is loaded
+        this.toggle_execution = false; // false, until a valid configuration is loaded
+        (() => {
+        // not an IIFE assignement to avoid race
             const value = this._parameters.toggle_execution ?? false
-            AwesomeCodeElement.API.configuration.when_ready_then({ handler: () => {
-                this.toggle_execution = value
-            } })
-            return false
+
+            if (AwesomeCodeElement.API.configuration.is_ready)
+                return this.toggle_execution = value
+            AwesomeCodeElement.API.configuration.when_ready_then({ handler: () => this.toggle_execution })
         })()
 
         this.#initialize_ids()
 
         // bindings
         const projections = AwesomeCodeElement.details.utility.types.projections
-        // TODO: proxies on proxies: avoid duplicate calls
-        this.synced_attributes_controler = new two_way_synced_attributes_controler({
+        const attributes_binder = data_binder.synced_attr_view_controler({
             target: this,
-            properties_descriptor: new Map([
-                [ 'toggle_execution',           { target: this, projection: projections.boolean } ],
-                [ 'url',                        { target: this } ],
-                [ 'language',                   { target: this.ace_cs_panels.presentation.code_mvc.controler } ],
-                [ 'toggle_parsing',             { target: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean } ],
-                [ 'toggle_language_detection',  { target: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean } ],
-                [ 'is_executable',              { target: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean } ]
-            ])
+            data_sources: [
+                { property_name: 'url',                        owner: this },
+                { property_name: 'language',                   owner: this.ace_cs_panels.presentation.code_mvc.controler },
+                { property_name: 'toggle_parsing',             owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean },
+                { property_name: 'toggle_language_detection',  owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean },
+                { property_name: 'toggle_execution',           owner: this,                                               projection: projections.boolean },
+                { property_name: 'is_executable',              owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean },
+                
+            ]
         })
         const { origin, transformed, revoke } = AwesomeCodeElement.details.utility.inject_on_property_change_proxy({
             target: this.ace_cs_panels.presentation.code_mvc,
@@ -2550,6 +2706,14 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                     this.#fetch_execution_controler.fetch()
             }
         })
+        let id_attribute_mutation_observer = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+                if (mutation.oldValue === this.id)
+                    return
+                this.#initialize_ids()
+            })
+        })
+        id_attribute_mutation_observer.observe(this, { attributeFilter: ['id'], attributeOldValue: true })
 
         // callable once
         // delete this._parameters
@@ -2564,9 +2728,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         return () => { return `cs_${counter.next().value}` }
     })()
     #initialize_ids(){
-    // TODO: update if this.attributes[id] changes
-    // TODO: also dedicated classes?
-        this.id = this.id || cs.#id_generator()
+        this.id ||= cs.#id_generator()
         this.ace_cs_panels.presentation.id                                    = `${this.id}.panels.presentation`
         this.ace_cs_panels.execution.id                                       = `${this.id}.panels.execution`
         this.ace_cs_panels.presentation.ace_cs_buttons.CE.id                  = `${this.id}.panels.presentation.buttons.CE`
@@ -2614,9 +2776,12 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 return
 
             if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable){
-                const error = `${this.toString()}: not executable (yet?) - missing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
-                this.#target.ace_cs_panels.execution.code_mvc.model = `# error: ${error}`
-                this.#target.ace_cs_panels.execution.setAttribute('status', 'error')
+                const error = `${this.toString()}: not executable (yet?)\n\tmissing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
+                const execution_panel = this.#target.ace_cs_panels.execution
+                execution_panel.status = {
+                    value: 'error-not-executable',
+                    message: `${error}`
+                }
                 console.warn(`${error} - set(toggle_execution)`)
                 return
             }
@@ -2637,30 +2802,28 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
             this.#is_loading = true
 
-            const set_execution_content = ({ is_fetch_success, content: { value, return_code } }) => {
+            const set_execution_content = ({ content: { value, return_code } }) => {
     
-                this.#target.ace_cs_panels.execution.code_mvc.model = value
-    
-                is_fetch_success
-                    ? this.#target.ace_cs_panels.execution.setAttribute('status', return_code < 0 ? 'failure' : 'success')
-                    : this.#target.ace_cs_panels.execution.setAttribute('status', 'error')
-
+                const execution_panel = this.#target.ace_cs_panels.execution
+                execution_panel.code_mvc.model = value
+                execution_panel.status = {
+                    value: `${return_code < 0 ? 'failure' : 'success'}-compilation`,
+                    message: `compilation: ${return_code < 0 ? 'failure' : 'success'}`
+                }
                 this.#is_loading = false
             }
             const set_error = ({ error }) => {
-                set_execution_content({
-                    is_fetch_success : false,
-                    content : {
-                        return_code: -1,
-                        value: error
-                    }
-                })
-                throw new Error(error)
+                const execution_panel = this.#target.ace_cs_panels.execution
+                execution_panel.status = {
+                    value: 'error-compilation',
+                    message: `compilation failed with error:\n\t${error}`
+                }
+                this.#is_loading = false
             }
     
             // cleanup status
-            this.#target.ace_cs_panels.execution.removeAttribute('status')
-            this.#target.ace_cs_panels.execution.code_mvc.view.removeAttribute('status')
+            // this.#target.ace_cs_panels.execution.removeAttribute('status')
+            // this.#target.ace_cs_panels.execution.code_mvc.view.removeAttribute('status')
     
             if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable) {
                 const error = `CodeSection:fetch_execution: not executable.\n\tNo known valid configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
@@ -2688,7 +2851,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                             error : undefined,
                             return_code :  regex_result.length != 3 ? undefined : parseInt(regex_result[2])
                         }
-                    set_execution_content({ is_fetch_success : true, content : content })
+                    set_execution_content({ content : content })
                 })
                 .catch((error) => {
                     error = `CodeSection:fetch_execution: CE_API.fetch_execution_result: failed:\n\t[${error}]`
@@ -2700,38 +2863,53 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     }
     #fetch_execution_controler = new cs.fetch_execution_controler_t(this)
 
-    #_url = undefined
-    get url() { return this.#_url }
+    #url = undefined
+    get url() { return this.#url }
     set url(value) {
     // TODO: Async task cancelation: 
     //  Cancel or wait for pending resource acquisition
     //  issue:  if `url` is set twice (in a short period of time), we have a race condition
     //          can be fix with some internal state management
 
-        if (value === 'undefined')
+        if (!value || value === 'undefined')
             value = undefined
-
-        if (this.#_url === value)
+        if (this.#url === value)
             return
 
-        this.#_url = value
+        this.#url = value
+
+        const presentation_panel = this.ace_cs_panels.presentation
+        if (!this.#url){
+            presentation_panel.status = {
+                value: 'error-network-invalid-url',
+                message: `ace.cs.set(url): network error:\n\tinvalid or empty url`
+            }
+            return
+        }
+        presentation_panel.status = {
+            value: 'network-fetching',
+            message: `ace.cs.set(url): fetching:\n\turl = [${this.#url}]`
+        }
 
         let fetch_url_result_promise = new Promise((resolve, reject) => {
 
-            AwesomeCodeElement.details.utility.fetch_resource(this.#_url, {
-                on_error: (error) => {
-                    this.on_error(`CodeSection: network error: ${error}`)
-                    reject('on_error')
-                },
+            AwesomeCodeElement.details.utility.fetch_resource(this.#url, {
+                on_error: (error) => reject({
+                    value: 'error-network-invalid-url',
+                    message: `ace.cs.set(url): network error:\n\t${error}`
+                }),
                 on_success: (code) => {
+
                     if (!code) {
-                        this.on_error('CodeSection: fetched invalid (possibly empty) remote code')
-                        reject('success, but invalid fetch result')
+                        reject({
+                            value: 'error-network-invalid-fetched-code',
+                            message: `ace.cs.set(url): network error:\n\tfetched invalid (possibly empty) result\n\tcode=[${code}]`
+                        })
                     }
     
                     if (this.ace_cs_panels.presentation.code_mvc.controler.toggle_language_detection) {
                     // use url extension as language, if valid
-                        const url_extension = AwesomeCodeElement.details.utility.get_url_extension(this.#_url)
+                        const url_extension = AwesomeCodeElement.details.utility.get_url_extension(this.#url)
                         if (url_extension
                          && this.ace_cs_panels.presentation.code_mvc.controler.language_policies.detector.is_valid_language(url_extension)){
                             this.ace_cs_panels.presentation.code_mvc.controler.toggle_language_detection = false
@@ -2743,23 +2921,54 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                     //     this.ace_cs_panels.presentation.code_mvc.model = code
                     //     resolve('on_success')
                     // }, 2000)
+
+                    // update status with success
+                    presentation_panel.status = {
+                        value: 'success-network-fetch',
+                        message: `ace.cs.set(url): network success:\n\tfetched [${this.url}]`
+                    }
+                    // update model
                     this.ace_cs_panels.presentation.code_mvc.model = code
-                    resolve('on_success')
+                    resolve('ace.cs.set(url) -> on_success')
                 }
             })
         })
+        .catch((error) => {
+
+            const { value, message } = error
+            value ??= 'error-network-unknown'
+            message ??= 'ace.cs.set(url): network error:\n\tunknown'
+
+            presentation_panel.status = {
+                value: value,
+                message: message
+            }
+            console.error(presentation_panel.status.message)
+        })
+        .then(
+            (result) => {
+                // presentation panel: use url extension as language, if valid
+                const presentation_controler = presentation_panel.code_mvc.controler;
+                if (presentation_controler.toggle_language_detection) {
+                    const url_extension = AwesomeCodeElement.details.utility.get_url_extension(this.#url)
+                    if (url_extension && presentation_controler.language_policies.detector.is_valid_language(url_extension)) {
+                        presentation_controler.toggle_language_detection = false
+                        presentation_controler.language = url_extension
+                    }
+                }
+                // execution panel: fetch execution result
+                this.#fetch_execution_controler.fetch()
+            },
+            (error) => { 
+                presentation_panel.status = {
+                    value: 'error-network-fetch-failed',
+                    message: `${cs.HTMLElement_tagName}.set(url): fetch failed\n\t${error}`
+                }
+            }
+        );
 
         this.ace_cs_panels.presentation.loading_animation_controler.animate_while({ promise: fetch_url_result_promise })
         this.ace_cs_panels.execution.loading_animation_controler.animate_while({ promise: fetch_url_result_promise })
-
-        fetch_url_result_promise.then(
-            (result) => {
-               this.#fetch_execution_controler.fetch()// this.toggle_execution = this.toggle_execution // refresh execution
-            },
-            (error) => { 
-               this.ace_cs_panels.execution.code_mvc.model = `${cs.HTMLElement_tagName}.set(url): fetch failed\n${error}`
-            }
-        );
     }
 }
 customElements.define(
