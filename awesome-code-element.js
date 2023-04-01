@@ -102,6 +102,7 @@
 // TODO: log debug sub-channels/contexts
 // TODO: custom hljs language for execution output ? (and reduce "poor language relevance" noise)
 // TODO: ace.cs: change url dynamically (attr binding)
+// TODO: try/catch -> finally
 
 export { AwesomeCodeElement as default }
 
@@ -746,6 +747,7 @@ AwesomeCodeElement.details.utility = class utility {
             return matches.length === 2 ? matches[1] : undefined
         }
         static is_string(value){ return typeof value === 'string' || value instanceof String }
+        static is_int(value){ return !isNaN(value) && parseInt(Number(value)) == value }
         static is_empty(value){
             return Boolean(value)
                 && Object.keys(value).length === 0
@@ -1265,8 +1267,8 @@ AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInG
 
     onClickSend() {
 
+        const code_mvc_HTMLelement_value = this.parentElement
         const code_mvc_value = (() => {
-            const code_mvc_HTMLelement_value = this.parentElement
             if (!(code_mvc_HTMLelement_value instanceof code_mvc_HTMLElement))
                 throw new Error('awesome-code-element.js: ShowInGodboltButton.onClickSend: ill-formed element: unexpected parentElement.parentElement layout (must be an ace.code_mvc_HTMLElement)')
             const value = code_mvc_HTMLelement_value.code_mvc
@@ -1285,13 +1287,20 @@ AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt = class ShowInG
             get language(){ return this.ce_options.language },
             get code(){ return code_mvc_value.model_details.to_execute }
         }
-        if (!accessor.ce_options)
-            throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: missing CE configuration for language [${code_mvc_value.controler.language}]`)
 
-        if (!AwesomeCodeElement.details.remote.CE_API.languages.includes(accessor.language))
-            //      hljs    https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
-            //  vs. CE      https://godbolt.org/api/languages
-            throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: invalid CE API language [${accessor.language}]`);
+        try {
+            if (!accessor.ce_options)
+                throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: missing CE configuration for language [${code_mvc_value.controler.language}]`)
+
+            if (!AwesomeCodeElement.details.remote.CE_API.languages.includes(accessor.language))
+                //      hljs    https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
+                //  vs. CE      https://godbolt.org/api/languages
+                throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: invalid CE API language: [${accessor.language}]`);
+        }
+        catch (error){
+            code_mvc_HTMLelement_value.status_for = { value: "error-CE-button", message: error, duration: 2000 }
+            throw error
+        }
 
         // build request as JSon
         const data = {
@@ -2380,7 +2389,12 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         this.removeAttribute('code')
 
         this.loading_animation_controler = new animation.controler({ owner: this, target: this.code_mvc.view })
-        code_mvc_HTMLElement.add_buttons_to({ value: this })
+        const { copy_to_clipboard, CE } = code_mvc_HTMLElement.add_buttons_to({ value: this })
+        code_mvc_HTMLElement.set_on_resize_event({
+            panel: this,
+            scrolling_element: this.code_mvc.view,
+            elements_to_hide: [ copy_to_clipboard, CE ]
+        })
 
         const projections = AwesomeCodeElement.details.utility.types.projections
         data_binder.synced_attr_view_controler({
@@ -2411,10 +2425,41 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         let CE_button = new AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt()
             CE_button = value.appendChild(CE_button)
 
-        value.ace_cs_buttons = {
+        return value.ace_cs_buttons = {
             copy_to_clipboard: copy_to_clipboard_button,
             CE: CE_button
         }
+    }
+    static set_on_resize_event({ panel, scrolling_element, elements_to_hide }){
+
+        const make_event_on_resize_maybe_hide_elements = ({ owner, elements }) => {
+            let auto_hide_elements = (container, elements) => {
+                elements.forEach((element) => { element.style.display = 'none' })
+                container.onmouseover   = () => { elements.forEach((element) => { element.style.display = 'block' }) }
+                container.onmouseout    = () => { elements.forEach((element) => element.style.display = 'none') }
+            }
+            let no_auto_hide_elements = (container, elements) => {
+                elements.forEach((element) => { element.style.display = 'block' })
+                container.onmouseover = null
+                container.onmouseout = null
+            }
+            return () => {
+                // cheaper than a proper AABB to check if code's content overlap with other elements
+                let functor = (
+                        AwesomeCodeElement.API.configuration.value.auto_hide_buttons
+                    ||  AwesomeCodeElement.details.utility.is_scrolling(owner).horizontally
+                )   ? auto_hide_elements
+                    : no_auto_hide_elements
+    
+                functor(owner, elements)
+            }
+        }
+
+        panel.on_resize = make_event_on_resize_maybe_hide_elements({
+            owner: scrolling_element,
+            elements: Object.entries(elements_to_hide).map(element => element[1]) // structure-to-array
+        })
+        AwesomeCodeElement.details.HTML_elements.resize_observer.observe(panel)
     }
 
     // status: error|success|failure tracking/display
@@ -2430,133 +2475,21 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         this.status_display.set({ value: value, message: message })
     }
     get status(){ return this.status_display.get() }
+    set status_for({ value, message, duration }){
+
+        if (!value || !AwesomeCodeElement.details.utility.types.is_int(duration))
+            throw new Error('ace.code_mvc_HTMLElement.status_for(set): invalid argument')
+
+        const status = this.status
+        this.status = { value: value, message: message }
+        setTimeout(() => this.status = status, duration)
+    }
 }
 customElements.define(code_mvc_HTMLElement.HTMLElement_tagName, code_mvc_HTMLElement);
 
 // ---
 
-// TODO: integrate events, then REMOVE
-class ace_cs_HTML_content_factory {
-// HTML layout/barebone for CodeSection
-
-    static #set_on_resize_event = ({ panel, scrolling_element, elements_to_hide }) => {
-        panel.on_resize = ace_cs_HTML_content_factory.#make_event_on_resize_maybe_hide_elements({
-            owner: scrolling_element,
-            elements: Object.entries(elements_to_hide).map(element => element[1]) // structure-to-array
-        })
-        AwesomeCodeElement.details.HTML_elements.resize_observer.observe(panel)
-    }
-
-    static make_panel({ code_mvc_value }) {
-
-        if (!(code_mvc_value instanceof code_mvc)) 
-            throw new Error('ace_cs_HTML_content_factoy.make_HTML_layout: invalid argument')
-
-        let copy_to_clipboard_button = new AwesomeCodeElement.details.HTML_elements.buttons.copy_to_clipboard()
-            copy_to_clipboard_button.style.zIndex = code_mvc_value.view.style.zIndex + 1
-            copy_to_clipboard_button = code_mvc_value.view.appendChild(copy_to_clipboard_button)
-
-        let CE_button = new AwesomeCodeElement.details.HTML_elements.buttons.show_in_godbolt()
-            CE_button.style.zIndex = CE_button.style.zIndex + 1
-            CE_button = code_mvc_value.view.appendChild(CE_button)
-
-        // ace_cs_HTML_content_factoy.#set_on_resize_event({
-        //     panel: view,
-        //     scrolling_element: content,
-        //     elements_to_hide: [ copy_button, CE_button ]
-        // })
-
-        code_mvc_value.view.ace_cs_buttons = {
-            CE: CE_button,
-            copy_to_clipboard: copy_to_clipboard_button
-        }
-
-        return code_mvc_value
-    }
-
-    static panels_for = class {
-
-        static #id_generator = (() => {
-            const counter = (function*(){
-                let i = 0;
-                while (true) { yield i++; }
-            })()
-            return () => { return `cs_${counter.next().value}` }
-        })()
-
-        constructor({ code_mvc_value }) {
-            let [ presentation_panel, execution_panel ] = [
-                ace_cs_HTML_content_factory.make_panel({ code_mvc_value: code_mvc_value }),
-                ace_cs_HTML_content_factory.make_panel({
-                    code_mvc_value: new code_mvc({
-                        code_origin: undefined,
-                        language_policy: {
-                            detector:    language_policies.detectors.use_none,
-                            highlighter: language_policies.highlighters.use_none
-                        }
-                    })
-                })
-            ]
-            this.presentation = presentation_panel
-            this.execution = execution_panel
-        }
-        add_to({ target_element }) {
-
-            if (!(target_element instanceof HTMLElement))
-                throw new Error('ace_cs_HTML_content_factoy.panels_for.add_to: invalid argument')
-
-            target_element.cs_panels = {
-                presentation: this.presentation,
-                execution: this.execution
-            }
-
-            // add to target_element
-            target_element.appendChild(target_element.cs_panels.presentation)
-            target_element.appendChild(target_element.cs_panels.execution)
-
-            const initialize_ids = () => {
-            // TODO: also dedicated classes?
-                target_element.id = target_element.id || ace_cs_HTML_content_factory.panels_for.#id_generator()
-                target_element.cs_panels.presentation.id   = `${target_element.id}.panels.presentation`
-                target_element.cs_panels.execution.id      = `${target_element.id}.panels.execution`
-                target_element.cs_panels.presentation.ace_cs_buttons.CE.id                  = `${target_element.id}.panels.presentation.buttons.CE`
-                target_element.cs_panels.presentation.ace_cs_buttons.copy_to_clipboard.id   = `${target_element.id}.panels.presentation.buttons.copy_to_clipboard`
-                target_element.cs_panels.execution.ace_cs_buttons.CE.id                     = `${target_element.id}.panels.execution.buttons.CE`
-                target_element.cs_panels.execution.ace_cs_buttons.copy_to_clipboard.id      = `${target_element.id}.panels.execution.buttons.copy_to_clipboard`
-            }
-            initialize_ids()
-        }
-    }
-
-    // html-related events
-    static #make_event_on_resize_maybe_hide_elements({ owner, elements }) {
-        let auto_hide_elements = (container, elements) => {
-            elements.forEach((element) => { element.style.display = 'none' })
-            container.onmouseover   = () => { elements.forEach((element) => { element.style.display = 'block' }) }
-            container.onmouseout    = () => { elements.forEach((element) => element.style.display = 'none') }
-        }
-        let no_auto_hide_elements = (container, elements) => {
-            elements.forEach((element) => { element.style.display = 'block' })
-            container.onmouseout = null
-            container.onmouseover = null
-        }
-        return () => {
-            // cheaper than a proper AABB to check if code's content overlap with other elements
-            let functor = (
-                    AwesomeCodeElement.API.configuration.value.auto_hide_buttons
-                ||  AwesomeCodeElement.details.utility.is_scrolling(owner).horizontally
-            )   ? auto_hide_elements
-                : no_auto_hide_elements
-
-            functor(owner, elements)
-        }
-    }
-}
-
 // WIP: must set global CE configuration prior to execution
-
-// WIP: attributes
-//  id change -> reset hierarchy IDs
 // TODO: presentation.view is mutable and the user changed the textContent -> update model
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
