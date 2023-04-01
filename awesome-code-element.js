@@ -103,6 +103,7 @@
 // TODO: custom hljs language for execution output ? (and reduce "poor language relevance" noise)
 // TODO: ace.cs: change url dynamically (attr binding)
 // TODO: try/catch -> finally
+// TODO: hljs: web-worker https://github.com/highlightjs/highlight.js/#using-web-workers
 
 export { AwesomeCodeElement as default }
 
@@ -1433,6 +1434,28 @@ AwesomeCodeElement.details.HTML_elements.defered_HTMLElement = class extends HTM
 
 class language_policies {
 
+    static define_ce_output_language = (() => {
+        // WIP
+        if (undefined === hljs)
+            throw new Error('language_policies.define_ce_output_language: only supports hljs')
+
+        const ce_output_language = () => {
+            return {
+                case_insensitive: true,
+                keywords: '',
+                contains: [
+                    hljs.COMMENT(
+                        '^# Compiler exited with result code', // begin
+                        '$', // end
+                        { relevance: 10 }
+                    )
+                ]
+            }
+        }
+        hljs.registerLanguage('ce_output', ce_output_language)
+        return hljs.getLanguage('ce_output')
+    })()
+
     static detectors = class {
         static check_concept = function(argument) {
             return argument
@@ -1500,6 +1523,7 @@ class language_policies {
                     value: code_element.innerHTML
                 }
             }
+            static initialize_ce_output_language(){}
         }
         static use_hljs = class use_hljs {
 
@@ -1514,7 +1538,7 @@ class language_policies {
                 const result = language
                     ? hljs.highlight(code_element.textContent, { language: language })
                     : hljs.highlightAuto(code_element.textContent)
-                if (result.relevance < 5)
+                if (result.relevance < 5 && code_element.textContent.length > 0)
                     console.warn(
                         `use_hljs.highlight: poor language relevance [${result.relevance}/10] for language [${result.language}]\n`,
                         `Perhaps the code is too small ? (${code_element.textContent.length} characters):`, result
@@ -2579,7 +2603,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 new code_mvc_HTMLElement(new code_mvc({
                     code_origin: '',
                     controler_options:{
-                        language: 'bash',
+                        language: 'ce_output',
                         toggle_parsing : false,
                         toggle_language_detection : false
                     },
