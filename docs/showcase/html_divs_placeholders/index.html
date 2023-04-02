@@ -95,10 +95,20 @@ SOFTWARE.
 
             import ace from "../../awesome-code-element/awesome-code-element.js"
 
-            ace.API.configure({
-                CE: new ace.API.CE_ConfigurationManager([
+            ace.API.configuration.configure({
+                doxygen_awesome_css_compatibility: true,
+                hljs: {         // useless, for demo purpose
+                    default_theme   : 'obsidian' // unused, as there is a valid theme-selector. (Obsidian theme does not supports dark/light variations)
+                },
+                CodeSection: {  // useless, for demo purpose // TODO: use global configuration in cs
+                    language        : undefined,
+                    toggle_parsing  : true,
+                    toggle_execution: false,
+                    direction       : ''
+                },
+                CE: new Map([
                     [
-                        'cpp',
+                        'C++',
                         {
                             language: 'c++',
                             compiler_id: 'clang1500',
@@ -107,13 +117,14 @@ SOFTWARE.
                     ]
                 ])
             })
+            console.info(`docs/showcase/html_divs_placeholders/index.html: ace.API.configuration:`, ace.API.configuration.value)
             ace.API.initialize();
 
             // hljs configuration
             hljs.configure({
                 ignoreUnescapedHTML: true,
                 throwUnescapedHTML: false,
-                languages: ['cpp', 'c', 'bash', 'plain-text', 'HTML']
+                languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plain-text', 'HTML']
             })
         </script>
     

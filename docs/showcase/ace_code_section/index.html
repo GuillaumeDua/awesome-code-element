@@ -82,16 +82,13 @@ SOFTWARE.
             }
         </style>
     
+        <!--
+            ACE missing dependencies are loaded automatically here,
+            so users do not need to add extra script/link elements, such as :
+        -->
         <!-- highlight -->
         <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/languages/cpp.min.js" integrity="sha512-IAojhJDNJ4oC/Eui96KT2gmg2iwV2MsxTDs9CzqrrjNF8OdKV4MQE8H9fHbOXIsTaYZjLAVgtPOeyBNtD8LLEw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
-        <script type="module">
-            // import { hljs } from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js';
-            // import { cpp }  from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/cpp.min.js';
-            // import { bash } from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/bash.min.js';
-            // hljs.registerLanguage('cpp',  cpp);
-            // hljs.registerLanguage('bash', bash);
-        </script>
         <!-- jquery -->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     
@@ -122,23 +119,25 @@ SOFTWARE.
                     ]
                 ])
             })
-            console.info(`demo/index.html: ace.API.configuration:`, ace.API.configuration.value)
+            console.info(`docs/showcase/ace_code_section/index.html: ace.API.configuration:`, ace.API.configuration.value)
             ace.API.initialize();
 
-        </script>
-    
-        <!-- CS Tests utils scripts -->
-        <script type="module" src="../../details/js/modules/utils.js"></script>
-
-        <script type="module">
             // hljs configuration
             hljs.configure({
                 ignoreUnescapedHTML: true,
                 throwUnescapedHTML: false,
                 languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plain-text', 'HTML']
             })
+            // or:
+            // import { hljs } from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js';
+            // import { cpp }  from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/cpp.min.js';
+            // import { bash } from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/bash.min.js';
+            // hljs.registerLanguage('cpp',  cpp);
+            // hljs.registerLanguage('bash', bash);
         </script>
-
+    
+        <!-- CS Tests utils scripts -->
+        <script type="module" src="../../details/js/modules/utils.js"></script>
         <script type="module" src="../../details/js/modules/showcase.js"></script>
 
     </head>
