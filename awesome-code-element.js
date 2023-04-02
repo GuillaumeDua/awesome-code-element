@@ -3400,6 +3400,11 @@ AwesomeCodeElement.API.initialize = () => {
 
             let ReplaceHTMLPlaceholders = (translation) => {
 
+                if (!translation)
+                    throw new Error('ace.API.initialize: invalid argument')
+
+                // WIP
+
                 let elements = $('body').find(translation.query)
                 console.info(`awesome-code-element.js:ReplaceHTMLPlaceholders(${translation.type.name}) : replacing ${elements.length} element(s) ...`)
                 elements.each((index, element) => {
@@ -3408,9 +3413,10 @@ AwesomeCodeElement.API.initialize = () => {
                         element.replaceWith(translated_element)
                 })
             }
-            [   // replace placeholders with proper HTML elements
-                // AwesomeCodeElement.API.HTML_elements.CodeSection // TODO: uncomment
-            ].forEach(html_component => ReplaceHTMLPlaceholders(html_component.PlaceholdersTranslation))
+            [   // replace placeholders (<div class="...tagname...">) with matching HTML elements
+                AwesomeCodeElement.API.HTML_elements.CodeSection,
+                code_mvc_HTMLElement
+            ].forEach(html_component => ReplaceHTMLPlaceholders(html_component.HTMLElement_tagName))
 
             // WIP:
             // if (AwesomeCodeElement.API.configuration.value.compatibility.doxygen) {
