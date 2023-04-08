@@ -1084,7 +1084,8 @@ class data_binder{
 
         // spread data_source initiale value
         if (source_adapter.initiale.get === undefined){
-            console.warn('data_binder.bind_attr: data-source is write-only. Initiale value is undefined.')
+            console.debug(source_adapter)
+            console.error('data_binder.bind_attr: data-source is write-only. Initiale value is undefined.', data_source)
             broadcast_to_attributes(undefined)
         }
         else broadcast_to_attributes(source_adapter.initiale.get())
@@ -2404,7 +2405,7 @@ class code_mvc_HTMLElement extends AwesomeCodeElement.details.HTML_elements.defe
         return is_valid
     }
     initialize(){
-        console.debug(`code_mvc_HTMLElement.initialize: parameters:`, this._parameters)
+        // console.debug(`code_mvc_HTMLElement.initialize: parameters:`, this._parameters)
 
         this.status_display = this.appendChild(new status_display)
         this.code_mvc = this.#code_mvc_initializer()

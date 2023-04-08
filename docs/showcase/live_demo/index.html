@@ -78,17 +78,19 @@ SOFTWARE.
     
         <!-- awesome-code-element -->
         <script type="module">
+
             import ace from "../../awesome-code-element/awesome-code-element.js"
-            ace.API.configure({
-                CodeSection: {  // useless, for demo purpose
-                    language        : undefined,
-                    toggle_parsing  : false,
-                    toggle_execution: false,
-                    direction       : ''
+
+            ace.API.configuration.configure({
+                doxygen_awesome_css_compatibility: true,
+                CodeSection: {
+                    language        : 'cpp',
+                    toggle_parsing  : true,
+                    toggle_execution: true
                 },
-                CE : new ace.API.CE_ConfigurationManager([
+                CE: new Map([
                     [
-                        'cpp',
+                        'C++',
                         {
                             language: 'c++',
                             compiler_id: 'clang1500',
@@ -97,8 +99,15 @@ SOFTWARE.
                     ]
                 ])
             })
-            console.info(`demo/index.html: ace.API.configuration:`, ace.API.configuration)
+            console.info(`docs/showcase/live_demo/index.html: ace.API.configuration:`, ace.API.configuration.value)
             ace.API.initialize();
+
+            // hljs configuration
+            hljs.configure({
+                ignoreUnescapedHTML: true,
+                throwUnescapedHTML: false,
+                languages: [ 'cpp' ]
+            })
         </script>
     
         <!-- CS Tests utils scripts -->
