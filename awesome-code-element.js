@@ -2935,28 +2935,39 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     static get HTML_element_placeholder_translation(){
         return {
             translate: function(element_placeholder){
-                // attributes
-                let args = (() => {
-                    let value = { attributes : {} };
 
-                    // classList
+                const attributes = (() => {
                     element_placeholder.classList.remove(this.tag_name)
                     if (element_placeholder.classList.length === 0)
                         element_placeholder.removeAttribute('class')
-
-                    value.attributes = Object.fromEntries(Array
+                    return Array
                         .from(element_placeholder.attributes)
-                        .filter(a => { return a.specified })
+                        .filter(a => a.specified)
+                })() 
+
+                let parameters = {}
+                // unrelated attributes
+                parameters.attributes = Object.fromEntries(
+                    attributes
+                        .filter(a => this.type.named_parameters.indexOf(a.name) === -1)
                         .map((attribute) => {
-                            return [ attribute.nodeName, attribute.value ]
-                        }))
-                    return value
-                })()
-
+                            return [ attribute.name, attribute.value ]
+                        })
+                )
                 // code
-                args.code = code_mvc_details.html_parser.to_code({ elements: [ element_placeholder ] })
+                parameters.code = code_mvc_details.html_parser.to_code({ elements: [ element_placeholder ] })
 
-                return new this.type(args)
+                // related attributes
+                parameters = AwesomeCodeElement.details.utility.accumulate_objects(
+                    parameters,
+                    Object.fromEntries(attributes
+                        .filter(a => this.type.named_parameters.indexOf(a.name) !== -1)
+                        .map((attribute) => {
+                            return [ attribute.name, attribute.value ]
+                        }))
+                )
+
+                return new this.type(parameters)
             }
         }
     }
