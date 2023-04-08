@@ -3460,7 +3460,7 @@ AwesomeCodeElement.API.initialize = () => {
                 )
 
                 let elements = $('body').find(translation.query)
-                console.info(`ace.API.initialize: replace_HTML_element_placeholders: (${translation.type.name}) : replacing ${elements.length} element(s) ...`)
+                console.info(`ace.API.initialize: replace_HTML_element_placeholders: [${translation.type.name}] : replacing [${elements.length}] element(s) ...`)
                 elements.each((index, element) => {
                     let translated_element = translation.translate(element)
                     if (translated_element)

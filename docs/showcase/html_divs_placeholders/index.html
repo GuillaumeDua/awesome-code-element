@@ -144,7 +144,8 @@ SOFTWARE.
         <!--<div class="ace-code-section" id="my_custom_cs_id"></div>-->
     </ace-showcase-wrapper>
     <button style="margin-top: 10px;" onclick="
-        document.getElementById('my_custom_cs_id').textContent = document.getElementById('cs_0').code
+        const code = document.getElementById('cs_1').ace_cs_panels.presentation.code_mvc.model; // equivalent here to document.getElementById('cs_0').textContent
+        document.getElementById('my_custom_cs_id').textContent = code
         this.style.display = 'none'
     ">
         <b style="color:green">Click me !</b> <i>(load content, trigger defered initialization)</i>
