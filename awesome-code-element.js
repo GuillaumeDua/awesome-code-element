@@ -104,6 +104,7 @@
 // TODO: ace.cs: change url dynamically (attr binding)
 // TODO: try/catch -> finally
 // TODO: hljs: web-worker https://github.com/highlightjs/highlight.js/#using-web-workers
+// TODO: static member ref: this.constructor.<name> rather than classname redundancy
 
 export { AwesomeCodeElement as default }
 
@@ -501,6 +502,8 @@ AwesomeCodeElement.details.utility = class utility {
     }
 
     static accumulate_objects = (lhs, rhs) => {
+        lhs ??= {}
+        rhs ??= {}
         let result = { ...lhs }
         
         const keys = new Set([ ...Object.keys(lhs), ...Object.keys(rhs) ])
@@ -2536,7 +2539,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
     //  - not executable presentation: hide execution or show error message
 
     constructor(parameters = {}){
-        if (typeof parameters !== "object")
+        if (!new.target || typeof parameters !== "object")
             throw new Error(
                 `code_mvc_HTMLElement.constructor: invalid argument.
                 Expected object layout: { ${cs.named_parameters } }
@@ -2927,6 +2930,35 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
 
         this.ace_cs_panels.presentation.loading_animation_controler.animate_while({ promise: fetch_url_result_promise })
         this.ace_cs_panels.execution.loading_animation_controler.animate_while({ promise: fetch_url_result_promise })
+    }
+
+    static get HTML_element_placeholder_translation(){
+        return {
+            translate: function(element_placeholder){
+                // attributes
+                let args = (() => {
+                    let value = { attributes : {} };
+
+                    // classList
+                    element_placeholder.classList.remove(this.tag_name)
+                    if (element_placeholder.classList.length === 0)
+                        element_placeholder.removeAttribute('class')
+
+                    value.attributes = Object.fromEntries(Array
+                        .from(element_placeholder.attributes)
+                        .filter(a => { return a.specified })
+                        .map((attribute) => {
+                            return [ attribute.nodeName, attribute.value ]
+                        }))
+                    return value
+                })()
+
+                // code
+                args.code = code_mvc_details.html_parser.to_code({ elements: [ element_placeholder ] })
+
+                return new this.type(args)
+            }
+        }
     }
 }
 customElements.define(
@@ -3398,15 +3430,26 @@ AwesomeCodeElement.API.initialize = () => {
 
             console.info('awesome-code-element.js:initialize ...')
 
-            let ReplaceHTMLPlaceholders = (translation) => {
+            let replace_HTML_element_placeholders = (type) => {
 
-                if (!translation)
+                if (!type)
                     throw new Error('ace.API.initialize: invalid argument')
 
-                // WIP
+                const translation = AwesomeCodeElement.details.utility.accumulate_objects(
+                    {
+                        type: type,
+                        tag_name: type.HTMLElement_tagName,
+                        query: `div[class=${type.HTMLElement_tagName}]`,
+                        translate: function(){
+                            console.warn('ace.API.initialize: replace_HTML_element_placeholders: using default/fallback translation.translate')
+                            return new this.type()
+                        }
+                    },
+                    type.HTML_element_placeholder_translation
+                )
 
                 let elements = $('body').find(translation.query)
-                console.info(`awesome-code-element.js:ReplaceHTMLPlaceholders(${translation.type.name}) : replacing ${elements.length} element(s) ...`)
+                console.info(`ace.API.initialize: replace_HTML_element_placeholders: (${translation.type.name}) : replacing ${elements.length} element(s) ...`)
                 elements.each((index, element) => {
                     let translated_element = translation.translate(element)
                     if (translated_element)
@@ -3416,7 +3459,7 @@ AwesomeCodeElement.API.initialize = () => {
             [   // replace placeholders (<div class="...tagname...">) with matching HTML elements
                 AwesomeCodeElement.API.HTML_elements.CodeSection,
                 code_mvc_HTMLElement
-            ].forEach(html_component => ReplaceHTMLPlaceholders(html_component.HTMLElement_tagName))
+            ].forEach(html_component => replace_HTML_element_placeholders(html_component))
 
             // WIP:
             // if (AwesomeCodeElement.API.configuration.value.compatibility.doxygen) {
