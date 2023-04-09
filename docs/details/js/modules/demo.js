@@ -32,6 +32,12 @@ if (ace.API.HTML_elements.CodeSection === undefined)
 if (ace.test_utils === undefined)
     throw new Error('docs/details/js/modules/utils.js: missing [ace.test_utils]')
 
+// WIP:
+// - language               -> immutable for some reasons
+// - url                    -> not working (no effect)
+// - toggle_execution       -> not working (always visible, short-circuited?)
+// - switch_style_direction -> not working (no effect)
+
 ace.showcase                    = ace.showcase ?? {}
 ace.showcase.HTML_elements      = ace.showcase.HTML_elements ?? {}
 ace.showcase.HTML_elements.demo = class cs_demo extends ace.API.HTML_elements.CodeSection {
@@ -41,10 +47,12 @@ ace.showcase.HTML_elements.demo = class cs_demo extends ace.API.HTML_elements.Co
 
     constructor() {
         super()
+        this.style.border = '1px dashed green'
     }
 
     set switch_style_direction(value) {
-        this.direction = (this.direction === 'column' ?  'row' : 'column')
+        console.log('>>>', this.style.flexDirection)
+        this.style.flexDirection = (this.style.flexDirection === 'column' ?  'row' : 'column')
     }
     get switch_style_direction() {
         return this.direction
@@ -83,8 +91,8 @@ ace.showcase.HTML_elements.demo = class cs_demo extends ace.API.HTML_elements.Co
         const presentation_mvc = this.ace_cs_panels.presentation.code_mvc
         presentation_mvc.view.title = 'Edit me !'
         presentation_mvc.view.addEventListener('click', () => {
-            presentation_mvc.view.setAttribute('contentEditable', !this.toggle_parsing)
-            if (this.toggle_parsing)
+            presentation_mvc.view.setAttribute('contentEditable', !presentation_mvc.controler.toggle_parsing)
+            if (presentation_mvc.controler.toggle_parsing)
                 ace_test_utils.element_shake_effect_for(presentation_mvc.view, 500)
         })
         let delay_timer = null
@@ -92,7 +100,7 @@ ace.showcase.HTML_elements.demo = class cs_demo extends ace.API.HTML_elements.Co
 
             console.log(event)
 
-            if (this.toggle_parsing)
+            if (presentation_mvc.controler.toggle_parsing)
                 throw new Error('CodeSection_demo: invalid attempt to edit parsed code')
 
             if (delay_timer)
@@ -126,11 +134,9 @@ ace.showcase.HTML_elements.demo = class cs_demo extends ace.API.HTML_elements.Co
         let label = sub_container.appendChild(document.createElement('label'))
             label.textContent = ` ${printable_name}`
 
-        ace_test_utils.inject_field_proxy(target, property_name, {
-            getter_payload : undefined,
-            setter_payload : (value) => {
-                checkbox.checked = value
-            }
+        ace.details.utility.inject_field_proxy(target, property_name, {
+            getter_payload : (value) => checkbox.checked = value,
+            setter_payload : (value) => checkbox.checked = value
         })
 
         checkbox.onclick = (event) => {
@@ -159,7 +165,7 @@ ace.showcase.HTML_elements.demo = class cs_demo extends ace.API.HTML_elements.Co
             label.textContent = `${property_name} `
         let input_field = sub_container.appendChild(document.createElement('input'))
             input_field.type = "text"
-            input_field.value = super[property_name] ?? ''
+            input_field.value = target[property_name] ?? ''
             input_field.title = hint
             ace.details.utility.apply_css(input_field, {
                 width: '100%',
@@ -176,13 +182,10 @@ ace.showcase.HTML_elements.demo = class cs_demo extends ace.API.HTML_elements.Co
             }, 300)
         })
 
-        // ace_test_utils.inject_field_proxy(target, property_name, {
-        //     getter_payload : () => {
-        //     },
-        //     setter_payload : (value) => {
-        //         input_field.value = value ?? ''
-        //     }
-        // })
+        ace.details.utility.inject_field_proxy(target, property_name, {
+            getter_payload : (value) => { input_field.value = value ?? '' },
+            setter_payload : (value) => { input_field.value = value ?? '' }
+        })
 
         return sub_container
     }
