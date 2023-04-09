@@ -20,16 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// WARNING: INTERNAL USE FOR SHOWCASE ONLY.
+// WARNING: INTERNAL USE, FOR SHOWCASE ONLY.
 
 import ace from '../../../awesome-code-element/awesome-code-element.js'
 if (ace === undefined)
     throw new Error('docs/details/js/modules/utils.js: missing [ace]')
-
 if (ace.API.HTML_elements.CodeSection === undefined)
     throw new Error('CodeSection_demo: missing mandatory dependency [ace.CodeSection]')
 
-import ace_test_utils from '../../../details/js/modules/utils.js';
+    import ace_test_utils from '../../../details/js/modules/utils.js';
 if (ace.test_utils === undefined)
     throw new Error('docs/details/js/modules/utils.js: missing [ace.test_utils]')
 
@@ -54,28 +53,28 @@ ace.showcase.HTML_elements.demo = class cs_demo extends ace.API.HTML_elements.Co
     initialize() {
         super.initialize()
 
-        // if (!this.isConnected)
-        //     throw new Error('CodeSection_demo: not connected yet ')
+        if (!this.isConnected)
+            throw new Error('CodeSection_demo: not connected yet ')
 
-        // // view proxies
-        // let options_container = document.createElement('div')
-        // ace.details.utility.apply_css(options_container, {
-        //     flexDirection: 'column',
-        //     display: 'flex',
-        // })
-        // // two-way binding ...
-        // const presentation_controler = this.ace_cs_panels.presentation.code_mvc.controler
-        // options_container.appendChild(this.#make_boolean_field_view({ target: presentation_controler, property_name: 'toggle_parsing' }))
-        // options_container.appendChild(this.#make_boolean_field_view({ target: presentation_controler, property_name: 'toggle_language_detection' }))
-        // options_container.appendChild(this.#make_boolean_field_view({ target: this, property_name: 'toggle_execution' }))
-        // console.log(this)
-        // options_container.appendChild(this.#make_boolean_field_view({ target: this, property_name: 'switch_style_direction' }))
-        // options_container.appendChild(this.#make_string_view({ target: presentation_controler, property_name: 'language', hint: 'clear to attempt a fallback autodetection' }))
-        // options_container.appendChild(this.#make_string_view({ target: this, property_name: 'url', hint: 'remote code location. Press <enter> to apply' }))
+        // view proxies
+        let options_container = document.createElement('div')
+        ace.details.utility.apply_css(options_container, {
+            flexDirection: 'column',
+            display: 'flex',
+        })
+        // two-way binding ...
+        const presentation_controler = this.ace_cs_panels.presentation.code_mvc.controler
+        options_container.appendChild(this.#make_boolean_field_view({ target: presentation_controler, property_name: 'toggle_parsing' }))
+        options_container.appendChild(this.#make_boolean_field_view({ target: presentation_controler, property_name: 'toggle_language_detection' }))
+        options_container.appendChild(this.#make_boolean_field_view({ target: this, property_name: 'toggle_execution' }))
+        console.log(this)
+        options_container.appendChild(this.#make_boolean_field_view({ target: this, property_name: 'switch_style_direction' }))
+        options_container.appendChild(this.#make_string_view({ target: presentation_controler, property_name: 'language', hint: 'clear to attempt a fallback autodetection' }))
+        options_container.appendChild(this.#make_string_view({ target: this, property_name: 'url', hint: 'remote code location. Press <enter> to apply' }))
 
-        // this.prepend(options_container)
+        this.prepend(options_container)
 
-        // this.#transform_code_into_editable()   
+        this.#transform_code_into_editable()   
     }
 
     // TODO: rich code editor
