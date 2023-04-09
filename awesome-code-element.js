@@ -1434,7 +1434,6 @@ AwesomeCodeElement.details.HTML_elements.defered_HTMLElement = class extends HTM
 
 // ============================
 // details: code representation
-// --- WIP
 
 class language_policies {
 
@@ -1927,10 +1926,13 @@ class code_mvc_details {
             })
         }
         static #build_from_nodes(elements){
-        // expected: Array.from(node.childNodes)
+        // expected: node.childNodes, or a filtered subset of Array.from(node.childNodes)
+
+            if (elements instanceof NodeList)
+                elements = Array.from(elements)
 
             if (!(
-                elements instanceof Array
+                (elements instanceof Array)
             &&  elements.length !== 0
             &&  elements.reduce((index, arg) => undefined !== arg.nodeType, true)
             ))  throw new Error('code_mvc_details.factory.#build_from_nodes(array): invalid argument')
@@ -2221,6 +2223,17 @@ class code_mvc {
             })
             return value
         })()
+    }
+}
+
+AwesomeCodeElement.details.code_utility = {
+    policies: {
+        language: language_policies,
+        code: code_policies
+    },
+    mvc: {
+        details: code_mvc_details,
+        type: code_mvc
     }
 }
 

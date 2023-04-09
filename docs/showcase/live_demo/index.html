@@ -44,6 +44,19 @@ SOFTWARE.
             label, button, select {
                 color: var(--default-text-color)
             }
+            div.note {
+                border: 1px solid var(--separator-color);
+                color:  var(--default-text-color);
+                margin: 5px 0 5px 0;
+            }
+            div.note > h4 {
+                margin: 0px;
+            }
+            div.note > pre {
+                font-style:     italic;
+                overflow:       auto;
+                padding-left:   30px;
+            }
 
             @-webkit-keyframes shake {
                 0%  { -webkit-transform: translate(2px, 1px) rotate(0deg); } 
@@ -129,13 +142,20 @@ SOFTWARE.
 
     <awesome_code_element_test-utility-toolbar></awesome_code_element_test-utility-toolbar>
  
-    <h2>Live demo</h2>
+    <h2 style="color:purple">Live demo</h2>
+    <div class="note">
+        <h4>&#9432; Note:</h4>
+        <pre>We recommend that you open your browser's developper console to side,
+and play with ace-cs HTML elements' attributes.</pre>
+    </div>
     <!-- TODO: select various pre-defined scenaris, that users can play with -->
     <ace-code-section-demo>
         THIS IS REMOVED // @ace::skip::line
+#include <iostream>
 auto main() -> int {    
                         // @ace::show::block::begin
 auto i = 42; // test
+std::cout << "- result:" << i << '\n';
 return i;
                         // @ace::show::block::end
 }                       

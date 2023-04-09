@@ -33,36 +33,37 @@ if (ace.test_utils === undefined)
     throw new Error('docs/details/js/modules/utils.js: missing [ace.test_utils]')
 
 // WIP:
-// - language               -> immutable for some reasons
+// - language               -> sometimes desynchronized
 // - url                    -> not working (no effect)
-// - toggle_execution       -> not working (always visible, short-circuited?)
-// - switch_style_direction -> not working (no effect)
 
 ace.showcase                    = ace.showcase ?? {}
 ace.showcase.HTML_elements      = ace.showcase.HTML_elements ?? {}
-ace.showcase.HTML_elements.demo = class cs_demo extends ace.API.HTML_elements.CodeSection {
+ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
 
     static get HTMLElement_tagName() { return 'ace-code-section-demo' }
     get [Symbol.toStringTag](){ return cs_demo.HTMLElement_tagName }
 
-    constructor() {
-        super()
-        this.style.border = '1px dashed green'
-    }
+    constructor() { super() }
 
     set switch_style_direction(value) {
-        console.log('>>>', this.style.flexDirection)
-        this.style.flexDirection = (this.style.flexDirection === 'column' ?  'row' : 'column')
+        this.ace_cs.style.flexDirection = (this.ace_cs.style.flexDirection === 'column' ?  'row' : 'column')
     }
-    get switch_style_direction() {
-        return this.direction
-    }
+    get switch_style_direction() { return this.ace_cs.style.flexDirection }
 
-    initialize() {
-        super.initialize()
+    connectedCallback(){
 
         if (!this.isConnected)
-            throw new Error('CodeSection_demo: not connected yet ')
+            throw new Error('ace.cs_demo: not connected yet ')
+
+        this.ace_cs = new ace.API.HTML_elements.CodeSection({
+            code: ace.details.code_utility.mvc.details.factory.build_from({ nodes: this.childNodes })
+        })
+        this.ace_cs = this.appendChild(this.ace_cs)
+
+        ace.details.utility.apply_css(this.ace_cs, {
+            border: '1px dashed green',
+            padding: '5px',
+        })
 
         // view proxies
         let options_container = document.createElement('div')
@@ -71,24 +72,23 @@ ace.showcase.HTML_elements.demo = class cs_demo extends ace.API.HTML_elements.Co
             display: 'flex',
         })
         // two-way binding ...
-        const presentation_controler = this.ace_cs_panels.presentation.code_mvc.controler
+        const presentation_controler = this.ace_cs.ace_cs_panels.presentation.code_mvc.controler;
         options_container.appendChild(this.#make_boolean_field_view({ target: presentation_controler, property_name: 'toggle_parsing' }))
         options_container.appendChild(this.#make_boolean_field_view({ target: presentation_controler, property_name: 'toggle_language_detection' }))
-        options_container.appendChild(this.#make_boolean_field_view({ target: this, property_name: 'toggle_execution' }))
-        console.log(this)
+        options_container.appendChild(this.#make_boolean_field_view({ target: this.ace_cs, property_name: 'toggle_execution' }))
         options_container.appendChild(this.#make_boolean_field_view({ target: this, property_name: 'switch_style_direction' }))
         options_container.appendChild(this.#make_string_view({ target: presentation_controler, property_name: 'language', hint: 'clear to attempt a fallback autodetection' }))
-        options_container.appendChild(this.#make_string_view({ target: this, property_name: 'url', hint: 'remote code location. Press <enter> to apply' }))
+        options_container.appendChild(this.#make_string_view({ target: this.ace_cs, property_name: 'url', hint: 'remote code location. Press <enter> to apply' }))
 
         this.prepend(options_container)
 
-        this.#transform_code_into_editable()   
+        this.#transform_code_into_editable()  
     }
 
     // TODO: rich code editor
     #transform_code_into_editable() {
         // make code editable
-        const presentation_mvc = this.ace_cs_panels.presentation.code_mvc
+        const presentation_mvc = this.ace_cs.ace_cs_panels.presentation.code_mvc;
         presentation_mvc.view.title = 'Edit me !'
         presentation_mvc.view.addEventListener('click', () => {
             presentation_mvc.view.setAttribute('contentEditable', !presentation_mvc.controler.toggle_parsing)
