@@ -111,13 +111,7 @@ export { AwesomeCodeElement as default }
 // ----------------------------------------------------------------------------------------------------------------------------
 
 const AwesomeCodeElement = {
-    API : {
-        configuration : {
-            description: {},
-            CE : {},
-            CodeSection : {}
-        }
-    },
+    API : {},
     details : {}
 }
 
@@ -2650,11 +2644,10 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         this.toggle_execution = false; // false, until a valid configuration is loaded
         (() => {
         // not an IIFE assignement to avoid race
-            const value = this._parameters.toggle_execution ?? false
-
-            if (AwesomeCodeElement.API.configuration.is_ready)
-                return this.toggle_execution = value
-            AwesomeCodeElement.API.configuration.when_ready_then({ handler: () => this.toggle_execution })
+            const value = this._parameters.toggle_execution
+            AwesomeCodeElement.API.configuration.when_ready_then({
+                handler: () => this.toggle_execution = value ?? (() => AwesomeCodeElement.API.configuration.value.CodeSection.toggle_execution)()
+            })
         })()
 
         this.#initialize_ids()
