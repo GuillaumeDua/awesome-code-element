@@ -2525,8 +2525,8 @@ customElements.define(code_mvc_HTMLElement.HTMLElement_tagName, code_mvc_HTMLEle
 // ==================
 // HTML_elements : API
 
-// WIP: must set global CE configuration prior to execution
 // TODO: presentation.view is mutable and the user changed the textContent -> update model
+// TODO: model or language change -> refresh execution
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
@@ -2663,7 +2663,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 { property_name: 'toggle_language_detection',  owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean },
                 { property_name: 'toggle_execution',           owner: this,                                               projection: projections.boolean },
                 { property_name: 'is_executable',              owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean },
-                
             ]
         })
         const { origin, transformed, revoke } = AwesomeCodeElement.details.utility.inject_on_property_change_proxy({

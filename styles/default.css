@@ -169,8 +169,21 @@ ace-code-section[toggle_execution='false'] > ace-cs-code-mvc[id$='.panels.execut
     display: none
 }
 ace-code-section[toggle_execution='true'][is_executable='false'] > ace-cs-code-mvc[id$='.panels.execution'] {
+    /* display: none; */
+    color: red;
+    border: 2px solid red;
+}
+
+/* TODO: remove such quick-fix for [toggle_execution='true'][is_executable='false'] */
+ace-code-section[toggle_execution='true'][is_executable='false'] > ace-cs-code-mvc[id$='.panels.execution'] > * {
     display: none;
 }
+ace-code-section[toggle_execution='true'][is_executable='false'] > ace-cs-code-mvc[id$='.panels.execution']::before {
+    content: "toggle_execution on, yet code is not executable\a(invalid language, or missing language configuration ?)";
+    white-space: pre;
+}
+/* end-of-quickfix */
+
 ace-code-section[toggle_execution='true'] > ace-cs-code-mvc[id$='.panels.execution']{
     display: flex
 }
