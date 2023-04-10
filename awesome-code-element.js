@@ -2681,6 +2681,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                     this.#fetch_execution_controler.fetch()
             }
         })
+        // TODO: one MutationObserver for all ace.cs instances
         let id_attribute_mutation_observer = new MutationObserver(mutations => {
             mutations.forEach(mutation => {
                 if (mutation.oldValue === this.id)
@@ -2751,13 +2752,13 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 return
 
             if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable){
-                const error = `${this.toString()}: not executable (yet?)\n\tmissing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
+                const error = `${this.toString()}.set(toggle_execution): not executable (yet?)\n\tmissing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
                 const execution_panel = this.#target.ace_cs_panels.execution
                 execution_panel.status = {
                     value: 'error-not-executable',
                     message: `${error}`
                 }
-                console.warn(`${error} - set(toggle_execution)`)
+                console.warn(error)
                 return
             }
             if (this.last_input === this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute){

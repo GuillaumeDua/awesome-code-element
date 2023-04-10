@@ -28,7 +28,7 @@ if (ace === undefined)
 if (ace.API.HTML_elements.CodeSection === undefined)
     throw new Error('CodeSection_demo: missing mandatory dependency [ace.CodeSection]')
 
-    import ace_test_utils from '../../../details/js/modules/utils.js';
+import ace_test_utils from '../../../details/js/modules/utils.js';
 if (ace.test_utils === undefined)
     throw new Error('docs/details/js/modules/utils.js: missing [ace.test_utils]')
 
@@ -72,13 +72,28 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
             display: 'flex',
         })
         // two-way binding ...
-        const presentation_controler = this.ace_cs.ace_cs_panels.presentation.code_mvc.controler;
-        options_container.appendChild(this.#make_boolean_field_view({ target: presentation_controler, property_name: 'toggle_parsing' }))
-        options_container.appendChild(this.#make_boolean_field_view({ target: presentation_controler, property_name: 'toggle_language_detection' }))
+        const presentation_mvc = this.ace_cs.ace_cs_panels.presentation.code_mvc;
+        options_container.appendChild(this.#make_boolean_field_view({ target: presentation_mvc.controler, property_name: 'toggle_parsing' }))
+        options_container.appendChild(this.#make_boolean_field_view({ target: presentation_mvc.controler, property_name: 'toggle_language_detection' }))
         options_container.appendChild(this.#make_boolean_field_view({ target: this.ace_cs, property_name: 'toggle_execution' }))
         options_container.appendChild(this.#make_boolean_field_view({ target: this, property_name: 'switch_style_direction' }))
-        options_container.appendChild(this.#make_string_view({ target: presentation_controler, property_name: 'language', hint: 'clear to attempt a fallback autodetection' }))
-        options_container.appendChild(this.#make_string_view({ target: this.ace_cs, property_name: 'url', hint: 'remote code location. Press <enter> to apply' }))
+
+        options_container.appendChild(this.#make_string_view({
+            target: {
+                view:  this.ace_cs.ace_cs_panels.presentation,
+                model: this.ace_cs.ace_cs_panels.presentation.code_mvc.controler
+            },
+            property_name: 'language',
+            hint: 'clear to attempt a fallback autodetection'
+        }))
+        options_container.appendChild(this.#make_string_view({
+            target: {
+                view:  this.ace_cs,
+                model: this.ace_cs
+            },
+            property_name: 'url',
+            hint: 'remote code location. Press <enter> to apply'
+        }))
 
         this.prepend(options_container)
 
@@ -98,8 +113,6 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
         let delay_timer = null
         presentation_mvc.view.addEventListener('keyup', function(event){
 
-            console.log(event)
-
             if (presentation_mvc.controler.toggle_parsing)
                 throw new Error('CodeSection_demo: invalid attempt to edit parsed code')
 
@@ -113,6 +126,14 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
     }
 
     // two-way data bindings
+    #bindings = new Map;
+    #attr_observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+            const value = mutation.target.getAttribute(mutation.attributeName)
+            const update_view = this.#bindings.get(mutation.attributeName)
+            update_view(value)
+        })
+    })
     #make_boolean_field_view({ target, property_name }) {
 
         if (!target.hasOwnProperty(property_name) && !Object.getPrototypeOf(target).hasOwnProperty(property_name))
@@ -152,8 +173,14 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
     }
     #make_string_view({ target, property_name, hint }) {
 
-        if (!target.hasOwnProperty(property_name) && !Object.getPrototypeOf(target).hasOwnProperty(property_name))
-            throw new Error(`ace.showcase.HTML_elements.demo: invalid argument\n\t[${target}] -> [${property_name}]`)
+        const { view, model } = target;
+
+        // assert: valid target model
+        if (!model.hasOwnProperty(property_name) && !Object.getPrototypeOf(model).hasOwnProperty(property_name))
+            throw new Error(`ace.showcase.HTML_elements.demo: invalid argument (model)\n\t[${model}] -> [${property_name}]`)
+        // assert: valid target view (attr)
+        if (!(view instanceof HTMLElement) || !view.hasAttribute(property_name))
+            throw new Error(`ace.showcase.HTML_elements.demo: invalid argument (view)\n\t[${view}] -> [${property_name}]`)
 
         let sub_container = document.createElement('div')
         ace.details.utility.apply_css(sub_container, {
@@ -165,7 +192,7 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
             label.textContent = `${property_name} `
         let input_field = sub_container.appendChild(document.createElement('input'))
             input_field.type = "text"
-            input_field.value = target[property_name] ?? ''
+            input_field.value = model[property_name] ?? ''
             input_field.title = hint
             ace.details.utility.apply_css(input_field, {
                 width: '100%',
@@ -174,18 +201,18 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
 
         let delay_timer = null
         input_field.addEventListener('keyup', (arg) => {
+            // todo: press enter to validate
             if (delay_timer)
                 window.clearTimeout(delay_timer)
             delay_timer = window.setTimeout(() => {
                 delay_timer = null // reset timer
-                target[property_name] = arg.target.value
+                model[property_name] = arg.target.value ?? ''
             }, 300)
         })
 
-        ace.details.utility.inject_field_proxy(target, property_name, {
-            getter_payload : (value) => { input_field.value = value ?? '' },
-            setter_payload : (value) => { input_field.value = value ?? '' }
-        })
+        // bindings
+        this.#bindings.set(property_name, (value) => input_field.value = value ?? '')
+        this.#attr_observer.observe(view, { attributeFilter: [ property_name ], attributeOldValue: true })
 
         return sub_container
     }
