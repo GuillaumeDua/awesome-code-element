@@ -2768,7 +2768,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 value: 'error-not-executable',
                 message: `${error}`
             }
-            console.warning(error)
+            console.warn(error)
             return false
         }
 
