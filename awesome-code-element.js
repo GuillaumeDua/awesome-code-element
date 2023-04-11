@@ -707,19 +707,19 @@ AwesomeCodeElement.details.utility = class utility {
         if (target_setter)
             descriptor.set = (value) => {
 
-                    if (value === storage) return
+                if (value === storage) return
 
-                    target_setter(value)
+                target_setter(value)
 
-                    const notify_property_changed = {
-                        origin_op: 'set',
-                        property_name: property_name,
-                        old_value: storage,
-                        new_value: value
-                    }
-                    storage = value
-                    // console.debug('proxy %csetter:', 'color:red', target.toString(), notify_property_changed)
-                    on_property_change(notify_property_changed)
+                const notify_property_changed = {
+                    origin_op: 'set',
+                    property_name: property_name,
+                    old_value: storage,
+                    new_value: value
+                }
+                storage = value
+                // console.debug('proxy %csetter:', 'color:red', target.toString(), notify_property_changed)
+                on_property_change(notify_property_changed)
             }
 
         Object.defineProperty(target, property_name, descriptor);
@@ -2665,12 +2665,22 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 { property_name: 'is_executable',              owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean },
             ]
         })
-        const { origin, transformed, revoke } = AwesomeCodeElement.details.utility.inject_on_property_change_proxy({
+        /* const { origin, transformed, revoke } = */ AwesomeCodeElement.details.utility.inject_on_property_change_proxy({
             target: this.ace_cs_panels.presentation.code_mvc,
             property_name: 'model',
-            on_property_change: ({ new_value, old_value }) => {
-                if (new_value && new_value !== old_value && this.toggle_execution)
-                    this.#fetch_execution_controler.fetch()
+            on_property_change: ({ new_value, old_value, origin_op }) => {
+                if (new_value === old_value || !this.toggle_execution)
+                    return
+                this.#fetch_execution_controler.fetch()
+            }
+        })
+        /* const { origin, transformed, revoke } = */ AwesomeCodeElement.details.utility.inject_on_property_change_proxy({
+            target: this.ace_cs_panels.presentation.code_mvc.controler,
+            property_name: 'language',
+            on_property_change: ({ new_value, old_value, origin_op }) => {
+                if (origin_op !== 'set' || new_value === old_value || !this.toggle_execution)
+                    return
+                this.#fetch_execution_controler.fetch()
             }
         })
         // TODO: one MutationObserver for all ace.cs instances
@@ -2738,21 +2748,35 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
         #last_input = undefined
         get last_input(){ return this.#last_input }
 
-        fetch(){
+        get #expect_target_is_executable(){
 
             if (!this.#target.#toggle_execution)
-                return
+                throw new Error('ace.cs.fetch_execution_controler_t.expect_target_is_executable: prerequisite: target.toggle_execution')
 
-            if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable){
-                const error = `${this.toString()}.set(toggle_execution): not executable (yet?)\n\tmissing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
-                const execution_panel = this.#target.ace_cs_panels.execution
+            const execution_panel = this.#target.ace_cs_panels.execution
+
+            if (this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable){
                 execution_panel.status = {
-                    value: 'error-not-executable',
-                    message: `${error}`
+                    value: 'ready-to-fetch',
+                    message: ``
                 }
-                console.warn(error)
-                return
+                return true
             }
+            
+            const error = `${this.toString()}.get(expect_target_is_executable):\n\tnot executable (yet?)\n\tmissing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
+            execution_panel.status = {
+                value: 'error-not-executable',
+                message: `${error}`
+            }
+            console.warning(error)
+            return false
+        }
+
+        fetch(){
+
+            if (!this.#target.#toggle_execution
+             || !this.#expect_target_is_executable
+            ) return
             if (this.last_input === this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute){
                 console.warn(this.toString(), '.fetch: no-op: already fetching or fetched')
                 return
@@ -2789,10 +2813,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 this.#is_loading = false
             }
     
-            // cleanup status
-            // this.#target.ace_cs_panels.execution.removeAttribute('status')
-            // this.#target.ace_cs_panels.execution.code_mvc.view.removeAttribute('status')
-    
             if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable) {
                 const error = `CodeSection:fetch_execution: not executable.\n\tNo known valid configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
                 set_error({ error: error })
@@ -2824,8 +2844,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 .catch((error) => {
                     error = `CodeSection:fetch_execution: CE_API.fetch_execution_result: failed:\n\t[${error}]`
                     set_error({ error: error })
-                    // this.#target.on_critical_internal_error(`CodeSection:fetch_execution: CE_API.fetch_execution_result: failed:\n\t[${error}]`)
-                    // this.#is_loading = false
                 })
         }
     }
