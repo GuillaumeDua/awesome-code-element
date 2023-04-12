@@ -2,8 +2,6 @@
 
 Some code examples here.
 
-*Note: plain Doxygen does not support light/dark-mode toggling*
-
 ---
 
 ## Using \`\include\` doxygen directive
