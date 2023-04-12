@@ -1170,7 +1170,7 @@ AwesomeCodeElement.details.log_facility = class {
 // HTML_elements : details
 
 AwesomeCodeElement.details.HTML_elements = {}
-// TODO: should be replaced by dynamic CSS at some point
+// TODO: should be replaced by dynamic CSS at some point ?
 AwesomeCodeElement.details.HTML_elements.resize_observer = new ResizeObserver(entries => {
 
     for (let entry of entries) {
@@ -2208,6 +2208,24 @@ class code_mvc {
                     ? () => { return this.controler.toggle_parsing ? this.#model.to_display : this.#model.raw }
                     : () => { return this.#model.raw },
                 set: (value) => {
+
+                    if (value instanceof NodeList)
+                        value = (() => {
+                        // convert NodeList to code
+                            let elements = Array.from(value);
+                            elements.forEach((element) => code_mvc_details.html_parser.cleanup({ element: element }))
+                            return elements
+                                .map((element) => { 
+                                    return code_mvc_details.html_parser.to_code({
+                                        elements: [ element ]
+                                    })
+                                })
+                                .join('')
+                        })()
+
+                    if (!AwesomeCodeElement.details.utility.types.is_string(value))
+                        throw new Error('code_mvc.set(model): invalid parameter')
+
                     if (value === this.#model.raw)
                         return
                     this.#model = this.#model_parser.parse({ code: value })
@@ -2526,7 +2544,6 @@ customElements.define(code_mvc_HTMLElement.HTMLElement_tagName, code_mvc_HTMLEle
 // HTML_elements : API
 
 // TODO: presentation.view is mutable and the user changed the textContent -> update model
-// TODO: model or language change -> refresh execution
 AwesomeCodeElement.API.HTML_elements = {}
 AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeElement.details.HTML_elements.defered_HTMLElement {
 
@@ -2683,6 +2700,34 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 this.#fetch_execution_controler.fetch()
             }
         })
+
+        // WIP
+        //  TODO: move to code_mvc ?
+        //  TODO: one mutationObserver for all instances
+        //  TODO: prevent this from triggering too-often (add delay)
+        // presentation panel textContent change
+        const presentation_mvc = this.ace_cs_panels.presentation.code_mvc;
+        if (presentation_mvc.is_mutable)
+        {
+            let observer = new MutationObserver((mutations) => {
+                mutations.forEach(function(mutation) {
+
+                    if (mutation.type !== 'childList'
+                     || presentation_mvc.model === presentation_mvc.view.textContent
+                    ) return
+
+                    console.log('>>>', mutation)
+
+                    presentation_mvc.model = presentation_mvc.view.childNodes
+                    presentation_mvc.update_view()
+                });
+            })
+            observer.observe(
+                presentation_mvc.view,
+                { characterData: false, attributes: false, childList: true, subtree: true }
+            )
+        }
+
         // TODO: one MutationObserver for all ace.cs instances
         let id_attribute_mutation_observer = new MutationObserver(mutations => {
             mutations.forEach(mutation => {

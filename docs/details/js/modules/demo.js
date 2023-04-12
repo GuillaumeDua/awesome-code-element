@@ -104,25 +104,25 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
     #transform_code_into_editable() {
         // make code editable
         const presentation_mvc = this.ace_cs.ace_cs_panels.presentation.code_mvc;
-        presentation_mvc.view.title = 'Edit me !'
+        presentation_mvc.view.title = 'Edit me ! (requires toggle_parsing off)'
         presentation_mvc.view.addEventListener('click', () => {
             presentation_mvc.view.setAttribute('contentEditable', !presentation_mvc.controler.toggle_parsing)
             if (presentation_mvc.controler.toggle_parsing)
                 ace_test_utils.element_shake_effect_for(presentation_mvc.view, 500)
         })
-        let delay_timer = null
-        presentation_mvc.view.addEventListener('keyup', function(event){
+        // let delay_timer = null
+        // presentation_mvc.view.addEventListener('keyup', function(event){
 
-            if (presentation_mvc.controler.toggle_parsing)
-                throw new Error('CodeSection_demo: invalid attempt to edit parsed code')
+        //     if (presentation_mvc.controler.toggle_parsing)
+        //         throw new Error('CodeSection_demo: invalid attempt to edit parsed code')
 
-            if (delay_timer)
-                window.clearTimeout(delay_timer)
-            delay_timer = window.setTimeout(() => {
-                delay_timer = null // reset timer
-                presentation_mvc.model = presentation_mvc.view.textContent
-            }, 500)
-        })
+        //     if (delay_timer)
+        //         window.clearTimeout(delay_timer)
+        //     delay_timer = window.setTimeout(() => {
+        //         delay_timer = null // reset timer
+        //         presentation_mvc.model = presentation_mvc.view.textContent
+        //     }, 500)
+        // })
     }
 
     // two-way data bindings
