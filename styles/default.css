@@ -101,7 +101,7 @@ ace-cs-status-display {
 ace-cs-code-mvc[status|='error'] > ace-cs-status-display {
     display: block;
     color: red;
-    border: 2px solid red;
+    border: 1px solid red;
     overflow-wrap: break-word;
     /* overflow-block: scroll; */
     white-space: pre-wrap;
