@@ -2235,6 +2235,42 @@ class code_mvc {
             })
             return value
         })()
+
+        // WIP
+        //  TODO: one mutationObserver for all instances
+        //  TODO: prevent this from triggering too-often (add delay)
+        if (this.is_mutable)
+        {
+            let pending_update_controler = { canceled: false }
+            let observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+
+                    if (mutation.type !== 'characterData'
+                     || this.controler.toggle_parsing
+                     || this.model === this.view.textContent
+                    ) return
+
+                    // update every seconds if no new user input
+                    pending_update_controler.canceled = true;
+                    let update_controler = { canceled: false }
+                    setTimeout(() => {
+                        if (update_controler.canceled)
+                            return;
+
+                        // TODO: save cursor position
+                        let previous_selection = window.getSelection()
+                        this.model = this.view.childNodes // will invoke this.update_view()
+                        // TODO: restore cursor
+                    }, 1000)
+                    
+                    pending_update_controler = update_controler
+                });
+            })
+            observer.observe(
+                this.view,
+                { characterData: true, subtree: true }
+            )
+        }
     }
 }
 
@@ -2686,7 +2722,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
             target: this.ace_cs_panels.presentation.code_mvc,
             property_name: 'model',
             on_property_change: ({ new_value, old_value, origin_op }) => {
-                if (new_value === old_value || !this.toggle_execution)
+                if (origin_op !== 'set' || new_value === old_value || !this.toggle_execution)
                     return
                 this.#fetch_execution_controler.fetch()
             }
@@ -2700,33 +2736,6 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                 this.#fetch_execution_controler.fetch()
             }
         })
-
-        // WIP
-        //  TODO: move to code_mvc ?
-        //  TODO: one mutationObserver for all instances
-        //  TODO: prevent this from triggering too-often (add delay)
-        // presentation panel textContent change
-        const presentation_mvc = this.ace_cs_panels.presentation.code_mvc;
-        if (presentation_mvc.is_mutable)
-        {
-            let observer = new MutationObserver((mutations) => {
-                mutations.forEach(function(mutation) {
-
-                    if (mutation.type !== 'childList'
-                     || presentation_mvc.model === presentation_mvc.view.textContent
-                    ) return
-
-                    console.log('>>>', mutation)
-
-                    presentation_mvc.model = presentation_mvc.view.childNodes
-                    presentation_mvc.update_view()
-                });
-            })
-            observer.observe(
-                presentation_mvc.view,
-                { characterData: false, attributes: false, childList: true, subtree: true }
-            )
-        }
 
         // TODO: one MutationObserver for all ace.cs instances
         let id_attribute_mutation_observer = new MutationObserver(mutations => {
@@ -2823,7 +2832,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
              || !this.#expect_target_is_executable
             ) return
             if (this.last_input === this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute){
-                console.warn(this.toString(), '.fetch: no-op: already fetching or fetched')
+                console.trace(this.toString(), '.fetch: no-op: already fetching or fetched')
                 return
             }
             this.#last_input = this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute
