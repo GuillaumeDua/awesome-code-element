@@ -2092,10 +2092,12 @@ class code_mvc {
                 }
             })()
 
+            this.toggle_language_detection = !argument.is_valid;
+
             if (this.#language === argument.language_name && argument.is_valid)
                 return
 
-            if (this.toggle_language_detection = !argument.is_valid)
+            if (this.toggle_language_detection)
                 console.warn(`ace.details.code.language(set): invalid input [${value}], attempting fallback detection.`)
 
             const result = this.#target.is_mutable
@@ -2844,7 +2846,7 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
              || !this.#expect_target_is_executable
             ) return
             if (this.last_input === this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute){
-                console.trace(this.toString(), '.fetch: no-op: already fetching or fetched')
+                console.warn(this.toString(), '.fetch: no-op: already fetching or fetched')
                 return
             }
             this.#last_input = this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute
