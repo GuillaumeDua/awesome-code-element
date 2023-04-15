@@ -651,7 +651,6 @@ AwesomeCodeElement.details.utility = class utility {
         }
     }
     // WIP: proxy on proxy: how to avoid multiples getter/setter calls
-    // TODO: proxy ?
     static inject_on_property_change_proxy = function({ target, property_name, on_property_change } = {}) {
     // calls `on_property_change` when target[property_name] change
     // on_property_change: ({ argument, old_value, new_value }) => { ... }
@@ -735,6 +734,14 @@ AwesomeCodeElement.details.utility = class utility {
             },
             revoke: () => Object.defineProperty(target, property_name, property_descriptor)
         }
+    }
+    static cancelable_setTimeout = function(func, delay){
+        let update_controler = { canceled: false }
+        setTimeout(() => {
+            if (!update_controler.canceled)
+                func()
+        }, delay);
+        return update_controler
     }
 
     static types = class types {
@@ -1965,11 +1972,13 @@ class code_mvc {
 
     get [Symbol.toStringTag](){ return 'code_mvc' }
 
+    // API: accessors
     is_mutable = undefined // is_owning
     view = undefined
     model = undefined
     controler = undefined
 
+    // model
     #model_parser = undefined
     #model = undefined
     get model_details(){
@@ -1977,6 +1986,8 @@ class code_mvc {
         return this.#model
     }
     #model_update_ce_options(){
+    // TODO: decouple this and is_executable
+    // TODO: model change -> same language -> keep ce_options
         this?.controler?.is_executable // call getter
     }
 
@@ -2123,7 +2134,7 @@ class code_mvc {
             if (!this.#target.#model.to_execute)
                 return false
 
-            const language = this.#language// this.language // avoid multiples calls to getter
+            const language = this.#language
             if (!language)
                 return false
     
@@ -2140,7 +2151,43 @@ class code_mvc {
              && !AwesomeCodeElement.details.utility.types.is_empty(this.#target.#model.ce_options)
             )
         }
-        // set is_executable(value){ /* const (no-op). setter used by two_way_synced_attributes_controler to propagate update */ }
+    }
+    static #modelChanged_Mutations_handler = new class cancelable_MutationObserver {
+        #pending_update_controler = { canceled: false }
+        #observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+
+                const code_mvc_element = (() => {
+                    let candidate = mutation.target.nodeType === Node.ELEMENT_NODE
+                        ? mutation.target
+                        : mutation.target.parentElement
+                    const expected_element_localName = 'ace-cs-code-mvc'
+                    return candidate.localName === expected_element_localName
+                        ? candidate
+                        : candidate.closest(expected_element_localName)
+                })()
+                if (!code_mvc_element)
+                    throw new Error('ace.cs.code_mvc: MutationObserver: model change: invalid target')
+                const code_mvc = code_mvc_element.code_mvc
+
+                if (mutation.type !== 'characterData'
+                || code_mvc.controler.toggle_parsing
+                || code_mvc.model === code_mvc.view.textContent
+                ) return
+
+                // update every seconds if no new user input
+                this.#pending_update_controler.canceled = true;
+                this.#pending_update_controler = AwesomeCodeElement.details.utility.cancelable_setTimeout(() => {
+                    // TODO: save cursor position
+                    // let previous_selection = window.getSelection()
+                    code_mvc.model = code_mvc.view.childNodes // will invoke code_mvc.update_view()
+                    // TODO: restore cursor
+                }, 1000)
+            });
+        })
+        observe(element, configuration){
+            return this.#observer.observe(element, configuration)
+        }
     }
 
     // initialization
@@ -2214,13 +2261,9 @@ class code_mvc {
                         // convert NodeList to code
                             let elements = Array.from(value);
                             elements.forEach((element) => code_mvc_details.html_parser.cleanup({ element: element }))
-                            return elements
-                                .map((element) => { 
-                                    return code_mvc_details.html_parser.to_code({
-                                        elements: [ element ]
-                                    })
-                                })
-                                .join('')
+                            return code_mvc_details.html_parser.to_code({
+                                elements: elements
+                            })
                         })()
 
                     if (!AwesomeCodeElement.details.utility.types.is_string(value))
@@ -2233,44 +2276,13 @@ class code_mvc {
                     this.update_view()
                 }
             })
+            if (this.is_mutable)
+                code_mvc.#modelChanged_Mutations_handler.observe(
+                    this.view,
+                    { characterData: true, subtree: true }
+                )
             return value
         })()
-
-        // WIP
-        //  TODO: one mutationObserver for all instances
-        //  TODO: prevent this from triggering too-often (add delay)
-        if (this.is_mutable)
-        {
-            let pending_update_controler = { canceled: false }
-            let observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-
-                    if (mutation.type !== 'characterData'
-                     || this.controler.toggle_parsing
-                     || this.model === this.view.textContent
-                    ) return
-
-                    // update every seconds if no new user input
-                    pending_update_controler.canceled = true;
-                    let update_controler = { canceled: false }
-                    setTimeout(() => {
-                        if (update_controler.canceled)
-                            return;
-
-                        // TODO: save cursor position
-                        let previous_selection = window.getSelection()
-                        this.model = this.view.childNodes // will invoke this.update_view()
-                        // TODO: restore cursor
-                    }, 1000)
-                    
-                    pending_update_controler = update_controler
-                });
-            })
-            observer.observe(
-                this.view,
-                { characterData: true, subtree: true }
-            )
-        }
     }
 }
 
