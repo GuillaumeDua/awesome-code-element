@@ -36,12 +36,14 @@ Some code examples here.
 
 ```html
 <div class="ace-code-section" language="cpp" toggle_execution="true">
+<pre>
 #include <iostream>
 auto main() -> int {
     auto i = 42;
     std::cout << "some console output";
     return i;
 }
+</pre>
 </div>
 ```
 

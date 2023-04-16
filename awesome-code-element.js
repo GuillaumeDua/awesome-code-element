@@ -2641,13 +2641,15 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                : nodes
         })()
 
-        // TODO: check if code is an empty string
         if (this._parameters.code && this._parameters.url){
-            console.warn(
-                this.toString(), 'both parameters [code] and [url] provided.\n\tfallback behavior: use only [url]',
-                '\t\ncode = ', this._parameters.code,
-                '\t\nurl  = ', this._parameters.url
-            )
+            const is_code_empty = AwesomeCodeElement.details.utility.types.is_string(this._parameters.code) &&  /^\s+$/.test(this._parameters.code);
+            if (!is_code_empty)
+            // warn only if code is non-empty (either a string or seq of nodes)
+                console.warn(
+                    this.toString(), 'both parameters [code] and [url] provided.\n\tfallback behavior: use only [url]',
+                    `\t\ncode = [${this._parameters.code}]`,
+                    `\t\nurl  = [${this._parameters.url}]`
+                )
             delete this._parameters.code
             this.innerHTML = ''
         }
