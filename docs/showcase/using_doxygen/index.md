@@ -1,6 +1,18 @@
 # This is an markdown index file
 
-Some code examples here.
+This showcase demonstrates various ways to use `ace-cs` in a `Doxygen` documentation.  
+Here, such documentation is generated using a `Markdown` index file (see `docs/showcase/using_doxygen/index.md`).
+
+**Q**: Why use `<div class="ace-code-section">` rather than `<ace-code-section>` tags ?  
+
+- Plain Markdown does not (by default) allow custom `HTMLElement`s.  
+  Here, we use `<div class="ace-code-section">` tags which are `acs-cs`'s placeholders for `<ace-code-section>` tags, that are automatically replaced by the `ace-cs` library.
+
+**Q**: Why the extra `<pre></pre>` tags ?  
+
+- Note that because such document is converted from Markdown to `HTML`,  
+  we need to enclose code in `HTML` `<pre></pre>` tag in order to preserve return characters.  
+  In opposition to pure `HTML` file in which you don't.
 
 ---
 

@@ -27,6 +27,8 @@ SOFTWARE.
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
 
+        <!-- <link id='ace-stylesheet' rel="stylesheet" href="../../awesome-code-element/styles/default.css"> -->
+
         <link rel="icon" type="image/x-icon" href="../../favicon.ico">
 
         <style>
@@ -86,9 +88,9 @@ SOFTWARE.
         -->
         <!-- highlight -->
         <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/languages/cpp.min.js" integrity="sha512-IAojhJDNJ4oC/Eui96KT2gmg2iwV2MsxTDs9CzqrrjNF8OdKV4MQE8H9fHbOXIsTaYZjLAVgtPOeyBNtD8LLEw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
-        <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script> -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
         <!-- jquery -->
-        <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script> -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     
         <!-- awesome-code-element -->
         <script type="module">
@@ -117,7 +119,7 @@ SOFTWARE.
                     ]
                 ])
             })
-            console.info(`docs/showcase/html_divs_placeholders/index.html: ace.API.configuration:`, ace.API.configuration.value)
+            console.info(`docs/showcase/ace_code_section/index.html: ace.API.configuration:`, ace.API.configuration.value)
             ace.API.initialize();
 
             // hljs configuration
@@ -126,6 +128,12 @@ SOFTWARE.
                 throwUnescapedHTML: false,
                 languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plain-text', 'HTML']
             })
+            // or:
+            // import { hljs } from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js';
+            // import { cpp }  from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/cpp.min.js';
+            // import { bash } from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/bash.min.js';
+            // hljs.registerLanguage('cpp',  cpp);
+            // hljs.registerLanguage('bash', bash);
         </script>
     
         <!-- CS Tests utils scripts -->
@@ -137,98 +145,104 @@ SOFTWARE.
 
     <awesome_code_element_test-utility-toolbar></awesome_code_element_test-utility-toolbar>
 
-<ul>
-    <li>
-    <h3>code-section : empty (will wait for content), user-provided id</h3>
-    <ace-showcase-wrapper>
-        <!--<div class="ace-code-section" id="my_custom_cs_id"></div>-->
-    </ace-showcase-wrapper>
-    <button style="margin-top: 10px;" onclick="
-        const code = document.getElementById('cs_1').ace_cs_panels.presentation.code_mvc.model; // equivalent here to document.getElementById('cs_0').textContent
-        document.getElementById('my_custom_cs_id').textContent = code
-        this.style.display = 'none'
-    ">
-        <b style="color:green">Click me !</b> <i>(load content, trigger defered initialization)</i>
-    </button>
-    </li>
-
-    <li>
-        <h3>code-section : text content, with language detection</h3>
-        <div class="note">
-                <h4>&#9432; Note:</h4>
-                <pre>Currently, C++ trailing-return-type is considered as an illegale synthax by highlight-js
-See the issue <a href="https://github.com/highlightjs/highlight.js/issues/3673">here (highlight.js/issues/3673)</a>.
-In such case, a fallback detection strategy is then used, but is not likely to be appropriate</pre>
-        </div>
-        
-        <ul><li>
-            <h3>code-section : text content (language detection <b style="color:red">failure</b>)</h3>
-            <ace-showcase-wrapper>
-                <!--<div class="ace-code-section">auto main() -> int { return 42; }</div>-->
-            </ace-showcase-wrapper>
-        </li></ul>
-    
-        <ul><li>
-        <h3>code-section : text content (language detection <b style="color:green">success</b>)</h3>
+    <ul>
+        <li>
+        <h3>code-section : empty (will wait for content), user-provided id</h3>
         <ace-showcase-wrapper>
-            <!--<div class="ace-code-section">int main() { return 42; }</div>-->
+            <!--<div class="ace-code-section" id="my_custom_cs_id"></div>-->
         </ace-showcase-wrapper>
-        </li></ul>
-    </li>
-
-    <li>
-    <h3>code-section : text content (large)</h3>
-    <ace-showcase-wrapper>
-        <!--<div class="ace-code-section" language="cpp">
+        <button style="margin-top: 10px;" onclick="
+            const code = document.getElementById('cs_1').ace_cs_panels.presentation.code_mvc.model; // equivalent here to document.getElementById('cs_0').textContent
+            document.getElementById('my_custom_cs_id').textContent = code
+            this.style.display = 'none'
+        ">
+            <b style="color:green">Click me !</b> <i>(load content, trigger defered initialization)</i>
+        </button>
+        </li>
+    
+        <li>
+            <h3>code-section : text content, with language detection (<b style='color: blueviolet'>auto</b>)</h3>
+            <div class="note">
+                    <h4>&#9432; Note:</h4>
+                    <pre>Currently, C++ trailing-return-type is considered as an illegale synthax by highlight-js
+    See the issue <a href="https://github.com/highlightjs/highlight.js/issues/3673">here (highlight.js/issues/3673)</a>.
+    In such case, a fallback detection strategy is then used, but is not likely to be appropriate</pre>
+            </div>
+            
+            <ul><li>
+                <h3>code-section : text content (language detection <b style="color:red">failure</b>: no syntax highlighting)</h3>
+                <ace-showcase-wrapper>
+                    <!--<div class="ace-code-section">auto main() -> int { return 42; }</div>-->
+                </ace-showcase-wrapper>
+            </li></ul>
+        
+            <ul><li>
+            <h3>code-section : text content (language detection <b style="color:green">success</b>)</h3>
+            <ace-showcase-wrapper>
+                <!--<div class="ace-code-section">int main() { return 42; }</div>-->
+            </ace-showcase-wrapper>
+            </li></ul>
+        </li>
+    
+        <li>
+        <h3>code-section : text content (large)</h3>
+        <ace-showcase-wrapper>
+<!--<div class="ace-code-section" language="cpp">
 auto main() -> int { return 42; } // this is a pretty long comment, so it should triggers small-rendering behavior, as well as horizontal-scrolling, depending on your window size ... otherwise, why would such extra-long comment exists ? .................................................................................................................. ?
 </div>-->
-    </ace-showcase-wrapper>
-    </li>
-
-    <li>
-    <h3>code-section : text content + language attribute</h3>
-    <ace-showcase-wrapper>
-        <!--<div class="ace-code-section" language="cpp">auto main() -> int { return 42; }</div>-->
-    </ace-showcase-wrapper>
-    </li>
-
-    <li>
-    <h3>code-section : language + code attributes</h3>
-    <ace-showcase-wrapper>
-        <!--<div class="ace-code-section" language="cpp" code="auto main() -> int { return 42; }"></div>-->
-    </ace-showcase-wrapper>
-    </li>
-
-    <li>
-    <h3>code-section : url (external code)</h3>
-
-        <ul><li>
-        <h3>network: <b style="color:red">unreachable</b></h3>
-        <ace-showcase-wrapper>
-            <!--<div class="ace-code-section" url="/DOES_NOT_EXISTS"></div>-->
         </ace-showcase-wrapper>
-        </li></ul>
-
-        <ul><li>
-        <h3>network: <b style="color:green">reachable</b></h3>
+        </li>
+    
+        <li>
+        <h3>code-section : text content + language attribute</h3>
         <ace-showcase-wrapper>
-            <!--<div class="ace-code-section" url="../../details/resources/code_content/noexecute_show_block.cpp"></div>-->
+            <!--<div class="ace-code-section" language="cpp">auto main() -> int { return 42; }</div>-->
         </ace-showcase-wrapper>
-        </li></ul>
-
-        <ul><li>
-        <h3>network: <b style="color:green">reachable</b>, immediatly executed</h3>
+        </li>
+    
+        <li>
+        <h3>code-section : language + code attributes</h3>
         <ace-showcase-wrapper>
-            <!--<div class="ace-code-section" toggle_execution="true" url="../../details/resources/code_content/noexecute_show_block.cpp"></div>-->
+            <!--<div class="ace-code-section" language="cpp" code="auto main() -> int { return 42; }"></div>-->
         </ace-showcase-wrapper>
-        </li></ul>
-    </li>
+        </li>
+    
+        <li>
+        <h3>code-section : url (external code)</h3>
+    
+            <ul><li>
+            <h3>network: <b style="color:red">unreachable</b></h3>
+            <ace-showcase-wrapper>
+                <!--<div class="ace-code-section" url="/DOES_NOT_EXISTS"></div>-->
+            </ace-showcase-wrapper>
+            <div class="note">
+                <h4>&#9432; Note:</h4>
+                <pre>Relevant JS console error:
+    <code>ace.cs.set(url): network error:
+        ace.details.utility.fetch_resource: bad request status 404 on url [/DOES_NOT_EXISTS]</code></pre>
+            </div>
+            </li></ul>
 
-    <li>
-        <h3>code-section : language, execution</h3>
-
-        <ul><li>
-        <h3>compilation <b style="color:green">success</b></h3>
+            <ul><li>
+            <h3>network: <b style="color:green">reachable</b></h3>
+            <ace-showcase-wrapper>
+                <!--<div class="ace-code-section" url="../../details/resources/code_content/noexecute_show_block.cpp"></div>-->
+            </ace-showcase-wrapper>
+            </li></ul>
+    
+            <ul><li>
+            <h3>network: <b style="color:green">reachable</b>, immediatly executed</h3>
+            <ace-showcase-wrapper>
+                <!--<div class="ace-code-section" toggle_execution="true" url="../../details/resources/code_content/noexecute_show_block.cpp"></div>-->
+            </ace-showcase-wrapper>
+            </li></ul>
+        </li>
+    
+        <li>
+            <h3>code-section : language, execution</h3>
+    
+            <ul><li>
+            <h3>compilation <b style="color:green">success</b></h3>
 <ace-showcase-wrapper><!--<div class="ace-code-section" language="cpp" toggle_execution="true">
 #include <iostream>
 auto main() -> int {
@@ -237,10 +251,10 @@ auto main() -> int {
     return i;
 }                       
 </div>--></ace-showcase-wrapper>
-        </li></ul>
-
-        <ul><li>
-        <h3>compilation <b style="color:red">error</b></h3>
+            </li></ul>
+    
+            <ul><li>
+            <h3>compilation <b style="color:orange">error</b></h3>
 <ace-showcase-wrapper><!--<div class="ace-code-section" language="cpp" toggle_execution="true">
 #include <iostream>
 auto main() -> int {
@@ -249,33 +263,33 @@ auto main() -> int {
     return i;
 }                       
 </div>--></ace-showcase-wrapper>
-<div class="note">
-    <h4>&#9432; Note:</h4>
-    <pre>Relevant error status:
-    <b>JS:</b>  <code>cs_element.html_elements.execution.getAttribute('status') === 'failure'</code>
-    <b>CSS:</b> <code>ace-code-section > [id$='.panels.right'] > [id$='.execution'][status='failure']</code></pre>
-</div>
-        </li></ul>
-
-        <ul><li>
-<h3><b style="color:red">error</b> : missing configuration (c vs. cpp)</h3>
+    <div class="note">
+        <h4>&#9432; Note:</h4>
+        <pre>Relevant error status:
+        <b>JS:</b>  <code>ace_cs_element.ace_cs_panels.execution.getAttribute('status') === 'failure-compilation'</code>
+        <b>CSS:</b> <code>ace-code-section > ace-cs-code-mvc[id$='.panels.execution'][status|='failure']</code></pre>
+    </div>
+            </li></ul>
+    
+            <ul><li>
+    <h3><b style="color:red">error</b> : missing configuration (c vs. cpp)</h3>
 <ace-showcase-wrapper><!--<div class="ace-code-section" language="c" toggle_execution="true">
 int main() {
     return 42;
 }                       
 </div>--></ace-showcase-wrapper>
-<div class="note">
-    <h4>&#9432; Note:</h4>
-    <pre>Relevant error status:
-    <b>JS:</b>  <code>cs_element.html_elements.panels.right.getAttribute('status') === 'error'</code>
-    <b>CSS:</b> <code>ace-code-section > [id$='.panels.right'][status='error']</code></pre>
-</div>
-        </li></ul>
-       
-    </li>
-
-    <li>
-        <h3>code-section : language, execution, column orientation</h3>
+    <div class="note">
+        <h4>&#9432; Note:</h4>
+        <pre>Relevant error status:
+        <b>JS:</b>  <code>ace_cs_element.ace_cs_panels.panels.right.getAttribute('status') === 'error-compilation'</code>
+        <b>CSS:</b> <code>ace-code-section > [id$='.panels.right'][status='error']</code></pre>
+    </div>
+            </li></ul>
+           
+        </li>
+    
+        <li>
+            <h3>code-section : language, execution, column orientation</h3>
 <ace-showcase-wrapper><!--<div class="ace-code-section" language="cpp" toggle_execution="true" direction="column"> 
 #include <iostream>
 auto main() -> int {
@@ -284,33 +298,33 @@ auto main() -> int {
     return i;
 }                       
 </div>--></ace-showcase-wrapper>
-        <div class="note">
-            <h4>&#9432; Note:</h4>
-            <pre>Alternatively, setting the style value <code>style="flex-direction: column"</code> also works</pre>
-        </div>
-
-    </li>
-
-    <li>
-        <h3>code-section : parsing (render and/or execute only what is relevant for the audience)</h3>
+            <div class="note">
+                <h4>&#9432; Note:</h4>
+                <pre>Alternatively, setting the style value <code>style="flex-direction: column"</code> also works</pre>
+            </div>
+    
+        </li>
+    
+        <li>
+            <h3>code-section : parsing (render and/or execute only what is relevant for the audience)</h3>
 <ace-showcase-wrapper><!--<div class="ace-code-section" toggle_parsing="true">
-    THIS IS REMOVED // @ace::skip::line
+    THIS IS REMOVED (from presentation and execution) // @ace::skip::line
 #include <iostream>
 auto main() -> int {    
                     // @ace::show::block::begin
-auto i = 42; // test ----------------------------------------
+auto i = 42; // presentation starts here
 std::cout << "some console output";
-return i;
+return i; // presentation ends here
                     // @ace::show::block::end
 }                       
     THIS IS REMOVED TOO // @ace::skip::line
 </div>--></ace-showcase-wrapper>
-    </li>
-
-    <li>
-        <h3>code-section : language + parsing + execution</h3>
+        </li>
+            
+        <li>
+            <h3>code-section : language + parsing + execution</h3>
 <ace-showcase-wrapper><!--<div class="ace-code-section" toggle_parsing="true" toggle_execution="true">
-    THIS IS REMOVED // @ace::skip::line
+    THIS IS REMOVED (from presentation and execution) // @ace::skip::line
 #include <iostream>
 auto main() -> int {    
                     // @ace::show::block::begin
@@ -321,16 +335,14 @@ return i;
 }                       
     THIS IS REMOVED TOO // @ace::skip::line
 </div>--></ace-showcase-wrapper>
-    </li>
-
+        </li>
+            
     <li>
         <h3>code-section : mixing html entities and regular chars (&lt;, &gt;, &quot;, &amp;)</h3>
 <ace-showcase-wrapper><!--<div class="ace-code-section" language="cpp" toggle_execution="true">
 #include <vector>
 #include &lt;iostream&gt;
-
 int main() {
-
     auto i = 42;
     auto b = 42 < 13 || 42 > 13;
     
@@ -339,7 +351,6 @@ int main() {
     std::cout
         <<"&<>42&"
         &lt;< "'&lt;, &lt;, \&quot, &&amp;'&quot;;
-
     return (i <=> (int)b) == 0;
 }
 </div> --></ace-showcase-wrapper>
