@@ -955,7 +955,7 @@ HTML_STYLESHEET               =
 # Awesome-code-element
 # ACE:
 HTML_EXTRA_FILES       += ./awesome-code-element.js
-HTML_EXTRA_FILES       += styles/default.css
+HTML_EXTRA_FILES       += ./styles/default.css
 
 HTML_COLORSTYLE_HUE    = 220
 HTML_COLORSTYLE_SAT    = 100

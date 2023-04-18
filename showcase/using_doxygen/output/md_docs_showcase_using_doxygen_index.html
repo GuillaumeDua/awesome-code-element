@@ -46,16 +46,16 @@
     <!-- TODO: ace path: path to deployed version -->
     <script type="module">
         import ace from "./awesome-code-element.js"
-        ace.API.configure({
-            compatibility : {
-                doxygen: true
+        ace.API.configuration.configure({
+            doxygen_awesome_css_compatibility: true,
+            CodeSection: {
+                // language        : 'cpp',
+                // toggle_parsing  : true,
+                toggle_execution: true
             },
-            hljs : {
-                version: '11.7.0'
-            },
-            CE : new ace.API.CE_ConfigurationManager([
+            CE: new Map([
                 [
-                    'cpp',
+                    'C++',
                     {
                         language: 'c++',
                         compiler_id: 'clang1500',
@@ -64,8 +64,14 @@
                 ]
             ])
         })
-        console.info(`demo/index.html: ace.API.configuration:`, ace.API.configuration)
+        console.info(`docs/showcase/live_demo/index.html: ace.API.configuration:`, ace.API.configuration.value)
         ace.API.initialize();
+        // hljs configuration
+        hljs.configure({
+            ignoreUnescapedHTML: true,
+            throwUnescapedHTML: false,
+            languages: [ 'cpp' ]
+        })
     </script>
 </head>
 <body>
@@ -150,8 +156,21 @@ $(document).ready(function(){initNavTree('md_docs_showcase_using_doxygen_index.h
 <div class="title">This is an markdown index file </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>Some code examples here.</p>
-<p><em>Note: plain Doxygen does not support light/dark-mode toggling</em></p>
+<div class="textblock"><p>This showcase demonstrates various ways to use <code>ace-cs</code> in a <code>Doxygen</code> documentation. <br  />
+ Here, such documentation is generated using a <code>Markdown</code> index file (see <code>docs/showcase/using_doxygen/index.md</code>).</p>
+<p><b>Q</b>: Why use <code>&lt;div class="ace-code-section"&gt;</code> rather than <code>&lt;ace-code-section&gt;</code> tags ? <br  />
+</p>
+<ul>
+<li>Plain Markdown does not (by default) allow custom <code>HTMLElement</code>s. <br  />
+ Here, we use <code>&lt;div class="ace-code-section"&gt;</code> tags which are <code>acs-cs</code>'s placeholders for <code>&lt;ace-code-section&gt;</code> tags, that are automatically replaced by the <code>ace-cs</code> library.</li>
+</ul>
+<p><b>Q</b>: Why the extra <code>&lt;pre&gt;&lt;/pre&gt;</code> tags ? <br  />
+</p>
+<ul>
+<li>Note that because such document is converted from Markdown to <code>HTML</code>, <br  />
+ we need to enclose code in <code>HTML</code> <code>&lt;pre&gt;&lt;/pre&gt;</code> tag in order to preserve return characters. <br  />
+ In opposition to pure <code>HTML</code> file in which you don't.</li>
+</ul>
 <hr  />
 <h1><a class="anchor" id="autotoc_md2"></a>
 Using `\include` doxygen directive</h1>
