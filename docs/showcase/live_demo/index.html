@@ -44,6 +44,19 @@ SOFTWARE.
             label, button, select {
                 color: var(--default-text-color)
             }
+            div.note {
+                border: 1px solid var(--separator-color);
+                color:  var(--default-text-color);
+                margin: 5px 0 5px 0;
+            }
+            div.note > h4 {
+                margin: 0px;
+            }
+            div.note > pre {
+                font-style:     italic;
+                overflow:       auto;
+                padding-left:   30px;
+            }
 
             @-webkit-keyframes shake {
                 0%  { -webkit-transform: translate(2px, 1px) rotate(0deg); } 
@@ -78,17 +91,19 @@ SOFTWARE.
     
         <!-- awesome-code-element -->
         <script type="module">
+
             import ace from "../../awesome-code-element/awesome-code-element.js"
-            ace.API.configure({
-                CodeSection: {  // useless, for demo purpose
-                    language        : undefined,
-                    toggle_parsing  : false,
-                    toggle_execution: false,
-                    direction       : ''
+
+            ace.API.configuration.configure({
+                doxygen_awesome_css_compatibility: true,
+                CodeSection: {
+                    // language        : 'cpp',
+                    // toggle_parsing  : true,
+                    toggle_execution: true
                 },
-                CE : new ace.API.CE_ConfigurationManager([
+                CE: new Map([
                     [
-                        'cpp',
+                        'C++',
                         {
                             language: 'c++',
                             compiler_id: 'clang1500',
@@ -97,8 +112,15 @@ SOFTWARE.
                     ]
                 ])
             })
-            console.info(`demo/index.html: ace.API.configuration:`, ace.API.configuration)
+            console.info(`docs/showcase/live_demo/index.html: ace.API.configuration:`, ace.API.configuration.value)
             ace.API.initialize();
+
+            // hljs configuration
+            hljs.configure({
+                ignoreUnescapedHTML: true,
+                throwUnescapedHTML: false,
+                languages: [ 'cpp' ]
+            })
         </script>
     
         <!-- CS Tests utils scripts -->
@@ -120,17 +142,24 @@ SOFTWARE.
 
     <awesome_code_element_test-utility-toolbar></awesome_code_element_test-utility-toolbar>
  
-    <h2>Live demo</h2>
+    <h2 style="color:purple">Live demo</h2>
+    <div class="note">
+        <h4>&#9432; Note:</h4>
+        <pre>We recommend that you open your browser's developper console aside,
+and play with ace-cs HTML elements' attributes.</pre>
+    </div>
     <!-- TODO: select various pre-defined scenaris, that users can play with -->
     <ace-code-section-demo>
-        THIS IS REMOVED // @awesome-code-element::skip::line
+        THIS IS REMOVED // @ace::skip::line
+#include <iostream>
 auto main() -> int {    
-                        // @awesome-code-element::show::block::begin
+                        // @ace::show::block::begin
 auto i = 42; // test
+std::cout << "- result:" << i << '\n';
 return i;
-                        // @awesome-code-element::show::block::end
+                        // @ace::show::block::end
 }                       
-        THIS IS REMOVED TOO // @awesome-code-element::skip::line
+        THIS IS REMOVED TOO // @ace::skip::line
     </ace-code-section-demo>
 
     <!-- TODO: CS builder from current demo state -->

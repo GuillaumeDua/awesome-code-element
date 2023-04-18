@@ -52,18 +52,19 @@
     <!-- awesome-code-element -->
     <!-- TODO: ace path: path to deployed version -->
     <script type="module">
+
         import ace from "./awesome-code-element.js"
 
-        ace.API.configure({
-            compatibility : {
-                doxygen: true
+        ace.API.configuration.configure({
+            doxygen_awesome_css_compatibility: true,
+            CodeSection: {
+                // language        : 'cpp',
+                // toggle_parsing  : true,
+                toggle_execution: true
             },
-            hljs : {
-                version: '11.7.0'
-            },
-            CE : new ace.API.CE_ConfigurationManager([
+            CE: new Map([
                 [
-                    'cpp',
+                    'C++',
                     {
                         language: 'c++',
                         compiler_id: 'clang1500',
@@ -72,8 +73,15 @@
                 ]
             ])
         })
-        console.info(`demo/index.html: ace.API.configuration:`, ace.API.configuration)
+        console.info(`docs/showcase/live_demo/index.html: ace.API.configuration:`, ace.API.configuration.value)
         ace.API.initialize();
+
+        // hljs configuration
+        hljs.configure({
+            ignoreUnescapedHTML: true,
+            throwUnescapedHTML: false,
+            languages: [ 'cpp' ]
+        })
     </script>
     
 </head>

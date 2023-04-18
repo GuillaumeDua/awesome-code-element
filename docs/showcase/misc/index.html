@@ -95,17 +95,19 @@ SOFTWARE.
     
         <!-- awesome-code-element -->
         <script type="module">
+
             import ace from "../../awesome-code-element/awesome-code-element.js"
 
-            ace.API.configure({
+            ace.API.configuration.configure({
                 doxygen_awesome_css_compatibility: true,
-                hljs : {
-                    version         : '11.7.0',
-                    default_theme   : 'obsidian' // unused, as there is a valid theme-selector. (Obsidian theme does not supports dark/light variations)
+                CodeSection: {
+                    // language        : 'cpp',
+                    // toggle_parsing  : true,
+                    toggle_execution: true
                 },
-                CE : new ace.API.CE_ConfigurationManager([
+                CE: new Map([
                     [
-                        'cpp',
+                        'C++',
                         {
                             language: 'c++',
                             compiler_id: 'clang1500',
@@ -114,8 +116,15 @@ SOFTWARE.
                     ]
                 ])
             })
-            console.info(`demo/index.html: ace.API.configuration:`, ace.API.configuration)
+            console.info(`docs/showcase/live_demo/index.html: ace.API.configuration:`, ace.API.configuration.value)
             ace.API.initialize();
+
+            // hljs configuration
+            hljs.configure({
+                ignoreUnescapedHTML: true,
+                throwUnescapedHTML: false,
+                languages: [ 'cpp' ]
+            })
         </script>
     
         <!-- CS Tests utility scripts -->

@@ -15,8 +15,8 @@
     --spacing-large: 16px;
     --content-maxwidth: 1050px;
     --ace-cs-buttons-z-index: 2;
+    --ace-cs-code-line-height: 1.3;
 }
-
 html.light-mode {
     color-scheme: light;
     --separator-color: #8e8e8e;
@@ -32,28 +32,6 @@ html.dark-mode {
     --default-background-color:  #2b2a33;
 }/* #1a1b26 #2b2a33 */
 
-/* Buttons */
-ace-code-section        button[is^='ace-button-'],
-ace-code-section-demo   button[is^='ace-button-'] {
-    z-index:            var(--ace-cs-buttons-z-index);
-    position:           absolute;
-    top:                5px;
-
-    color:              var(--default-text-color);
-    border:             1px solid var(--separator-color);
-    border-radius:      var(--border-radius-small);
-    background-color:   var(--default-background-color);
-}
-/* [id^='*.panels.*.buttons.copy_to_clipboard'] */
-ace-code-section        button[is='ace-button-copy-to-clipboard'],
-ace-code-section-demo   button[is='ace-button-copy-to-clipboard'] {
-    right       : 5px;
-}
-/* [id^='.panels.left.buttons.CE'] */
-ace-code-section        button[is='ace-button-send-to-godbolt'],
-ace-code-section-demo   button[is='ace-button-send-to-godbolt']{
-    right       : 45px;
-}
 ace-code-section        img#ace-loading-animation,
 ace-code-section-demo   img#ace-loading-animation{
     contain             : strict;
@@ -64,90 +42,176 @@ ace-code-section-demo   img#ace-loading-animation{
     box-sizing          : border-box;
     display             : none
 }   /* hidden by default */
+img.ace-animation,
+img.ace-animation{
+    contain             : strict;
+    /* border              : 1px solid var(--separator-color);
+    border-radius       : var(--border-radius-small); */
+    width               : 100%;
+    /* height              : 100%; */
+    box-sizing          : border-box;
+    /* display             : none */
+    flex:       1 1 content;
+}   /* hidden by default */
 
 /* CS */
-ace-code-section,
-ace-code-section-demo {
+ace-cs-code-mvc {
+    border          : 1px solid var(--separator-color);
+    border-radius   : var(--border-radius-small);
+
     display         : flex;
     flex-direction  : row;
     align-items     : stretch;
     box-sizing      : border-box;
     width           : 100%;
 
+    overflow        : auto;
+    position        : relative;
+    top             : 0px;
+    left            : 0px;
+    width           : 100%;
+    margin          : 0px;
+
     font-family     : "Lucida Console", "Monaco", monospace;
     font-size       : 14px;
-    line-height     : 1.3;
+    line-height     : var(--ace-cs-code-line-height);
 }
-/* CS: panels : left, right */
-ace-code-section        > [id*='.panels.'],
-ace-code-section-demo   > [id*='.panels.'] {
-    flex:       2 2 content;
+ace-cs-code-mvc > :not(button) {
+    /* flex:       2 2 content; */
     overflow:   auto;
     position:   relative;
     top:        0px;
     left:       0px;
     width:      100%;
     margin:     0px;
-    min-height: 40px;
-
-    /*stand-alone usage (not mandatory)*/
-    border-radius: var(--border-radius-small);
-    border: 1px solid var(--separator-color);
+    min-height: 20px;
+    white-space: pre-wrap; /* multi-lines content */
 }
-ace-code-section      > [id$='.panels.left'],
-ace-code-section-demo > [id$='.panels.left'] {
+ace-cs-code-mvc > code {
+    display: block;
+    line-height: var(--ace-cs-code-line-height); /* calc(var(--ace-cs-code-line-height) * 2); */
+}
+/* error rendering */
+ace-cs-code-mvc[status|='error'] > :not(ace-cs-status-display) {
+    display: none !important;
+}
+ace-cs-status-display {
+    display: none;
+}
+ace-cs-code-mvc[status|='error'] > ace-cs-status-display {
+    display: block;
+    color: red;
+    border: 1px solid red;
+    overflow-wrap: break-word;
+    /* overflow-block: scroll; */
+    white-space: pre-wrap;
+}
+/* ace-cs-code-mvc > code > * {
+    margin-left: calc(var(--ace-cs-code-line-height) * 2px);
+} */
+ace-cs-code-mvc > button[is^='ace-button-'] {
+    z-index:            var(--ace-cs-buttons-z-index);
+    position:           absolute;
+
+    --spacing-size:     2px;
+    top:                var(--spacing-size);
+
+    color:              var(--default-text-color);
+    border:             1px solid var(--separator-color);
+    border-radius:      var(--border-radius-small);
+    background-color:   var(--default-background-color);
+
+    display: block;
+    height: calc(100% - calc(var(--spacing-size) * 2)); /* top is 2px */
+    width: inherit;
+    max-height: 30px;
+    max-width: 30px;
+}
+ace-cs-code-mvc > button[is='ace-button-copy-to-clipboard'] {
+    right       : 2px;
+}
+ace-cs-code-mvc > button[is='ace-button-send-to-godbolt'] {
+    right       : 34px;
+    display : none;  /* hidden by default  */
+}
+ace-cs-code-mvc > button[is^='ace-button-'] > * {
+    height: inherit;
+    width: inherit;
+}
+ace-cs-code-mvc[is_executable="true"] > button[is="ace-button-send-to-godbolt"] {
+    display     : block;
+}
+
+ace-code-section,
+ace-code-section-demo {
+    /* border          : 1px solid var(--separator-color);
+    border-radius   : var(--border-radius-small); */
+
+    display         : flex;
+    flex-direction  : row;
+    align-items     : stretch;
+    box-sizing      : border-box;
+    width           : 100%;
+    /* padding: 5px 0px 5px 0px; */
+}
+/* ace.cs: panels : left, right */
+ace-code-section        > [id*='.panels.'],
+ace-code-section-demo   > [id*='.panels.'] {
+    flex:       1 1 fit-content;
+}
+ace-code-section      > [id$='.panels.presentation'],
+ace-code-section-demo > [id$='.panels.presentation'] {
     width:      100%;
     box-sizing: border-box;
 }
-ace-code-section      > [id$='.panels.left'][status='error'],
-ace-code-section-demo > [id$='.panels.left'][status='error'],
-ace-code-section      > [id$='.panels.right'][status='error'],
-ace-code-section-demo > [id$='.panels.right'][status='error'] {
-    border: 1px solid red;
-    color:red;
+/* TODO: ace-cs-code-mvc[id$='.panels.execution'] vs. nth-child() ? */
+ace-code-section[toggle_execution='false'] > ace-cs-code-mvc[id$='.panels.execution']{
+    display: none
 }
-ace-code-section      > [id$='.panels.right'][status='error'] > [id$='.execution'],
-ace-code-section-demo > [id$='.panels.right'][status='error'] > [id$='.execution'] {
-    color:red;
+ace-code-section[toggle_execution='true']  > ace-cs-code-mvc[id$='.panels.execution']{
+    display: flex
 }
 
-ace-code-section      > [id$='.panels.left'] > [id$='.code'],
-ace-code-section-demo > [id$='.panels.left'] > [id$='.code'] {
+ace-code-section      > [id$='.panels.presentation'] > [id$='.code'],
+ace-code-section-demo > [id$='.panels.presentation'] > [id$='.code'] {
     width:      auto;
     height:     100%;
     box-sizing: border-box;
     display:    block;
 }
-ace-code-section        > [id$='.panels.left.buttons.CE'],
-ace-code-section-demo   > [id$='.panels.left.buttons.CE'] {
-    z-index : 2;
-    display : none; /* hidden by default */
-}
-ace-code-section      > [id$='.panels.right'], 
-ace-code-section-demo > [id$='.panels.right'] {
-    flex:       1 1 content;
+
+ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'], 
+ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] {
+    /* flex:       1 1 content; */
     display:     flex;
     align-items: stretch;
     box-sizing:  border-box;
 }
-/* display:    flex; flex-direction : column; */
-ace-code-section      > [id$='.panels.right'] > [id$='.execution'],
-ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'] {
+
+ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'],
+ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'] {
     display:        block;
     width:          100%;
     overflow:       auto;
     margin:         inherit;
-    overflow:       auto;
     border-radius:  var(--border-radius-small)
 }
-ace-code-section      > [id$='.panels.right'] > [id$='.execution'][status='success'],
-ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'][status='success'] {
+
+/* style */
+ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'][status|='success'],
+ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='success'] {
     border-top: 2px solid green;
 }
-ace-code-section      > [id$='.panels.right'] > [id$='.execution'][status='failure'],
-ace-code-section-demo > [id$='.panels.right'] > [id$='.execution'][status='failure'] {
-    border-top: 2px solid red;
+ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'][status|='failure'],
+ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='failure'] {
+    border-top: 2px solid orange;
+}
+
+/* ace-cs-code-mvc[status|='error']::before {
+    content: 'test';
+} */
+ace-code-section[direction='column']{
+    flex-direction: column;
 }
 
 /* TODO: right-panel copy-to-clipboard does not hide anymore */
-/* TODO: wtf: good execution -> red color */
