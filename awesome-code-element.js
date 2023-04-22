@@ -105,6 +105,7 @@
 // TODO: try/catch -> finally
 // TODO: hljs: web-worker https://github.com/highlightjs/highlight.js/#using-web-workers
 // TODO: static member ref: this.constructor.<name> rather than classname redundancy
+// TODO: on page focus -> refresh toggle light/dark button icon
 
 export { AwesomeCodeElement as default }
 
@@ -2064,6 +2065,18 @@ class code_mvc {
 
         // language
         #language = undefined
+        set #language_impl(value){
+
+            this.#language = this.#language_policies.detector.get_language_name(value)
+            if (this.#target.is_mutable &&
+                this.#language_policies.detector.get_language(this.#target.view) !== this.#language
+            )
+                this.#language_policies.highlighter.highlight({
+                    code_element: this.#target.view,
+                    language: this.#language
+                })
+            this.#target.#model_update_ce_options()
+        }
         get language() {
 
             let value = (() => {
@@ -2078,7 +2091,8 @@ class code_mvc {
 
             // autodetect
             if (this.toggle_language_detection)
-                this.#language = value
+                this.#language_impl = value
+
             return value
         }
         set language(value) {
@@ -2110,9 +2124,8 @@ class code_mvc {
             if (undefined === argument.language_name
              || this.#language !== argument.language_name
             ){
-                this.#language = this.#language_policies.detector.get_language_name(result.language) // note: possibly not equal to `value`
+                this.#language_impl = result.language // note: possibly not equal to `value`
                 this.toggle_language_detection = Boolean(result.relevance <= 5)
-                this.#target.#model_update_ce_options()
             }
         }
 

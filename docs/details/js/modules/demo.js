@@ -84,7 +84,7 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
                 model: this.ace_cs.ace_cs_panels.presentation.code_mvc.controler
             },
             property_name: 'language',
-            hint: 'clear to attempt a fallback autodetection'
+            hint: 'set, or clear to attempt a fallback autodetection'
         }))
         options_container.appendChild(this.#make_string_view({
             target: {
