@@ -2106,12 +2106,11 @@ class code_mvc {
                 }
             })()
 
-            this.toggle_language_detection = !argument.is_valid;
-
             if (this.#language === argument.language_name && argument.is_valid)
                 return
 
-            if (this.toggle_language_detection)
+            this.toggle_language_detection = !argument.is_valid;
+            if (!argument.is_valid)
                 console.warn(`ace.details.code.language(set): invalid input [${value}], attempting fallback detection.`)
 
             const result = this.#target.is_mutable
@@ -2981,8 +2980,8 @@ AwesomeCodeElement.API.HTML_elements.CodeSection = class cs extends AwesomeCodeE
                         const url_extension = AwesomeCodeElement.details.utility.get_url_extension(this.#url)
                         if (url_extension
                          && this.ace_cs_panels.presentation.code_mvc.controler.language_policies.detector.is_valid_language(url_extension)){
-                            this.ace_cs_panels.presentation.code_mvc.controler.toggle_language_detection = false
                             this.ace_cs_panels.presentation.code_mvc.controler.language = url_extension
+                            this.ace_cs_panels.presentation.code_mvc.controler.toggle_language_detection = false
                         }
                     }
                     
