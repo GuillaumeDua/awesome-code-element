@@ -1,29 +1,67 @@
-# Awesome-doc-code-sections
+# **ACE** - HTML Awesome code element
 
-`HTML`/`JS` code sections for documentation purposes.  
-Optionaly compatible with [Doxygen](https://doxygen.nl/) (which can - or not - be used in conjunction with [doxygen-awesome-css](https://github.com/jothepro/doxygen-awesome-css) too)
+![](https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/docs/images/simple_test_output.JPG)
 
-Originaly created to ease the documentation creation process of [CppShelf](https://github.com/GuillaumeDua/CppShelf)
+ACE is a `JS` modules which offers both `HTML` and `JS` APIs to integrate code examples in web pages and various documentations systems.  
 
 ---
 
-- [Showcase : CS](https://guillaumedua.github.io/awesome-code-element/showcase/ace_code_section/)
-- [Showcase : CS *(using div placeholders)*](https://guillaumedua.github.io/awesome-code-element/showcase/html_divs_placeholders/)
-- [Showcase : misc](https://guillaumedua.github.io/awesome-code-element/showcase/misc/)
-- [Showcase: Doxygen](https://guillaumedua.github.io/awesome-code-element/showcase/using_doxygen/output/md_docs_showcase_using_doxygen_index.html)
-- [Live demo](https://guillaumedua.github.io/awesome-code-element/showcase/live_demo/)
+Internaly uses [compiler-explorer API](https://github.com/compiler-explorer/compiler-explorer/blob/main/docs/API.md) for languages supports, code compilation and execution.
+
+- See [supported languages](https://godbolt.org/api/languages)
+- See [supported compilers](https://godbolt.org/api/compilers)
+
+Such code-sections behaviors and styles are highly customizables *(supports themes, dark-mode, styles/layouts, etc.)*.
+
+---
+
+## Showcases
+
+*The following showcases are CI-deployed.*
+
+| showcase name | status |
+|-|-|
+| 🌐 [*\<ace-code-section\>*](https://guillaumedua.github.io/awesome-code-element/showcase/ace_code_section/)          | ✔️ |
+| 🌐[*\<div\> placeholders*](https://guillaumedua.github.io/awesome-code-element/showcase/html_divs_placeholders/)     | ✔️ |
+| 🌐 [acs miscs](https://guillaumedua.github.io/awesome-code-element/showcase/misc/)                                   | ✔️ |
+| 🔌 [**Doxygen** integration (plain)](https://guillaumedua.github.io/awesome-code-element/showcase/using_doxygen/output/md_docs_showcase_using_doxygen_index.html) | ✔️ |
+| 🔌 **Doxygen** integration with **Doxgen-awesome-css** | ❌ *(incoming)* |
+| 🕹️ [Interactive live demo](https://guillaumedua.github.io/awesome-code-element/showcase/live_demo/)  | ✔️ |
 
 ---
 
 <!-- TODO: iframe to live demo here ?    -->
 <!-- TODO: iframe showcase subset here ? -->
-<!-- TODO: integrate CS elements that best demonstrates standard usage -->
+<!-- TODO: integrate ace-cs elements that best demonstrates standard usage -->
+
+<!--
+- bindings
+- html structure/hierarchy
+- thanks to hljs, compiler-explorer
+-->
 
 ## Content
 
 ## CodeSection
 
-This is the main component : it renders code, and optionally execute it, then display the output in another panel.
+Ths is the module's main components. It represents a code example, which can optionally be executed. If so, its associated output is then displayed on another side panel.
+
+### HTML API
+
+```html
+<ace-code-section language="cpp" toggle_execution="true">
+#include <iostream>
+auto main() -> int {
+    auto i = 42;
+    std::cout << "some console output : " << i;
+    return i;
+}                       
+</ace-code-section>
+```
+
+Note that users do not have to care about invalid HTML in the provided code. For instance, in the example above, `<iostream>` does not generates invalid HTML, neither shift operators `<<`.
+
+### Javascript API
 
 ```js
 let code = `
