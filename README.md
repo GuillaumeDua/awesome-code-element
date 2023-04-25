@@ -1,23 +1,15 @@
-# **ACE** - HTML Awesome code element
+# **ACE** - HTML **A**wesome **C**ode **E**lement
 
-![](https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/docs/images/simple_test_output.JPG)
+<!-- TODO: replace with gif -->
 
-ACE is a `JS` modules which offers both `HTML` and `JS` APIs to integrate code examples in web pages and various documentations systems.  
+![overview](https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/docs/images/simple_test_output.JPG)
 
----
-
-Internaly uses [compiler-explorer API](https://github.com/compiler-explorer/compiler-explorer/blob/main/docs/API.md) for languages supports, code compilation and execution.
-
-- See [supported languages](https://godbolt.org/api/languages)
-- See [supported compilers](https://godbolt.org/api/compilers)
-
-Such code-sections behaviors and styles are highly customizables *(supports themes, dark-mode, styles/layouts, etc.)*.
+ACE is a `JS` modules which offers both `HTML` and `JS` APIs to integrate code samples in web pages and various documentations systems.  
+Supports **syntax highlighting**, **compilation**, and **execution** of a wide range of programming languages.
 
 ---
 
-## Showcases
-
-*The following showcases are CI-deployed.*
+## Showcases (CI-deployed)
 
 | showcase name | status |
 |-|-|
@@ -30,7 +22,6 @@ Such code-sections behaviors and styles are highly customizables *(supports them
 
 ---
 
-<!-- TODO: iframe to live demo here ?    -->
 <!-- TODO: iframe showcase subset here ? -->
 <!-- TODO: integrate ace-cs elements that best demonstrates standard usage -->
 
@@ -39,6 +30,15 @@ Such code-sections behaviors and styles are highly customizables *(supports them
 - html structure/hierarchy
 - thanks to hljs, compiler-explorer
 -->
+
+## How does it work ?
+
+Internaly, ace-cs module uses the [compiler-explorer API](https://github.com/compiler-explorer/compiler-explorer/blob/main/docs/API.md) for languages supports, code compilation and execution.
+
+- See [supported languages](https://godbolt.org/api/languages)
+- See [supported compilers](https://godbolt.org/api/compilers)
+
+Such code-sections **behaviors** and **styles** are highly customizables *(supports themes, dark-mode, styles/layouts, etc.)*.
 
 ## Content
 
@@ -67,7 +67,7 @@ Note that users do not have to care about invalid HTML in the provided code. For
 let code = `
 #include <iostream>
 auto main() -> int {
-    std::cout << 'Hello, there';
+    std::cout << 'Hello, there';~
     return 42;
 }
 `
