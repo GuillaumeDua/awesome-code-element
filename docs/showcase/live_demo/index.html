@@ -137,11 +137,26 @@ SOFTWARE.
                 languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plaintext']
             })
         </script>
+
+        <script>
+
+            let add_elem;
+
+            import("../../awesome-code-element/awesome-code-element.js")
+            .then(ace_cs => {
+                add_elem = () => {
+                    alert('toto')
+                }
+            })
+        </script>
+
     </head>
 <body>
 
     <awesome_code_element_test-utility-toolbar></awesome_code_element_test-utility-toolbar>
  
+    <button onclick="add_elem()">toto</button>
+
     <h2 style="color:purple">Live demo</h2>
     <div class="note">
         <h4>&#9432; Note:</h4>
