@@ -107,6 +107,7 @@
 // TODO: hljs: web-worker https://github.com/highlightjs/highlight.js/#using-web-workers
 // TODO: static member ref: this.constructor.<name> rather than classname redundancy
 // TODO: on page focus -> refresh toggle light/dark button icon
+// TODO? ace.details => ace_details => not exported (hidden details ?)
 
 export { ace as default }
 
@@ -1457,900 +1458,900 @@ ace.details.HTML_elements.status_display = class status_display extends HTMLElem
     get value(){ return this.#value }
     get message(){ return this.#message }
 }
-customElements.define(status_display.HTMLElement_tagName, status_display);
+customElements.define(ace.details.HTML_elements.status_display.HTMLElement_tagName, ace.details.HTML_elements.status_display);
 
 // ============================
 // details: code representation
 
-ace.details.code = class {
+ace.details.code = {}
+ace.details.code.policies = class policies {
 
-    static policies = class {
+    static language = class language_policies {
 
-        static language = class language_policies {
+        static define_ce_output_language = (() => {
+        // WIP
+            if (undefined === hljs)
+                throw new Error('language_policies.define_ce_output_language: only supports hljs')
 
-            static define_ce_output_language = (() => {
-            // WIP
-                if (undefined === hljs)
-                    throw new Error('language_policies.define_ce_output_language: only supports hljs')
-
-                const ce_output_language = () => {
-                    return {
-                        case_insensitive: true,
-                        keywords: '',
-                        contains: [
-                            hljs.COMMENT(
-                                '^# Compiler exited with result code', // begin
-                                '$', // end
-                                { relevance: 10 }
-                            )
-                        ]
-                    }
-                }
-                hljs.registerLanguage('ce_output', ce_output_language)
-                return hljs.getLanguage('ce_output')
-            })()
-
-            static detectors = class {
-
-                static check_concept = function(argument) {
-                    return argument
-                        && argument.is_valid_language
-                        && argument.get_language
-                        && argument.detect_language
-                }
-
-                // available implementations
-                static use_none = class {
-
-                    get [Symbol.toStringTag](){ return 'ace.details.code.policies.language.detectors.use_none' }
-
-                    static is_valid_language(language){ return true; }
-                    static get_language_name(maybe_alias){ return maybe_alias; }
-                    static get_language(element){
-                        return 'n/a'
-                    }
-                    static detect_language(text){
-                        return {
-                            language: 'n/a',
-                            relevance: 10,
-                            value: text
-                        }
-                    }
-                }
-                static use_hljs = class use_hljs_language_detector_policy {
-
-                    get [Symbol.toStringTag](){ return 'ace.details.code.policies.language.detectors.use_hljs' }
-
-                    static is_valid_language(language){
-                        return hljs.getLanguage(language) !== undefined
-                    }
-                    static get_language_name(maybe_alias){
-                        const language = hljs.getLanguage(maybe_alias)
-                        return language ? language.name : undefined
-                    }
-                    static get_language(element){
-
-                        if (element === undefined || !(element instanceof HTMLElement))
-                            throw new Error(`ace.language_policies.get_language(element): bad input`)
-
-                        const result = element.classList.toString().match(/language-(\w+)/, '') // expected: "hljs language-[name]"
-                        return Boolean(result && result.length === 1)
-                            ? (result[1] === "undefined" ? undefined : result[1])
-                            : undefined // first capture group
-                    }
-                    static detect_language(text){
-                        if (text === undefined || !(typeof text === 'string'))
-                            throw new Error(`ace.language_policies.detect_language(text): bad input`)
-                        const result = hljs.highlightAuto(text) ?? {}
-                        return {
-                            language: result.language,
-                            relevance: result.relevance,
-                            value: result.value
-                        }
-                    }
+            const ce_output_language = () => {
+                return {
+                    case_insensitive: true,
+                    keywords: '',
+                    contains: [
+                        hljs.COMMENT(
+                            '^# Compiler exited with result code', // begin
+                            '$', // end
+                            { relevance: 10 }
+                        )
+                    ]
                 }
             }
+            hljs.registerLanguage('ce_output', ce_output_language)
+            return hljs.getLanguage('ce_output')
+        })()
 
-            static highlighters = class {
-                static check_concept = function(argument) {
-                    return argument
-                        && argument.highlight
-                }
-
-                // available implementations
-                static use_none = class {
-
-                    get [Symbol.toStringTag](){ return 'ace.details.code.policies.language.highlighters.use_none' }
-
-                    static highlight({ code_element, language }){
-                        return {
-                            relevance: 10,
-                            language: language ?? 'n/a',
-                            value: code_element.innerHTML
-                        }
-                    }
-                    static initialize_ce_output_language(){}
-                }
-                static use_hljs = class use_hljs {
-
-                    get [Symbol.toStringTag](){ return 'ace.details.code.policies.language.highlighters.use_hljs' }
-
-                    static #highlight_dry_run({ code_element, language }){
-
-                        if (!hljs)
-                            throw new Error(`${this}.highlight requires hljs (the HighlightJS library), which is missing`)
-
-                        if (!code_element || !(code_element instanceof HTMLElement))
-                            throw new Error('use_hljs.highlight: invalid argument. Expect [code_element] to be a valid HTMLElement')
-                        if (language && !language_policies.detectors.use_hljs.is_valid_language(language)) {
-                            console.warn(`use_hljs.highlight: invalid language [${language}], attempting fallback detection`)
-                            language = undefined
-                        }
-                        
-                        const result = language
-                            ? hljs.highlight(code_element.textContent, { language: language })
-                            : hljs.highlightAuto(code_element.textContent)
-                        if (result.relevance < 5 && code_element.textContent.length > 0)
-                            console.warn(
-                                `use_hljs.highlight: poor language relevance [${result.relevance}/10] for language [${result.language}]\n`,
-                                `Perhaps the code is too small ? (${code_element.textContent.length} characters):`, result
-                            )
-                        return result
-                    }
-                    static highlight({ code_element, language }){
-
-                        const result = use_hljs.#highlight_dry_run({
-                            code_element: code_element,
-                            language: language
-                        })
-                        code_element.innerHTML = result.value
-            
-                        language = language_policies.detectors.use_hljs.get_language_name(result.language)
-                        const update_classList = () => {
-                            code_element.classList = [...code_element.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
-                            code_element.classList.add(`hljs`)
-                            code_element.classList.add(`language-${language}`) // TODO:useless?
-                        }
-                        update_classList()
-                        return result
-                    }
-                }
-            }
-        }
-        static code_parser = class code_parsing_policies {
+        static detectors = class {
 
             static check_concept = function(argument) {
                 return argument
-                    && argument.parse
-            }
-
-            static result_type = class {
-                constructor(arg){ Object.assign(this,arg) }
-                
-                raw        = undefined
-                to_display = undefined
-                to_execute = undefined
-                ce_options = {}
+                    && argument.is_valid_language
+                    && argument.get_language
+                    && argument.detect_language
             }
 
             // available implementations
             static use_none = class {
 
-                get [Symbol.toStringTag](){ return 'ace.details.code.policies.code_parser.use_none' }
+                get [Symbol.toStringTag](){ return 'ace.details.code.policies.language.detectors.use_none' }
 
-                static parse({ code }){
-                    return code_parsing_policies.result_type({
-                        raw: code,
-                        to_display: code,
-                        to_execute: code
-                    })
+                static is_valid_language(language){ return true; }
+                static get_language_name(maybe_alias){ return maybe_alias; }
+                static get_language(element){
+                    return 'n/a'
+                }
+                static detect_language(text){
+                    return {
+                        language: 'n/a',
+                        relevance: 10,
+                        value: text
+                    }
                 }
             }
-            static use_ace_metadata_parser = class ace_metadata_parser {
-            // TODO: @awesome-code-element::keep : keep tag anyway as comment (for documentation purpose)
+            static use_hljs = class use_hljs_language_detector_policy {
 
-            // @awesome-code-element::CE={
-            //  "language"            : "c++",
-            //  "compiler_id"         : "clang1400",
-            //  "compilation_options" : "-O2 -std=c++20",
-            //  "libs"                : [ {"id": "fmt", "version": "trunk"} ],
-            //  "includes_transformation" : [
-            //     // <documentation> <replacement>
-            //        [ "csl/",       "https://raw.githubusercontent.com/GuillaumeDua/CppShelf/main/includes/ag/csl/" ],
-            //        [ "toto",       "iostream" ]
-            //  ],
-            //  "add_in_doc_execution" : true
-            //  }
-            // @awesome-code-element::skip::block::begin,end : range to [skip] (no parsing, removed from documentation & execution)
-            // @awesome-code-element::skip::line             : line  to [skip]
-            // @awesome-code-element::show::block::begin,end : range to [show] (documentation side only. The rest is still part of the execution code)
-            //                                                      if there is at least one occurence, the rest is by default hidden
-            // @awesome-code-element::show::line             : line  to [show]
-            //                                                      if there is at least one occurence, the rest is by default hidden
+                get [Symbol.toStringTag](){ return 'ace.details.code.policies.language.detectors.use_hljs' }
 
-                static tag = '// @ace'
-                static parse({ code }) {
+                static is_valid_language(language){
+                    return hljs.getLanguage(language) !== undefined
+                }
+                static get_language_name(maybe_alias){
+                    const language = hljs.getLanguage(maybe_alias)
+                    return language ? language.name : undefined
+                }
+                static get_language(element){
 
-                    if (code === undefined)
-                        throw new Error('ace.details.code.code_parsing_policies.ace_metadata_parser.parse: invalid argument')
+                    if (element === undefined || !(element instanceof HTMLElement))
+                        throw new Error(`ace.language_policies.get_language(element): bad input`)
 
-                    let result = code_parsing_policies.result_type({ raw: code })
-                        result = ace_metadata_parser.#parse_impl({ result: result})
-                        result = ace_metadata_parser.#apply_ce_transformations({ result: result })
+                    const result = element.classList.toString().match(/language-(\w+)/, '') // expected: "hljs language-[name]"
+                    return Boolean(result && result.length === 1)
+                        ? (result[1] === "undefined" ? undefined : result[1])
+                        : undefined // first capture group
+                }
+                static detect_language(text){
+                    if (text === undefined || !(typeof text === 'string'))
+                        throw new Error(`ace.language_policies.detect_language(text): bad input`)
+                    const result = hljs.highlightAuto(text) ?? {}
+                    return {
+                        language: result.language,
+                        relevance: result.relevance,
+                        value: result.value
+                    }
+                }
+            }
+        }
 
-                    // TODO: (elsewhere!!!) merge local with global
-                    // apply default configuration for a given - non-mandatory - language
-                    // Note: global configuration can be overrided locally in the configuration
-                    // if (ace.API.configuration.value.CE.has(language))
-                    //     this.ce_options = ace.API.configuration.value.CE.get(language)
+        static highlighters = class {
+            static check_concept = function(argument) {
+                return argument
+                    && argument.highlight
+            }
 
+            // available implementations
+            static use_none = class {
+
+                get [Symbol.toStringTag](){ return 'ace.details.code.policies.language.highlighters.use_none' }
+
+                static highlight({ code_element, language }){
+                    return {
+                        relevance: 10,
+                        language: language ?? 'n/a',
+                        value: code_element.innerHTML
+                    }
+                }
+                static initialize_ce_output_language(){}
+            }
+            static use_hljs = class use_hljs {
+
+                get [Symbol.toStringTag](){ return 'ace.details.code.policies.language.highlighters.use_hljs' }
+
+                static #highlight_dry_run({ code_element, language }){
+
+                    if (!hljs)
+                        throw new Error(`${this}.highlight requires hljs (the HighlightJS library), which is missing`)
+
+                    if (!code_element || !(code_element instanceof HTMLElement))
+                        throw new Error('use_hljs.highlight: invalid argument. Expect [code_element] to be a valid HTMLElement')
+                    if (language && !language_policies.detectors.use_hljs.is_valid_language(language)) {
+                        console.warn(`use_hljs.highlight: invalid language [${language}], attempting fallback detection`)
+                        language = undefined
+                    }
+                    
+                    const result = language
+                        ? hljs.highlight(code_element.textContent, { language: language })
+                        : hljs.highlightAuto(code_element.textContent)
+                    if (result.relevance < 5 && code_element.textContent.length > 0)
+                        console.warn(
+                            `use_hljs.highlight: poor language relevance [${result.relevance}/10] for language [${result.language}]\n`,
+                            `Perhaps the code is too small ? (${code_element.textContent.length} characters):`, result
+                        )
                     return result
                 }
-                static #parse_impl({ result }) {
+                static highlight({ code_element, language }){
 
-                    let code_content = result.raw
-            
-                    {   // CE options
-                        const regex_match_json_pattern = '\{(?:[^{}]|(?:\{[^{}]*\}))*\}'
-                        const regexp = new RegExp(`^\\s*?${ace_metadata_parser.tag}::CE=(${regex_match_json_pattern})\s*?\n?`, 'gm')
-                        const matches = [...result.raw.matchAll(regexp)] // expect exactly 1 match
-                        if (matches.length > 1)
-                            console.warn(
-                                `ace.details.code.code_parsing_policies.ace_metadata_parser.parse: found multiples CE configurations\n`,
-                                ...matches.map((value) => value.at(0))
-                            )
-                
-                        // reversed twiced array: because we are altering the original `code_content` here, yet prevalence matters
-                        matches.reverse().map((match) => {
-                            const value = match[1].replaceAll(
-                                new RegExp(`^\\s*?//`, 'gm'),
-                                ''
-                            )
-                            // remove from original content
-                            code_content = code_content.slice(0, match.index)
-                                        + code_content.slice(match.index + match[0].length)
-                            return value
-                        }).reverse().forEach((value) => {
-
-                            // Merge CE configuration. Local can override global.
-                            result.ce_options = {
-                                ...(result.ce_options || {}),
-                                ...JSON.parse(value)
-                            }
-                        })
+                    const result = use_hljs.#highlight_dry_run({
+                        code_element: code_element,
+                        language: language
+                    })
+                    code_element.innerHTML = result.value
+        
+                    language = language_policies.detectors.use_hljs.get_language_name(result.language)
+                    const update_classList = () => {
+                        code_element.classList = [...code_element.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
+                        code_element.classList.add(`hljs`)
+                        code_element.classList.add(`language-${language}`) // TODO:useless?
                     }
-            
-                    // skip block, line (documentation & execution sides)
-                    // block
-                    code_content = code_content.replaceAll(
-                        new RegExp(`^\\s*?${ace_metadata_parser.tag}::skip::block::begin\n(.*?\n)*\\s*?${ace_metadata_parser.tag}::skip::block::end\\s*?$`, 'gm'),
-                        ''
-                    )
-                    // line
-                    code_content = code_content.replaceAll(
-                        new RegExp(`^.*?\\s+${ace_metadata_parser.tag}::skip::line\\s*$`, 'gm'),
-                        ''
-                    )
-            
-                    // show block, line (documentation side)
-                    const code_only_show = (() => {
-                        const regex_show_block  = `(^\\s*?${ace_metadata_parser.tag}::show::block::begin\n(?<block>(^.*?$\n)+)\\s*${ace_metadata_parser.tag}::show::block::end\n?)`
-                        const regex_show_line   = `(^(?<line>.*?)\\s*${ace_metadata_parser.tag}::show::line\\s*?$)`
-                        const regexp = new RegExp(`${regex_show_block}|${regex_show_line}`, 'gm')
-                        const matches = [...code_content.matchAll(regexp)]
-                        return matches
-                            .reverse()
-                            .map((match) => {
-                                const result = match.groups.block !== undefined
-                                    ? match.groups.block
-                                    : match.groups.line
-                                // remove from original content
-                                // code_content = code_content.replace(match[0], result) // really slower than 2 reverse + 2 substring ?
-                                code_content = code_content.substring(0, match.index) + result + code_content.substring(match.index + match[0].length)
-                                return result
-                            })
-                            .reverse()
-                            .join('\n')
-                    })()
-            
-                    result.to_display = (code_only_show !== "" ? code_only_show : code_content)
-                    result.to_execute = code_content
-
-                    return result
-                }
-                static #apply_ce_transformations({ result }) {
-            
-                    // includes_transformation
-                    if (result.ce_options && result.ce_options.includes_transformation) {
-                        result.ce_options.includes_transformation.forEach((value) => {
-                            // replace includes
-                            const regex = new RegExp(`^(\\s*?\\#.*?[\\"|\\<"].*?)(${value[0]})(.*?[\\"|\\>"])`, 'gm')
-                            result.to_execute = result.to_execute.replace(regex, `$1${value[1]}$3`)
-                        })
-                    }
+                    update_classList()
                     return result
                 }
             }
         }
     }
+    static code_parsers = class code_parsing_policies {
 
-    static mvc_details = class code_mvc_details {
-    // acquire { model, view } from an HTMLElement or text
-    //  model : inner text considered as plain code: any invalid nodes injected by the HTML rendering are removed
-    //  view  : either an `HTMLCodeElement` (expected layout), a given HTMLElement (wrap mode) or if the later contains valid HTML elements
-        
-        get [Symbol.toStringTag](){ return 'ace.details.code.mvc_details' }
+        static check_concept = function(argument) {
+            return argument
+                && argument.parse
+        }
 
-        static html_parser = class html_parser {
+        static result_type = class {
+            constructor(arg){ Object.assign(this,arg) }
+            
+            raw        = undefined
+            to_display = undefined
+            to_execute = undefined
+            ce_options = {}
+        }
 
-            get [Symbol.toStringTag](){ return 'code.mvc_details.html_parser' }
+        // available implementations
+        static use_none = class {
 
-            static is_valid_HTMLElement({ element }){
-                if (element === undefined)
-                    throw new Error(`${this}.is_valid_HTMLElement: invalid argument`)
-                return element instanceof HTMLElement && !(element instanceof HTMLUnknownElement)
+            get [Symbol.toStringTag](){ return 'ace.details.code.policies.code_parser.use_none' }
+
+            static parse({ code }){
+                return code_parsing_policies.result_type({
+                    raw: code,
+                    to_display: code,
+                    to_execute: code
+                })
             }
-            static #valid_tagName_cache = new Map
-            static is_valid_tagName({ tagName }) {
-                if (element === undefined)
-                    throw new Error(`${this}.html_parser.is_valid_tagName: invalid argument`)
-                if (!(typeof tagName === 'string') && !(tagName instanceof String))
-                    throw new Error('html_parser.is_valid_tagName: invalid argument')
+        }
+        static use_ace_metadata_parser = class ace_metadata_parser {
+        // TODO: @awesome-code-element::keep : keep tag anyway as comment (for documentation purpose)
 
-                return (() => {
-                    let value = this.#valid_tagName_cache.get(tagName)
-                    if (!value) {
-                        value = html_parser.is_valid_HTMLElement({ element: document.createElement(tagName) })
-                        this.#valid_tagName_cache.set(tagName, value)
-                    }
-                    return value
-                })()
-            }
-            static count_valid_childrens({ element, is_recursive = false }) {
-                if (element === undefined)
-                    throw new Error(`${this}.html_parser.count_valid_childrens: invalid argument`)
-                return Array
-                    .from(element.children)
-                    .map((element) => {
-                        return 0
-                            + html_parser.is_valid_HTMLElement({ element: element })
-                            + (is_recursive ? html_parser.count_valid_childrens({ element: element, is_recursive: is_recursive }) : 0)
-                    })
-                    .reduce((total, current) => total + current, 0)
-            }
-            static to_code({ elements }) {
-            // expect Array.from(node.childNodes)
-            // TODO?: faster approach?: use regex on outerHTML: \<(?'closing'\/?)(?'tagname'\w+\-?)+.*?\>
-            // replace invalid HTMLElement by their localName as text
-                if (elements === undefined)
-                    throw new Error(`${this}.html_parser.to_code: invalid argument`)
-                return elements
-                    .map(element => {
-                        switch (element.nodeType) {
-                            case Node.TEXT_NODE:
-                                return element.textContent
-                            case Node.ELEMENT_NODE:
-                                if (html_parser.is_valid_HTMLElement({ element: element }))
-                                    return html_parser.to_code({ elements: Array.from(element.childNodes) })
-                                // invalid tagname are kept as text, to preserve include semantic.
-                                //  e.g: `<iostream>` in `#include <iostream>`
-                                return `<${element.localName}>${html_parser.to_code({ elements: Array.from(element.childNodes) })}`
-                            case Node.COMMENT_NODE:
-                            case Node.CDATA_SECTION_NODE:
-                            default:
-                                console.debug(`${this}.parser.to_code: unhandled tags [comment, cdata, etc.]`)
-                                return ''                        
-                        }
-                    })
-                    .join('')
-            }
-            static cleanup({ element }){
-            // recursively replaces invalid childrens element by their tagname as text
-                if (element === undefined)
-                    throw new Error(`${this}..html_parser.cleanup: invalid argument`)
+        // @awesome-code-element::CE={
+        //  "language"            : "c++",
+        //  "compiler_id"         : "clang1400",
+        //  "compilation_options" : "-O2 -std=c++20",
+        //  "libs"                : [ {"id": "fmt", "version": "trunk"} ],
+        //  "includes_transformation" : [
+        //     // <documentation> <replacement>
+        //        [ "csl/",       "https://raw.githubusercontent.com/GuillaumeDua/CppShelf/main/includes/ag/csl/" ],
+        //        [ "toto",       "iostream" ]
+        //  ],
+        //  "add_in_doc_execution" : true
+        //  }
+        // @awesome-code-element::skip::block::begin,end : range to [skip] (no parsing, removed from documentation & execution)
+        // @awesome-code-element::skip::line             : line  to [skip]
+        // @awesome-code-element::show::block::begin,end : range to [show] (documentation side only. The rest is still part of the execution code)
+        //                                                      if there is at least one occurence, the rest is by default hidden
+        // @awesome-code-element::show::line             : line  to [show]
+        //                                                      if there is at least one occurence, the rest is by default hidden
 
-                let childNodes = Array.from(element.childNodes)
-                childNodes
-                    .filter(element => element.nodeType === HTMLElement.ELEMENT_NODE)
-                    .forEach(element => {
-                        html_parser.#cleanup_impl({ element: element })
-                    })
-                return element
-            }
-            static #cleanup_impl({ element }){
-            // recursively replaces invalid element by their tagname as text
+            static tag = '// @ace'
+            static parse({ code }) {
 
-                if (element === undefined)
-                    throw new Error(`${this}.html_parser.cleanup_impl: invalid argument`)
+                if (code === undefined)
+                    throw new Error('ace.details.code.code_parsing_policies.ace_metadata_parser.parse: invalid argument')
 
-                let childNodes = Array.from(element.childNodes)                                         // preserve reference/offset integrity
-                if (!html_parser.is_valid_HTMLElement({ element: element })) {
-                    const nodes_attr_as_text = `${element.attributes.length ? '/' : ''}${Array.from(element.attributes).map(value => value.name).join('/')}`
-                    const node_text          = `<${element.localName}${nodes_attr_as_text}>`            // #include <toto/b.hpp> : `toto` is the invalid tag, `b.hpp` its attribute
-                    element.previousSibling.appendData(node_text)                                       // replace by text
-                    childNodes.forEach(node => element.parentNode.insertBefore(node, element))          // transfert childrensNodes to parent
-                    element = element.parentNode.removeChild(element)                                   // remove the element
-                }
-                childNodes
-                    .filter(element => element.nodeType === HTMLElement.ELEMENT_NODE)
-                    .forEach(element => {
-                        html_parser.#cleanup_impl({ element: element })
-                    })
-            }
-        };
+                let result = code_parsing_policies.result_type({ raw: code })
+                    result = ace_metadata_parser.#parse_impl({ result: result})
+                    result = ace_metadata_parser.#apply_ce_transformations({ result: result })
 
-        static factory = class factory {
+                // TODO: (elsewhere!!!) merge local with global
+                // apply default configuration for a given - non-mandatory - language
+                // Note: global configuration can be overrided locally in the configuration
+                // if (ace.API.configuration.value.CE.has(language))
+                //     this.ce_options = ace.API.configuration.value.CE.get(language)
 
-            static result_type = class {
-
-                constructor(argument){
-        
-                    Object.assign(this, argument)
-                    Object.seal(this)
-                }
-        
-                model = undefined
-                view = { top_parent: undefined, code_container: undefined }
-        
-                is_mutable = false
-            }
-
-            static is_expected_layout(element){
-                if (!(element instanceof HTMLElement))
-                    throw new Error('code.mvc_details.factory.is_expected_layout: invalid argument')
-                return element.localName === 'code'
-            }
-
-            static build_from(argument) {
-
-                if (argument instanceof code_mvc_details.factory.result_type)
-                    return argument
-
-                argument ??= ''
-
-                let result = (() => {
-
-                    if (undefined === argument
-                    ||  argument.text !== undefined)
-                        return code_mvc_details.factory.#build_from_text(argument.text)
-                    if (argument.element !== undefined)
-                        return code_mvc_details.factory.#build_from_element(argument.element)
-                    if (argument.nodes !== undefined)
-                        return code_mvc_details.factory.#build_from_nodes(argument.nodes)
-
-                    return code_mvc_details.factory.#build_from(argument)
-                })()
-                    result.model = (result.model ?? '')
-                        .replace(/^\s*/, '')
-                        .replace(/\s*$/, '') // remove enclosing white-spaces
-                    if (result.is_mutable)
-                        result.view.textContent = result.model
                 return result
             }
+            static #parse_impl({ result }) {
 
-            static #build_from(argument){
+                let code_content = result.raw
+        
+                {   // CE options
+                    const regex_match_json_pattern = '\{(?:[^{}]|(?:\{[^{}]*\}))*\}'
+                    const regexp = new RegExp(`^\\s*?${ace_metadata_parser.tag}::CE=(${regex_match_json_pattern})\s*?\n?`, 'gm')
+                    const matches = [...result.raw.matchAll(regexp)] // expect exactly 1 match
+                    if (matches.length > 1)
+                        console.warn(
+                            `ace.details.code.code_parsing_policies.ace_metadata_parser.parse: found multiples CE configurations\n`,
+                            ...matches.map((value) => value.at(0))
+                        )
+            
+                    // reversed twiced array: because we are altering the original `code_content` here, yet prevalence matters
+                    matches.reverse().map((match) => {
+                        const value = match[1].replaceAll(
+                            new RegExp(`^\\s*?//`, 'gm'),
+                            ''
+                        )
+                        // remove from original content
+                        code_content = code_content.slice(0, match.index)
+                                    + code_content.slice(match.index + match[0].length)
+                        return value
+                    }).reverse().forEach((value) => {
 
-                if (argument instanceof HTMLElement)
-                    return code_mvc_details.factory.#build_from_element(argument)
-                else if (argument instanceof Array
-                    && argument.reduce((index, arg) => undefined !== arg.nodeType, true))
-                {
-                    let only_one_valid_element = (() => {
-                        const no_ws_elements = argument.filter((element) => !(element.nodeType === Node.TEXT_NODE && /^\s+$/g.test(element.textContent)))
-                        return no_ws_elements.length === 1 && code_mvc_details.html_parser.is_valid_HTMLElement({ element: no_ws_elements[0] })
-                            ? no_ws_elements[0]
-                            : undefined
-                    })()
-                    return only_one_valid_element
-                        ? code_mvc_details.factory.#build_from_element(only_one_valid_element)
-                        : code_mvc_details.factory.#build_from_nodes(argument)
+                        // Merge CE configuration. Local can override global.
+                        result.ce_options = {
+                            ...(result.ce_options || {}),
+                            ...JSON.parse(value)
+                        }
+                    })
                 }
-                else if (argument.nodeType === document.TEXT_NODE)
-                    return code_mvc_details.factory.#build_from_text(argument.textContent)
-                else
-                    return code_mvc_details.factory.#build_from_text(argument.toString())
-            }
-            static #build_from_text(value){
-
-                return new code_mvc_details.factory.result_type({
-                    is_mutable : true,
-                    model : value ?? '',
-                    view : (() => {
-                        let code_node = document.createElement('code')
-                            code_node.textContent = value
-                        return code_node
-                    })()
-                })
-            }
-            static #build_from_element(element){
-
-                if (!(element instanceof HTMLElement))
-                    throw new Error('code.mvc_details.factory.#build_from_element: invalid argument')
-
-                const is_mutable = !Boolean(code_mvc_details.html_parser.count_valid_childrens({ element: element, is_recursive: true }))
-
-                return new code_mvc_details.factory.result_type({
-                    is_mutable : is_mutable,
-                    model : (() => {
-                        element = code_mvc_details.html_parser.cleanup({ element: element })
-                        const result = code_mvc_details.html_parser.to_code({ elements: Array.from(element.childNodes) })
-                        element.innerHTML = ""
-                        return result
-                    })(),
-                    view : element
-                })
-            }
-            static #build_from_nodes(elements){
-            // expected: node.childNodes, or a filtered subset of Array.from(node.childNodes)
-
-                if (elements instanceof NodeList)
-                    elements = Array.from(elements)
-
-                if (!(
-                    (elements instanceof Array)
-                &&  elements.length !== 0
-                &&  elements.reduce((index, arg) => undefined !== arg.nodeType, true)
-                ))  throw new Error('code_mvc_details.factory.#build_from_nodes(array): invalid argument')
-
-                // const parent = (() => { // have common parent
-                //     const parent = elements[0].parentNode
-                //     if (elements.reduce((index, arg) => arg.parentNode !== parent, true))
-                //         throw new Error('code_mvc_details.factory.#build_from_nodes(array): nodes does not have a common parentNode')
-                //     return parent
-                // })()
-
-                const code_content = (() => {
-                    
-                    elements.forEach((element) => code_mvc_details.html_parser.cleanup({ element: element }))
-                    return elements
-                        .map((element) => { 
-                            return code_mvc_details.html_parser.to_code({
-                                elements: [ element ]
-                            })
+        
+                // skip block, line (documentation & execution sides)
+                // block
+                code_content = code_content.replaceAll(
+                    new RegExp(`^\\s*?${ace_metadata_parser.tag}::skip::block::begin\n(.*?\n)*\\s*?${ace_metadata_parser.tag}::skip::block::end\\s*?$`, 'gm'),
+                    ''
+                )
+                // line
+                code_content = code_content.replaceAll(
+                    new RegExp(`^.*?\\s+${ace_metadata_parser.tag}::skip::line\\s*$`, 'gm'),
+                    ''
+                )
+        
+                // show block, line (documentation side)
+                const code_only_show = (() => {
+                    const regex_show_block  = `(^\\s*?${ace_metadata_parser.tag}::show::block::begin\n(?<block>(^.*?$\n)+)\\s*${ace_metadata_parser.tag}::show::block::end\n?)`
+                    const regex_show_line   = `(^(?<line>.*?)\\s*${ace_metadata_parser.tag}::show::line\\s*?$)`
+                    const regexp = new RegExp(`${regex_show_block}|${regex_show_line}`, 'gm')
+                    const matches = [...code_content.matchAll(regexp)]
+                    return matches
+                        .reverse()
+                        .map((match) => {
+                            const result = match.groups.block !== undefined
+                                ? match.groups.block
+                                : match.groups.line
+                            // remove from original content
+                            // code_content = code_content.replace(match[0], result) // really slower than 2 reverse + 2 substring ?
+                            code_content = code_content.substring(0, match.index) + result + code_content.substring(match.index + match[0].length)
+                            return result
                         })
-                        .join('')
+                        .reverse()
+                        .join('\n')
                 })()
-                elements.forEach((element) => element.parentElement.removeChild(element))
-                // return new code_mvc_details.factory.result_type({
-                //     is_mutable : false,
-                //     model : code_content,
-                //     view : { top_parent: element, code_container: element }
-                // })
-                return code_mvc_details.factory.#build_from_text(code_content)
+        
+                result.to_display = (code_only_show !== "" ? code_only_show : code_content)
+                result.to_execute = code_content
+
+                return result
+            }
+            static #apply_ce_transformations({ result }) {
+        
+                // includes_transformation
+                if (result.ce_options && result.ce_options.includes_transformation) {
+                    result.ce_options.includes_transformation.forEach((value) => {
+                        // replace includes
+                        const regex = new RegExp(`^(\\s*?\\#.*?[\\"|\\<"].*?)(${value[0]})(.*?[\\"|\\>"])`, 'gm')
+                        result.to_execute = result.to_execute.replace(regex, `$1${value[1]}$3`)
+                    })
+                }
+                return result
             }
         }
     }
+}
+ace.details.code.mvc_details = class code_mvc_details {
+// acquire { model, view } from an HTMLElement or text
+//  model : inner text considered as plain code: any invalid nodes injected by the HTML rendering are removed
+//  view  : either an `HTMLCodeElement` (expected layout), a given HTMLElement (wrap mode) or if the later contains valid HTML elements
+    
+    get [Symbol.toStringTag](){ return 'ace.details.code.mvc_details' }
 
-    static mvc = class code_mvc {
-    // enhanced { model, view, controler } to represent some code as a (possibly-existing) html-element
+    static html_parser = class html_parser {
 
-        get [Symbol.toStringTag](){ return 'ace.code.mvc' }
+        get [Symbol.toStringTag](){ return 'code.mvc_details.html_parser' }
 
-        // API: accessors
-        is_mutable = undefined // is_owning
-        view = undefined
-        model = undefined
-        controler = undefined
-
-        // model
-        #model_parser = undefined
-        #model = undefined
-        get model_details(){
-            this.#model_update_ce_options()
-            return this.#model
+        static is_valid_HTMLElement({ element }){
+            if (element === undefined)
+                throw new Error(`${this}.is_valid_HTMLElement: invalid argument`)
+            return element instanceof HTMLElement && !(element instanceof HTMLUnknownElement)
         }
-        #model_update_ce_options(){
-        // TODO: decouple this and is_executable
-        // TODO: model change -> same language -> keep ce_options
-            this?.controler?.is_executable // call getter
-        }
+        static #valid_tagName_cache = new Map
+        static is_valid_tagName({ tagName }) {
+            if (element === undefined)
+                throw new Error(`${this}.html_parser.is_valid_tagName: invalid argument`)
+            if (!(typeof tagName === 'string') && !(tagName instanceof String))
+                throw new Error('html_parser.is_valid_tagName: invalid argument')
 
-        static controler_type = class {
-
-            get [Symbol.toStringTag](){ return `code_mvc.controler_type` }
-
-            #target = undefined
-            toggle_parsing = undefined
-
-            constructor({ target, language_policy, options }){
-                
-                if (!(target instanceof code_mvc))
-                    throw new Error('code_mvc.controler_type.constructor: invalid argument (invalid type for argument `target`)')
-
-                this.#target = target
-                this.#language_policies = language_policy
-
-                const language_argument = options.language ?? this.#target.model_details.ce_options.language
-                this.#language = this.#language_policies.detector.get_language_name(language_argument)
-                if (this.#language === undefined && language_argument)
-                    console.warn(`code_mvc.controler_type.constructor: invalid user-provided language: [${language_argument}]`)
-
-                this.toggle_language_detection = options.language // if a user-provided valid language exists, then toggle_language-deteciton is set to false
-                    ? !Boolean(this.#language)
-                    : options.toggle_language_detection
-
-                this.#initialize_behaviors(options)
-            }
-            #initialize_behaviors(options){
-            // [ const | mutable ] specific behaviors
-            
-                if (!this.#target.is_mutable) {
-                    console.warn(
-                        'ace.details.code.constructor: invalid language_policies.highlighter for non-mutable/const code mvc\n',
-                        `was [${this.language_policies.highlighter.name}], switching to fallback [language_policies.highlighters.use_none]`
-                    )
-                    this.language_policies.highlighter = language_policies.highlighters.use_none
+            return (() => {
+                let value = this.#valid_tagName_cache.get(tagName)
+                if (!value) {
+                    value = html_parser.is_valid_HTMLElement({ element: document.createElement(tagName) })
+                    this.#valid_tagName_cache.set(tagName, value)
                 }
-        
-                if (!language_policies.detectors.check_concept(this.language_policies.detector))
-                    throw new Error('ace.details.code.constructor: invalid argument (language_policy.detector)')
-                if (!language_policies.highlighters.check_concept(this.language_policies.highlighter))
-                    throw new Error('ace.details.code.constructor: invalid argument (language_policy.highlighter)')
-                
-                this.#toggle_parsing = (() => {
-        
-                    Object.defineProperty(this, 'toggle_parsing', {
-                        get: () => { return Boolean(this.#toggle_parsing) },
-                        set: this.#target.is_mutable
-                            ? (value) => {
-                                value = ace.details.utility.types.is_string(value)
-                                    ? Boolean(value === 'true')
-                                    : Boolean(value)
-                                if (value === this.#toggle_parsing)
-                                    return
-                                this.#toggle_parsing = value
-                                this.#target.update_view()
-                            }
-                            : () => { console.warn('code.set(toggle_parsing): no-op: not editable') }
-                    })
-                    return this.#target.is_mutable
-                        ? Boolean(options.toggle_parsing) ?? Boolean(this.#target.model_details.ce_options)
-                        : false
-                })()
-            }
-
-            // policies, behaviors
-            get language_policies(){ return this.#language_policies }
-            #language_policies = {
-                detector: undefined,
-                highlighter: undefined
-            }
-
-            // language
-            #language = undefined
-            set #language_impl(value){
-
-                this.#language = this.#language_policies.detector.get_language_name(value)
-                if (this.#target.is_mutable &&
-                    this.#language_policies.detector.get_language(this.#target.view) !== this.#language
-                )
-                    this.#language_policies.highlighter.highlight({
-                        code_element: this.#target.view,
-                        language: this.#language
-                    })
-                this.#target.#model_update_ce_options()
-            }
-            get language() {
-
-                let value = (() => {
-                    if (this.language_policies.detector.is_valid_language(this.#language))
-                        return this.#language
-
-                    console.info(`code_mvc.controler.get(language) : invalid language [${this.#language}], attempting fallback detections`)
-                    return this.language_policies.detector.get_language(this.#target.view)
-                        ?? this.language_policies.detector.detect_language(this.#target.#model.to_display).language
-                })()
-                value = this.#language_policies.detector.get_language_name(value)
-
-                // autodetect
-                if (this.toggle_language_detection)
-                    this.#language_impl = value
-
-                return value
-            }
-            set language(value) {
-
-                const argument = (() => {
-                    const language_name = this.language_policies.detector.get_language_name(value)
-                    const is_valid_input = Boolean(language_name)
-                    return {
-                        language_name: language_name,
-                        is_valid: is_valid_input
-                    }
-                })()
-
-                if (this.#language === argument.language_name && argument.is_valid)
-                    return
-
-                this.toggle_language_detection = !argument.is_valid;
-                if (!argument.is_valid)
-                    console.warn(`ace.details.code.language(set): invalid input [${value}], attempting fallback detection.`)
-
-                const result = this.#target.is_mutable
-                    ? this.#language_policies.highlighter.highlight({
-                        code_element: this.#target.view,
-                        language: this.#toggle_language_detection ? undefined : argument.language_name
-                    })
-                    : this.#language_policies.detector.detect_language(this.#target.model)
-
-                if (undefined === argument.language_name
-                || this.#language !== argument.language_name
-                ){
-                    this.#language_impl = result.language // note: possibly not equal to `value`
-                    this.toggle_language_detection = Boolean(result.relevance <= 5)
-                }
-            }
-
-            // language_detection
-            #toggle_parsing = undefined
-            #toggle_language_detection = true
-            get toggle_language_detection() {
-                return  this.#toggle_language_detection
-                    || !this.language_policies.detector.is_valid_language(this.#language)
-            }
-            set toggle_language_detection(value) {
-                value = ace.details.utility.types.is_string(value)
-                    ? Boolean(value === 'true')
-                    : Boolean(value)
-                this.#toggle_language_detection = value
-            }
-
-            // is_executable
-            get is_executable() {
-
-                if (!this.#target.#model.to_execute)
-                    return false
-
-                const language = this.#language
-                if (!language)
-                    return false
-        
-                if (ace.API.configuration.is_ready
-                && language !== this.language_policies.detector.get_language_name(this.#target.#model.ce_options?.language)
-                && ace.API.configuration.value.CE.has(language)
-                ){  // attempt to load the appropriate ce options
-                    this.#target.#model.ce_options = ace.API.configuration.value.CE.get(language)
-                    console.info(`code_mvc.is_executable(get): loaded matching CE configuration for language [${language}]: `, this.#target.#model.ce_options)
-                }
-
-                return Boolean(
-                    language === this.language_policies.detector.get_language_name(this.#target.#model.ce_options?.language)
-                && !ace.details.utility.types.is_empty(this.#target.#model.ce_options)
-                )
-            }
-        }
-        static #modelChanged_Mutations_handler = new class cancelable_MutationObserver {
-            #pending_update_controler = { canceled: false }
-            #observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-
-                    const code_mvc_element = (() => {
-                        let candidate = mutation.target.nodeType === Node.ELEMENT_NODE
-                            ? mutation.target
-                            : mutation.target.parentElement
-                        const expected_element_localName = 'ace-cs-code-mvc'
-                        return candidate.localName === expected_element_localName
-                            ? candidate
-                            : candidate.closest(expected_element_localName)
-                    })()
-                    if (!code_mvc_element)
-                        throw new Error('ace.cs.code_mvc: MutationObserver: model change: invalid target')
-                    const code_mvc = code_mvc_element.code_mvc
-
-                    if (mutation.type !== 'characterData'
-                    || code_mvc.controler.toggle_parsing
-                    || code_mvc.model === code_mvc.view.textContent
-                    ) return
-
-                    // update every seconds if no new user input
-                    this.#pending_update_controler.canceled = true;
-                    this.#pending_update_controler = ace.details.utility.cancelable_setTimeout(() => {
-                        // TODO: save cursor position
-                        // let previous_selection = window.getSelection()
-                        code_mvc.model = code_mvc.view.childNodes // will invoke code_mvc.update_view()
-                        // TODO: restore cursor
-                    }, 1000)
-                });
-            })
-            observe(element, configuration){
-                return this.#observer.observe(element, configuration)
-            }
-        }
-
-        // initialization
-        static get default_arguments(){ return {
-            controler_options: {
-                language : undefined, // TODO: global configuration < local < in-code (ce_options)
-                toggle_parsing : true,
-                toggle_language_detection : true
-            },
-            language_policy: {
-                detector:    language_policies.detectors.use_hljs,
-                highlighter: language_policies.highlighters.use_hljs
-            }
-        }}
-
-        constructor({
-            code_origin,
-            language_policy = { ...code_mvc.default_arguments.language_policy },
-            controler_options = { ...code_mvc.default_arguments.controler_options }
-        }){
-            Object.assign(this, code_mvc_details.factory.build_from(code_origin))
-
-            const is_mutable = this.is_mutable // or seal/non-writable ?
-            Object.defineProperty(this, 'is_mutable', {
-                get: () => { return is_mutable },
-                set: () => { console.warn('ace.details.code.set(is_mutable): no-op, const property') },
-            })
-
-            this.#initialize_behaviors()
-            this.controler = new code_mvc.controler_type({
-                target: this,
-                language_policy: language_policy,
-                options: ace.details.utility.accumulate_objects(code_mvc.default_arguments.controler_options, controler_options)
-            })
-            this.update_view() // might trigger language auto-detect
-
-            ace.API.configuration.when_ready_then({ handler: () => {
-                this.#model_update_ce_options()
-            } })
-        }
-
-        #initialize_behaviors(){
-        // [ const | mutable ] specific behaviors
-
-            this.#model_parser = this.is_mutable
-                ? ace.details.code.parser.ace_metadata_parser
-                : ace.details.code.parser.no_parser
-
-            if (!ace.details.code.parser.check_concept(this.#model_parser))
-                throw new Error('ace.details.code_mvc.#initialize_behaviors: invalid argument (parser)')
-
-            this.update_view = this.is_mutable
-                ? () => {
-                    this.view.textContent = this.model
-                    if (this.controler.toggle_language_detection)
-                        this.controler.language = undefined // will trigger auto-detect
-                    else
-                        this.controler.language_policies.highlighter.highlight({ code_element: this.view, language: this.controler.language })
-                }
-                : () => {}
-            this.#model = (() => {
-                const value = this.#model_parser.parse({ code: this.model })
-                Object.defineProperty(this, 'model', {
-                    get: this.is_mutable
-                        ? () => { return this.controler.toggle_parsing ? this.#model.to_display : this.#model.raw }
-                        : () => { return this.#model.raw },
-                    set: (value) => {
-
-                        if (value instanceof NodeList)
-                            value = (() => {
-                            // convert NodeList to code
-                                let elements = Array.from(value);
-                                elements.forEach((element) => code_mvc_details.html_parser.cleanup({ element: element }))
-                                return code_mvc_details.html_parser.to_code({
-                                    elements: elements
-                                })
-                            })()
-
-                        if (!ace.details.utility.types.is_string(value))
-                            throw new Error('code_mvc.set(model): invalid parameter')
-
-                        if (value === this.#model.raw)
-                            return
-                        this.#model = this.#model_parser.parse({ code: value })
-                        this.#model_update_ce_options()
-                        this.update_view()
-                    }
-                })
-                if (this.is_mutable)
-                    code_mvc.#modelChanged_Mutations_handler.observe(
-                        this.view,
-                        { characterData: true, subtree: true }
-                    )
                 return value
             })()
         }
+        static count_valid_childrens({ element, is_recursive = false }) {
+            if (element === undefined)
+                throw new Error(`${this}.html_parser.count_valid_childrens: invalid argument`)
+            return Array
+                .from(element.children)
+                .map((element) => {
+                    return 0
+                        + html_parser.is_valid_HTMLElement({ element: element })
+                        + (is_recursive ? html_parser.count_valid_childrens({ element: element, is_recursive: is_recursive }) : 0)
+                })
+                .reduce((total, current) => total + current, 0)
+        }
+        static to_code({ elements }) {
+        // expect Array.from(node.childNodes)
+        // TODO?: faster approach?: use regex on outerHTML: \<(?'closing'\/?)(?'tagname'\w+\-?)+.*?\>
+        // replace invalid HTMLElement by their localName as text
+            if (elements === undefined)
+                throw new Error(`${this}.html_parser.to_code: invalid argument`)
+            return elements
+                .map(element => {
+                    switch (element.nodeType) {
+                        case Node.TEXT_NODE:
+                            return element.textContent
+                        case Node.ELEMENT_NODE:
+                            if (html_parser.is_valid_HTMLElement({ element: element }))
+                                return html_parser.to_code({ elements: Array.from(element.childNodes) })
+                            // invalid tagname are kept as text, to preserve include semantic.
+                            //  e.g: `<iostream>` in `#include <iostream>`
+                            return `<${element.localName}>${html_parser.to_code({ elements: Array.from(element.childNodes) })}`
+                        case Node.COMMENT_NODE:
+                        case Node.CDATA_SECTION_NODE:
+                        default:
+                            console.debug(`${this}.parser.to_code: unhandled tags [comment, cdata, etc.]`)
+                            return ''                        
+                    }
+                })
+                .join('')
+        }
+        static cleanup({ element }){
+        // recursively replaces invalid childrens element by their tagname as text
+            if (element === undefined)
+                throw new Error(`${this}..html_parser.cleanup: invalid argument`)
+
+            let childNodes = Array.from(element.childNodes)
+            childNodes
+                .filter(element => element.nodeType === HTMLElement.ELEMENT_NODE)
+                .forEach(element => {
+                    html_parser.#cleanup_impl({ element: element })
+                })
+            return element
+        }
+        static #cleanup_impl({ element }){
+        // recursively replaces invalid element by their tagname as text
+
+            if (element === undefined)
+                throw new Error(`${this}.html_parser.cleanup_impl: invalid argument`)
+
+            let childNodes = Array.from(element.childNodes)                                         // preserve reference/offset integrity
+            if (!html_parser.is_valid_HTMLElement({ element: element })) {
+                const nodes_attr_as_text = `${element.attributes.length ? '/' : ''}${Array.from(element.attributes).map(value => value.name).join('/')}`
+                const node_text          = `<${element.localName}${nodes_attr_as_text}>`            // #include <toto/b.hpp> : `toto` is the invalid tag, `b.hpp` its attribute
+                element.previousSibling.appendData(node_text)                                       // replace by text
+                childNodes.forEach(node => element.parentNode.insertBefore(node, element))          // transfert childrensNodes to parent
+                element = element.parentNode.removeChild(element)                                   // remove the element
+            }
+            childNodes
+                .filter(element => element.nodeType === HTMLElement.ELEMENT_NODE)
+                .forEach(element => {
+                    html_parser.#cleanup_impl({ element: element })
+                })
+        }
+    };
+
+    static factory = class factory {
+
+        static result_type = class {
+
+            constructor(argument){
+    
+                Object.assign(this, argument)
+                Object.seal(this)
+            }
+    
+            model = undefined
+            view = { top_parent: undefined, code_container: undefined }
+    
+            is_mutable = false
+        }
+
+        static is_expected_layout(element){
+            if (!(element instanceof HTMLElement))
+                throw new Error('code.mvc_details.factory.is_expected_layout: invalid argument')
+            return element.localName === 'code'
+        }
+
+        static build_from(argument) {
+
+            if (argument instanceof code_mvc_details.factory.result_type)
+                return argument
+
+            argument ??= ''
+
+            let result = (() => {
+
+                if (undefined === argument
+                ||  argument.text !== undefined)
+                    return code_mvc_details.factory.#build_from_text(argument.text)
+                if (argument.element !== undefined)
+                    return code_mvc_details.factory.#build_from_element(argument.element)
+                if (argument.nodes !== undefined)
+                    return code_mvc_details.factory.#build_from_nodes(argument.nodes)
+
+                return code_mvc_details.factory.#build_from(argument)
+            })()
+                result.model = (result.model ?? '')
+                    .replace(/^\s*/, '')
+                    .replace(/\s*$/, '') // remove enclosing white-spaces
+                if (result.is_mutable)
+                    result.view.textContent = result.model
+            return result
+        }
+
+        static #build_from(argument){
+
+            if (argument instanceof HTMLElement)
+                return code_mvc_details.factory.#build_from_element(argument)
+            else if (argument instanceof Array
+                && argument.reduce((index, arg) => undefined !== arg.nodeType, true))
+            {
+                let only_one_valid_element = (() => {
+                    const no_ws_elements = argument.filter((element) => !(element.nodeType === Node.TEXT_NODE && /^\s+$/g.test(element.textContent)))
+                    return no_ws_elements.length === 1 && code_mvc_details.html_parser.is_valid_HTMLElement({ element: no_ws_elements[0] })
+                        ? no_ws_elements[0]
+                        : undefined
+                })()
+                return only_one_valid_element
+                    ? code_mvc_details.factory.#build_from_element(only_one_valid_element)
+                    : code_mvc_details.factory.#build_from_nodes(argument)
+            }
+            else if (argument.nodeType === document.TEXT_NODE)
+                return code_mvc_details.factory.#build_from_text(argument.textContent)
+            else
+                return code_mvc_details.factory.#build_from_text(argument.toString())
+        }
+        static #build_from_text(value){
+
+            return new code_mvc_details.factory.result_type({
+                is_mutable : true,
+                model : value ?? '',
+                view : (() => {
+                    let code_node = document.createElement('code')
+                        code_node.textContent = value
+                    return code_node
+                })()
+            })
+        }
+        static #build_from_element(element){
+
+            if (!(element instanceof HTMLElement))
+                throw new Error('code.mvc_details.factory.#build_from_element: invalid argument')
+
+            const is_mutable = !Boolean(code_mvc_details.html_parser.count_valid_childrens({ element: element, is_recursive: true }))
+
+            return new code_mvc_details.factory.result_type({
+                is_mutable : is_mutable,
+                model : (() => {
+                    element = code_mvc_details.html_parser.cleanup({ element: element })
+                    const result = code_mvc_details.html_parser.to_code({ elements: Array.from(element.childNodes) })
+                    element.innerHTML = ""
+                    return result
+                })(),
+                view : element
+            })
+        }
+        static #build_from_nodes(elements){
+        // expected: node.childNodes, or a filtered subset of Array.from(node.childNodes)
+
+            if (elements instanceof NodeList)
+                elements = Array.from(elements)
+
+            if (!(
+                (elements instanceof Array)
+            &&  elements.length !== 0
+            &&  elements.reduce((index, arg) => undefined !== arg.nodeType, true)
+            ))  throw new Error('code_mvc_details.factory.#build_from_nodes(array): invalid argument')
+
+            // const parent = (() => { // have common parent
+            //     const parent = elements[0].parentNode
+            //     if (elements.reduce((index, arg) => arg.parentNode !== parent, true))
+            //         throw new Error('code_mvc_details.factory.#build_from_nodes(array): nodes does not have a common parentNode')
+            //     return parent
+            // })()
+
+            const code_content = (() => {
+                
+                elements.forEach((element) => code_mvc_details.html_parser.cleanup({ element: element }))
+                return elements
+                    .map((element) => { 
+                        return code_mvc_details.html_parser.to_code({
+                            elements: [ element ]
+                        })
+                    })
+                    .join('')
+            })()
+            elements.forEach((element) => element.parentElement.removeChild(element))
+            // return new code_mvc_details.factory.result_type({
+            //     is_mutable : false,
+            //     model : code_content,
+            //     view : { top_parent: element, code_container: element }
+            // })
+            return code_mvc_details.factory.#build_from_text(code_content)
+        }
+    }
+}
+ace.details.code.mvc = class code_mvc {
+// enhanced { model, view, controler } to represent some code as a (possibly-existing) html-element
+
+    get [Symbol.toStringTag](){ return 'ace.details.code.mvc' }
+
+    // API: accessors
+    is_mutable = undefined // is_owning
+    view = undefined
+    model = undefined
+    controler = undefined
+
+    // model
+    #model_parser = undefined
+    #model = undefined
+    get model_details(){
+        this.#model_update_ce_options()
+        return this.#model
+    }
+    #model_update_ce_options(){
+    // TODO: decouple this and is_executable
+    // TODO: model change -> same language -> keep ce_options
+        this?.controler?.is_executable // call getter
+    }
+
+    static controler_type = class {
+
+        get [Symbol.toStringTag](){ return `ace.details.code.mvc.controler_type` }
+
+        #target = undefined
+        toggle_parsing = undefined
+
+        constructor({ target, language_policy, options }){
+            
+            if (!(target instanceof code_mvc))
+                throw new Error('code_mvc.controler_type.constructor: invalid argument (invalid type for argument `target`)')
+
+            this.#target = target
+            this.#language_policies = language_policy
+
+            const language_argument = options.language ?? this.#target.model_details.ce_options.language
+            this.#language = this.#language_policies.detector.get_language_name(language_argument)
+            if (this.#language === undefined && language_argument)
+                console.warn(`code_mvc.controler_type.constructor: invalid user-provided language: [${language_argument}]`)
+
+            this.toggle_language_detection = options.language // if a user-provided valid language exists, then toggle_language-deteciton is set to false
+                ? !Boolean(this.#language)
+                : options.toggle_language_detection
+
+            this.#initialize_behaviors(options)
+        }
+        #initialize_behaviors(options){
+        // [ const | mutable ] specific behaviors
+        
+            if (!this.#target.is_mutable) {
+                console.warn(
+                    'ace.details.code.constructor: invalid language_policies.highlighter for non-mutable/const code mvc\n',
+                    `was [${this.language_policies.highlighter.name}], switching to fallback [language_policies.highlighters.use_none]`
+                )
+                this.language_policies.highlighter = language_policies.highlighters.use_none
+            }
+    
+            if (!language_policies.detectors.check_concept(this.language_policies.detector))
+                throw new Error('ace.details.code.constructor: invalid argument (language_policy.detector)')
+            if (!language_policies.highlighters.check_concept(this.language_policies.highlighter))
+                throw new Error('ace.details.code.constructor: invalid argument (language_policy.highlighter)')
+            
+            this.#toggle_parsing = (() => {
+    
+                Object.defineProperty(this, 'toggle_parsing', {
+                    get: () => { return Boolean(this.#toggle_parsing) },
+                    set: this.#target.is_mutable
+                        ? (value) => {
+                            value = ace.details.utility.types.is_string(value)
+                                ? Boolean(value === 'true')
+                                : Boolean(value)
+                            if (value === this.#toggle_parsing)
+                                return
+                            this.#toggle_parsing = value
+                            this.#target.update_view()
+                        }
+                        : () => { console.warn('code.set(toggle_parsing): no-op: not editable') }
+                })
+                return this.#target.is_mutable
+                    ? Boolean(options.toggle_parsing) ?? Boolean(this.#target.model_details.ce_options)
+                    : false
+            })()
+        }
+
+        // policies, behaviors
+        get language_policies(){ return this.#language_policies }
+        #language_policies = {
+            detector: undefined,
+            highlighter: undefined
+        }
+
+        // language
+        #language = undefined
+        set #language_impl(value){
+
+            this.#language = this.#language_policies.detector.get_language_name(value)
+            if (this.#target.is_mutable &&
+                this.#language_policies.detector.get_language(this.#target.view) !== this.#language
+            )
+                this.#language_policies.highlighter.highlight({
+                    code_element: this.#target.view,
+                    language: this.#language
+                })
+            this.#target.#model_update_ce_options()
+        }
+        get language() {
+
+            let value = (() => {
+                if (this.language_policies.detector.is_valid_language(this.#language))
+                    return this.#language
+
+                console.info(`code_mvc.controler.get(language) : invalid language [${this.#language}], attempting fallback detections`)
+                return this.language_policies.detector.get_language(this.#target.view)
+                    ?? this.language_policies.detector.detect_language(this.#target.#model.to_display).language
+            })()
+            value = this.#language_policies.detector.get_language_name(value)
+
+            // autodetect
+            if (this.toggle_language_detection)
+                this.#language_impl = value
+
+            return value
+        }
+        set language(value) {
+
+            const argument = (() => {
+                const language_name = this.language_policies.detector.get_language_name(value)
+                const is_valid_input = Boolean(language_name)
+                return {
+                    language_name: language_name,
+                    is_valid: is_valid_input
+                }
+            })()
+
+            if (this.#language === argument.language_name && argument.is_valid)
+                return
+
+            this.toggle_language_detection = !argument.is_valid;
+            if (!argument.is_valid)
+                console.warn(`ace.details.code.language(set): invalid input [${value}], attempting fallback detection.`)
+
+            const result = this.#target.is_mutable
+                ? this.#language_policies.highlighter.highlight({
+                    code_element: this.#target.view,
+                    language: this.#toggle_language_detection ? undefined : argument.language_name
+                })
+                : this.#language_policies.detector.detect_language(this.#target.model)
+
+            if (undefined === argument.language_name
+            || this.#language !== argument.language_name
+            ){
+                this.#language_impl = result.language // note: possibly not equal to `value`
+                this.toggle_language_detection = Boolean(result.relevance <= 5)
+            }
+        }
+
+        // language_detection
+        #toggle_parsing = undefined
+        #toggle_language_detection = true
+        get toggle_language_detection() {
+            return  this.#toggle_language_detection
+                || !this.language_policies.detector.is_valid_language(this.#language)
+        }
+        set toggle_language_detection(value) {
+            value = ace.details.utility.types.is_string(value)
+                ? Boolean(value === 'true')
+                : Boolean(value)
+            this.#toggle_language_detection = value
+        }
+
+        // is_executable
+        get is_executable() {
+
+            if (!this.#target.#model.to_execute)
+                return false
+
+            const language = this.#language
+            if (!language)
+                return false
+    
+            if (ace.API.configuration.is_ready
+            && language !== this.language_policies.detector.get_language_name(this.#target.#model.ce_options?.language)
+            && ace.API.configuration.value.CE.has(language)
+            ){  // attempt to load the appropriate ce options
+                this.#target.#model.ce_options = ace.API.configuration.value.CE.get(language)
+                console.info(`code_mvc.is_executable(get): loaded matching CE configuration for language [${language}]: `, this.#target.#model.ce_options)
+            }
+
+            return Boolean(
+                language === this.language_policies.detector.get_language_name(this.#target.#model.ce_options?.language)
+            && !ace.details.utility.types.is_empty(this.#target.#model.ce_options)
+            )
+        }
+    }
+    static #modelChanged_Mutations_handler = new class cancelable_MutationObserver {
+        #pending_update_controler = { canceled: false }
+        #observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+
+                const code_mvc_element = (() => {
+                    let candidate = mutation.target.nodeType === Node.ELEMENT_NODE
+                        ? mutation.target
+                        : mutation.target.parentElement
+                    const expected_element_localName = 'ace-cs-code-mvc'
+                    return candidate.localName === expected_element_localName
+                        ? candidate
+                        : candidate.closest(expected_element_localName)
+                })()
+                if (!code_mvc_element)
+                    throw new Error('ace.cs.code_mvc: MutationObserver: model change: invalid target')
+                const code_mvc = code_mvc_element.code_mvc
+
+                if (mutation.type !== 'characterData'
+                || code_mvc.controler.toggle_parsing
+                || code_mvc.model === code_mvc.view.textContent
+                ) return
+
+                // update every seconds if no new user input
+                this.#pending_update_controler.canceled = true;
+                this.#pending_update_controler = ace.details.utility.cancelable_setTimeout(() => {
+                    // TODO: save cursor position
+                    // let previous_selection = window.getSelection()
+                    code_mvc.model = code_mvc.view.childNodes // will invoke code_mvc.update_view()
+                    // TODO: restore cursor
+                }, 1000)
+            });
+        })
+        observe(element, configuration){
+            return this.#observer.observe(element, configuration)
+        }
+    }
+
+    // initialization
+    static get default_arguments(){ return {
+        controler_options: {
+            language : undefined, // TODO: global configuration < local < in-code (ce_options)
+            toggle_parsing : true,
+            toggle_language_detection : true
+        },
+        policies : {
+            get language(){
+                return {
+                    detector:    ace.details.code.policies.language.detectors.use_hljs,
+                    highlighter: ace.details.code.policies.language.highlighters.use_hljs
+                }
+            }
+        }
+    }}
+
+    constructor({
+        code_origin,
+        language_policies = { ...code_mvc.default_arguments.policies.language },
+        controler_options = { ...code_mvc.default_arguments.controler_options }
+    }){
+        Object.assign(this, ace.details.code.mvc_details.factory.build_from(code_origin))
+
+        const is_mutable = this.is_mutable // or seal/non-writable ?
+        Object.defineProperty(this, 'is_mutable', {
+            get: () => { return is_mutable },
+            set: () => { console.warn('ace.details.code.set(is_mutable): no-op, const property') },
+        })
+
+        this.#initialize_behaviors()
+        this.controler = new code_mvc.controler_type({
+            target: this,
+            language_policy: language_policies,
+            options: ace.details.utility.accumulate_objects(code_mvc.default_arguments.controler_options, controler_options)
+        })
+        this.update_view() // might trigger language auto-detect
+
+        ace.API.configuration.when_ready_then({ handler: () => {
+            this.#model_update_ce_options()
+        } })
+    }
+
+    #initialize_behaviors(){
+    // [ const | mutable ] specific behaviors
+
+        this.#model_parser = this.is_mutable
+            ? ace.details.code.parser.ace_metadata_parser
+            : ace.details.code.parser.no_parser
+
+        if (!ace.details.code.parser.check_concept(this.#model_parser))
+            throw new Error('ace.details.code_mvc.#initialize_behaviors: invalid argument (parser)')
+
+        this.update_view = this.is_mutable
+            ? () => {
+                this.view.textContent = this.model
+                if (this.controler.toggle_language_detection)
+                    this.controler.language = undefined // will trigger auto-detect
+                else
+                    this.controler.language_policies.highlighter.highlight({ code_element: this.view, language: this.controler.language })
+            }
+            : () => {}
+        this.#model = (() => {
+            const value = this.#model_parser.parse({ code: this.model })
+            Object.defineProperty(this, 'model', {
+                get: this.is_mutable
+                    ? () => { return this.controler.toggle_parsing ? this.#model.to_display : this.#model.raw }
+                    : () => { return this.#model.raw },
+                set: (value) => {
+
+                    if (value instanceof NodeList)
+                        value = (() => {
+                        // convert NodeList to code
+                            let elements = Array.from(value);
+                            elements.forEach((element) => ace.details.code.mvc_details.html_parser.cleanup({ element: element }))
+                            return ace.details.code.mvc_details.html_parser.to_code({
+                                elements: elements
+                            })
+                        })()
+
+                    if (!ace.details.utility.types.is_string(value))
+                        throw new Error('code_mvc.set(model): invalid parameter')
+
+                    if (value === this.#model.raw)
+                        return
+                    this.#model = this.#model_parser.parse({ code: value })
+                    this.#model_update_ce_options()
+                    this.update_view()
+                }
+            })
+            if (this.is_mutable)
+                code_mvc.#modelChanged_Mutations_handler.observe(
+                    this.view,
+                    { characterData: true, subtree: true }
+                )
+            return value
+        })()
     }
 }
 
@@ -2698,7 +2699,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
 
             let [ presentation, execution ] = [
                 // new code_mvc_HTMLElement(this._parameters),
-                new code_mvc_HTMLElement(new code_mvc({
+                new code_mvc_HTMLElement(new ace.details.code.mvc({
                     code_origin: this._parameters.code,
                     controler_options:{
                         language: this._parameters.language,
@@ -2711,7 +2712,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                     //     highlighter: language_policies.highlighters.use_hljs
                     // }
                 })),
-                new code_mvc_HTMLElement(new code_mvc({
+                new code_mvc_HTMLElement(new ace.details.code.mvc({
                     code_origin: '',
                     controler_options:{
                         language: 'ce_output',
@@ -3081,7 +3082,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                         })
                 )
                 // code
-                parameters.code = code_mvc_details.html_parser.to_code({ elements: [ element_placeholder ] })
+                parameters.code = ace.details.code.mvc_details.html_parser.to_code({ elements: [ element_placeholder ] })
 
                 // related attributes
                 parameters = ace.details.utility.accumulate_objects(
