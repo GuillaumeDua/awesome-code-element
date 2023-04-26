@@ -93,6 +93,7 @@
 // TODO: opt-in: godbolt /api/shortener instead of ClientState ?
 // TODO: feature: add compilation/execution duration information (useful for quick-performance comparisons)
 // TODO: get [Symbol.toStringTag]()
+// TODO       Symbol.toStringTag consistency
 // TODO: use synthax qwe?.asd?.zxc rather than ternary expressions
 // TODO: avoid useless calls (get/set)
 // TODO: test all network errors (url, execution)
@@ -1432,147 +1433,191 @@ ace.details.HTML_elements.defered_HTMLElement = class extends HTMLElement {
         this.replaceWith(error_element)
     }
 }
+ace.details.HTML_elements.status_display = class status_display extends HTMLElement {
+    
+    static get HTMLElement_tagName() { return 'ace-cs-status-display' }
+    get [Symbol.toStringTag](){ return 'ace.details.HTML_elements.status_display' }
+
+    #value = 'unknown'
+    #message = ''
+
+    set({ value, message }){
+        this.#value = value
+        this.#message = message
+
+        this.textContent = `[${value}]${message ? ':\n' : ''}${message}`
+    }
+    get(){
+        return {
+            value: this.#value,
+            message: this.#message
+        }
+    }
+
+    get value(){ return this.#value }
+    get message(){ return this.#message }
+}
+customElements.define(status_display.HTMLElement_tagName, status_display);
 
 // ============================
 // details: code representation
 
 ace.details.code = class {
-    static language_policies = class language_policies {
 
-        static define_ce_output_language = (() => {
+    static policies = class {
+
+        static language = class language_policies {
+
+            static define_ce_output_language = (() => {
             // WIP
-            if (undefined === hljs)
-                throw new Error('language_policies.define_ce_output_language: only supports hljs')
+                if (undefined === hljs)
+                    throw new Error('language_policies.define_ce_output_language: only supports hljs')
 
-            const ce_output_language = () => {
-                return {
-                    case_insensitive: true,
-                    keywords: '',
-                    contains: [
-                        hljs.COMMENT(
-                            '^# Compiler exited with result code', // begin
-                            '$', // end
-                            { relevance: 10 }
-                        )
-                    ]
-                }
-            }
-            hljs.registerLanguage('ce_output', ce_output_language)
-            return hljs.getLanguage('ce_output')
-        })()
-
-        static detectors = class {
-            static check_concept = function(argument) {
-                return argument
-                    && argument.is_valid_language
-                    && argument.get_language
-                    && argument.detect_language
-            }
-
-            static use_none = class {
-                static is_valid_language(language){ return true; }
-                static get_language_name(maybe_alias){ return maybe_alias; }
-                static get_language(element){
-                    return 'n/a'
-                }
-                static detect_language(text){
+                const ce_output_language = () => {
                     return {
-                        language: 'n/a',
-                        relevance: 10,
-                        value: text
+                        case_insensitive: true,
+                        keywords: '',
+                        contains: [
+                            hljs.COMMENT(
+                                '^# Compiler exited with result code', // begin
+                                '$', // end
+                                { relevance: 10 }
+                            )
+                        ]
+                    }
+                }
+                hljs.registerLanguage('ce_output', ce_output_language)
+                return hljs.getLanguage('ce_output')
+            })()
+
+            static detectors = class {
+
+                static check_concept = function(argument) {
+                    return argument
+                        && argument.is_valid_language
+                        && argument.get_language
+                        && argument.detect_language
+                }
+
+                // available implementations
+                static use_none = class {
+
+                    get [Symbol.toStringTag](){ return 'ace.details.code.policies.language.detectors.use_none' }
+
+                    static is_valid_language(language){ return true; }
+                    static get_language_name(maybe_alias){ return maybe_alias; }
+                    static get_language(element){
+                        return 'n/a'
+                    }
+                    static detect_language(text){
+                        return {
+                            language: 'n/a',
+                            relevance: 10,
+                            value: text
+                        }
+                    }
+                }
+                static use_hljs = class use_hljs_language_detector_policy {
+
+                    get [Symbol.toStringTag](){ return 'ace.details.code.policies.language.detectors.use_hljs' }
+
+                    static is_valid_language(language){
+                        return hljs.getLanguage(language) !== undefined
+                    }
+                    static get_language_name(maybe_alias){
+                        const language = hljs.getLanguage(maybe_alias)
+                        return language ? language.name : undefined
+                    }
+                    static get_language(element){
+
+                        if (element === undefined || !(element instanceof HTMLElement))
+                            throw new Error(`ace.language_policies.get_language(element): bad input`)
+
+                        const result = element.classList.toString().match(/language-(\w+)/, '') // expected: "hljs language-[name]"
+                        return Boolean(result && result.length === 1)
+                            ? (result[1] === "undefined" ? undefined : result[1])
+                            : undefined // first capture group
+                    }
+                    static detect_language(text){
+                        if (text === undefined || !(typeof text === 'string'))
+                            throw new Error(`ace.language_policies.detect_language(text): bad input`)
+                        const result = hljs.highlightAuto(text) ?? {}
+                        return {
+                            language: result.language,
+                            relevance: result.relevance,
+                            value: result.value
+                        }
                     }
                 }
             }
-            static use_hljs = class use_hljs_language_detector_policy {
-                static is_valid_language(language){
-                    return hljs.getLanguage(language) !== undefined
-                }
-                static get_language_name(maybe_alias){
-                    const language = hljs.getLanguage(maybe_alias)
-                    return language ? language.name : undefined
-                }
-                static get_language(element){
 
-                    if (element === undefined || !(element instanceof HTMLElement))
-                        throw new Error(`ace.language_policies.get_language(element): bad input`)
-
-                    const result = element.classList.toString().match(/language-(\w+)/, '') // expected: "hljs language-[name]"
-                    return Boolean(result && result.length === 1)
-                        ? (result[1] === "undefined" ? undefined : result[1])
-                        : undefined // first capture group
+            static highlighters = class {
+                static check_concept = function(argument) {
+                    return argument
+                        && argument.highlight
                 }
-                static detect_language(text){
-                    if (text === undefined || !(typeof text === 'string'))
-                        throw new Error(`ace.language_policies.detect_language(text): bad input`)
-                    const result = hljs.highlightAuto(text) ?? {}
-                    return {
-                        language: result.language,
-                        relevance: result.relevance,
-                        value: result.value
+
+                // available implementations
+                static use_none = class {
+
+                    get [Symbol.toStringTag](){ return 'ace.details.code.policies.language.highlighters.use_none' }
+
+                    static highlight({ code_element, language }){
+                        return {
+                            relevance: 10,
+                            language: language ?? 'n/a',
+                            value: code_element.innerHTML
+                        }
+                    }
+                    static initialize_ce_output_language(){}
+                }
+                static use_hljs = class use_hljs {
+
+                    get [Symbol.toStringTag](){ return 'ace.details.code.policies.language.highlighters.use_hljs' }
+
+                    static #highlight_dry_run({ code_element, language }){
+
+                        if (!hljs)
+                            throw new Error(`${this}.highlight requires hljs (the HighlightJS library), which is missing`)
+
+                        if (!code_element || !(code_element instanceof HTMLElement))
+                            throw new Error('use_hljs.highlight: invalid argument. Expect [code_element] to be a valid HTMLElement')
+                        if (language && !language_policies.detectors.use_hljs.is_valid_language(language)) {
+                            console.warn(`use_hljs.highlight: invalid language [${language}], attempting fallback detection`)
+                            language = undefined
+                        }
+                        
+                        const result = language
+                            ? hljs.highlight(code_element.textContent, { language: language })
+                            : hljs.highlightAuto(code_element.textContent)
+                        if (result.relevance < 5 && code_element.textContent.length > 0)
+                            console.warn(
+                                `use_hljs.highlight: poor language relevance [${result.relevance}/10] for language [${result.language}]\n`,
+                                `Perhaps the code is too small ? (${code_element.textContent.length} characters):`, result
+                            )
+                        return result
+                    }
+                    static highlight({ code_element, language }){
+
+                        const result = use_hljs.#highlight_dry_run({
+                            code_element: code_element,
+                            language: language
+                        })
+                        code_element.innerHTML = result.value
+            
+                        language = language_policies.detectors.use_hljs.get_language_name(result.language)
+                        const update_classList = () => {
+                            code_element.classList = [...code_element.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
+                            code_element.classList.add(`hljs`)
+                            code_element.classList.add(`language-${language}`) // TODO:useless?
+                        }
+                        update_classList()
+                        return result
                     }
                 }
             }
         }
-
-        static highlighters = class {
-            static check_concept = function(argument) {
-                return argument
-                    && argument.highlight
-            }
-
-            static use_none = class {
-                static highlight({ code_element, language }){
-                    return {
-                        relevance: 10,
-                        language: language ?? 'n/a',
-                        value: code_element.innerHTML
-                    }
-                }
-                static initialize_ce_output_language(){}
-            }
-            static use_hljs = class use_hljs {
-
-                static #highlight_dry_run({ code_element, language }){
-                    if (!code_element || !(code_element instanceof HTMLElement))
-                        throw new Error('use_hljs.highlight: invalid argument. Expect [code_element] to be a valid HTMLElement')
-                    if (language && !language_policies.detectors.use_hljs.is_valid_language(language)) {
-                        console.warn(`use_hljs.highlight: invalid language [${language}], attempting fallback detection`)
-                        language = undefined
-                    }
-                    
-                    const result = language
-                        ? hljs.highlight(code_element.textContent, { language: language })
-                        : hljs.highlightAuto(code_element.textContent)
-                    if (result.relevance < 5 && code_element.textContent.length > 0)
-                        console.warn(
-                            `use_hljs.highlight: poor language relevance [${result.relevance}/10] for language [${result.language}]\n`,
-                            `Perhaps the code is too small ? (${code_element.textContent.length} characters):`, result
-                        )
-                    return result
-                }
-                static highlight({ code_element, language }){
-
-                    const result = use_hljs.#highlight_dry_run({
-                        code_element: code_element,
-                        language: language
-                    })
-                    code_element.innerHTML = result.value
-        
-                    language = language_policies.detectors.use_hljs.get_language_name(result.language)
-                    const update_classList = () => {
-                        code_element.classList = [...code_element.classList].filter(element => !element.startsWith('language-') && element !== 'hljs')
-                        code_element.classList.add(`hljs`)
-                        code_element.classList.add(`language-${language}`) // TODO:useless?
-                    }
-                    update_classList()
-                    return result
-                }
-            }
-        }
-    }
-    static code_policies = class code_policies {
-
-        static parser = class parser {
+        static code_parser = class code_parsing_policies {
 
             static check_concept = function(argument) {
                 return argument
@@ -1588,16 +1633,20 @@ ace.details.code = class {
                 ce_options = {}
             }
 
-            static no_parser = class {
+            // available implementations
+            static use_none = class {
+
+                get [Symbol.toStringTag](){ return 'ace.details.code.policies.code_parser.use_none' }
+
                 static parse({ code }){
-                    return new code_policies.parser.result_type({
+                    return code_parsing_policies.result_type({
                         raw: code,
                         to_display: code,
                         to_execute: code
                     })
                 }
             }
-            static ace_metadata_parser = class ace_metadata_parser {
+            static use_ace_metadata_parser = class ace_metadata_parser {
             // TODO: @awesome-code-element::keep : keep tag anyway as comment (for documentation purpose)
 
             // @awesome-code-element::CE={
@@ -1623,9 +1672,9 @@ ace.details.code = class {
                 static parse({ code }) {
 
                     if (code === undefined)
-                        throw new Error('code_policies.parser.ace_metadata_parser.parse: invalid argument')
+                        throw new Error('ace.details.code.code_parsing_policies.ace_metadata_parser.parse: invalid argument')
 
-                    let result = new code_policies.parser.result_type({ raw: code })
+                    let result = code_parsing_policies.result_type({ raw: code })
                         result = ace_metadata_parser.#parse_impl({ result: result})
                         result = ace_metadata_parser.#apply_ce_transformations({ result: result })
 
@@ -1643,11 +1692,11 @@ ace.details.code = class {
             
                     {   // CE options
                         const regex_match_json_pattern = '\{(?:[^{}]|(?:\{[^{}]*\}))*\}'
-                        const regexp = new RegExp(`^\\s*?${code_policies.parser.ace_metadata_parser.tag}::CE=(${regex_match_json_pattern})\s*?\n?`, 'gm')
+                        const regexp = new RegExp(`^\\s*?${ace_metadata_parser.tag}::CE=(${regex_match_json_pattern})\s*?\n?`, 'gm')
                         const matches = [...result.raw.matchAll(regexp)] // expect exactly 1 match
                         if (matches.length > 1)
                             console.warn(
-                                `code_policies.parser.ace_metadata_parser.parse: found multiples CE configurations\n`,
+                                `ace.details.code.code_parsing_policies.ace_metadata_parser.parse: found multiples CE configurations\n`,
                                 ...matches.map((value) => value.at(0))
                             )
                 
@@ -1674,19 +1723,19 @@ ace.details.code = class {
                     // skip block, line (documentation & execution sides)
                     // block
                     code_content = code_content.replaceAll(
-                        new RegExp(`^\\s*?${code_policies.parser.ace_metadata_parser.tag}::skip::block::begin\n(.*?\n)*\\s*?${code_policies.parser.ace_metadata_parser.tag}::skip::block::end\\s*?$`, 'gm'),
+                        new RegExp(`^\\s*?${ace_metadata_parser.tag}::skip::block::begin\n(.*?\n)*\\s*?${ace_metadata_parser.tag}::skip::block::end\\s*?$`, 'gm'),
                         ''
                     )
                     // line
                     code_content = code_content.replaceAll(
-                        new RegExp(`^.*?\\s+${code_policies.parser.ace_metadata_parser.tag}::skip::line\\s*$`, 'gm'),
+                        new RegExp(`^.*?\\s+${ace_metadata_parser.tag}::skip::line\\s*$`, 'gm'),
                         ''
                     )
             
                     // show block, line (documentation side)
                     const code_only_show = (() => {
-                        const regex_show_block  = `(^\\s*?${code_policies.parser.ace_metadata_parser.tag}::show::block::begin\n(?<block>(^.*?$\n)+)\\s*${code_policies.parser.ace_metadata_parser.tag}::show::block::end\n?)`
-                        const regex_show_line   = `(^(?<line>.*?)\\s*${code_policies.parser.ace_metadata_parser.tag}::show::line\\s*?$)`
+                        const regex_show_block  = `(^\\s*?${ace_metadata_parser.tag}::show::block::begin\n(?<block>(^.*?$\n)+)\\s*${ace_metadata_parser.tag}::show::block::end\n?)`
+                        const regex_show_line   = `(^(?<line>.*?)\\s*${ace_metadata_parser.tag}::show::line\\s*?$)`
                         const regexp = new RegExp(`${regex_show_block}|${regex_show_line}`, 'gm')
                         const matches = [...code_content.matchAll(regexp)]
                         return matches
@@ -1715,7 +1764,6 @@ ace.details.code = class {
                     if (result.ce_options && result.ce_options.includes_transformation) {
                         result.ce_options.includes_transformation.forEach((value) => {
                             // replace includes
-            
                             const regex = new RegExp(`^(\\s*?\\#.*?[\\"|\\<"].*?)(${value[0]})(.*?[\\"|\\>"])`, 'gm')
                             result.to_execute = result.to_execute.replace(regex, `$1${value[1]}$3`)
                         })
@@ -1976,7 +2024,7 @@ ace.details.code = class {
     static mvc = class code_mvc {
     // enhanced { model, view, controler } to represent some code as a (possibly-existing) html-element
 
-        get [Symbol.toStringTag](){ return 'code-mvc' }
+        get [Symbol.toStringTag](){ return 'ace.code.mvc' }
 
         // API: accessors
         is_mutable = undefined // is_owning
@@ -2252,10 +2300,10 @@ ace.details.code = class {
         // [ const | mutable ] specific behaviors
 
             this.#model_parser = this.is_mutable
-                ? code_policies.parser.ace_metadata_parser
-                : code_policies.parser.no_parser
+                ? ace.details.code.parser.ace_metadata_parser
+                : ace.details.code.parser.no_parser
 
-            if (!code_policies.parser.check_concept(this.#model_parser))
+            if (!ace.details.code.parser.check_concept(this.#model_parser))
                 throw new Error('ace.details.code_mvc.#initialize_behaviors: invalid argument (parser)')
 
             this.update_view = this.is_mutable
@@ -2397,31 +2445,7 @@ class animation {
     }
 }
 
-class status_display extends HTMLElement {
-    
-    static get HTMLElement_tagName() { return 'ace-cs-status-display' }
-    get [Symbol.toStringTag](){ return status_display.HTMLElement_tagName }
 
-    #value = 'unknown'
-    #message = ''
-
-    set({ value, message }){
-        this.#value = value
-        this.#message = message
-
-        this.textContent = `[${value}]${message ? ':\n' : ''}${message}`
-    }
-    get(){
-        return {
-            value: this.#value,
-            message: this.#message
-        }
-    }
-
-    get value(){ return this.#value }
-    get message(){ return this.#message }
-}
-customElements.define(status_display.HTMLElement_tagName, status_display);
 
 class code_mvc_HTMLElement extends ace.details.HTML_elements.defered_HTMLElement {
 
@@ -2489,7 +2513,7 @@ class code_mvc_HTMLElement extends ace.details.HTML_elements.defered_HTMLElement
     initialize(){
         // console.debug(`code_mvc_HTMLElement.initialize: parameters:`, this._parameters)
 
-        this.status_display = this.appendChild(new status_display)
+        this.status_display = this.appendChild(new ace.details.HTML_elements.status_display)
         this.code_mvc = this.#code_mvc_initializer()
         this.appendChild(this.code_mvc.view)
 
