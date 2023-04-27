@@ -1460,6 +1460,98 @@ ace.details.HTML_elements.status_display = class status_display extends HTMLElem
 }
 customElements.define(ace.details.HTML_elements.status_display.HTMLElement_tagName, ace.details.HTML_elements.status_display);
 
+// Animation HTML element factory + controler
+ace.details.animation = class animation {
+    
+    static get HTMLElement_tagName() { return 'ace-animation' }
+    get [Symbol.toStringTag](){ return animation.HTMLElement_tagName }
+
+    static #cache = (function(){
+    // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
+        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/resources/images/loading_animation.svg'
+        let value = document.createElement('img');
+            value.src = loading_animation_fallback_url
+            value.id = animation.HTMLElement_tagName
+            value.className = animation.HTMLElement_tagName
+            value.style.display = 'none'
+        return value
+    })()
+    static get element() {
+        return animation.#cache.cloneNode()
+    }
+
+    static controler = class controler {
+
+        get [Symbol.toStringTag](){ return `animation.controler` }
+
+        #owner = undefined
+        #target = undefined
+        #target_visible_display = undefined
+        #element = undefined
+
+        static counter_type = class {
+
+            #on_value_changed = undefined
+
+            constructor({ on_value_changed }){
+                if (!on_value_changed || !(on_value_changed instanceof Function))
+                    throw new Error('counter_type.constructor: invalid argument')
+                this.#on_value_changed = on_value_changed
+            }
+
+            #value = 0
+            get value(){ return this.#value }
+            set value(value){ this.#on_value_changed(this.#value = value) }
+        }
+        #animate_while_counter = undefined
+
+        constructor({ owner, target }) {
+
+            if (!(owner instanceof HTMLElement)
+             || !(target instanceof HTMLElement)
+            ) throw new Error('animation.controler: invalid argument type')
+
+            this.#owner = owner
+            this.#target = target
+            this.#target_visible_display = target.style.display
+
+            this.#element = this.#owner.appendChild(animation.element)
+
+            this.#animate_while_counter = new controler.counter_type({ on_value_changed: (value) => {
+
+                if (value === 0 && this.toggle_animation){
+                    this.toggle_animation = false
+                    return
+                }
+                if (value !== 0 && !this.toggle_animation)
+                    this.toggle_animation = true
+            }})
+        }
+
+        set toggle_animation(value){
+            this.#target.style.display  = Boolean(value) ? 'none' : this.#target_visible_display
+            this.#element.style.display = Boolean(value) ? 'flex' : 'none'
+        }
+        get toggle_animation(){
+            return Boolean(this.#element.style.display !== 'none')
+        }
+
+        animate_while({ promise }){
+
+            if (!(promise instanceof Promise))
+                throw new Error('animation.controler.animate_while: invalid argument type')
+
+            if (this.toggle_animation)
+                console.warn('animation.controler.animate_while: already animating')
+
+            ++this.#animate_while_counter.value
+            promise.then(() => {
+                --this.#animate_while_counter.value
+            })
+        }
+    }
+}
+
 // ============================
 // details: code representation
 
@@ -1674,7 +1766,7 @@ ace.details.code.policies = class policies {
                 if (code === undefined)
                     throw new Error('ace.details.code.code_parsing_policies.ace_metadata_parser.parse: invalid argument')
 
-                let result = code_parsing_policies.result_type({ raw: code })
+                let result = new code_parsing_policies.result_type({ raw: code })
                     result = ace_metadata_parser.#parse_impl({ result: result})
                     result = ace_metadata_parser.#apply_ce_transformations({ result: result })
 
@@ -2080,6 +2172,7 @@ ace.details.code.mvc = class code_mvc {
                 this.language_policies.highlighter = language_policies.highlighters.use_none
             }
     
+            const language_policies = ace.details.code.policies.language;
             if (!language_policies.detectors.check_concept(this.language_policies.detector))
                 throw new Error('ace.details.code.constructor: invalid argument (language_policy.detector)')
             if (!language_policies.highlighters.check_concept(this.language_policies.highlighter))
@@ -2301,12 +2394,17 @@ ace.details.code.mvc = class code_mvc {
     #initialize_behaviors(){
     // [ const | mutable ] specific behaviors
 
-        this.#model_parser = this.is_mutable
-            ? ace.details.code.parser.ace_metadata_parser
-            : ace.details.code.parser.no_parser
+        this.#model_parser = (() => {
 
-        if (!ace.details.code.parser.check_concept(this.#model_parser))
-            throw new Error('ace.details.code_mvc.#initialize_behaviors: invalid argument (parser)')
+            const parsers = ace.details.code.policies.code_parsers;
+        
+            let value = this.is_mutable
+                ? parsers.use_ace_metadata_parser
+                : parsers.use_none
+            if (!parsers.check_concept(value))
+                throw new Error('ace.details.code_mvc.#initialize_behaviors: invalid argument (parser)')
+            return value;
+        })();
 
         this.update_view = this.is_mutable
             ? () => {
@@ -2354,104 +2452,10 @@ ace.details.code.mvc = class code_mvc {
         })()
     }
 }
-
-class animation {
-    
-    static get HTMLElement_tagName() { return 'ace-animation' }
-    get [Symbol.toStringTag](){ return animation.HTMLElement_tagName }
-
-    static #cache = (function(){
-    // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
-        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/resources/images/loading_animation.svg'
-        let value = document.createElement('img');
-            value.src = loading_animation_fallback_url
-            value.id = animation.HTMLElement_tagName
-            value.className = animation.HTMLElement_tagName
-            value.style.display = 'none'
-        return value
-    })()
-    static get element() {
-        return animation.#cache.cloneNode()
-    }
-
-    static controler = class controler {
-
-        get [Symbol.toStringTag](){ return `animation.controler` }
-
-        #owner = undefined
-        #target = undefined
-        #target_visible_display = undefined
-        #element = undefined
-
-        static counter_type = class {
-
-            #on_value_changed = undefined
-
-            constructor({ on_value_changed }){
-                if (!on_value_changed || !(on_value_changed instanceof Function))
-                    throw new Error('counter_type.constructor: invalid argument')
-                this.#on_value_changed = on_value_changed
-            }
-
-            #value = 0
-            get value(){ return this.#value }
-            set value(value){ this.#on_value_changed(this.#value = value) }
-        }
-        #animate_while_counter = undefined
-
-        constructor({ owner, target }) {
-
-            if (!(owner instanceof HTMLElement)
-             || !(target instanceof HTMLElement)
-            ) throw new Error('animation.controler: invalid argument type')
-
-            this.#owner = owner
-            this.#target = target
-            this.#target_visible_display = target.style.display
-
-            this.#element = this.#owner.appendChild(animation.element)
-
-            this.#animate_while_counter = new controler.counter_type({ on_value_changed: (value) => {
-
-                if (value === 0 && this.toggle_animation){
-                    this.toggle_animation = false
-                    return
-                }
-                if (value !== 0 && !this.toggle_animation)
-                    this.toggle_animation = true
-            }})
-        }
-
-        set toggle_animation(value){
-            this.#target.style.display  = Boolean(value) ? 'none' : this.#target_visible_display
-            this.#element.style.display = Boolean(value) ? 'flex' : 'none'
-        }
-        get toggle_animation(){
-            return Boolean(this.#element.style.display !== 'none')
-        }
-
-        animate_while({ promise }){
-
-            if (!(promise instanceof Promise))
-                throw new Error('animation.controler.animate_while: invalid argument type')
-
-            if (this.toggle_animation)
-                console.warn('animation.controler.animate_while: already animating')
-
-            ++this.#animate_while_counter.value
-            promise.then(() => {
-                --this.#animate_while_counter.value
-            })
-        }
-    }
-}
-
-
-
-class code_mvc_HTMLElement extends ace.details.HTML_elements.defered_HTMLElement {
+ace.details.code.mvc_HTMLElement = class code_mvc_HTMLElement extends ace.details.HTML_elements.defered_HTMLElement {
 
     static get HTMLElement_tagName() { return 'ace-cs-code-mvc' }
-    get [Symbol.toStringTag](){ return code_mvc_HTMLElement.HTMLElement_tagName }
+    get [Symbol.toStringTag](){ return 'ace.details.code.mvc_HTMLElement' }
 
     static get named_parameters(){ return [
         'language',
@@ -2467,7 +2471,7 @@ class code_mvc_HTMLElement extends ace.details.HTML_elements.defered_HTMLElement
                 Expected object layout: { ${code_mvc_HTMLElement.named_parameters } }
                 or valid childs/textContent when onConnectedCallback triggers`)
         
-        if (parameters instanceof code_mvc){
+        if (parameters instanceof ace.details.code.mvc){
         // direct initialization from code_mvc value,
         // by-pass defered_HTMLElement
             super()
@@ -2523,7 +2527,7 @@ class code_mvc_HTMLElement extends ace.details.HTML_elements.defered_HTMLElement
         delete this._parameters
         this.removeAttribute('code')
 
-        this.loading_animation_controler = new animation.controler({ owner: this, target: this.code_mvc.view })
+        this.loading_animation_controler = new ace.details.animation.controler({ owner: this, target: this.code_mvc.view })
         const { copy_to_clipboard, CE } = code_mvc_HTMLElement.add_buttons_to({ value: this })
         code_mvc_HTMLElement.set_on_resize_event({
             panel: this,
@@ -2620,7 +2624,7 @@ class code_mvc_HTMLElement extends ace.details.HTML_elements.defered_HTMLElement
         setTimeout(() => this.status = status, duration)
     }
 }
-customElements.define(code_mvc_HTMLElement.HTMLElement_tagName, code_mvc_HTMLElement);
+customElements.define(ace.details.code.mvc_HTMLElement.HTMLElement_tagName, ace.details.code.mvc_HTMLElement);
 
 // ==================
 // HTML_elements : API
@@ -2699,7 +2703,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
 
             let [ presentation, execution ] = [
                 // new code_mvc_HTMLElement(this._parameters),
-                new code_mvc_HTMLElement(new ace.details.code.mvc({
+                new ace.details.code.mvc_HTMLElement(new ace.details.code.mvc({
                     code_origin: this._parameters.code,
                     controler_options:{
                         language: this._parameters.language,
@@ -2712,7 +2716,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                     //     highlighter: language_policies.highlighters.use_hljs
                     // }
                 })),
-                new code_mvc_HTMLElement(new ace.details.code.mvc({
+                new ace.details.code.mvc_HTMLElement(new ace.details.code.mvc({
                     code_origin: '',
                     controler_options:{
                         language: 'ce_output',
@@ -2720,8 +2724,8 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                         toggle_language_detection : false
                     },
                     language_policy: {
-                        detector:    language_policies.detectors.use_none,
-                        highlighter: language_policies.highlighters.use_hljs
+                        detector:    ace.details.code.policies.language.detectors.use_none,
+                        highlighter: ace.details.code.policies.language.highlighters.use_hljs
                     }
                 }))
             ];
@@ -3596,7 +3600,7 @@ ace.API.initialize = () => {
             }
             [   // replace placeholders (<div class="...tagname...">) with matching HTML elements
                 ace.API.HTML_elements.CodeSection,
-                code_mvc_HTMLElement
+                ace.details.code.mvc_HTMLElement
             ].forEach(html_component => replace_HTML_element_placeholders(html_component))
 
             // WIP:
