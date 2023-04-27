@@ -56,7 +56,7 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
             throw new Error('ace.cs_demo: not connected yet ')
 
         this.ace_cs = new ace.API.HTML_elements.CodeSection({
-            code: ace.details.code_utility.mvc.details.factory.build_from({ nodes: this.childNodes })
+            code: ace.details.code.mvc_details.factory.build_from({ nodes: this.childNodes })
         })
         this.ace_cs = this.appendChild(this.ace_cs)
 
