@@ -395,8 +395,8 @@ ace.API.configuration = class configuration {
             direction       : ''            // default: row
         },
         hljs                                : {
-            // default_theme:   If no ace-theme-selector, then this is the default one.
-            //                  Otherwise, the first valid option of the first ace-theme-selector is the default
+            // default_theme:   If no ace-cs-theme-selector, then this is the default one.
+            //                  Otherwise, the first valid option of the first ace-cs-theme-selector is the default
             default_theme   : 'tokyo-night'  // supports dark/light variations
         },
         compatibility                       : {
@@ -1236,7 +1236,7 @@ ace.details.HTML_elements.buttons.copy_to_clipboard = class CopyToClipboardButto
 }
 customElements.define(
     ace.details.HTML_elements.buttons.copy_to_clipboard.HTMLElement_tagName,
-    ace.details.HTML_elements.buttons.copy_to_clipboard, {extends: 'button'}
+    ace.details.HTML_elements.buttons.copy_to_clipboard, { extends: 'button' }
 );
 ace.details.HTML_elements.buttons.show_in_godbolt = class ShowInGodboltButton extends HTMLButtonElement {
 
@@ -1347,7 +1347,7 @@ ace.details.HTML_elements.buttons.show_in_godbolt = class ShowInGodboltButton ex
 }
 customElements.define(
     ace.details.HTML_elements.buttons.show_in_godbolt.HTMLElement_tagName,
-    ace.details.HTML_elements.buttons.show_in_godbolt, {extends: 'button'}
+    ace.details.HTML_elements.buttons.show_in_godbolt, { extends: 'button' }
 );
 ace.details.HTML_elements.defered_HTMLElement = class extends HTMLElement {
 // HTMLElements that handles defered initialization
@@ -3228,7 +3228,7 @@ ace.details.Theme = class Theme {
 
     static get default_theme() {
         const theme_selector_default_option = (() => {
-            let candidate_option = $(document).find(`select[is=${ace.API.HTML_elements.ThemeSelector.HTMLElement_name}]`)
+            let candidate_option = $(document).find(`select[is=${ace.API.HTML_elements.ThemeSelector.HTMLElement_tagName}]`)
                 .map((index, element) => { return element.options[0] })
                 .filter((index, element) => element && element.value)
                 [0]
@@ -3371,27 +3371,27 @@ ace.details.Theme = class Theme {
 }
 // Events: monitor system preference changes
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-    $(document).find(`button[is=${ace.API.HTML_elements.ToggleDarkModeButton.HTMLElement_name}]`)
+    $(document).find(`button[is=${ace.API.HTML_elements.ToggleDarkModeButton.HTMLElement_tagName}]`)
         .each((index, element) => { element.updateIcon() })
     ace.details.Theme.is_dark_mode = event.matches
 })
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', event => {
-    $(document).find(`button[is=${ace.API.HTML_elements.ToggleDarkModeButton.HTMLElement_name}]`)
+    $(document).find(`button[is=${ace.API.HTML_elements.ToggleDarkModeButton.HTMLElement_tagName}]`)
         .each((index, element) => { element.updateIcon() })
     ace.details.Theme.is_dark_mode = !event.matches
 })
 ace.API.HTML_elements.ToggleDarkModeButton = class ToggleDarkModeButton extends HTMLButtonElement {
 
-    static HTMLElement_name                 = "ace-toggle-dark-mode-button"
-    static title                            = "Toggle light/dark Mode"
-    static lightModeIcon                    = `<svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#FCBF00"><rect fill="none" height="24" width="24"/><circle cx="12" cy="12" opacity=".3" r="3"/><path d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"/></svg>`
-    static darkModeIcon                     = `<svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#FE9700"><rect fill="none" height="24" width="24"/><path d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27 C17.45,17.19,14.93,19,12,19c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z" opacity=".3"/><path d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"/></svg>`
+    static get HTMLElement_tagName() { return 'ace-cs-button_toggle-dark-mode' }
+    static title            = "Toggle light/dark Mode"
+    static lightModeIcon    = `<svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#FCBF00"><rect fill="none" height="24" width="24"/><circle cx="12" cy="12" opacity=".3" r="3"/><path d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"/></svg>`
+    static darkModeIcon     = `<svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#FE9700"><rect fill="none" height="24" width="24"/><path d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27 C17.45,17.19,14.93,19,12,19c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z" opacity=".3"/><path d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"/></svg>`
 
     constructor() {
         super()
     }
     connectedCallback() {
-        this.setAttribute('is', ToggleDarkModeButton.HTMLElement_name)
+        this.setAttribute('is', ToggleDarkModeButton.HTMLElement_tagName)
         this.title = ToggleDarkModeButton.title
         this.addEventListener('click', this.#on_click);
         this.updateIcon()
@@ -3416,15 +3416,15 @@ ace.API.HTML_elements.ToggleDarkModeButton = class ToggleDarkModeButton extends 
     }
 }
 customElements.define(
-    ace.API.HTML_elements.ToggleDarkModeButton.HTMLElement_name,
-    ace.API.HTML_elements.ToggleDarkModeButton, {extends: 'button'}
+    ace.API.HTML_elements.ToggleDarkModeButton.HTMLElement_tagName,
+    ace.API.HTML_elements.ToggleDarkModeButton, { extends: 'button' }
 );
 ace.API.HTML_elements.ThemeSelector = class ThemeSelector extends HTMLSelectElement {
 // For themes, see https://cdnjs.com/libraries/highlight.js
 // Note: The first one is the default
 // Use theme name, without light or dark specification. Example : `tokyo-night`
 
-    static HTMLElement_name = 'ace-theme-selector'
+    static get HTMLElement_tagName() { return 'ace-cs-theme-selector' }
 
     #parameters = undefined
 
@@ -3453,7 +3453,7 @@ ace.API.HTML_elements.ThemeSelector = class ThemeSelector extends HTMLSelectElem
 
     #initialize() {
 
-        this.setAttribute('is', ThemeSelector.HTMLElement_name)
+        this.setAttribute('is', ThemeSelector.HTMLElement_tagName)
         this.id = ThemeSelector.#id_generator()
         this.innerHTML = ""
 
@@ -3473,11 +3473,11 @@ ace.API.HTML_elements.ThemeSelector = class ThemeSelector extends HTMLSelectElem
 
     static #id_generator = (() => {
         let counter = ace.details.utility.make_incremental_counter_generator()
-        return () => { return `${ThemeSelector.HTMLElement_name}-${counter.next().value}` }
+        return () => { return `${ThemeSelector.HTMLElement_tagName}-${counter.next().value}` }
     })()
 }
 customElements.define(
-    ace.API.HTML_elements.ThemeSelector.HTMLElement_name,
+    ace.API.HTML_elements.ThemeSelector.HTMLElement_tagName,
     ace.API.HTML_elements.ThemeSelector, { extends : 'select' }
 );
 

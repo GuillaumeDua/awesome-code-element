@@ -1,7 +1,8 @@
-/* TODO: vars */
-/* TODO: is there a better way to reuse existing recipes ? */
-/*       otherwise, consider creating a script to generate a decoupled stylesheet for the sole purpose of ace-cs-element-demo ?*/
 /*
+    TODO: vars
+    TODO: decouple demo-related elements from this file
+        - either (in the demo) redefined what ace-cs-element is, so ace-cs-demo overwrite its definition
+        - otherwise, consider creating a script to generate a decoupled stylesheet for the sole purpose of ace-cs-element-demo ?
     TODO: button visibility based on @media (max-width), rather than JS window listener
           when `CS > code` is scrolling, then CS > buttons toggle display blokc/none
 */
