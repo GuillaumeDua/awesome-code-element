@@ -37,7 +37,7 @@
 //      - theme selector
 //  - toggle dark/light theme
 //  - buttons :
-//      - send-to-godbolt
+//      - open-in-godbolt
 //      - copy-to-clipboard
 //      - (doxygen-awesome-css compatibility) toggle light/dark mode
 
@@ -108,6 +108,13 @@
 // TODO: static member ref: this.constructor.<name> rather than classname redundancy
 // TODO: on page focus -> refresh toggle light/dark button icon
 // TODO? ace.details => ace_details => not exported (hidden details ?)
+// TODO: pre-fetch+load resources in background to improve reactivity
+//          - available theme
+//          - non-default dark/light theme variations, if any
+// TODO: Additional UI infos (stylesheet only ?)
+//          - soft-(error|warning) icon (opt-out)
+//              - language detection failed
+//          - active language
 
 export { ace as default }
 
@@ -1191,7 +1198,7 @@ ace.details.HTML_elements.buttons = {}
 ace.details.HTML_elements.buttons.copy_to_clipboard = class CopyToClipboardButton extends HTMLButtonElement {
 // Copy text context of this previousSibling HTMLelement
 
-    static HTMLElement_name = 'ace-button-copy-to-clipboard'
+    static get HTMLElement_tagName() { return 'ace-cs-button_copy-to-clipboard' }
     static title            = "Copy to clipboard"
     static copyIcon         = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>`
     static successIcon      = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`
@@ -1199,7 +1206,7 @@ ace.details.HTML_elements.buttons.copy_to_clipboard = class CopyToClipboardButto
 
     constructor() {
         super();
-        this.setAttribute('is', CopyToClipboardButton.HTMLElement_name)
+        this.setAttribute('is', CopyToClipboardButton.HTMLElement_tagName)
 
         this.title = CopyToClipboardButton.title
         this.innerHTML = CopyToClipboardButton.copyIcon
@@ -1228,12 +1235,12 @@ ace.details.HTML_elements.buttons.copy_to_clipboard = class CopyToClipboardButto
     }
 }
 customElements.define(
-    ace.details.HTML_elements.buttons.copy_to_clipboard.HTMLElement_name,
+    ace.details.HTML_elements.buttons.copy_to_clipboard.HTMLElement_tagName,
     ace.details.HTML_elements.buttons.copy_to_clipboard, {extends: 'button'}
 );
 ace.details.HTML_elements.buttons.show_in_godbolt = class ShowInGodboltButton extends HTMLButtonElement {
 
-    static HTMLElement_name = 'ace-button-send-to-godbolt'
+    static get HTMLElement_tagName() { return 'ace-cs-button_open-in-godbolt' }
     static title            = 'Try this on godbolt.org (compiler-explorer)'
     static icon             = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><switch><g><path d="M58.6 46.5c-.3-.5-.3-1.2 0-1.7.3-.6.7-1.3 1-2 .2-.5-.1-1-.7-1h-5.8c-.6 0-1.2.3-1.4.8-.7 1.1-1.6 2.2-2.6 3.2-3.7 3.7-8.6 5.7-13.9 5.7-5.3 0-10.2-2-13.9-5.7-3.8-3.7-5.8-8.6-5.8-13.9s2-10.2 5.8-13.9c3.7-3.7 8.6-5.7 13.9-5.7 5.3 0 10.2 2 13.9 5.7 1 1 1.9 2.1 2.6 3.2.3.5.9.8 1.4.8h5.8c.5 0 .9-.5.7-1-.3-.7-.6-1.3-1-2-.3-.5-.3-1.2 0-1.7l1.9-3.5c.4-.7.3-1.5-.3-2.1l-4.9-4.9c-.6-.6-1.4-.7-2.1-.3l-3.6 2c-.5.3-1.2.3-1.7 0-1.7-.9-3.5-1.7-5.4-2.2-.6-.2-1-.6-1.2-1.2l-1.1-3.9C40.1.5 39.5 0 38.7 0h-6.9C31 0 30.2.5 30 1.3l-1.1 3.9c-.2.6-.6 1-1.2 1.2-1.9.6-3.6 1.3-5.3 2.2-.5.3-1.2.3-1.7 0l-3.6-2c-.7-.4-1.5-.3-2.1.3l-4.9 4.9c-.6.6-.7 1.4-.3 2.1l2 3.6c.3.5.3 1.2 0 1.7-.9 1.7-1.7 3.5-2.2 5.3-.2.6-.6 1-1.2 1.2l-3.9 1.1c-.7.2-1.3.9-1.3 1.7v6.9c0 .8.5 1.5 1.3 1.7l3.9 1.1c.6.2 1 .6 1.2 1.2.5 1.9 1.3 3.6 2.2 5.3.3.6.3 1.2 0 1.7l-2 3.6c-.4.7-.3 1.5.3 2.1L15 57c.6.6 1.4.7 2.1.3l3.6-2c.6-.3 1.2-.3 1.7 0 1.7.9 3.5 1.7 5.3 2.2.6.2 1 .6 1.2 1.2l1.1 3.9c.2.7.9 1.3 1.7 1.3h6.9c.8 0 1.5-.5 1.7-1.3l1.1-3.9c.2-.6.6-1 1.2-1.2 1.9-.6 3.6-1.3 5.4-2.2.5-.3 1.2-.3 1.7 0l3.6 2c.7.4 1.5.3 2.1-.3l4.9-4.9c.6-.6.7-1.4.3-2.1l-2-3.5z" fill="#67c52a"/><path d="M23.5 37.7v4.4h23.8v-4.4H23.5zm0-7.8v4.4h19.6v-4.4H23.5zm0-7.9v4.4h23.8V22H23.5z" fill="#3c3c3f"/></g></switch></svg>`;
     static successIcon      = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`
@@ -1242,7 +1249,7 @@ ace.details.HTML_elements.buttons.show_in_godbolt = class ShowInGodboltButton ex
     constructor() {
 
         super();
-        this.setAttribute('is', ShowInGodboltButton.HTMLElement_name)
+        this.setAttribute('is', ShowInGodboltButton.HTMLElement_tagName)
 
         this.title = ShowInGodboltButton.title;
         this.innerHTML = ShowInGodboltButton.icon;
@@ -1339,7 +1346,7 @@ ace.details.HTML_elements.buttons.show_in_godbolt = class ShowInGodboltButton ex
     }
 }
 customElements.define(
-    ace.details.HTML_elements.buttons.show_in_godbolt.HTMLElement_name,
+    ace.details.HTML_elements.buttons.show_in_godbolt.HTMLElement_tagName,
     ace.details.HTML_elements.buttons.show_in_godbolt, {extends: 'button'}
 );
 ace.details.HTML_elements.defered_HTMLElement = class extends HTMLElement {
@@ -1463,7 +1470,7 @@ customElements.define(ace.details.HTML_elements.status_display.HTMLElement_tagNa
 // Animation HTML element factory + controler
 ace.details.animation = class animation {
     
-    static get HTMLElement_tagName() { return 'ace-animation' }
+    static get HTMLElement_tagName() { return 'ace-cs-animation' }
     get [Symbol.toStringTag](){ return animation.HTMLElement_tagName }
 
     static #cache = (function(){
@@ -2633,7 +2640,7 @@ customElements.define(ace.details.code.mvc_HTMLElement.HTMLElement_tagName, ace.
 ace.API.HTML_elements = {}
 ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.defered_HTMLElement {
 
-    static get HTMLElement_tagName() { return 'ace-code-section' }
+    static get HTMLElement_tagName() { return 'ace-cs-element' }
     get [Symbol.toStringTag](){ return cs.HTMLElement_tagName }
 
     static get named_parameters(){ return [
