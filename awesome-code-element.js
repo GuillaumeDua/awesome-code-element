@@ -2152,7 +2152,7 @@ ace.details.code.mvc = class code_mvc {
         constructor({ target, language_policy, options }){
             
             if (!(target instanceof code_mvc))
-                throw new Error('code_mvc.controler_type.constructor: invalid argument (invalid type for argument `target`)')
+                throw new Error(`${this}.controler_type.constructor: invalid argument (invalid type for argument [target])`)
 
             this.#target = target
             this.#language_policies = language_policy
@@ -2160,7 +2160,7 @@ ace.details.code.mvc = class code_mvc {
             const language_argument = options.language ?? this.#target.model_details.ce_options.language
             this.#language = this.#language_policies.detector.get_language_name(language_argument)
             if (this.#language === undefined && language_argument)
-                console.warn(`code_mvc.controler_type.constructor: invalid user-provided language: [${language_argument}]`)
+                console.warn(`${this}.controler_type.constructor: invalid user-provided language: [${language_argument}]`)
 
             this.toggle_language_detection = options.language // if a user-provided valid language exists, then toggle_language-deteciton is set to false
                 ? !Boolean(this.#language)
@@ -2173,7 +2173,7 @@ ace.details.code.mvc = class code_mvc {
         
             if (!this.#target.is_mutable) {
                 console.warn(
-                    'ace.details.code.constructor: invalid language_policies.highlighter for non-mutable/const code mvc\n',
+                    `${this}.controler_type.initialize_behaviors: invalid language_policies.highlighter for non-mutable/const code mvc\n`,
                     `was [${this.language_policies.highlighter.name}], switching to fallback [language_policies.highlighters.use_none]`
                 )
                 this.language_policies.highlighter = language_policies.highlighters.use_none
@@ -2181,9 +2181,9 @@ ace.details.code.mvc = class code_mvc {
     
             const language_policies = ace.details.code.policies.language;
             if (!language_policies.detectors.check_concept(this.language_policies.detector))
-                throw new Error('ace.details.code.constructor: invalid argument (language_policy.detector)')
+                throw new Error(`${this}.controler_type.initialize_behaviors: invalid argument [language_policy.detector]`)
             if (!language_policies.highlighters.check_concept(this.language_policies.highlighter))
-                throw new Error('ace.details.code.constructor: invalid argument (language_policy.highlighter)')
+                throw new Error(`${this}.controler_type.initialize_behaviors: invalid argument [language_policy.highlighter]`)
             
             this.#toggle_parsing = (() => {
     
@@ -2459,10 +2459,16 @@ ace.details.code.mvc = class code_mvc {
         })()
     }
 }
-ace.details.code.mvc_HTMLElement = class code_mvc_HTMLElement extends ace.details.HTML_elements.defered_HTMLElement {
+
+// ==================
+// HTML_elements : API
+
+// TODO: presentation.view is mutable and the user changed the textContent -> update model
+ace.API.HTML_elements = {}
+ace.API.HTML_elements.CodeMVC = class code_mvc_HTMLElement extends ace.details.HTML_elements.defered_HTMLElement {
 
     static get HTMLElement_tagName() { return 'ace-cs-code-mvc' }
-    get [Symbol.toStringTag](){ return 'ace.details.code.mvc_HTMLElement' }
+    get [Symbol.toStringTag](){ return 'ace.API.HTML_elements.CodeMVC' }
 
     static get named_parameters(){ return [
         'language',
@@ -2471,14 +2477,17 @@ ace.details.code.mvc_HTMLElement = class code_mvc_HTMLElement extends ace.detail
         'code'
     ]}
 
+    static value_type = ace.details.code.mvc;
+    value = undefined
+
     constructor(parameters = {}) {
         if (typeof parameters !== "object")
             throw new Error(
-                `code_mvc_HTMLElement.constructor: invalid argument.
+                `${this}.constructor: invalid argument.
                 Expected object layout: { ${code_mvc_HTMLElement.named_parameters } }
                 or valid childs/textContent when onConnectedCallback triggers`)
         
-        if (parameters instanceof ace.details.code.mvc){
+        if (parameters instanceof code_mvc_HTMLElement.value_type){
         // direct initialization from code_mvc value,
         // by-pass defered_HTMLElement
             super()
@@ -2526,19 +2535,19 @@ ace.details.code.mvc_HTMLElement = class code_mvc_HTMLElement extends ace.detail
         // console.debug(`code_mvc_HTMLElement.initialize: parameters:`, this._parameters)
 
         this.status_display = this.appendChild(new ace.details.HTML_elements.status_display)
-        this.code_mvc = this.#code_mvc_initializer()
-        this.appendChild(this.code_mvc.view)
+        this.value = this.#code_mvc_initializer()
+        this.appendChild(this.value.view)
 
         // this as proxy to code_mvc ?
 
         delete this._parameters
         this.removeAttribute('code')
 
-        this.loading_animation_controler = new ace.details.animation.controler({ owner: this, target: this.code_mvc.view })
-        const { copy_to_clipboard, CE } = code_mvc_HTMLElement.add_buttons_to({ value: this })
-        code_mvc_HTMLElement.set_on_resize_event({
+        this.loading_animation_controler = new ace.details.animation.controler({ owner: this, target: this.value.view })
+        const { copy_to_clipboard, CE } = this.constructor.add_buttons_to({ value: this })
+        this.constructor.set_on_resize_event({
             panel: this,
-            scrolling_element: this.code_mvc.view,
+            scrolling_element: this.value.view,
             elements_to_hide: [ copy_to_clipboard, CE ]
         })
 
@@ -2546,10 +2555,10 @@ ace.details.code.mvc_HTMLElement = class code_mvc_HTMLElement extends ace.detail
         ace.details.utility.data_binder.synced_attr_view_controler({
             target: this,
             data_sources: [
-                { property_name: 'language',                    owner: this.code_mvc.controler, projection: projections.string },
-                { property_name: 'toggle_parsing',              owner: this.code_mvc.controler, projection: projections.boolean },
-                { property_name: 'toggle_language_detection',   owner: this.code_mvc.controler, projection: projections.boolean },
-                { property_name: 'is_executable',               owner: this.code_mvc.controler, projection: projections.boolean },
+                { property_name: 'language',                    owner: this.value.controler, projection: projections.string },
+                { property_name: 'toggle_parsing',              owner: this.value.controler, projection: projections.boolean },
+                { property_name: 'toggle_language_detection',   owner: this.value.controler, projection: projections.boolean },
+                { property_name: 'is_executable',               owner: this.value.controler, projection: projections.boolean },
             ]
         })
         // ace.details.utility.data_binder.bind_attr({ 
@@ -2631,13 +2640,7 @@ ace.details.code.mvc_HTMLElement = class code_mvc_HTMLElement extends ace.detail
         setTimeout(() => this.status = status, duration)
     }
 }
-customElements.define(ace.details.code.mvc_HTMLElement.HTMLElement_tagName, ace.details.code.mvc_HTMLElement);
-
-// ==================
-// HTML_elements : API
-
-// TODO: presentation.view is mutable and the user changed the textContent -> update model
-ace.API.HTML_elements = {}
+customElements.define(ace.API.HTML_elements.CodeMVC.HTMLElement_tagName, ace.API.HTML_elements.CodeMVC);
 ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.defered_HTMLElement {
 
     static get HTMLElement_tagName() { return 'ace-cs-element' }
@@ -2708,9 +2711,10 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
 
         this.ace_cs_panels = (() => {
 
+            const code_mvc = ace.API.HTML_elements.CodeMVC;
             let [ presentation, execution ] = [
                 // new code_mvc_HTMLElement(this._parameters),
-                new ace.details.code.mvc_HTMLElement(new ace.details.code.mvc({
+                new code_mvc(new code_mvc.value_type({
                     code_origin: this._parameters.code,
                     controler_options:{
                         language: this._parameters.language,
@@ -2723,7 +2727,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                     //     highlighter: language_policies.highlighters.use_hljs
                     // }
                 })),
-                new ace.details.code.mvc_HTMLElement(new ace.details.code.mvc({
+                new code_mvc(new code_mvc.value_type({
                     code_origin: '',
                     controler_options:{
                         language: 'ce_output',
@@ -2770,15 +2774,15 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
             target: this,
             data_sources: [
                 { property_name: 'url',                        owner: this },
-                { property_name: 'language',                   owner: this.ace_cs_panels.presentation.code_mvc.controler },
-                { property_name: 'toggle_parsing',             owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean },
-                { property_name: 'toggle_language_detection',  owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean },
-                { property_name: 'toggle_execution',           owner: this,                                               projection: projections.boolean },
-                { property_name: 'is_executable',              owner: this.ace_cs_panels.presentation.code_mvc.controler, projection: projections.boolean },
+                { property_name: 'language',                   owner: this.ace_cs_panels.presentation.value.controler },
+                { property_name: 'toggle_parsing',             owner: this.ace_cs_panels.presentation.value.controler, projection: projections.boolean },
+                { property_name: 'toggle_language_detection',  owner: this.ace_cs_panels.presentation.value.controler, projection: projections.boolean },
+                { property_name: 'toggle_execution',           owner: this,                                            projection: projections.boolean },
+                { property_name: 'is_executable',              owner: this.ace_cs_panels.presentation.value.controler, projection: projections.boolean },
             ]
         })
         /* const { origin, transformed, revoke } = */ ace.details.utility.inject_on_property_change_proxy({
-            target: this.ace_cs_panels.presentation.code_mvc,
+            target: this.ace_cs_panels.presentation.value,
             property_name: 'model',
             on_property_change: ({ new_value, old_value, origin_op }) => {
                 if (origin_op !== 'set' || new_value === old_value || !this.toggle_execution)
@@ -2787,7 +2791,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
             }
         })
         /* const { origin, transformed, revoke } = */ ace.details.utility.inject_on_property_change_proxy({
-            target: this.ace_cs_panels.presentation.code_mvc.controler,
+            target: this.ace_cs_panels.presentation.value.controler,
             property_name: 'language',
             on_property_change: ({ new_value, old_value, origin_op }) => {
                 if (origin_op !== 'set' || new_value === old_value || !this.toggle_execution)
@@ -2868,7 +2872,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
 
             const execution_panel = this.#target.ace_cs_panels.execution
 
-            if (this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable){
+            if (this.#target.ace_cs_panels.presentation.value.controler.is_executable){
                 execution_panel.status = {
                     value: 'ready-to-fetch',
                     message: ``
@@ -2876,7 +2880,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                 return true
             }
             
-            const error = `${this.toString()}.get(expect_target_is_executable):\n\tnot executable (yet?)\n\tmissing configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
+            const error = `${this.toString()}.get(expect_target_is_executable):\n\tnot executable (yet?)\n\tmissing configuration for language [${this.#target.ace_cs_panels.presentation.value.controler.language}]`
             execution_panel.status = {
                 value: 'error-not-executable',
                 message: `${error}`
@@ -2890,11 +2894,13 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
             if (!this.#target.#toggle_execution
              || !this.#expect_target_is_executable
             ) return
-            if (this.last_input === this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute){
+
+            const code_mvc = this.#target.ace_cs_panels.presentation.value;
+            if (this.last_input === code_mvc.model_details.to_execute){
                 console.warn(this.toString(), '.fetch: no-op: already fetching or fetched')
                 return
             }
-            this.#last_input = this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute
+            this.#last_input = code_mvc.model_details.to_execute;
             if (this.is_loading){
                 console.warn(this.toString(), 'already loading')
                 return
@@ -2910,7 +2916,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
             const set_execution_content = ({ content: { value, return_code } }) => {
     
                 const execution_panel = this.#target.ace_cs_panels.execution
-                execution_panel.code_mvc.model = value
+                execution_panel.value.model = value
                 execution_panel.status = {
                     value: `${return_code < 0 ? 'failure' : 'success'}-compilation`,
                     message: `compilation: ${return_code < 0 ? 'failure' : 'success'}`
@@ -2926,15 +2932,16 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                 this.#is_loading = false
             }
     
-            if (!this.#target.ace_cs_panels.presentation.code_mvc.controler.is_executable) {
-                const error = `CodeSection:fetch_execution: not executable.\n\tNo known valid configuration for language [${this.#target.ace_cs_panels.presentation.code_mvc.controler.language}]`
+            const presentation_panel = this.#target.ace_cs_panels.presentation;
+            if (!presentation_panel.value.controler.is_executable) {
+                const error = `CodeSection:fetch_execution: not executable.\n\tNo known valid configuration for language [${presentation_panel.value.controler.language}]`
                 set_error({ error: error })
             }
     
             // execution panel: replace with result
             return ace.details.remote.CE_API.fetch_execution_result(
-                this.#target.ace_cs_panels.presentation.code_mvc.model_details.ce_options,
-                this.#target.ace_cs_panels.presentation.code_mvc.model_details.to_execute
+                presentation_panel.value.model_details.ce_options,
+                presentation_panel.value.model_details.to_execute
             )
                 .then((result) => {
                     // CE header: parse & remove
@@ -2977,7 +2984,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
 
         this.#url = value
 
-        const presentation_panel = this.ace_cs_panels.presentation
+        const presentation_panel = this.ace_cs_panels.presentation;
         if (!this.#url){
             presentation_panel.status = {
                 value: 'error-network-invalid-url',
@@ -3006,18 +3013,18 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                         })
                     }
     
-                    if (this.ace_cs_panels.presentation.code_mvc.controler.toggle_language_detection) {
+                    if (presentation_panel.value.controler.toggle_language_detection) {
                     // use url extension as language, if valid
                         const url_extension = ace.details.utility.get_url_extension(this.#url)
                         if (url_extension
-                         && this.ace_cs_panels.presentation.code_mvc.controler.language_policies.detector.is_valid_language(url_extension)){
-                            this.ace_cs_panels.presentation.code_mvc.controler.language = url_extension
-                            this.ace_cs_panels.presentation.code_mvc.controler.toggle_language_detection = false
+                         && presentation_panel.value.controler.language_policies.detector.is_valid_language(url_extension)){
+                            presentation_panel.value.controler.language = url_extension
+                            presentation_panel.value.controler.toggle_language_detection = false
                         }
                     }
                     
-                    // setTimeout(() => { // simulate slow network for test purpose
-                    //     this.ace_cs_panels.presentation.code_mvc.model = code
+                    // setTimeout(() => { // simulates slow network for test purpose
+                    //     presentation_panel.value.model = code
                     //     resolve('on_success')
                     // }, 2000)
 
@@ -3027,7 +3034,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                         message: `ace.cs.set(url): network success:\n\tfetched [${this.url}]`
                     }
                     // update model
-                    this.ace_cs_panels.presentation.code_mvc.model = code
+                    presentation_panel.value.model = code
                     resolve('ace.cs.set(url) -> on_success')
                 }
             })
@@ -3047,7 +3054,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
         .then(
             (result) => {
                 // presentation panel: use url extension as language, if valid
-                const presentation_controler = presentation_panel.code_mvc.controler;
+                const presentation_controler = presentation_panel.value.controler;
                 if (presentation_controler.toggle_language_detection) {
                     const url_extension = ace.details.utility.get_url_extension(this.#url)
                     if (url_extension && presentation_controler.language_policies.detector.is_valid_language(url_extension)) {
@@ -3485,99 +3492,101 @@ customElements.define(
 // Initialization
 // TODO: cleanup, refactor
 
-ace.API.initializers = {
-    // TODO: global configuration for default/forced ace.CS options: language, toggle_*
-    doxygenCodeSections : function() {
-        // Replace code-sections generated by doxygen (and possibly altered by doxygen-awesome-css)
-        // like `<pre><code></code></pre>`,
-        // or placeholders like `\include path/to/example.ext`
-        
-        // DoxygenAwesomeFragmentCopyButton wraps code in
-        //  div[class="doxygen-awesome-fragment-wrapper"] div[class="fragment"] div[class="line"]
-        // otherwise, default is
-        //  div[class="fragment"] div[class="line"]
-    
-        // clickable documentation elements are :
-        //  div[class="doxygen-awesome-fragment-wrapper"] div[class="fragment"] div[class="line"]
-        //      <a class="code" href="structcsl_1_1ag_1_1size.html">csl::ag::size&lt;A&gt;::value</a>
-    
-        let doc_ref_links = new Map(); // preserve clickable documentation reference links
-    
-        var place_holders = $('body').find('div[class=doxygen-awesome-fragment-wrapper]');
-        console.info(`awesome-code-element.js:initialize_doxygenCodeSections : replacing [${place_holders.length}] elements ...`)
-        place_holders.each((index, value) => {
-    
-            let lines = $(value).find('div[class=fragment] div[class=line]')
-    
-            // WIP: keep doc ref links,
-            //      or wrap with specific CS mode that does not alter content
-            let links = lines.find('a[class="code"]')
-            links.each((index, value) => {
-                doc_ref_links.set(value.textContent, value.href)
-            })
-            // /WIP
-    
-            let code = $.map(lines, function(value) { return value.textContent }).join('\n')
-            let node = new ace.API.HTML_elements.CodeSection({ code: code });
-                $(value).replaceWith(node)
-        })
-    
-        var place_holders = $('body').find('div[class=fragment]')
-        console.info(`awesome-code-element.js:initialize_doxygenCodeSections : replacing [${place_holders.length}] elements ...`)
-        place_holders.each((index, value) => {
-    
-            let lines = $(value).find('div[class=line]')
-    
-            // WIP
-            let links = lines.find('a[class="code"]')
-            links.each((index, value) => {
-                doc_ref_links.set(value.textContent, value.href)
-            })
-            // /WIP
-    
-            let code = $.map(lines, function(value) { return value.textContent }).join('\n')
-            let node = new ace.API.HTML_elements.CodeSection({ code: code });
-                $(value).replaceWith(node)
-        })
-    
-        // TODO: restore documentation reference links
-        doc_ref_links.forEach((values, keys) => {
-            // console.debug(">>> " + value.href + " => " + value.textContent)
-            console.debug(">>> " + values + " => " + keys)
-        })
-    
-        var place_holders = $('body').find('awesome-code-element_code-section pre code') // span or text
-        place_holders.filter(function() {
-            return $(this).text().replace(/toto/g, '<a href=".">toto</a>');
-            })
-    },
-    // TODO: make sure that doxygen elements are also still clickable with pure doxygen (not doxygen-awesome-css)
-    PreCodeHTML_elements : function() {
-
-        $('body').find('pre code').each((index, value) => { // filter
-
-            if ($(value).parent().parent().prop('nodeName').toLowerCase().startsWith("awesome-code-element_"))
-                return
-
-            let existing_node = $(value).parent()
-
-            let language = value.getAttribute('language')
-            let code = existing_node.text()
-
-            let node = new ace.API.HTML_elements.CodeSection({ code: code, language: language });
-                // node.setAttribute('language', language)
-            existing_node.replaceWith(node);
-        })
-
-        // TODO: same for only code elements ?
-    }
-}
 ace.API.initialize = () => {
+
+    const initializers = {
+        // TODO: global configuration for default/forced ace.CS options: language, toggle_*
+        doxygenCodeSections : function() {
+            // Replace code-sections generated by doxygen (and possibly altered by doxygen-awesome-css)
+            // like `<pre><code></code></pre>`,
+            // or placeholders like `\include path/to/example.ext`
+            
+            // DoxygenAwesomeFragmentCopyButton wraps code in
+            //  div[class="doxygen-awesome-fragment-wrapper"] div[class="fragment"] div[class="line"]
+            // otherwise, default is
+            //  div[class="fragment"] div[class="line"]
+        
+            // clickable documentation elements are :
+            //  div[class="doxygen-awesome-fragment-wrapper"] div[class="fragment"] div[class="line"]
+            //      <a class="code" href="structcsl_1_1ag_1_1size.html">csl::ag::size&lt;A&gt;::value</a>
+        
+            let doc_ref_links = new Map(); // preserve clickable documentation reference links
+        
+            var place_holders = $('body').find('div[class=doxygen-awesome-fragment-wrapper]');
+            console.info(`awesome-code-element.js:initialize_doxygenCodeSections : replacing [${place_holders.length}] elements ...`)
+            place_holders.each((index, value) => {
+        
+                let lines = $(value).find('div[class=fragment] div[class=line]')
+        
+                // WIP: keep doc ref links,
+                //      or wrap with specific CS mode that does not alter content
+                let links = lines.find('a[class="code"]')
+                links.each((index, value) => {
+                    doc_ref_links.set(value.textContent, value.href)
+                })
+                // /WIP
+        
+                let code = $.map(lines, function(value) { return value.textContent }).join('\n')
+                let node = new ace.API.HTML_elements.CodeSection({ code: code });
+                    $(value).replaceWith(node)
+            })
+        
+            var place_holders = $('body').find('div[class=fragment]')
+            console.info(`awesome-code-element.js:initialize_doxygenCodeSections : replacing [${place_holders.length}] elements ...`)
+            place_holders.each((index, value) => {
+        
+                let lines = $(value).find('div[class=line]')
+        
+                // WIP
+                let links = lines.find('a[class="code"]')
+                links.each((index, value) => {
+                    doc_ref_links.set(value.textContent, value.href)
+                })
+                // /WIP
+        
+                let code = $.map(lines, function(value) { return value.textContent }).join('\n')
+                let node = new ace.API.HTML_elements.CodeSection({ code: code });
+                    $(value).replaceWith(node)
+            })
+        
+            // TODO: restore documentation reference links
+            doc_ref_links.forEach((values, keys) => {
+                // console.debug(">>> " + value.href + " => " + value.textContent)
+                console.debug(">>> " + values + " => " + keys)
+            })
+        
+            var place_holders = $('body').find('awesome-code-element_code-section pre code') // span or text
+            place_holders.filter(function() {
+                return $(this).text().replace(/toto/g, '<a href=".">toto</a>');
+                })
+        },
+        // TODO: make sure that doxygen elements are also still clickable with pure doxygen (not doxygen-awesome-css)
+        PreCodeHTML_elements : function() {
+    
+            $('body').find('pre code').each((index, value) => { // filter
+    
+                if ($(value).parent().parent().prop('nodeName').toLowerCase().startsWith("awesome-code-element_"))
+                    return
+    
+                let existing_node = $(value).parent()
+    
+                let language = value.getAttribute('language')
+                let code = existing_node.text()
+    
+                let node = new ace.API.HTML_elements.CodeSection({ code: code, language: language });
+                    // node.setAttribute('language', language)
+                existing_node.replaceWith(node);
+            })
+    
+            // TODO: same for only code elements ?
+        }
+    };
 
     $(function() {
         $(document).ready(function() {
 
             console.info('awesome-code-element.js:initialize ...')
+            console.debug('>>> ace:', ace)
 
             let replace_HTML_element_placeholders = (type) => {
 
@@ -3607,7 +3616,7 @@ ace.API.initialize = () => {
             }
             [   // replace placeholders (<div class="...tagname...">) with matching HTML elements
                 ace.API.HTML_elements.CodeSection,
-                ace.details.code.mvc_HTMLElement
+                ace.API.HTML_elements.CodeMVC
             ].forEach(html_component => replace_HTML_element_placeholders(html_component))
 
             // WIP:
