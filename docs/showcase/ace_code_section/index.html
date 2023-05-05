@@ -152,7 +152,7 @@ SOFTWARE.
             <!--<ace-cs-element id="my_custom_cs_id"></ace-cs-element>-->
         </ace-showcase-wrapper>
         <button style="margin-top: 10px;" onclick="
-            const code = document.getElementById('cs_1').ace_cs_panels.presentation.value.model; // equivalent here to document.getElementById('cs_0').textContent
+            const code = document.getElementById('cs_1').ace_panels.presentation.mvc.model; // equivalent here to document.getElementById('cs_0').textContent
             document.getElementById('my_custom_cs_id').textContent = code
             this.style.display = 'none'
         ">
@@ -266,7 +266,7 @@ auto main() -> int {
     <div class="note">
         <h4>&#9432; Note:</h4>
         <pre>Relevant error status:
-        <b>JS:</b>  <code>ace_cs_element.ace_cs_panels.execution.getAttribute('status') === 'failure-compilation'</code>
+        <b>JS:</b>  <code>ace_cs_element.ace_panels.execution.getAttribute('status') === 'failure-compilation'</code>
         <b>CSS:</b> <code>ace-cs-element > ace-cs-code-mvc[id$='.panels.execution'][status|='failure']</code></pre>
     </div>
             </li></ul>
@@ -281,7 +281,7 @@ int main() {
     <div class="note">
         <h4>&#9432; Note:</h4>
         <pre>Relevant error status:
-        <b>JS:</b>  <code>ace_cs_element.ace_cs_panels.panels.right.getAttribute('status') === 'error-compilation'</code>
+        <b>JS:</b>  <code>ace_cs_element.ace_panels.panels.right.getAttribute('status') === 'error-compilation'</code>
         <b>CSS:</b> <code>ace-cs-element > [id$='.panels.right'][status='error']</code></pre>
     </div>
             </li></ul>

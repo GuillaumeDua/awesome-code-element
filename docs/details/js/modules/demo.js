@@ -72,7 +72,7 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
             display: 'flex',
         })
         // two-way binding ...
-        const presentation_mvc = this.ace_cs.ace_cs_panels.presentation.code_mvc;
+        const presentation_mvc = this.ace_cs.ace_panels.presentation.mvc;
         options_container.appendChild(this.#make_boolean_field_view({ target: presentation_mvc.controler, property_name: 'toggle_parsing' }))
         options_container.appendChild(this.#make_boolean_field_view({ target: presentation_mvc.controler, property_name: 'toggle_language_detection' }))
         options_container.appendChild(this.#make_boolean_field_view({ target: this.ace_cs, property_name: 'toggle_execution' }))
@@ -80,8 +80,8 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
 
         options_container.appendChild(this.#make_string_view({
             target: {
-                view:  this.ace_cs.ace_cs_panels.presentation,
-                model: this.ace_cs.ace_cs_panels.presentation.code_mvc.controler
+                view:  this.ace_cs.ace_panels.presentation,
+                model: this.ace_cs.ace_panels.presentation.mvc.controler
             },
             property_name: 'language',
             hint: 'set, or clear to attempt a fallback autodetection'
@@ -103,7 +103,7 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
     // TODO: rich code editor
     #transform_code_into_editable() {
         // make code editable
-        const presentation_mvc = this.ace_cs.ace_cs_panels.presentation.code_mvc;
+        const presentation_mvc = this.ace_cs.ace_panels.presentation.mvc;
         presentation_mvc.view.title = 'Edit me ! (requires toggle_parsing off)'
         presentation_mvc.view.addEventListener('click', () => {
             presentation_mvc.view.setAttribute('contentEditable', !presentation_mvc.controler.toggle_parsing)

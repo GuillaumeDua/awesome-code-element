@@ -2465,6 +2465,8 @@ ace.details.code.mvc = class code_mvc {
 
 // TODO: HTML members 
 //  ex: loading_animation_controler -> ace_loading_animation_controler
+//  ex: ace_cs_buttons -> ace_buttons
+// TODO: ace-cs -> ace
 
 // TODO: presentation.view is mutable and the user changed the textContent -> update model
 ace.API.HTML_elements = {}
@@ -2480,8 +2482,8 @@ ace.API.HTML_elements.CodeMVC = class code_mvc_HTMLElement extends ace.details.H
         'code'
     ]}
 
-    static value_type = ace.details.code.mvc;
-    value = undefined
+    static mvc_type = ace.details.code.mvc;
+    mvc = undefined
 
     constructor(parameters = {}) {
         if (typeof parameters !== "object")
@@ -2490,7 +2492,7 @@ ace.API.HTML_elements.CodeMVC = class code_mvc_HTMLElement extends ace.details.H
                 Expected object layout: { ${code_mvc_HTMLElement.named_parameters } }
                 or valid childs/textContent when onConnectedCallback triggers`)
         
-        if (parameters instanceof code_mvc_HTMLElement.value_type){
+        if (parameters instanceof code_mvc_HTMLElement.mvc_type){
         // direct initialization from code_mvc value,
         // by-pass defered_HTMLElement
             super()
@@ -2538,19 +2540,19 @@ ace.API.HTML_elements.CodeMVC = class code_mvc_HTMLElement extends ace.details.H
         // console.debug(`code_mvc_HTMLElement.initialize: parameters:`, this._parameters)
 
         this.status_display = this.appendChild(new ace.details.HTML_elements.status_display)
-        this.value = this.#code_mvc_initializer()
-        this.appendChild(this.value.view)
+        this.mvc = this.#code_mvc_initializer()
+        this.appendChild(this.mvc.view)
 
         // this as proxy to code_mvc ?
 
         delete this._parameters
         this.removeAttribute('code')
 
-        this.loading_animation_controler = new ace.details.animation.controler({ owner: this, target: this.value.view })
+        this.loading_animation_controler = new ace.details.animation.controler({ owner: this, target: this.mvc.view })
         const { copy_to_clipboard, CE } = this.constructor.add_buttons_to({ value: this })
         this.constructor.set_on_resize_event({
             panel: this,
-            scrolling_element: this.value.view,
+            scrolling_element: this.mvc.view,
             elements_to_hide: [ copy_to_clipboard, CE ]
         })
 
@@ -2558,10 +2560,10 @@ ace.API.HTML_elements.CodeMVC = class code_mvc_HTMLElement extends ace.details.H
         ace.details.utility.data_binder.synced_attr_view_controler({
             target: this,
             data_sources: [
-                { property_name: 'language',                    owner: this.value.controler, projection: projections.string },
-                { property_name: 'toggle_parsing',              owner: this.value.controler, projection: projections.boolean },
-                { property_name: 'toggle_language_detection',   owner: this.value.controler, projection: projections.boolean },
-                { property_name: 'is_executable',               owner: this.value.controler, projection: projections.boolean },
+                { property_name: 'language',                    owner: this.mvc.controler, projection: projections.string },
+                { property_name: 'toggle_parsing',              owner: this.mvc.controler, projection: projections.boolean },
+                { property_name: 'toggle_language_detection',   owner: this.mvc.controler, projection: projections.boolean },
+                { property_name: 'is_executable',               owner: this.mvc.controler, projection: projections.boolean },
             ]
         })
         // ace.details.utility.data_binder.bind_attr({ 
@@ -2712,12 +2714,13 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
     initialize() {
         console.debug(`ace.details.HTML_elements.CodeSection.initialize: initializing with parameters:`, this._parameters)
 
-        this.ace_cs_panels = (() => {
+        this.ace_panels = (() => {
 
-            const code_mvc = ace.API.HTML_elements.CodeMVC;
+            const code_mvc_html_element = ace.API.HTML_elements.CodeMVC;
+            const code_mvc = code_mvc_html_element.mvc_type;
             let [ presentation, execution ] = [
                 // new code_mvc_HTMLElement(this._parameters),
-                new code_mvc(new code_mvc.value_type({
+                new code_mvc_html_element(new code_mvc({
                     code_origin: this._parameters.code,
                     controler_options:{
                         language: this._parameters.language,
@@ -2730,7 +2733,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                     //     highlighter: language_policies.highlighters.use_hljs
                     // }
                 })),
-                new code_mvc(new code_mvc.value_type({
+                new code_mvc_html_element(new code_mvc({
                     code_origin: '',
                     controler_options:{
                         language: 'ce_output',
@@ -2756,7 +2759,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
 
         if (this._parameters.url)
             this.url = this._parameters.url // initiate loading
-            // this.ace_cs_panels.presentation.initialization_promise.then(() => {
+            // this.ace_panels.presentation.initialization_promise.then(() => {
             //     this.url = this._parameters.url // initiate loading
             // })
 
@@ -2777,15 +2780,15 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
             target: this,
             data_sources: [
                 { property_name: 'url',                        owner: this },
-                { property_name: 'language',                   owner: this.ace_cs_panels.presentation.value.controler },
-                { property_name: 'toggle_parsing',             owner: this.ace_cs_panels.presentation.value.controler, projection: projections.boolean },
-                { property_name: 'toggle_language_detection',  owner: this.ace_cs_panels.presentation.value.controler, projection: projections.boolean },
+                { property_name: 'language',                   owner: this.ace_panels.presentation.mvc.controler },
+                { property_name: 'toggle_parsing',             owner: this.ace_panels.presentation.mvc.controler, projection: projections.boolean },
+                { property_name: 'toggle_language_detection',  owner: this.ace_panels.presentation.mvc.controler, projection: projections.boolean },
                 { property_name: 'toggle_execution',           owner: this,                                            projection: projections.boolean },
-                { property_name: 'is_executable',              owner: this.ace_cs_panels.presentation.value.controler, projection: projections.boolean },
+                { property_name: 'is_executable',              owner: this.ace_panels.presentation.mvc.controler, projection: projections.boolean },
             ]
         })
         /* const { origin, transformed, revoke } = */ ace.details.utility.inject_on_property_change_proxy({
-            target: this.ace_cs_panels.presentation.value,
+            target: this.ace_panels.presentation.mvc,
             property_name: 'model',
             on_property_change: ({ new_value, old_value, origin_op }) => {
                 if (origin_op !== 'set' || new_value === old_value || !this.toggle_execution)
@@ -2794,7 +2797,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
             }
         })
         /* const { origin, transformed, revoke } = */ ace.details.utility.inject_on_property_change_proxy({
-            target: this.ace_cs_panels.presentation.value.controler,
+            target: this.ace_panels.presentation.mvc.controler,
             property_name: 'language',
             on_property_change: ({ new_value, old_value, origin_op }) => {
                 if (origin_op !== 'set' || new_value === old_value || !this.toggle_execution)
@@ -2827,12 +2830,12 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
     })()
     #initialize_ids(){
         this.id ||= cs.#id_generator()
-        this.ace_cs_panels.presentation.id                                    = `${this.id}.panels.presentation`
-        this.ace_cs_panels.execution.id                                       = `${this.id}.panels.execution`
-        this.ace_cs_panels.presentation.ace_cs_buttons.CE.id                  = `${this.id}.panels.presentation.buttons.CE`
-        this.ace_cs_panels.presentation.ace_cs_buttons.copy_to_clipboard.id   = `${this.id}.panels.presentation.buttons.copy_to_clipboard`
-        this.ace_cs_panels.execution.ace_cs_buttons.CE.id                     = `${this.id}.panels.execution.buttons.CE`
-        this.ace_cs_panels.execution.ace_cs_buttons.copy_to_clipboard.id      = `${this.id}.panels.execution.buttons.copy_to_clipboard`
+        this.ace_panels.presentation.id                                    = `${this.id}.panels.presentation`
+        this.ace_panels.execution.id                                       = `${this.id}.panels.execution`
+        this.ace_panels.presentation.ace_cs_buttons.CE.id                  = `${this.id}.panels.presentation.buttons.CE`
+        this.ace_panels.presentation.ace_cs_buttons.copy_to_clipboard.id   = `${this.id}.panels.presentation.buttons.copy_to_clipboard`
+        this.ace_panels.execution.ace_cs_buttons.CE.id                     = `${this.id}.panels.execution.buttons.CE`
+        this.ace_panels.execution.ace_cs_buttons.copy_to_clipboard.id      = `${this.id}.panels.execution.buttons.copy_to_clipboard`
     }
 
     #toggle_execution = false
@@ -2863,7 +2866,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
 
         #is_loading = false
         get is_loading(){ return this.#is_loading }
-        // get is_loading(){ return this.#target.ace_cs_panels.execution.loading_animation_controler.toggle_animation }
+        // get is_loading(){ return this.#target.ace_panels.execution.loading_animation_controler.toggle_animation }
 
         #last_input = undefined
         get last_input(){ return this.#last_input }
@@ -2873,9 +2876,9 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
             if (!this.#target.#toggle_execution)
                 throw new Error('ace.cs.fetch_execution_controler_t.expect_target_is_executable: prerequisite: target.toggle_execution')
 
-            const execution_panel = this.#target.ace_cs_panels.execution
+            const execution_panel = this.#target.ace_panels.execution
 
-            if (this.#target.ace_cs_panels.presentation.value.controler.is_executable){
+            if (this.#target.ace_panels.presentation.mvc.controler.is_executable){
                 execution_panel.status = {
                     value: 'ready-to-fetch',
                     message: ``
@@ -2883,7 +2886,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                 return true
             }
             
-            const error = `${this.toString()}.get(expect_target_is_executable):\n\tnot executable (yet?)\n\tmissing configuration for language [${this.#target.ace_cs_panels.presentation.value.controler.language}]`
+            const error = `${this.toString()}.get(expect_target_is_executable):\n\tnot executable (yet?)\n\tmissing configuration for language [${this.#target.ace_panels.presentation.mvc.controler.language}]`
             execution_panel.status = {
                 value: 'error-not-executable',
                 message: `${error}`
@@ -2898,7 +2901,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
              || !this.#expect_target_is_executable
             ) return
 
-            const code_mvc = this.#target.ace_cs_panels.presentation.value;
+            const code_mvc = this.#target.ace_panels.presentation.mvc;
             if (this.last_input === code_mvc.model_details.to_execute){
                 console.warn(this.toString(), '.fetch: no-op: already fetching or fetched')
                 return
@@ -2909,7 +2912,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                 return
             }
 
-            try             { this.#target.ace_cs_panels.execution.loading_animation_controler.animate_while({ promise: this.#make_fetch_promise() }) }
+            try             { this.#target.ace_panels.execution.loading_animation_controler.animate_while({ promise: this.#make_fetch_promise() }) }
             catch (error)   { console.error(error) } // TODO: throw ? target internal error ?
         }
         #make_fetch_promise() {
@@ -2918,8 +2921,8 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
 
             const set_execution_content = ({ content: { value, return_code } }) => {
     
-                const execution_panel = this.#target.ace_cs_panels.execution
-                execution_panel.value.model = value
+                const execution_panel = this.#target.ace_panels.execution
+                execution_panel.mvc.model = value
                 execution_panel.status = {
                     value: `${return_code < 0 ? 'failure' : 'success'}-compilation`,
                     message: `compilation: ${return_code < 0 ? 'failure' : 'success'}`
@@ -2927,7 +2930,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                 this.#is_loading = false
             }
             const set_error = ({ error }) => {
-                const execution_panel = this.#target.ace_cs_panels.execution
+                const execution_panel = this.#target.ace_panels.execution
                 execution_panel.status = {
                     value: 'error-compilation',
                     message: `compilation failed with error:\n\t${error}`
@@ -2935,16 +2938,16 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                 this.#is_loading = false
             }
     
-            const presentation_panel = this.#target.ace_cs_panels.presentation;
-            if (!presentation_panel.value.controler.is_executable) {
-                const error = `CodeSection:fetch_execution: not executable.\n\tNo known valid configuration for language [${presentation_panel.value.controler.language}]`
+            const presentation_panel = this.#target.ace_panels.presentation;
+            if (!presentation_panel.mvc.controler.is_executable) {
+                const error = `CodeSection:fetch_execution: not executable.\n\tNo known valid configuration for language [${presentation_panel.mvc.controler.language}]`
                 set_error({ error: error })
             }
     
             // execution panel: replace with result
             return ace.details.remote.CE_API.fetch_execution_result(
-                presentation_panel.value.model_details.ce_options,
-                presentation_panel.value.model_details.to_execute
+                presentation_panel.mvc.model_details.ce_options,
+                presentation_panel.mvc.model_details.to_execute
             )
                 .then((result) => {
                     // CE header: parse & remove
@@ -2967,6 +2970,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                 .catch((error) => {
                     error = `CodeSection:fetch_execution: CE_API.fetch_execution_result: failed:\n\t[${error}]`
                     set_error({ error: error })
+                    console.error(error)
                 })
         }
     }
@@ -2987,7 +2991,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
 
         this.#url = value
 
-        const presentation_panel = this.ace_cs_panels.presentation;
+        const presentation_panel = this.ace_panels.presentation;
         if (!this.#url){
             presentation_panel.status = {
                 value: 'error-network-invalid-url',
@@ -3016,18 +3020,18 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                         })
                     }
     
-                    if (presentation_panel.value.controler.toggle_language_detection) {
+                    if (presentation_panel.mvc.controler.toggle_language_detection) {
                     // use url extension as language, if valid
                         const url_extension = ace.details.utility.get_url_extension(this.#url)
                         if (url_extension
-                         && presentation_panel.value.controler.language_policies.detector.is_valid_language(url_extension)){
-                            presentation_panel.value.controler.language = url_extension
-                            presentation_panel.value.controler.toggle_language_detection = false
+                         && presentation_panel.mvc.controler.language_policies.detector.is_valid_language(url_extension)){
+                            presentation_panel.mvc.controler.language = url_extension
+                            presentation_panel.mvc.controler.toggle_language_detection = false
                         }
                     }
                     
                     // setTimeout(() => { // simulates slow network for test purpose
-                    //     presentation_panel.value.model = code
+                    //     presentation_panel.mvc.model = code
                     //     resolve('on_success')
                     // }, 2000)
 
@@ -3037,7 +3041,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                         message: `ace.cs.set(url): network success:\n\tfetched [${this.url}]`
                     }
                     // update model
-                    presentation_panel.value.model = code
+                    presentation_panel.mvc.model = code
                     resolve('ace.cs.set(url) -> on_success')
                 }
             })
@@ -3057,7 +3061,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
         .then(
             (result) => {
                 // presentation panel: use url extension as language, if valid
-                const presentation_controler = presentation_panel.value.controler;
+                const presentation_controler = presentation_panel.mvc.controler;
                 if (presentation_controler.toggle_language_detection) {
                     const url_extension = ace.details.utility.get_url_extension(this.#url)
                     if (url_extension && presentation_controler.language_policies.detector.is_valid_language(url_extension)) {
@@ -3076,8 +3080,8 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
             }
         );
 
-        this.ace_cs_panels.presentation.loading_animation_controler.animate_while({ promise: fetch_url_result_promise })
-        this.ace_cs_panels.execution.loading_animation_controler.animate_while({ promise: fetch_url_result_promise })
+        this.ace_panels.presentation.loading_animation_controler.animate_while({ promise: fetch_url_result_promise })
+        this.ace_panels.execution.loading_animation_controler.animate_while({ promise: fetch_url_result_promise })
     }
 
     static get HTML_element_placeholder_translation(){
