@@ -2463,6 +2463,9 @@ ace.details.code.mvc = class code_mvc {
 // ==================
 // HTML_elements : API
 
+// TODO: HTML members 
+//  ex: loading_animation_controler -> ace_loading_animation_controler
+
 // TODO: presentation.view is mutable and the user changed the textContent -> update model
 ace.API.HTML_elements = {}
 ace.API.HTML_elements.CodeMVC = class code_mvc_HTMLElement extends ace.details.HTML_elements.defered_HTMLElement {
