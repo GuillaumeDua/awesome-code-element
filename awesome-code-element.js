@@ -120,10 +120,9 @@ export { ace as default }
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
-const ace = {
-    API : {},
-    details : {}
-}
+let ace = {}
+    ace.details = {};
+    ace.API = {};
 
 // ====================
 // details.dependencies
@@ -355,7 +354,18 @@ ace.API.CE_ConfigurationManager = class extends ace.details.containers.translati
 // =================
 // API.configuration
 
+// TODO: refactor:
+//  - remove static member function
+//  - copy/move constructor
+//      - ace.API.configuration = new ace.API.configuration_type / ace.API.configuration.type
 ace.API.configuration = class configuration {
+
+    get [Symbol.toStringTag](){ return 'ace.API.configuration' }
+
+    constructor(){
+        throw new Error(`${this} : not instanciable`)
+    }
+
     static #value = {
         description: {
             version:    '1.0.0',
@@ -1172,6 +1182,9 @@ ace.details.log_facility = class {
     }
 }
 
+// TODO: refactoring
+//  - use dedicated console (sub/scoped)channel for ace,
+//    rather than impacting console.
 {   // development settings
     if (location.hostname !== 'localhost')
         ace.details.log_facility.disable(['log', 'debug', 'trace'])
@@ -2463,7 +2476,7 @@ ace.details.code.mvc = class code_mvc {
 // ==================
 // HTML_elements : API
 
-// TODO: HTML members 
+// TODO: naming consistency / HTML members 
 //  ex: loading_animation_controler -> ace_loading_animation_controler
 //  ex: ace_cs_buttons -> ace_buttons
 // TODO: ace-cs -> ace
