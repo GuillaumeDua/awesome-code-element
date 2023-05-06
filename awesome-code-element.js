@@ -118,11 +118,11 @@
 
 export { ace as default }
 
-// ----------------------------------------------------------------------------------------------------------------------------
-
 let ace = {}
-    ace.details = {};
     ace.API = {};
+    ace.details = {};
+
+// ----------------------------------------------------------------------------------------------------------------------------
 
 // ====================
 // details.dependencies
@@ -317,7 +317,7 @@ ace.details.containers.translation_map = class extends Map {
         return super.has(key)
     }
 }
-// TODO: as details
+// TODO: as details, refactoring
 ace.API.CE_ConfigurationManager = class extends ace.details.containers.translation_map {
 // similar to a Map, but use `hljs.getLanguage(key)` as a key translator
 //
@@ -358,109 +358,121 @@ ace.API.CE_ConfigurationManager = class extends ace.details.containers.translati
 //  - remove static member function
 //  - copy/move constructor
 //      - ace.API.configuration = new ace.API.configuration_type / ace.API.configuration.type
-ace.API.configuration = class configuration {
+ace.API.configuration = new class configuration {
 
     get [Symbol.toStringTag](){ return 'ace.API.configuration' }
 
-    constructor(){
-        throw new Error(`${this} : not instanciable`)
-    }
-
-    static #value = {
-        description: {
-            version:    '1.0.0',
-            name:       'awesome-code-element.js',
-            path_prefix: ((name) => {
-            // quick-fix.
-            // TODO:
-            //  local:      this function
-            //  otherwise:  path to deployed release
-                const imported_modules = Array.from(document.querySelectorAll('script[type="module"]'));
-                let result = ""
-                const find_match = (value) => {
-                    let match = value.match(`(:?[^\"\']*)${name}`)
-                    if (match && match.length == 2)
-                        result = match[1]
-                }
-                imported_modules
-                    .map(value => value.src)
-                    .forEach(find_match)
-                if (result)
+    get #default_value(){
+        return {
+            is_default : true,
+            description: {
+            // ace-library self-awareness
+                version:    '1.0.0',
+                name:       'awesome-code-element.js',
+                path_prefix: ((name) => {
+                // quick-fix.
+                // TODO:
+                //  local:      this function
+                //  otherwise:  path to deployed release
+                    const imported_modules = Array.from(document.querySelectorAll('script[type="module"]'));
+                    let result = ""
+                    const find_match = (value) => {
+                        let match = value.match(`(:?[^\"\']*)${name}`)
+                        if (match && match.length == 2)
+                            result = match[1]
+                    }
+                    imported_modules
+                        .map(value => value.src)
+                        .forEach(find_match)
+                    if (result)
+                        return result
+    
+                    imported_modules
+                        .filter(value => !value.src)
+                        .map(value => value.innerText)
+                        .forEach(find_match)
                     return result
-
-                imported_modules
-                    .filter(value => !value.src)
-                    .map(value => value.innerText)
-                    .forEach(find_match)
-                return result
-            })('awesome-code-element.js'),
-            stylesheet_url: undefined // default: local
-        },
-        CE                                  : new ace.API.CE_ConfigurationManager,
-        CodeSection                         : {
-        // can be overrided locally
-            language        : undefined,    // autodetect
-            toggle_parsing  : true,
-            toggle_execution: false,
-            direction       : ''            // default: row
-        },
-        hljs                                : {
-            // default_theme:   If no ace-cs-theme-selector, then this is the default one.
-            //                  Otherwise, the first valid option of the first ace-cs-theme-selector is the default
-            default_theme   : 'tokyo-night'  // supports dark/light variations
-        },
-        compatibility                       : {
-            doxygen:                        Boolean(ace.details.dependency_manager.dependencies.doxygen.version), // default: enabled if detected
-            doxygen_awesome_css:            false,  // TODO: autodetect
-            pre_code:                       false
-        },
-        auto_hide_buttons                   : false, // TODO: rename force_ or always_
-        force_dark_light_scheme             : (() => {
-            if (Boolean(ace.details.dependency_manager.dependencies.doxygen_awesome_css_dark_mode.version))
-                return 'dark'
-            if (Boolean(ace.details.dependency_manager.dependencies.doxygen.version))
-                return 'light' // assuming doxygen does not handle light/dark-mode by default
-            return undefined // auto-detect
-        })()
+                })('awesome-code-element.js'),
+                stylesheet_url: undefined // default: local
+            },
+            CE                                  : new ace.API.CE_ConfigurationManager,
+            CodeSection                         : {
+            // can be overrided locally
+                language        : undefined,    // autodetect
+                toggle_parsing  : true,
+                toggle_execution: false,
+                direction       : ''            // default: row
+            },
+            hljs                                : {
+                // default_theme:   If no ace-cs-theme-selector, then this is the default one.
+                //                  Otherwise, the first valid option of the first ace-cs-theme-selector is the default
+                default_theme   : 'tokyo-night'  // supports dark/light variations
+            },
+            compatibility                       : {
+                doxygen:                        Boolean(ace.details.dependency_manager.dependencies.doxygen.version), // default: enabled if detected
+                doxygen_awesome_css:            false,  // TODO: autodetect
+                pre_code:                       false
+            },
+            auto_hide_buttons                   : false, // TODO: rename force_ or always_
+            force_dark_light_scheme             : (() => {
+                if (Boolean(ace.details.dependency_manager.dependencies.doxygen_awesome_css_dark_mode.version))
+                    return 'dark'
+                if (Boolean(ace.details.dependency_manager.dependencies.doxygen.version))
+                    return 'light' // assuming doxygen does not handle light/dark-mode by default
+                return undefined // auto-detect
+            })()
+        }
     }
-    static get value(){ return configuration.#value }
 
-    static configure(arg){
+    #value = this.#default_value;
+    get value(){ return this.#value }
+
+    configure(arg){
+
         if (!arg)
             throw new Error('ace.API.configuration.configure: invalid argument')
     
         if (arg.CE && arg.CE instanceof Map)
             arg.CE = new ace.API.CE_ConfigurationManager([...arg.CE])
         if (arg.CE && !(arg.CE instanceof ace.API.CE_ConfigurationManager))
-            throw new Error('ace.API.configure: invalid type for argument: [CE]')
+            throw new Error('ace.API.configuration.configure: invalid type for argument: [CE]')
     
         ace.details.utility.unfold_into({
-            target : configuration.#value,
+            target : this.#value,
             properties : arg
         })
+        if (this.#value.is_default)
+            delete this.#value.is_default;
 
-        configuration.#when_ready()
+        this.#make_ready()
     }
 
-    static #is_ready = false
-    static get is_ready(){ return configuration.#is_ready }
+    get is_default(){ return this.#value?.is_default ?? false }
 
-    static #when_ready(){
-        configuration.#is_ready = true
-        configuration.#when_ready_callbacks.forEach((handler) => handler())
-        configuration.#when_ready_callbacks = []
+    #is_ready = false
+    get is_ready(){ return this.#is_ready }
+
+    #make_ready() {
+
+        this.#is_ready = true
+        this.#when_ready_callbacks.forEach((handler) => handler())
+        this.#when_ready_callbacks = []
+
+        this.#is_ready = () => { throw new Error('ace.API.configuration.#make_ready(): already called') }
     }
-    static #when_ready_callbacks = []
-    static when_ready_then({ handler }){
+    #when_ready_callbacks = []
+    when_ready_then({ handler }){
 
         if (!handler || !(handler instanceof Function))
             throw new Error('configuration.when_ready_then: invalid argument type')
 
-        if (configuration.#is_ready)
-            handler()
-        else configuration.#when_ready_callbacks.push(handler)
+        this.#is_ready
+            ? handler()
+            : this.#when_ready_callbacks.push(handler)
+        ;
     }
 }
+
 
 // ================
 // internal details
@@ -3607,6 +3619,15 @@ ace.API.initialize = () => {
 
             console.info('awesome-code-element.js:initialize ...')
             console.debug('>>> ace:', ace)
+
+            if (!ace.API.configuration.value)
+                throw new Error(`ace: invalid configuration\n\tuse ace.API.configuration.configure(configuration_arg) prior to ace.API.initialize()`)
+            if (ace.API.configuration.value.is_default)
+                console.warn(
+                    'ace: using default configuration.\n',
+                    '\tSome features might be disabled.\n',
+                    '\t[ace.API.configuration] = ', ace.API.configuration.value
+                );
 
             let replace_HTML_element_placeholders = (type) => {
 
