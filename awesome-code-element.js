@@ -317,50 +317,52 @@ ace.details.containers.translation_map = class extends Map {
         return super.has(key)
     }
 }
-// TODO: as details, refactoring
-ace.API.CE_ConfigurationManager = class extends ace.details.containers.translation_map {
-// similar to a Map, but use `hljs.getLanguage(key)` as a key translator
-//
-// key   : language (name or alias. e.g: C++, cpp, cc, c++ are equivalent)
-// value : {
-//      language,       // not mandatory, if same as key. Refers to https://godbolt.org/api/languages
-//      compiler_id,    //     mandatory
-//      default_options // not mandatory
-// }
-    constructor(values) {
-        super(values, {
-            key_translator: (key) => {
-            // transform any language alias into a consistent name
-                let language = hljs.getLanguage(key)
-                if (!language)
-                    console.warn(`ce_configuration: invalid language [${key}]`)
-                return language ? language.name : undefined
-            },
-            mapped_translator : (mapped) => {
-                if (!mapped || !mapped.compiler_id)
-                    throw new Error(`ce_configuration: missing mandatory field '.compiler_id' in configuration ${mapped}`)
-                return mapped
-            }
-        })
-    }
-    set(key, mapped) {
-        if (this.has(key)) {
-            let language = hljs.getLanguage(key)
-            console.warn(`ce_configuration_manager: override existing configuration for language [${key}]. Translated name is [${language.name}], aliases are [${language.aliases}]`)
-        }
-        super.set(key, mapped)
-    }
-}
+
 // =================
 // API.configuration
 
-// TODO: refactor:
-//  - remove static member function
-//  - copy/move constructor
-//      - ace.API.configuration = new ace.API.configuration_type / ace.API.configuration.type
 ace.API.configuration = new class configuration {
 
     get [Symbol.toStringTag](){ return 'ace.API.configuration' }
+
+    static compiler_explorer_type = class extends ace.details.containers.translation_map {
+    // similar to a Map, but use `hljs.getLanguage(key)` as a key translator
+    //
+    // key   : language (name or alias. e.g: C++, cpp, cc, c++ are equivalent)
+    // value : {
+    //      language,       // not mandatory, if same as key. Refers to https://godbolt.org/api/languages
+    //      compiler_id,    //     mandatory
+    //      default_options // not mandatory
+    // }
+        get [Symbol.toStringTag](){ return 'ace.API.configuration.#compiler_explorer_type' }
+    
+        constructor(values) {
+            super(values, {
+                key_translator: (key) => {
+                // transform any language alias into a consistent name
+                    let language = hljs.getLanguage(key)
+                    if (!language)
+                        console.warn(`ce_configuration: invalid language [${key}]`)
+                    return language ? language.name : undefined
+                },
+                mapped_translator : (mapped) => {
+                    if (!mapped || !mapped.compiler_id)
+                        throw new Error(`ce_configuration: missing mandatory field '.compiler_id' in configuration ${mapped}`)
+                    return mapped
+                }
+            })
+        }
+        set(key, mapped) {
+            if (this.has(key)) {
+                const language = hljs.getLanguage(key) // TODO: remove strong coupling with hljs here ?
+                console.warn(
+                    `${this}.set: override existing configuration for language [${key}].`,
+                    `\n\tTranslated name is [${language.name}], aliases are [${language.aliases}]`
+                )
+            }
+            super.set(key, mapped)
+        }
+    }
 
     get #default_value(){
         return {
@@ -395,7 +397,7 @@ ace.API.configuration = new class configuration {
                 })('awesome-code-element.js'),
                 stylesheet_url: undefined // default: local
             },
-            CE                                  : new ace.API.CE_ConfigurationManager,
+            CE                                  : new configuration.compiler_explorer_type,
             CodeSection                         : {
             // can be overrided locally
                 language        : undefined,    // autodetect
@@ -430,13 +432,16 @@ ace.API.configuration = new class configuration {
     configure(arg){
 
         if (!arg)
-            throw new Error('ace.API.configuration.configure: invalid argument')
+            throw new Error(`${this}.configure: invalid argument`)
     
-        if (arg.CE && arg.CE instanceof Map)
-            arg.CE = new ace.API.CE_ConfigurationManager([...arg.CE])
-        if (arg.CE && !(arg.CE instanceof ace.API.CE_ConfigurationManager))
-            throw new Error('ace.API.configuration.configure: invalid type for argument: [CE]')
-    
+        arg.CE = (() => {
+            if (!arg.CE || (arg.CE instanceof configuration.compiler_explorer_type))
+                return arg.CE;
+            if (arg.CE instanceof Map)
+                return new configuration.compiler_explorer_type([...arg.CE])
+            throw new Error(`${this}: invalid type for argument: [CE]`)
+        })();
+
         ace.details.utility.unfold_into({
             target : this.#value,
             properties : arg
@@ -458,13 +463,13 @@ ace.API.configuration = new class configuration {
         this.#when_ready_callbacks.forEach((handler) => handler())
         this.#when_ready_callbacks = []
 
-        this.#is_ready = () => { throw new Error('ace.API.configuration.#make_ready(): already called') }
+        this.#is_ready = () => { throw new Error(`${this}.#make_ready: already called`) }
     }
     #when_ready_callbacks = []
     when_ready_then({ handler }){
 
         if (!handler || !(handler instanceof Function))
-            throw new Error('configuration.when_ready_then: invalid argument type')
+            throw new Error(`${this}.when_ready_then: invalid argument type`)
 
         this.#is_ready
             ? handler()
@@ -472,7 +477,6 @@ ace.API.configuration = new class configuration {
         ;
     }
 }
-
 
 // ================
 // internal details
@@ -1307,14 +1311,14 @@ ace.details.HTML_elements.buttons.show_in_godbolt = class ShowInGodboltButton ex
 
     onClickSend() {
 
-        const code_mvc_HTMLelement_value = this.parentElement
+        const code_mvc_HTMLelement = this.parentElement
         const code_mvc_value = (() => {
-            if (!(code_mvc_HTMLelement_value instanceof code_mvc_HTMLElement))
+            if (!(code_mvc_HTMLelement instanceof ace.API.HTML_elements.CodeMVC))
                 throw new Error('awesome-code-element.js: ShowInGodboltButton.onClickSend: ill-formed element: unexpected parentElement.parentElement layout (must be an ace.code_mvc_HTMLElement)')
-            const value = code_mvc_HTMLelement_value.code_mvc
-            if (!(value instanceof code_mvc))
+            const mvc = code_mvc_HTMLelement.mvc
+            if (!(mvc instanceof ace.API.HTML_elements.CodeMVC.mvc_type))
                 throw new Error('awesome-code-element.js: ShowInGodboltButton.onClickSend: ill-formed element: unexpected parentElement.parentElement.code_mvc (must be an ace.code_mvc)')
-            return value
+            return mvc
         })()
 
         console.info('awesome-code-element.js: ShowInGodboltButton.onClickSend: sending request ...')
@@ -1338,7 +1342,7 @@ ace.details.HTML_elements.buttons.show_in_godbolt = class ShowInGodboltButton ex
                 throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: invalid CE API language: [${accessor.language}]`);
         }
         catch (error){
-            code_mvc_HTMLelement_value.status_for = { value: "error-CE-button", message: error, duration: 2000 }
+            code_mvc_HTMLelement.status_for = { value: "error-CE-button", message: error, duration: 2000 }
             throw error
         }
 
@@ -2674,7 +2678,7 @@ customElements.define(ace.API.HTML_elements.CodeMVC.HTMLElement_tagName, ace.API
 ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.defered_HTMLElement {
 
     static get HTMLElement_tagName() { return 'ace-cs-element' }
-    get [Symbol.toStringTag](){ return cs.HTMLElement_tagName }
+    get [Symbol.toStringTag](){ return `ace.API.HTML_elements.CodeMVC/${cs.HTMLElement_tagName}` }
 
     static get named_parameters(){ return [
         'language',
@@ -2692,7 +2696,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
     constructor(parameters = {}){
         if (!new.target || typeof parameters !== "object")
             throw new Error(
-                `code_mvc_HTMLElement.constructor: invalid argument.
+                `ace.API.HTML_elements.CodeMVC.constructor: invalid argument.
                 Expected object layout: { ${cs.named_parameters } }
                 or valid childs/textContent when onConnectedCallback triggers`)
         super(parameters)
