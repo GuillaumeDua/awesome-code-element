@@ -40,7 +40,7 @@ ace.showcase                    = ace.showcase ?? {}
 ace.showcase.HTML_elements      = ace.showcase.HTML_elements ?? {}
 ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
 
-    static get HTMLElement_tagName() { return 'ace-cs-element-demo' }
+    static get HTMLElement_tagName() { return 'ace-cs-demo' }
     get [Symbol.toStringTag](){ return cs_demo.HTMLElement_tagName }
 
     constructor() { super() }

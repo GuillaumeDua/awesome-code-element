@@ -459,11 +459,12 @@ ace.API.configuration = new class configuration {
 
     #make_ready() {
 
+        if (this.#is_ready)
+            throw new Error(`${this}.#make_ready: already called`)
+
         this.#is_ready = true
         this.#when_ready_callbacks.forEach((handler) => handler())
         this.#when_ready_callbacks = []
-
-        this.#is_ready = () => { throw new Error(`${this}.#make_ready: already called`) }
     }
     #when_ready_callbacks = []
     when_ready_then({ handler }){
@@ -1499,8 +1500,8 @@ customElements.define(ace.details.HTML_elements.status_display.HTMLElement_tagNa
 // Animation HTML element factory + controler
 ace.details.animation = class animation {
     
-    static get HTMLElement_tagName() { return 'ace-cs-animation' }
-    get [Symbol.toStringTag](){ return animation.HTMLElement_tagName }
+    static get HTMLElement_tagName() { return 'ace-loading-animation' }
+    get [Symbol.toStringTag](){ return `ace.details.animation/${animation.HTMLElement_tagName}` }
 
     static #cache = (function(){
     // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
@@ -1518,7 +1519,7 @@ ace.details.animation = class animation {
 
     static controler = class controler {
 
-        get [Symbol.toStringTag](){ return `animation.controler` }
+        get [Symbol.toStringTag](){ return `ace.details.animation.controler` }
 
         #owner = undefined
         #target = undefined
@@ -2677,7 +2678,7 @@ ace.API.HTML_elements.CodeMVC = class code_mvc_HTMLElement extends ace.details.H
 customElements.define(ace.API.HTML_elements.CodeMVC.HTMLElement_tagName, ace.API.HTML_elements.CodeMVC);
 ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.defered_HTMLElement {
 
-    static get HTMLElement_tagName() { return 'ace-cs-element' }
+    static get HTMLElement_tagName() { return 'ace-cs' }
     get [Symbol.toStringTag](){ return `ace.API.HTML_elements.CodeMVC/${cs.HTMLElement_tagName}` }
 
     static get named_parameters(){ return [
@@ -2820,7 +2821,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
             target: this.ace_panels.presentation.mvc,
             property_name: 'model',
             on_property_change: ({ new_value, old_value, origin_op }) => {
-                if (origin_op !== 'set' || new_value === old_value || !this.toggle_execution)
+                if (new_value === old_value || !this.toggle_execution)
                     return
                 this.#fetch_execution_controler.fetch()
             }
@@ -3162,7 +3163,7 @@ customElements.define(
 // Style
 
 ace.details.Style = class Style {
-// class-as-namespace, for structuring styles, not cosmetic themes
+// class-as-namespace, for structuring styles and minor cosmetic tweaks
 
     static #stylesheet_element_id = 'ace-stylesheet'
     static initialize() {
@@ -3189,7 +3190,7 @@ ace.details.Style = class Style {
                 })()
 
                 return ace.API.configuration.value.compatibility.doxygen
-                    ? `${root}/default.css` // doxygen: assuming plain hierarchy
+                    ? `${root}/default.css` // doxygen: assuming plain fs hierarchy
                     : `${root}/styles/default.css`
                 ;
             })()
@@ -3632,6 +3633,7 @@ ace.API.initialize = () => {
                     '\tSome features might be disabled.\n',
                     '\t[ace.API.configuration] = ', ace.API.configuration.value
                 );
+            ace.details.Style.initialize()
 
             let replace_HTML_element_placeholders = (type) => {
 
@@ -3675,7 +3677,6 @@ ace.API.initialize = () => {
                 ace.API.initializers.PreCodeHTML_elements()
             }
 
-            ace.details.Style.initialize()
             ace.details.Theme.initialize({ force_dark_mode: (() => {
                 switch (ace.API.configuration.value.force_dark_light_scheme) {
                     case 'light':   return false;

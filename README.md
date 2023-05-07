@@ -13,7 +13,7 @@ Supports **syntax highlighting**, **compilation**, and **execution** of a wide r
 
 | showcase name | status |
 |-|-|
-| 🌐 [*\<ace-cs-element\>*](https://guillaumedua.github.io/awesome-code-element/showcase/ace_code_section/)          | ✔️ |
+| 🌐 [*\<ace-cs\>*](https://guillaumedua.github.io/awesome-code-element/showcase/ace_code_section/)          | ✔️ |
 | 🌐[*\<div\> placeholders*](https://guillaumedua.github.io/awesome-code-element/showcase/html_divs_placeholders/)     | ✔️ |
 | 🌐 [acs miscs](https://guillaumedua.github.io/awesome-code-element/showcase/misc/)                                   | ✔️ |
 | 🔌 [**Doxygen** integration (plain)](https://guillaumedua.github.io/awesome-code-element/showcase/using_doxygen/output/md_docs_showcase_using_doxygen_index.html) | ✔️ |
@@ -52,14 +52,14 @@ Ths is the module's main components. It represents a code example, which can opt
 ### HTML API
 
 ```html
-<ace-cs-element language="cpp" toggle_execution="true">
+<ace-cs language="cpp" toggle_execution="true">
 #include <iostream>
 auto main() -> int {
     auto i = 42;
     std::cout << "some console output : " << i;
     return i;
 }                       
-</ace-cs-element>
+</ace-cs>
 ```
 
 Note that users do not have to care about invalid HTML in the provided code. For instance, in the example above, `<iostream>` does not generates invalid HTML, neither shift operators `<<`.

@@ -149,7 +149,7 @@ SOFTWARE.
         <li>
         <h3>code-section : empty (will wait for content), user-provided id</h3>
         <ace-showcase-wrapper>
-            <!--<div class="ace-cs-element" id="my_custom_cs_id"></div>-->
+            <!--<div class="ace-cs" id="my_custom_cs_id"></div>-->
         </ace-showcase-wrapper>
         <button style="margin-top: 10px;" onclick="
             const code = document.getElementById('cs_1').ace_panels.presentation.mvc.model // equivalent here to document.getElementById('cs_0').textContent
@@ -172,14 +172,14 @@ SOFTWARE.
             <ul><li>
                 <h3>code-section : text content (language detection <b style="color:red">failure</b>: no syntax highlighting)</h3>
                 <ace-showcase-wrapper>
-                    <!--<div class="ace-cs-element">auto main() -> int { return 42; }</div>-->
+                    <!--<div class="ace-cs">auto main() -> int { return 42; }</div>-->
                 </ace-showcase-wrapper>
             </li></ul>
         
             <ul><li>
             <h3>code-section : text content (language detection <b style="color:green">success</b>)</h3>
             <ace-showcase-wrapper>
-                <!--<div class="ace-cs-element">int main() { return 42; }</div>-->
+                <!--<div class="ace-cs">int main() { return 42; }</div>-->
             </ace-showcase-wrapper>
             </li></ul>
         </li>
@@ -187,7 +187,7 @@ SOFTWARE.
         <li>
         <h3>code-section : text content (large)</h3>
         <ace-showcase-wrapper>
-<!--<div class="ace-cs-element" language="cpp">
+<!--<div class="ace-cs" language="cpp">
 auto main() -> int { return 42; } // this is a pretty long comment, so it should triggers small-rendering behavior, as well as horizontal-scrolling, depending on your window size ... otherwise, why would such extra-long comment exists ? .................................................................................................................. ?
 </div>-->
         </ace-showcase-wrapper>
@@ -196,14 +196,14 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
         <li>
         <h3>code-section : text content + language attribute</h3>
         <ace-showcase-wrapper>
-            <!--<div class="ace-cs-element" language="cpp">auto main() -> int { return 42; }</div>-->
+            <!--<div class="ace-cs" language="cpp">auto main() -> int { return 42; }</div>-->
         </ace-showcase-wrapper>
         </li>
     
         <li>
         <h3>code-section : language + code attributes</h3>
         <ace-showcase-wrapper>
-            <!--<div class="ace-cs-element" language="cpp" code="auto main() -> int { return 42; }"></div>-->
+            <!--<div class="ace-cs" language="cpp" code="auto main() -> int { return 42; }"></div>-->
         </ace-showcase-wrapper>
         </li>
     
@@ -213,7 +213,7 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
             <ul><li>
             <h3>network: <b style="color:red">unreachable</b></h3>
             <ace-showcase-wrapper>
-                <!--<div class="ace-cs-element" url="/DOES_NOT_EXISTS"></div>-->
+                <!--<div class="ace-cs" url="/DOES_NOT_EXISTS"></div>-->
             </ace-showcase-wrapper>
             <div class="note">
                 <h4>&#9432; Note:</h4>
@@ -226,14 +226,14 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
             <ul><li>
             <h3>network: <b style="color:green">reachable</b></h3>
             <ace-showcase-wrapper>
-                <!--<div class="ace-cs-element" url="../../details/resources/code_content/noexecute_show_block.cpp"></div>-->
+                <!--<div class="ace-cs" url="../../details/resources/code_content/noexecute_show_block.cpp"></div>-->
             </ace-showcase-wrapper>
             </li></ul>
     
             <ul><li>
             <h3>network: <b style="color:green">reachable</b>, immediatly executed</h3>
             <ace-showcase-wrapper>
-                <!--<div class="ace-cs-element" toggle_execution="true" url="../../details/resources/code_content/noexecute_show_block.cpp"></div>-->
+                <!--<div class="ace-cs" toggle_execution="true" url="../../details/resources/code_content/noexecute_show_block.cpp"></div>-->
             </ace-showcase-wrapper>
             </li></ul>
         </li>
@@ -243,7 +243,7 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
     
             <ul><li>
             <h3>compilation <b style="color:green">success</b></h3>
-<ace-showcase-wrapper><!--<div class="ace-cs-element" language="cpp" toggle_execution="true">
+<ace-showcase-wrapper><!--<div class="ace-cs" language="cpp" toggle_execution="true">
 #include <iostream>
 auto main() -> int {
     auto i = 42;
@@ -255,7 +255,7 @@ auto main() -> int {
     
             <ul><li>
             <h3>compilation <b style="color:orange">error</b></h3>
-<ace-showcase-wrapper><!--<div class="ace-cs-element" language="cpp" toggle_execution="true">
+<ace-showcase-wrapper><!--<div class="ace-cs" language="cpp" toggle_execution="true">
 #include <iostream>
 auto main() -> int {
     auto i = ; // invalid synthax: missing rhs value in assignement
@@ -267,13 +267,13 @@ auto main() -> int {
         <h4>&#9432; Note:</h4>
         <pre>Relevant error status:
         <b>JS:</b>  <code>ace_cs_element.ace_panels.execution.getAttribute('status') === 'failure-compilation'</code>
-        <b>CSS:</b> <code>ace-cs-element > ace-cs-code-mvc[id$='.panels.execution'][status|='failure']</code></pre>
+        <b>CSS:</b> <code>ace-cs > ace-cs-code-mvc[id$='.panels.execution'][status|='failure']</code></pre>
     </div>
             </li></ul>
     
             <ul><li>
     <h3><b style="color:red">error</b> : missing configuration (c vs. cpp)</h3>
-<ace-showcase-wrapper><!--<div class="ace-cs-element" language="c" toggle_execution="true">
+<ace-showcase-wrapper><!--<div class="ace-cs" language="c" toggle_execution="true">
 int main() {
     return 42;
 }                       
@@ -282,7 +282,7 @@ int main() {
         <h4>&#9432; Note:</h4>
         <pre>Relevant error status:
         <b>JS:</b>  <code>ace_cs_element.ace_panels.panels.right.getAttribute('status') === 'error-compilation'</code>
-        <b>CSS:</b> <code>ace-cs-element > [id$='.panels.right'][status='error']</code></pre>
+        <b>CSS:</b> <code>ace-cs > [id$='.panels.right'][status='error']</code></pre>
     </div>
             </li></ul>
            
@@ -290,7 +290,7 @@ int main() {
     
         <li>
             <h3>code-section : language, execution, column orientation</h3>
-<ace-showcase-wrapper><!--<div class="ace-cs-element" language="cpp" toggle_execution="true" direction="column"> 
+<ace-showcase-wrapper><!--<div class="ace-cs" language="cpp" toggle_execution="true" direction="column"> 
 #include <iostream>
 auto main() -> int {
     auto i = 42;
@@ -307,7 +307,7 @@ auto main() -> int {
     
         <li>
             <h3>code-section : parsing (render and/or execute only what is relevant for the audience)</h3>
-<ace-showcase-wrapper><!--<div class="ace-cs-element" toggle_parsing="true">
+<ace-showcase-wrapper><!--<div class="ace-cs" toggle_parsing="true">
     THIS IS REMOVED (from presentation and execution) // @ace::skip::line
 #include <iostream>
 auto main() -> int {    
@@ -323,7 +323,7 @@ return i; // presentation ends here
             
         <li>
             <h3>code-section : language + parsing + execution</h3>
-<ace-showcase-wrapper><!--<div class="ace-cs-element" toggle_parsing="true" toggle_execution="true">
+<ace-showcase-wrapper><!--<div class="ace-cs" toggle_parsing="true" toggle_execution="true">
     THIS IS REMOVED (from presentation and execution) // @ace::skip::line
 #include <iostream>
 auto main() -> int {    
@@ -339,7 +339,7 @@ return i;
             
     <li>
         <h3>code-section : mixing html entities and regular chars (&lt;, &gt;, &quot;, &amp;)</h3>
-<ace-showcase-wrapper><!--<div class="ace-cs-element" language="cpp" toggle_execution="true">
+<ace-showcase-wrapper><!--<div class="ace-cs" language="cpp" toggle_execution="true">
 #include <vector>
 #include &lt;iostream&gt;
 int main() {
