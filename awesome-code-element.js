@@ -1498,96 +1498,112 @@ ace.details.HTML_elements.status_display = class status_display extends HTMLElem
 customElements.define(ace.details.HTML_elements.status_display.HTMLElement_tagName, ace.details.HTML_elements.status_display);
 
 // Animation HTML element factory + controler
-ace.details.animation = class animation {
+ace.details.animation_factory = class animation_factory {
+    static #make_controler({typename, element_generator}){
+        return class controler {
+        
+            get [Symbol.toStringTag](){ return `${typename}.controler` }
     
-    static get HTMLElement_tagName() { return 'ace-loading-animation' }
-    get [Symbol.toStringTag](){ return `ace.details.animation/${animation.HTMLElement_tagName}` }
+            #owner = undefined
+            #target = undefined
+            #target_visible_display = undefined
+            #element = undefined
+    
+            static counter_type = class {
+    
+                get [Symbol.toStringTag](){ return `${typename}.controler.counter_type` }
 
-    static #cache = (function(){
-    // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
-        const loading_animation_fallback_url = 'https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/resources/images/loading_animation.svg'
-        let value = document.createElement('img');
-            value.src = loading_animation_fallback_url
-            value.id = animation.HTMLElement_tagName
-            value.className = animation.HTMLElement_tagName
-            value.style.display = 'none'
-        return value
-    })()
-    static get element() {
-        return animation.#cache.cloneNode()
-    }
-
-    static controler = class controler {
-
-        get [Symbol.toStringTag](){ return `ace.details.animation.controler` }
-
-        #owner = undefined
-        #target = undefined
-        #target_visible_display = undefined
-        #element = undefined
-
-        static counter_type = class {
-
-            #on_value_changed = undefined
-
-            constructor({ on_value_changed }){
-                if (!on_value_changed || !(on_value_changed instanceof Function))
-                    throw new Error('counter_type.constructor: invalid argument')
-                this.#on_value_changed = on_value_changed
-            }
-
-            #value = 0
-            get value(){ return this.#value }
-            set value(value){ this.#on_value_changed(this.#value = value) }
-        }
-        #animate_while_counter = undefined
-
-        constructor({ owner, target }) {
-
-            if (!(owner instanceof HTMLElement)
-             || !(target instanceof HTMLElement)
-            ) throw new Error('animation.controler: invalid argument type')
-
-            this.#owner = owner
-            this.#target = target
-            this.#target_visible_display = target.style.display
-
-            this.#element = this.#owner.appendChild(animation.element)
-
-            this.#animate_while_counter = new controler.counter_type({ on_value_changed: (value) => {
-
-                if (value === 0 && this.toggle_animation){
-                    this.toggle_animation = false
-                    return
+                #on_value_changed = undefined
+    
+                constructor({ on_value_changed }){
+                    if (!on_value_changed || !(on_value_changed instanceof Function))
+                        throw new Error(`${this}.constructor: invalid argument`)
+                    this.#on_value_changed = on_value_changed
                 }
-                if (value !== 0 && !this.toggle_animation)
-                    this.toggle_animation = true
-            }})
+    
+                #value = 0
+                get value(){ return this.#value }
+                set value(value){ this.#on_value_changed(this.#value = value) }
+            }
+            #animate_while_counter = undefined
+    
+            constructor({ owner, target }) {
+    
+                if (!(owner instanceof HTMLElement)
+                 || !(target instanceof HTMLElement)
+                ) throw new Error(`${this}: invalid argument type`)
+    
+                this.#owner = owner
+                this.#target = target
+                this.#target_visible_display = target.style.display
+    
+                this.#element = this.#owner.appendChild(element_generator())
+    
+                this.#animate_while_counter = new controler.counter_type({ on_value_changed: (value) => {
+    
+                    if (value === 0 && this.toggle_animation){
+                        this.toggle_animation = false
+                        return
+                    }
+                    if (value !== 0 && !this.toggle_animation)
+                        this.toggle_animation = true
+                }})
+            }
+    
+            set toggle_animation(value){
+                this.#target.style.display  = Boolean(value) ? 'none' : this.#target_visible_display
+                this.#element.style.display = Boolean(value) ? 'flex' : 'none'
+            }
+            get toggle_animation(){
+                return Boolean(this.#element.style.display !== 'none')
+            }
+    
+            animate_while({ promise }){
+    
+                if (!(promise instanceof Promise))
+                    throw new Error(`${this}.animate_while: invalid argument type`)
+    
+                if (this.toggle_animation)
+                    console.warn(`${this}.animate_while: already animating`)
+    
+                ++this.#animate_while_counter.value
+                promise.then(() => {
+                    --this.#animate_while_counter.value
+                })
+            }
         }
-
-        set toggle_animation(value){
-            this.#target.style.display  = Boolean(value) ? 'none' : this.#target_visible_display
-            this.#element.style.display = Boolean(value) ? 'flex' : 'none'
-        }
-        get toggle_animation(){
-            return Boolean(this.#element.style.display !== 'none')
-        }
-
-        animate_while({ promise }){
-
-            if (!(promise instanceof Promise))
-                throw new Error('animation.controler.animate_while: invalid argument type')
-
-            if (this.toggle_animation)
-                console.warn('animation.controler.animate_while: already animating')
-
-            ++this.#animate_while_counter.value
-            promise.then(() => {
-                --this.#animate_while_counter.value
+    }
+    static make({ typename, element_name = typename, resource_url }){
+        return class animation {
+    
+            static get HTMLElement_tagName() { return element_name }
+            get [Symbol.toStringTag](){ return `${element_name}/${animation.HTMLElement_tagName}` }
+        
+            static #cache = (function(){
+            // TODO: loading_animation.* as opt-in, inline (raw github data) as fallback
+                const loading_animation_fallback_url = resource_url
+                let value = document.createElement('img');
+                    value.src = loading_animation_fallback_url
+                    value.id = animation.HTMLElement_tagName
+                    value.className = animation.HTMLElement_tagName
+                    value.style.display = 'none'
+                return value
+            })()
+            static get element() {
+                return animation.#cache.cloneNode()
+            }
+            static controler = animation_factory.#make_controler({
+                typename: typename,
+                element_generator: () => animation.element
             })
         }
     }
 }
+ace.details.loading_animation = ace.details.animation_factory.make({
+    typename: 'ace.details.loading_animation',
+    element_name: 'ace-loading-animation',
+    resource_url: 'https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/resources/images/loading_animation.svg'
+})
 
 // ============================
 // details: code representation
@@ -2578,7 +2594,7 @@ ace.API.HTML_elements.CodeMVC = class code_mvc_HTMLElement extends ace.details.H
         delete this._parameters
         this.removeAttribute('code')
 
-        this.loading_animation_controler = new ace.details.animation.controler({ owner: this, target: this.mvc.view })
+        this.loading_animation_controler = new ace.details.loading_animation.controler({ owner: this, target: this.mvc.view })
         const { copy_to_clipboard, CE } = this.constructor.add_buttons_to({ value: this })
         this.constructor.set_on_resize_event({
             panel: this,
