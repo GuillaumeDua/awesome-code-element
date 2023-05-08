@@ -32,7 +32,18 @@ html.dark-mode {
     --default-text-color: steelblue;
     --document-background-color: #1c1b22;
     --default-background-color:  #2b2a33;
-}/* #1a1b26 #2b2a33 */
+}
+
+/* ace.API.HTML_elements.ToggleDarkModeButton */
+button[is=ace-cs-button_toggle-dark-mode] > * {
+    display: none;
+}
+html.dark-mode button[is=ace-cs-button_toggle-dark-mode] > svg[id='light-mode-icon'] {
+    display: block;
+}
+html.light-mode button[is=ace-cs-button_toggle-dark-mode] > svg[id='dark-mode-icon'] {
+    display: block;
+}
 
 ace-cs        img#ace-loading-animation,
 ace-cs-demo   img#ace-loading-animation{
