@@ -4,7 +4,8 @@
         - either (in the demo) redefined what ace-cs is, so ace-cs-demo overwrite its definition
         - otherwise, consider creating a script to generate a decoupled stylesheet for the sole purpose of ace-cs-demo ?
     TODO: button visibility based on @media (max-width), rather than JS window listener
-          when `CS > code` is scrolling, then CS > buttons toggle display blokc/none
+          when `CS > code` is scrolling, then CS > buttons toggle display block/none
+    TODO: move ace-cs-demo related rules to showcase/demo
 */
 
 :root {

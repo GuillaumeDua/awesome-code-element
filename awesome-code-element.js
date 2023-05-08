@@ -2519,7 +2519,7 @@ ace.API.HTML_elements = {}
 ace.API.HTML_elements.CodeMVC = class code_mvc_HTMLElement extends ace.details.HTML_elements.defered_HTMLElement {
 
     static get HTMLElement_tagName() { return 'ace-cs-code-mvc' }
-    get [Symbol.toStringTag](){ return 'ace.API.HTML_elements.CodeMVC' }
+    get [Symbol.toStringTag](){ return `ace.API.HTML_elements.CodeMVC/${code_mvc_HTMLElement.HTMLElement_tagName}` }
 
     static get named_parameters(){ return [
         'language',
@@ -3180,16 +3180,18 @@ customElements.define(
 
 ace.details.Style = class Style {
 // class-as-namespace, for structuring styles and minor cosmetic tweaks
+    get [Symbol.toStringTag](){ return `ace.details.Style` }
+    constructor(){ throw new Error(`${Style.prototype}: not instanciable (class-as-namespace)`) }
 
     static #stylesheet_element_id = 'ace-stylesheet'
     static initialize() {
 
         if (document.getElementById(Style.#stylesheet_element_id)) {
-            console.info(`ace.details.Style.initialize: user provided (valid element with id="${Style.#stylesheet_element_id}")`)
+            console.info(`${Style.prototype}.initialize: user provided (valid element with id="${Style.#stylesheet_element_id}")`)
             return;
         }
 
-        console.info(`ace.details.Style.initialize: automated loading ...`)
+        console.info(`${Style.prototype}.initialize: automated loading ...`)
 
         let stylesheet = document.createElement('link')
             stylesheet.rel = "stylesheet"
@@ -3211,7 +3213,7 @@ ace.details.Style = class Style {
                 ;
             })()
 
-            console.info(`ace.details.Style.initialize: loading using url [${stylesheet.href}]`)
+            console.info(`${Style.prototype}.initialize: loading using url [${stylesheet.href}]`)
 
         document.head.appendChild(stylesheet)
     }
@@ -3222,9 +3224,15 @@ ace.details.Style = class Style {
 
 // TODO: check doxygen-awesome-css compatiblity
 ace.details.Theme = class Theme {
-// class-as-namespace, for syntactic coloration and toggling dark/light mode
+// class-as-namespace, for syntax coloration and toggling dark/light mode
+
+    get [Symbol.toStringTag](){ return `ace.details.Theme` }
+    constructor(){ throw new Error(`${Theme.prototype}: not instanciable (class-as-namespace)`) }
 
     static preferences = class ThemePreferences {
+
+        get [Symbol.toStringTag](){ return `ace.details.Theme.preferences` }
+        constructor(){ throw new Error(`${ThemePreferences.prototype}: not instanciable (class-as-namespace)`) }
 
         static #prefersLightModeInDarkModeKey = "prefers-light-mode-in-dark-mode"
         static #prefersDarkModeInLightModeKey = "prefers-dark-mode-in-light-mode"
@@ -3260,20 +3268,23 @@ ace.details.Theme = class Theme {
     }
     static url_builder = class url_builder {
 
+        get [Symbol.toStringTag](){ return `ace.details.Theme.url_builder` }
+        constructor(){ throw new Error(`${url_builder.prototype}: not instanciable (class-as-namespace)`) }
+
         static #base = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/${ace.details.dependency_manager.dependencies.hljs.version}/styles/`
         static #ext = '.min.css'
 
         static build({ name, dark_or_light = Theme.preferences.dark_or_light }) {
             if (typeof name !== 'string' && !(name instanceof String))
-                throw new Error('ThemeSelector.#url_builder.build : invalid argument [name]')
+                throw new Error(`${url_builder.prototype}.build : invalid argument [name]`)
             if (dark_or_light && dark_or_light !== 'light' && dark_or_light !== 'dark')
-                throw new Error('ThemeSelector.#url_builder.build : invalid argument : [dark_or_light]')
+                throw new Error(`${url_builder.prototype}.build : invalid argument : [dark_or_light]`)
 
             dark_or_light = `${Boolean(dark_or_light) ? '-' : ''}${dark_or_light}`
             return `${url_builder.#base}${name}${dark_or_light}${url_builder.#ext}`
         }
         static retrieve(url) {
-            let matches = url.match(`${url_builder.#base}(.*?)(\-dark|\-light){0,1}${url_builder.#ext}`)
+            const matches = url.match(`${url_builder.#base}(.*?)(\-dark|\-light){0,1}${url_builder.#ext}`)
             return {
                 name: matches[1],
                 dark_or_light_suffix: matches[2]
@@ -3288,7 +3299,7 @@ ace.details.Theme = class Theme {
 
     static get default_theme() {
         const theme_selector_default_option = (() => {
-            let candidate_option = $(document).find(`select[is=${ace.API.HTML_elements.ThemeSelector.HTMLElement_tagName}]`)
+            const candidate_option = $(document).find(`select[is=${ace.API.HTML_elements.ThemeSelector.HTMLElement_tagName}]`)
                 .map((index, element) => { return element.options[0] })
                 .filter((index, element) => element && element.value)
                 [0]
@@ -3299,8 +3310,8 @@ ace.details.Theme = class Theme {
             : ace.API.configuration.value.hljs.default_theme
     }
 
-    static #stylesheet_element_id = 'code_theme_stylesheet'
-    static initialize({force_dark_mode = undefined}) {
+    static #stylesheet_element_id = 'ace-cs-code_theme-stylesheet_placeholder'
+    static initialize({ force_dark_mode = undefined }) {
         // generates the stylesheet HTML element used to import CSS content
         let stylesheet = document.createElement('link')
             stylesheet.rel = "stylesheet"
@@ -3308,18 +3319,18 @@ ace.details.Theme = class Theme {
         document.head.appendChild(stylesheet)
 
         // dark/light-mode preference
-        console.info(`ace.details.Theme.initialize: color-scheme preference: [${Theme.preferences.dark_or_light}]`)
+        console.info(`${Theme.prototype}.initialize: color-scheme preference: [${Theme.preferences.dark_or_light}]`)
         Theme.preferences.is_dark_mode = force_dark_mode ?? Theme.preferences.is_dark_mode
 
         // switch to default theme, if any
-        let default_theme_name = Theme.default_theme
+        const default_theme_name = Theme.default_theme
         if (default_theme_name) {
-            console.info(`ace.details.Theme.initialize: default theme name: [${default_theme_name}]`)
+            console.info(`${Theme.prototype}.initialize: default theme name: [${default_theme_name}]`)
             Theme.value = default_theme_name
         }
 
-        // avoid any redundant call
-        Theme.initialize = () => { console.error('ace.details.Theme.initialize: can only be called once') }
+        // callable once
+        Theme.initialize = () => { console.error(`${Theme.prototype}.initialize: can only be called once`) }
     }
     static get supports_dark_or_light_mode() {
         // Note: supports dark-mode by default (when not loaded yet)
@@ -3329,9 +3340,9 @@ ace.details.Theme = class Theme {
     // value
     static get value() {
 
-        let element = document.getElementById(Theme.#stylesheet_element_id);
+        const element = document.getElementById(Theme.#stylesheet_element_id);
         if (!element)
-            throw new Error(`ace.details.Theme: missing stylesheet [${Theme.#stylesheet_element_id}]\n\tDid you forget to call ace.API.initialize(); ?`)
+            throw new Error(`${Theme.prototype}.value(get): missing stylesheet [${Theme.#stylesheet_element_id}]\n\tDid you forget to call ace.API.initialize(); ?`)
 
         return {
             url:                    element.getAttribute('href'),
@@ -3348,11 +3359,11 @@ ace.details.Theme = class Theme {
     }
     static set value(theme_name) {
 
-        console.info(`ace.details.Theme: setting theme to [${theme_name}]`)
+        console.info(`${Theme.prototype}.value(set): setting theme to [${theme_name}]`)
 
         try {
             if (Theme.value.name === theme_name) {
-                console.info(`ace.details.Theme: already loaded`)
+                console.info(`${Theme.prototype}.value(set): already loaded`)
                 return
             }
         } catch(error){}
@@ -3364,20 +3375,20 @@ ace.details.Theme = class Theme {
             return
         }
 
-        let set_stylesheet_content = ({ url }) => {
+        const set_stylesheet_content = ({ url }) => {
             Theme.value.element.setAttribute('href', url)
 
-            let theme_infos = Theme.url_builder.retrieve(url)
+            const theme_infos = Theme.url_builder.retrieve(url)
             Theme.value.element.setAttribute('theme_name', theme_infos.name)
             Theme.value.element.setAttribute('theme_dark_or_light_suffix', theme_infos.dark_or_light_suffix || '')
 
-            console.info(`ace.details.Theme.set[value]: stylesheet successfully loaded\n\t[${url}]`)
+            console.info(`${Theme.prototype}.value(set): stylesheet successfully loaded\n\t[${url}]`)
         }
 
-        let try_to_load_stylesheet = ({ theme_name, dark_or_light, on_failure }) => {
+        const try_to_load_stylesheet = ({ theme_name, dark_or_light, on_failure }) => {
 
             let url = Theme.url_builder.build({ name : theme_name, dark_or_light: dark_or_light })
-            console.debug(`ace.details.Theme.set[value]: loading stylesheet\n\t[${url}] ...`)
+            console.debug(`${Theme.prototype}.value(set): loading stylesheet\n\t[${url}] ...`)
 
             fetch(url, { method: 'GET' })
                 .then(response => {
@@ -3389,14 +3400,14 @@ ace.details.Theme = class Theme {
                 .catch(error => {
                     let message = on_failure ? `\nBut a fallback strategy is provided (wait for it ...)` : ''
                     let console_stream = on_failure ? console.debug : console.error
-                        console_stream(`ace.details.Theme: unable to load\n\t[${url}]\n${error}${message}`)
+                        console_stream(`${Theme.prototype}: unable to load\n\t[${url}]\n${error}${message}`)
                     if (on_failure)
                         on_failure()
                 })
             ;
         }
 
-        let force_light_or_dark_mode = theme_name.search(/(-dark|-light)$/, '') !== -1
+        const force_light_or_dark_mode = theme_name.search(/(-dark|-light)$/, '') !== -1
         try_to_load_stylesheet({
             theme_name: theme_name,
             dark_or_light: force_light_or_dark_mode ? '' : Theme.preferences.dark_or_light,
@@ -3415,12 +3426,12 @@ ace.details.Theme = class Theme {
         Theme.preferences.is_dark_mode = value
 
         if (!Theme.value.support_dark_or_light_mode) {
-            console.info(`Theme.ToggleDarkMode: theme does not supports dark/light mode, aborting.`)
+            console.info(`${Theme.prototype}.is_dark_mode(set): theme does not supports dark/light mode, aborting.`)
             return
         }
         if ((value  && Theme.value.dark_or_light_suffix === '-dark')
         ||  (!value && Theme.value.dark_or_light_suffix === '-light')) {
-            console.info(`Theme.ToggleDarkMode: theme already has the right dark/light mode, aborting.`)
+            console.info(`${Theme.prototype}.is_dark_mode(set): theme already has the right dark/light mode, aborting.`)
             return
         }
         Theme.value = Theme.url_builder.toggle_dark_mode(Theme.value.fullname)

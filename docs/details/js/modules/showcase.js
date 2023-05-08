@@ -68,12 +68,14 @@ ace.showcase.HTML_elements.wrapper  = class HTMLShowCase extends HTMLElement {
             html_code_label.className = 'trapezoid trapezoid-up'
 
         let html_code_view = content_view.appendChild(document.createElement('pre'))
-            html_code_view.style.border       = '1px solid var(--separator-color)'
-            html_code_view.style.borderRadius = 'var(--border-radius-small)'
-            html_code_view.style.display    = 'block'
-            html_code_view.style.padding    = '1em'
-            html_code_view.style.margin     = '0'
-            html_code_view.style.overflow   = 'auto'
+            ace.details.utility.apply_css(html_code_view, {
+                border       : '1px solid var(--separator-color)',
+                borderRadius : 'var(--border-radius-small)',
+                display      : 'block',
+                padding      : '0.3em',
+                margin       : '0',
+                overflow     : 'auto'
+            })
             html_code_view.textContent      = this.wrapped_HTML_code.raw
             html_code_view.className        = 'hljs language-HTML'
 
