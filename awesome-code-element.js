@@ -1813,7 +1813,7 @@ ace.details.code.policies = class policies {
         // @awesome-code-element::show::line             : line  to [show]
         //                                                      if there is at least one occurence, the rest is by default hidden
 
-            static tag = '// @ace'
+            static tag = `//\\s*@ace`
             static parse({ code }) {
 
                 if (code === undefined)
@@ -2706,9 +2706,6 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
     ]}
 
     // WIP: controler + make such controler a proxy to panels code_mvc for relevant actions
-    // WIP: proxy to panels (or listeners to property changed)
-    //  - refresh execution if presentation model change
-    //  - not executable presentation: hide execution or show error message
 
     constructor(parameters = {}){
         if (!new.target || typeof parameters !== "object")
@@ -2923,8 +2920,9 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                 throw new Error('ace.cs.fetch_execution_controler_t.expect_target_is_executable: prerequisite: target.toggle_execution')
 
             const execution_panel = this.#target.ace_panels.execution
+            const presentation_mvc = this.#target.ace_panels.presentation.mvc
 
-            if (this.#target.ace_panels.presentation.mvc.controler.is_executable){
+            if (presentation_mvc.controler.is_executable){
                 execution_panel.status = {
                     value: 'ready-to-fetch',
                     message: ``
@@ -2932,7 +2930,16 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
                 return true
             }
             
-            const error = `${this.toString()}.get(expect_target_is_executable):\n\tnot executable (yet?)\n\tmissing configuration for language [${this.#target.ace_panels.presentation.mvc.controler.language}]`
+            const reason = (() => {
+                if (presentation_mvc.model_details.raw.length === 0)
+                    return 'empty model (model_details.raw)'
+                if (presentation_mvc.model_details.to_execute.length === 0)
+                    return 'empty model_details.to_execute\n\tcheck your parsing-specific metadata/tags, like [// @ace::skip::line]'
+                if (ace.details.utility.types.is_empty(presentation_mvc.model_details.ce_options))
+                    return `missing configuration for language [${presentation_mvc.controler.language}] - it might still be loading.\n\tOtherwise, check your call to ace.API.configuration.configure`
+                return 'unknown reason'
+            })();
+            const error = `${this}.get(expect_target_is_executable):\n\t${reason}`
             execution_panel.status = {
                 value: 'error-not-executable',
                 message: `${error}`
