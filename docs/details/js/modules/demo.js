@@ -25,7 +25,7 @@
 import ace from '../../../awesome-code-element/awesome-code-element.js'
 if (ace === undefined)
     throw new Error('docs/details/js/modules/utils.js: missing [ace]')
-if (ace.API.customElements.CodeSection === undefined)
+if (ace.API.HTMLElements.CodeSection === undefined)
     throw new Error('CodeSection_demo: missing mandatory dependency [ace.CodeSection]')
 
 import ace_test_utils from '../../../details/js/modules/utils.js';
@@ -37,8 +37,8 @@ if (ace.test_utils === undefined)
 // - url                    -> not working (no effect)
 
 ace.showcase                    = ace.showcase ?? {}
-ace.showcase.customElements      = ace.showcase.customElements ?? {}
-ace.showcase.customElements.demo = class cs_demo extends HTMLElement {
+ace.showcase.HTMLElements      = ace.showcase.HTMLElements ?? {}
+ace.showcase.HTMLElements.demo = class cs_demo extends HTMLElement {
 
     static get HTMLElement_tagName() { return 'ace-cs-demo' }
     get [Symbol.toStringTag](){ return cs_demo.HTMLElement_tagName }
@@ -55,7 +55,7 @@ ace.showcase.customElements.demo = class cs_demo extends HTMLElement {
         if (!this.isConnected)
             throw new Error('ace.cs_demo: not connected yet ')
 
-        this.ace_cs = new ace.API.customElements.CodeSection({
+        this.ace_cs = new ace.API.HTMLElements.CodeSection({
             code: ace.details.code.mvc_details.factory.build_from({ nodes: this.childNodes })
         })
         this.ace_cs = this.appendChild(this.ace_cs)
@@ -137,7 +137,7 @@ ace.showcase.customElements.demo = class cs_demo extends HTMLElement {
     #make_boolean_field_view({ target, property_name }) {
 
         if (!target.hasOwnProperty(property_name) && !Object.getPrototypeOf(target).hasOwnProperty(property_name))
-            throw new Error(`ace.showcase.customElements.demo: invalid argument\n\t[${target}] -> [${property_name}]`)
+            throw new Error(`ace.showcase.HTMLElements.demo: invalid argument\n\t[${target}] -> [${property_name}]`)
 
         let printable_name = property_name.replaceAll(/[\-|\_]/g, ' ')
         // html
@@ -177,10 +177,10 @@ ace.showcase.customElements.demo = class cs_demo extends HTMLElement {
 
         // assert: valid target model
         if (!model.hasOwnProperty(property_name) && !Object.getPrototypeOf(model).hasOwnProperty(property_name))
-            throw new Error(`ace.showcase.customElements.demo: invalid argument (model)\n\t[${model}] -> [${property_name}]`)
+            throw new Error(`ace.showcase.HTMLElements.demo: invalid argument (model)\n\t[${model}] -> [${property_name}]`)
         // assert: valid target view (attr)
         if (!(view instanceof HTMLElement) || !view.hasAttribute(property_name))
-            throw new Error(`ace.showcase.customElements.demo: invalid argument (view)\n\t[${view}] -> [${property_name}]`)
+            throw new Error(`ace.showcase.HTMLElements.demo: invalid argument (view)\n\t[${view}] -> [${property_name}]`)
 
         let sub_container = document.createElement('div')
         ace.details.utility.apply_css(sub_container, {
@@ -218,8 +218,8 @@ ace.showcase.customElements.demo = class cs_demo extends HTMLElement {
     }
 }
 customElements.define(
-    ace.showcase.customElements.demo.HTMLElement_tagName,
-    ace.showcase.customElements.demo
+    ace.showcase.HTMLElements.demo.HTMLElement_tagName,
+    ace.showcase.HTMLElements.demo
 );
 
-export default ace.showcase.customElements.demo
+export default ace.showcase.HTMLElements.demo

@@ -34,7 +34,7 @@ html.dark-mode {
     --default-background-color:  #2b2a33;
 }
 
-/* ace.API.customElements.ToggleDarkModeButton */
+/* ace.API.HTMLElements.ToggleDarkModeButton */
 button[is=ace-cs-button_toggle-dark-mode] > * {
     display: none;
 }
