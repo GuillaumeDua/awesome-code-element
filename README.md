@@ -75,7 +75,7 @@ auto main() -> int {
 }
 `
 let code_section = new CodeSection(code, 'cpp')
-    // equivalent to:  awesome_doc_code_sections.HTML_elements.CodeSection
+    // equivalent to:  awesome_doc_code_sections.customElements.CodeSection
 // attach `code_section` to the DOM ...
 ```
 

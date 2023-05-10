@@ -57,7 +57,7 @@
 //          https://stackoverflow.com/questions/74114767/highlightjs-how-to-create-custom-clickable-sequence-of-characters
 // TODO: hide warnings for undefined/fallback hljs language
 // TODO: soft errors (replace HTMLElement content with red error message, rather than stopping the process)
-// TODO: make Initialize_DivHTML_elements generic
+// TODO: make Initialize_DivcustomElements generic
 // TODO: Global option: force fallback language to ... [smthg]
 // TODO: per-codeSection CE configuration (local override global)
 // TODO: toggle technical info/warning logs
@@ -72,7 +72,7 @@
 // TODO: element name consistency ?
 // TODO: use arrow function: automatically captures the `this` value of the enclosing scope (rather than _this)
 // TODO: alias awesome-code-element -> ace ?
-// TODO: HTML_elements_name -> ace_${name}
+// TODO: customElements_name -> ace_${name}
 // TODO: check shadowroot-callbacks
 // TODO: dark_or_light -> color_scheme
 // TODO: console.xxx -> replace '\n\t' by ','-separated arguments ?
@@ -1213,19 +1213,19 @@ ace.details.log_facility = class {
 }
 
 // ======================
-// HTML_elements : details
+// customElements : details
 
-ace.details.HTML_elements = {}
+ace.details.customElements = {}
 // TODO: should be replaced by dynamic CSS at some point ?
-ace.details.HTML_elements.resize_observer = new ResizeObserver(entries => {
+ace.details.customElements.resize_observer = new ResizeObserver(entries => {
 
     for (let entry of entries) {
         entry.target.on_resize()
     }
 });
 
-ace.details.HTML_elements.buttons = {}
-ace.details.HTML_elements.buttons.copy_to_clipboard = class CopyToClipboardButton extends HTMLButtonElement {
+ace.details.customElements.buttons = {}
+ace.details.customElements.buttons.copy_to_clipboard = class CopyToClipboardButton extends HTMLButtonElement {
 // Copy text context of this previousSibling HTMLelement
 
     static get HTMLElement_tagName() { return 'ace-cs-button_copy-to-clipboard' }
@@ -1265,10 +1265,10 @@ ace.details.HTML_elements.buttons.copy_to_clipboard = class CopyToClipboardButto
     }
 }
 customElements.define(
-    ace.details.HTML_elements.buttons.copy_to_clipboard.HTMLElement_tagName,
-    ace.details.HTML_elements.buttons.copy_to_clipboard, { extends: 'button' }
+    ace.details.customElements.buttons.copy_to_clipboard.HTMLElement_tagName,
+    ace.details.customElements.buttons.copy_to_clipboard, { extends: 'button' }
 );
-ace.details.HTML_elements.buttons.show_in_godbolt = class ShowInGodboltButton extends HTMLButtonElement {
+ace.details.customElements.buttons.show_in_godbolt = class ShowInGodboltButton extends HTMLButtonElement {
 
     static get HTMLElement_tagName() { return 'ace-cs-button_open-in-godbolt' }
     static title            = 'Try this on godbolt.org (compiler-explorer)'
@@ -1314,10 +1314,10 @@ ace.details.HTML_elements.buttons.show_in_godbolt = class ShowInGodboltButton ex
 
         const code_mvc_HTMLelement = this.parentElement
         const code_mvc_value = (() => {
-            if (!(code_mvc_HTMLelement instanceof ace.API.HTML_elements.CodeMVC))
+            if (!(code_mvc_HTMLelement instanceof ace.API.customElements.CodeMVC))
                 throw new Error('awesome-code-element.js: ShowInGodboltButton.onClickSend: ill-formed element: unexpected parentElement.parentElement layout (must be an ace.code_mvc_HTMLElement)')
             const mvc = code_mvc_HTMLelement.mvc
-            if (!(mvc instanceof ace.API.HTML_elements.CodeMVC.mvc_type))
+            if (!(mvc instanceof ace.API.customElements.CodeMVC.mvc_type))
                 throw new Error('awesome-code-element.js: ShowInGodboltButton.onClickSend: ill-formed element: unexpected parentElement.parentElement.code_mvc (must be an ace.code_mvc)')
             return mvc
         })()
@@ -1376,10 +1376,10 @@ ace.details.HTML_elements.buttons.show_in_godbolt = class ShowInGodboltButton ex
     }
 }
 customElements.define(
-    ace.details.HTML_elements.buttons.show_in_godbolt.HTMLElement_tagName,
-    ace.details.HTML_elements.buttons.show_in_godbolt, { extends: 'button' }
+    ace.details.customElements.buttons.show_in_godbolt.HTMLElement_tagName,
+    ace.details.customElements.buttons.show_in_godbolt, { extends: 'button' }
 );
-ace.details.HTML_elements.defered_HTMLElement = class extends HTMLElement {
+ace.details.customElements.defered_HTMLElement = class extends HTMLElement {
 // HTMLElements that handles defered initialization
 //  if first added to the DOM empty, then triggers initialization when a first child is attached
 //  otherwise, initialize when created
@@ -1398,7 +1398,7 @@ ace.details.HTML_elements.defered_HTMLElement = class extends HTMLElement {
         // TODO: useless ?
         // explicit, user-provided attributes
         if (this._parameters.attributes) {
-            console.debug(`ace.details.HTML_elements.defered_HTMLElement: constructor: explicit attributes:`, this._parameters.attributes)
+            console.debug(`ace.details.customElements.defered_HTMLElement: constructor: explicit attributes:`, this._parameters.attributes)
             for (const property in this._parameters.attributes)
                 this.setAttribute(property, this._parameters.attributes[property])
         }
@@ -1412,7 +1412,7 @@ ace.details.HTML_elements.defered_HTMLElement = class extends HTMLElement {
         const initialize_when_ready = () => {
 
             if (!this.acquire_parameters(this._parameters)) {
-                console.debug('ace.details.HTML_elements.defered_HTMLElement: create shadowroot slot')
+                console.debug('ace.details.customElements.defered_HTMLElement: create shadowroot slot')
                 this.shadowroot_accessor = ace.details.utility.create_shadowroot_slot(
                     this, () => {
                         if (!this.acquire_parameters(this._parameters))
@@ -1422,7 +1422,7 @@ ace.details.HTML_elements.defered_HTMLElement = class extends HTMLElement {
                 )
             }
             else {
-                console.debug('ace.details.HTML_elements.defered_HTMLElement: no need for shadowroot slot')
+                console.debug('ace.details.customElements.defered_HTMLElement: no need for shadowroot slot')
                 this.initialize()
             }
         }
@@ -1453,13 +1453,13 @@ ace.details.HTML_elements.defered_HTMLElement = class extends HTMLElement {
 
     on_critical_internal_error(error = "") {
 
-        console.error('ace.details.HTML_elements.defered_HTMLElement.on_critical_internal_error: fallback rendering (No recovery possible)\n\t', error)
+        console.error('ace.details.customElements.defered_HTMLElement.on_critical_internal_error: fallback rendering (No recovery possible)\n\t', error)
 
         if (!this.isConnected)
             return
 
         let error_element = document.createElement('pre')
-            error_element.textContent = `ace.details.HTML_elements.defered_HTMLElement.on_critical_internal_error:\n\t${error || 'unknown error'}\n\t(No recovery possible)`
+            error_element.textContent = `ace.details.customElements.defered_HTMLElement.on_critical_internal_error:\n\t${error || 'unknown error'}\n\t(No recovery possible)`
         // TODO: status => error + CSS style for such status
         ace.details.utility.apply_css(error_element, {
             color: "red",
@@ -1471,10 +1471,10 @@ ace.details.HTML_elements.defered_HTMLElement = class extends HTMLElement {
         this.replaceWith(error_element)
     }
 }
-ace.details.HTML_elements.status_display = class status_display extends HTMLElement {
+ace.details.customElements.status_display = class status_display extends HTMLElement {
     
     static get HTMLElement_tagName() { return 'ace-cs-status-display' }
-    get [Symbol.toStringTag](){ return 'ace.details.HTML_elements.status_display' }
+    get [Symbol.toStringTag](){ return 'ace.details.customElements.status_display' }
 
     #value = 'unknown'
     #message = ''
@@ -1495,7 +1495,7 @@ ace.details.HTML_elements.status_display = class status_display extends HTMLElem
     get value(){ return this.#value }
     get message(){ return this.#message }
 }
-customElements.define(ace.details.HTML_elements.status_display.HTMLElement_tagName, ace.details.HTML_elements.status_display);
+customElements.define(ace.details.customElements.status_display.HTMLElement_tagName, ace.details.customElements.status_display);
 
 // Animation HTML element factory + controler
 ace.details.animation_factory = class animation_factory {
@@ -2506,8 +2506,8 @@ ace.details.code.mvc = class code_mvc {
     }
 }
 
-// ==================
-// HTML_elements : API
+// =========================
+// API: HTML custom elements
 
 // TODO: naming consistency / HTML members 
 //  ex: loading_animation_controler -> ace_loading_animation_controler
@@ -2515,11 +2515,11 @@ ace.details.code.mvc = class code_mvc {
 // TODO: ace-cs -> ace
 
 // TODO: presentation.view is mutable and the user changed the textContent -> update model
-ace.API.HTML_elements = {}
-ace.API.HTML_elements.CodeMVC = class code_mvc_HTMLElement extends ace.details.HTML_elements.defered_HTMLElement {
+ace.API.customElements = {}
+ace.API.customElements.CodeMVC = class code_mvc_HTMLElement extends ace.details.customElements.defered_HTMLElement {
 
     static get HTMLElement_tagName() { return 'ace-cs-code-mvc' }
-    get [Symbol.toStringTag](){ return `ace.API.HTML_elements.CodeMVC/${code_mvc_HTMLElement.HTMLElement_tagName}` }
+    get [Symbol.toStringTag](){ return `ace.API.customElements.CodeMVC/${code_mvc_HTMLElement.HTMLElement_tagName}` }
 
     static get named_parameters(){ return [
         'language',
@@ -2585,7 +2585,7 @@ ace.API.HTML_elements.CodeMVC = class code_mvc_HTMLElement extends ace.details.H
     initialize(){
         // console.debug(`code_mvc_HTMLElement.initialize: parameters:`, this._parameters)
 
-        this.status_display = this.appendChild(new ace.details.HTML_elements.status_display)
+        this.status_display = this.appendChild(new ace.details.customElements.status_display)
         this.mvc = this.#code_mvc_initializer()
         this.appendChild(this.mvc.view)
 
@@ -2625,10 +2625,10 @@ ace.API.HTML_elements.CodeMVC = class code_mvc_HTMLElement extends ace.details.H
         if (!(value instanceof code_mvc_HTMLElement))
             throw new Error('code_mvc_HTMLElement.add_buttons_to: invalid argument type')
 
-        let copy_to_clipboard_button = new ace.details.HTML_elements.buttons.copy_to_clipboard()
+        let copy_to_clipboard_button = new ace.details.customElements.buttons.copy_to_clipboard()
             copy_to_clipboard_button = value.appendChild(copy_to_clipboard_button)
 
-        let CE_button = new ace.details.HTML_elements.buttons.show_in_godbolt()
+        let CE_button = new ace.details.customElements.buttons.show_in_godbolt()
             CE_button = value.appendChild(CE_button)
 
         return value.ace_cs_buttons = {
@@ -2665,7 +2665,7 @@ ace.API.HTML_elements.CodeMVC = class code_mvc_HTMLElement extends ace.details.H
             owner: scrolling_element,
             elements: Object.entries(elements_to_hide).map(element => element[1]) // structure-to-array
         })
-        ace.details.HTML_elements.resize_observer.observe(panel)
+        ace.details.customElements.resize_observer.observe(panel)
     }
 
     // status: error|success|failure tracking/display
@@ -2691,11 +2691,11 @@ ace.API.HTML_elements.CodeMVC = class code_mvc_HTMLElement extends ace.details.H
         setTimeout(() => this.status = status, duration)
     }
 }
-customElements.define(ace.API.HTML_elements.CodeMVC.HTMLElement_tagName, ace.API.HTML_elements.CodeMVC);
-ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.defered_HTMLElement {
+customElements.define(ace.API.customElements.CodeMVC.HTMLElement_tagName, ace.API.customElements.CodeMVC);
+ace.API.customElements.CodeSection = class cs extends ace.details.customElements.defered_HTMLElement {
 
     static get HTMLElement_tagName() { return 'ace-cs' }
-    get [Symbol.toStringTag](){ return `ace.API.HTML_elements.CodeMVC/${cs.HTMLElement_tagName}` }
+    get [Symbol.toStringTag](){ return `ace.API.customElements.CodeMVC/${cs.HTMLElement_tagName}` }
 
     static get named_parameters(){ return [
         'language',
@@ -2710,7 +2710,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
     constructor(parameters = {}){
         if (!new.target || typeof parameters !== "object")
             throw new Error(
-                `ace.API.HTML_elements.CodeMVC.constructor: invalid argument.
+                `ace.API.customElements.CodeMVC.constructor: invalid argument.
                 Expected object layout: { ${cs.named_parameters } }
                 or valid childs/textContent when onConnectedCallback triggers`)
         super(parameters)
@@ -2755,11 +2755,11 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
         return is_valid
     }
     initialize() {
-        console.debug(`ace.details.HTML_elements.CodeSection.initialize: initializing with parameters:`, this._parameters)
+        console.debug(`ace.details.customElements.CodeSection.initialize: initializing with parameters:`, this._parameters)
 
         this.ace_panels = (() => {
 
-            const code_mvc_html_element = ace.API.HTML_elements.CodeMVC;
+            const code_mvc_html_element = ace.API.customElements.CodeMVC;
             const code_mvc = code_mvc_html_element.mvc_type;
             let [ presentation, execution ] = [
                 // new code_mvc_HTMLElement(this._parameters),
@@ -2861,7 +2861,7 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
 
         // callable once
         // delete this._parameters
-        this.initialize = () => { throw new Error('ace.details.HTML_elements.CodeSection.initialize: already called') }
+        this.initialize = () => { throw new Error('ace.details.customElements.CodeSection.initialize: already called') }
     }
 
     static #id_generator = (() => {
@@ -3178,8 +3178,8 @@ ace.API.HTML_elements.CodeSection = class cs extends ace.details.HTML_elements.d
     }
 }
 customElements.define(
-    ace.API.HTML_elements.CodeSection.HTMLElement_tagName,
-    ace.API.HTML_elements.CodeSection
+    ace.API.customElements.CodeSection.HTMLElement_tagName,
+    ace.API.customElements.CodeSection
 );
 
 // =====
@@ -3306,7 +3306,7 @@ ace.details.Theme = class Theme {
 
     static get default_theme() {
         const theme_selector_default_option = (() => {
-            const candidate_option = $(document).find(`select[is=${ace.API.HTML_elements.ThemeSelector.HTMLElement_tagName}]`)
+            const candidate_option = $(document).find(`select[is=${ace.API.customElements.ThemeSelector.HTMLElement_tagName}]`)
                 .map((index, element) => { return element.options[0] })
                 .filter((index, element) => element && element.value)
                 [0]
@@ -3449,19 +3449,19 @@ ace.details.Theme = class Theme {
 }
 // Events: monitor system preference changes
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-    $(document).find(`button[is=${ace.API.HTML_elements.ToggleDarkModeButton.HTMLElement_tagName}]`)
+    $(document).find(`button[is=${ace.API.customElements.ToggleDarkModeButton.HTMLElement_tagName}]`)
         .each((index, element) => { element.updateIcon() })
     ace.details.Theme.is_dark_mode = event.matches
 })
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', event => {
-    $(document).find(`button[is=${ace.API.HTML_elements.ToggleDarkModeButton.HTMLElement_tagName}]`)
+    $(document).find(`button[is=${ace.API.customElements.ToggleDarkModeButton.HTMLElement_tagName}]`)
         .each((index, element) => { element.updateIcon() })
     ace.details.Theme.is_dark_mode = !event.matches
 })
-ace.API.HTML_elements.ToggleDarkModeButton = class ToggleDarkModeButton extends HTMLButtonElement {
+ace.API.customElements.ToggleDarkModeButton = class ToggleDarkModeButton extends HTMLButtonElement {
 
     static get HTMLElement_tagName() { return 'ace-cs-button_toggle-dark-mode' }
-    get [Symbol.toStringTag](){ return `ace.API.HTML_elements.ToggleDarkModeButton/${ToggleDarkModeButton.HTMLElement_tagName}` }
+    get [Symbol.toStringTag](){ return `ace.API.customElements.ToggleDarkModeButton/${ToggleDarkModeButton.HTMLElement_tagName}` }
 
     static title             = "Toggle light/dark Mode"
     static #lightModeIcon    = `<svg id="light-mode-icon" xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#FCBF00"><rect fill="none" height="24" width="24"/><circle cx="12" cy="12" opacity=".3" r="3"/><path d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"/></svg>`
@@ -3479,10 +3479,10 @@ ace.API.HTML_elements.ToggleDarkModeButton = class ToggleDarkModeButton extends 
     #on_click(){ ace.details.Theme.ToggleDarkMode() }
 }
 customElements.define(
-    ace.API.HTML_elements.ToggleDarkModeButton.HTMLElement_tagName,
-    ace.API.HTML_elements.ToggleDarkModeButton, { extends: 'button' }
+    ace.API.customElements.ToggleDarkModeButton.HTMLElement_tagName,
+    ace.API.customElements.ToggleDarkModeButton, { extends: 'button' }
 );
-ace.API.HTML_elements.ThemeSelector = class ThemeSelector extends HTMLSelectElement {
+ace.API.customElements.ThemeSelector = class ThemeSelector extends HTMLSelectElement {
 // For themes, see https://cdnjs.com/libraries/highlight.js
 // Note: The first one is the default
 // Use theme name, without light or dark specification. Example : `tokyo-night`
@@ -3529,7 +3529,7 @@ ace.API.HTML_elements.ThemeSelector = class ThemeSelector extends HTMLSelectElem
         this.onchange = function(){
 
             let selected_option = $(this).find('option:selected')
-            console.info(`ace.API.HTML_elements.ThemeSelector.onchange: switching to [${selected_option.text()}]`)
+            console.info(`ace.API.customElements.ThemeSelector.onchange: switching to [${selected_option.text()}]`)
             ace.details.Theme.value = selected_option.text()
         }
     }
@@ -3540,8 +3540,8 @@ ace.API.HTML_elements.ThemeSelector = class ThemeSelector extends HTMLSelectElem
     })()
 }
 customElements.define(
-    ace.API.HTML_elements.ThemeSelector.HTMLElement_tagName,
-    ace.API.HTML_elements.ThemeSelector, { extends : 'select' }
+    ace.API.customElements.ThemeSelector.HTMLElement_tagName,
+    ace.API.customElements.ThemeSelector, { extends : 'select' }
 );
 
 // ==============
@@ -3583,7 +3583,7 @@ ace.API.initialize = () => {
                 // /WIP
         
                 let code = $.map(lines, function(value) { return value.textContent }).join('\n')
-                let node = new ace.API.HTML_elements.CodeSection({ code: code });
+                let node = new ace.API.customElements.CodeSection({ code: code });
                     $(value).replaceWith(node)
             })
         
@@ -3601,7 +3601,7 @@ ace.API.initialize = () => {
                 // /WIP
         
                 let code = $.map(lines, function(value) { return value.textContent }).join('\n')
-                let node = new ace.API.HTML_elements.CodeSection({ code: code });
+                let node = new ace.API.customElements.CodeSection({ code: code });
                     $(value).replaceWith(node)
             })
         
@@ -3617,7 +3617,7 @@ ace.API.initialize = () => {
                 })
         },
         // TODO: make sure that doxygen elements are also still clickable with pure doxygen (not doxygen-awesome-css)
-        PreCodeHTML_elements : function() {
+        PreCodecustomElements : function() {
     
             $('body').find('pre code').each((index, value) => { // filter
     
@@ -3629,7 +3629,7 @@ ace.API.initialize = () => {
                 let language = value.getAttribute('language')
                 let code = existing_node.text()
     
-                let node = new ace.API.HTML_elements.CodeSection({ code: code, language: language });
+                let node = new ace.API.customElements.CodeSection({ code: code, language: language });
                     // node.setAttribute('language', language)
                 existing_node.replaceWith(node);
             })
@@ -3681,8 +3681,8 @@ ace.API.initialize = () => {
                 })
             }
             [   // replace placeholders (<div class="...tagname...">) with matching HTML elements
-                ace.API.HTML_elements.CodeSection,
-                ace.API.HTML_elements.CodeMVC
+                ace.API.customElements.CodeSection,
+                ace.API.customElements.CodeMVC
             ].forEach(html_component => replace_HTML_element_placeholders(html_component))
 
             // WIP:
@@ -3693,7 +3693,7 @@ ace.API.initialize = () => {
 
             if (ace.API.configuration.value.compatibility.pre_code) {
                 console.info(`awesome-code-element.js:initialize: existing pre-code compatiblity ...`)
-                ace.API.initializers.PreCodeHTML_elements()
+                ace.API.initializers.PreCodecustomElements()
             }
 
             ace.details.Theme.initialize({ force_dark_mode: (() => {

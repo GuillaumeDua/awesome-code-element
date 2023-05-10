@@ -27,8 +27,8 @@ if (ace === undefined)
     throw new Error('docs/details/js/modules/utils.js: missing [ace]')
 
 ace.showcase                        = ace.showcase ?? {}
-ace.showcase.HTML_elements          = ace.showcase.HTML_elements ?? {}
-ace.showcase.HTML_elements.wrapper  = class HTMLShowCase extends HTMLElement {
+ace.showcase.customElements          = ace.showcase.customElements ?? {}
+ace.showcase.customElements.wrapper  = class HTMLShowCase extends HTMLElement {
     static HTMLElement_name = 'ace-showcase-wrapper'
 
     constructor(){
@@ -91,8 +91,8 @@ ace.showcase.HTML_elements.wrapper  = class HTMLShowCase extends HTMLElement {
 
 }
 customElements.define(
-    ace.showcase.HTML_elements.wrapper.HTMLElement_name,
-    ace.showcase.HTML_elements.wrapper
+    ace.showcase.customElements.wrapper.HTMLElement_name,
+    ace.showcase.customElements.wrapper
 );
 
-export default ace.showcase.HTML_elements.wrapper
+export default ace.showcase.customElements.wrapper
