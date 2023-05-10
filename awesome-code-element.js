@@ -127,15 +127,16 @@ let ace = {}
 // ====================
 // details.dependencies
 
-ace.details.dependency_descriptor = class {
+ace.details.dependency = {};
+ace.details.dependency.descriptor = class {
     constructor(args) {
         for (const property in args)
             this[property] = args[property]
         
         if (!this.name)
-            throw new Error('ace.details.dependency_descriptor: invalid input: missing mandatory parameter [name]')
+            throw new Error('ace.details.dependency.descriptor: invalid input: missing mandatory parameter [name]')
         if (!this.version_detector)
-            throw new Error('ace.details.dependency_descriptor: invalid input: missing mandatory parameter [version_detector]')
+            throw new Error('ace.details.dependency.descriptor: invalid input: missing mandatory parameter [version_detector]')
     }
 
     name                = undefined
@@ -144,13 +145,13 @@ ace.details.dependency_descriptor = class {
     is_mandatory        = false
     // TODO: post-dl configure ?
 }
-ace.details.dependency_manager = new class dependency_manager {
+ace.details.dependency.manager = new class dependency_manager {
 
     dependencies = {}
 
     constructor(args = []) {
         if (!(args instanceof Array))
-            throw new Error('ace.details.dependency_manager: invalid input: expect Array of dependency_descriptor')
+            throw new Error('ace.details.dependency.manager: invalid input: expect Array of dependency_descriptor')
         args.forEach(element => {
             element.version = element.version_detector()
             this.dependencies[element.name] = element
@@ -159,7 +160,7 @@ ace.details.dependency_manager = new class dependency_manager {
 
     async load_missing_dependencies() {
     // include missing mandatory dependencies asynchronously
-        console.info('ace.details.dependency_manager: loading missing dependencies (this can take some time...)')
+        console.info('ace.details.dependency.manager: loading missing dependencies (this can take some time...)')
         let promises = Object.entries(this.dependencies)
             .map(([key, value]) => value)
             .filter(element => element.is_mandatory)
@@ -168,7 +169,7 @@ ace.details.dependency_manager = new class dependency_manager {
                     return
                 const url = (element.url instanceof Function) ? element.url() : element.url
                 if (!url)
-                    throw new Error(`ace.details.dependency_manager: missing mandatory dependency [${element.name}], no fallback provided`)
+                    throw new Error(`ace.details.dependency.manager: missing mandatory dependency [${element.name}], no fallback provided`)
                 return dependency_manager
                     .include({name : element.name, url: url })
                     .then(() => {
@@ -180,7 +181,7 @@ ace.details.dependency_manager = new class dependency_manager {
     }
 
     static include({ name, url }) {
-        console.info(`ace.details.dependency_manager.include: including dependency [${name}]`, `using url [${url}]`)
+        console.info(`ace.details.dependency.manager.include: including dependency [${name}]`, `using url [${url}]`)
 
         let id = `ace-dependency_${name}`
 
@@ -199,11 +200,11 @@ ace.details.dependency_manager = new class dependency_manager {
 
         return new Promise((resolve, reject) => {
             element.addEventListener('error', () => {
-                reject(new Error(`ace.details.dependency_manager.include: failure: [${name}] using url [${url}]`))
+                reject(new Error(`ace.details.dependency.manager.include: failure: [${name}] using url [${url}]`))
             })
             element.addEventListener('load', () => {
                 element.is_loaded = true
-                console.info(`ace.details.dependency_manager.include: loaded: [${name}]`)
+                console.info(`ace.details.dependency.manager.include: loaded: [${name}]`)
                 resolve(element)
             })
         })
@@ -229,21 +230,21 @@ ace.details.dependency_manager = new class dependency_manager {
         return result
     }
 }([
-    new ace.details.dependency_descriptor({
+    new ace.details.dependency.descriptor({
         name:               'jquery',
         version_detector:   function(){ return (typeof jQuery !== "undefined") ? jQuery.fn.jquery : undefined },
         url :               'https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js',
         is_mandatory:       true,
 
     }),
-    new ace.details.dependency_descriptor({
+    new ace.details.dependency.descriptor({
         name:               'hljs',
         version_detector:   function(){ return (typeof hljs !== "undefined") ? hljs.versionString : undefined },
         is_mandatory:       true,
         url:                'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js'
     }),
     // todo: doxygen-awesome-css
-    new ace.details.dependency_descriptor({
+    new ace.details.dependency.descriptor({
         name:               'doxygen_awesome_css_dark_mode',
         is_mandatory:       false,
         version_detector:   function(){
@@ -252,7 +253,7 @@ ace.details.dependency_manager = new class dependency_manager {
                 : undefined
         }
     }),
-    new ace.details.dependency_descriptor({
+    new ace.details.dependency.descriptor({
         name:               'doxygen',
         is_mandatory:       false,
         version_detector:   function(){
@@ -263,7 +264,7 @@ ace.details.dependency_manager = new class dependency_manager {
         }
     })
 ])
-await ace.details.dependency_manager.load_missing_dependencies()
+await ace.details.dependency.manager.load_missing_dependencies()
 
 // ==================
 // details.containers
@@ -411,15 +412,15 @@ ace.API.configuration = new class configuration {
                 default_theme   : 'tokyo-night'  // supports dark/light variations
             },
             compatibility                       : {
-                doxygen:                        Boolean(ace.details.dependency_manager.dependencies.doxygen.version), // default: enabled if detected
+                doxygen:                        Boolean(ace.details.dependency.manager.dependencies.doxygen.version), // default: enabled if detected
                 doxygen_awesome_css:            false,  // TODO: autodetect
                 pre_code:                       false
             },
             auto_hide_buttons                   : false, // TODO: rename force_ or always_
             force_dark_light_scheme             : (() => {
-                if (Boolean(ace.details.dependency_manager.dependencies.doxygen_awesome_css_dark_mode.version))
+                if (Boolean(ace.details.dependency.manager.dependencies.doxygen_awesome_css_dark_mode.version))
                     return 'dark'
-                if (Boolean(ace.details.dependency_manager.dependencies.doxygen.version))
+                if (Boolean(ace.details.dependency.manager.dependencies.doxygen.version))
                     return 'light' // assuming doxygen does not handle light/dark-mode by default
                 return undefined // auto-detect
             })()
@@ -3190,24 +3191,24 @@ customElements.define(
 // =====
 // Style
 
-ace.details.Style = class Style {
+ace.details.HTMLUtils.StyleSheetManager = class StyleSheetManager {
 // class-as-namespace, for structuring styles and minor cosmetic tweaks
     get [Symbol.toStringTag](){ return `ace.details.Style` }
-    constructor(){ throw new Error(`${Style.prototype}: not instanciable (class-as-namespace)`) }
+    constructor(){ throw new Error(`${StyleSheetManager.prototype}: not instanciable (class-as-namespace)`) }
 
     static #stylesheet_element_id = 'ace-stylesheet'
     static initialize() {
 
-        if (document.getElementById(Style.#stylesheet_element_id)) {
-            console.info(`${Style.prototype}.initialize: user provided (valid element with id="${Style.#stylesheet_element_id}")`)
+        if (document.getElementById(StyleSheetManager.#stylesheet_element_id)) {
+            console.info(`${StyleSheetManager.prototype}.initialize: user provided (valid element with id="${StyleSheetManager.#stylesheet_element_id}")`)
             return;
         }
 
-        console.info(`${Style.prototype}.initialize: automated loading ...`)
+        console.info(`${StyleSheetManager.prototype}.initialize: automated loading ...`)
 
         let stylesheet = document.createElement('link')
             stylesheet.rel = "stylesheet"
-            stylesheet.id = Style.#stylesheet_element_id
+            stylesheet.id = StyleSheetManager.#stylesheet_element_id
             stylesheet.href = (() => {
                 // user-provided
                 if (ace.API.configuration.value.description.stylesheet_url)
@@ -3225,7 +3226,7 @@ ace.details.Style = class Style {
                 ;
             })()
 
-            console.info(`${Style.prototype}.initialize: loading using url [${stylesheet.href}]`)
+            console.info(`${StyleSheetManager.prototype}.initialize: loading using url [${stylesheet.href}]`)
 
         document.head.appendChild(stylesheet)
     }
@@ -3235,11 +3236,11 @@ ace.details.Style = class Style {
 // Theme
 
 // TODO: check doxygen-awesome-css compatiblity
-ace.details.Theme = class Theme {
+ace.details.HTMLUtils.DarkLightModeSwitch = class DarkLightModeSwitch {
 // class-as-namespace, for syntax coloration and toggling dark/light mode
 
     get [Symbol.toStringTag](){ return `ace.details.Theme` }
-    constructor(){ throw new Error(`${Theme.prototype}: not instanciable (class-as-namespace)`) }
+    constructor(){ throw new Error(`${DarkLightModeSwitch.prototype}: not instanciable (class-as-namespace)`) }
 
     static preferences = class ThemePreferences {
 
@@ -3283,10 +3284,10 @@ ace.details.Theme = class Theme {
         get [Symbol.toStringTag](){ return `ace.details.Theme.url_builder` }
         constructor(){ throw new Error(`${url_builder.prototype}: not instanciable (class-as-namespace)`) }
 
-        static #base = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/${ace.details.dependency_manager.dependencies.hljs.version}/styles/`
+        static #base = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/${ace.details.dependency.manager.dependencies.hljs.version}/styles/`
         static #ext = '.min.css'
 
-        static build({ name, dark_or_light = Theme.preferences.dark_or_light }) {
+        static build({ name, dark_or_light = DarkLightModeSwitch.preferences.dark_or_light }) {
             if (typeof name !== 'string' && !(name instanceof String))
                 throw new Error(`${url_builder.prototype}.build : invalid argument [name]`)
             if (dark_or_light && dark_or_light !== 'light' && dark_or_light !== 'dark')
@@ -3327,34 +3328,34 @@ ace.details.Theme = class Theme {
         // generates the stylesheet HTML element used to import CSS content
         let stylesheet = document.createElement('link')
             stylesheet.rel = "stylesheet"
-            stylesheet.id = Theme.#stylesheet_element_id
+            stylesheet.id = DarkLightModeSwitch.#stylesheet_element_id
         document.head.appendChild(stylesheet)
 
         // dark/light-mode preference
-        console.info(`${Theme.prototype}.initialize: color-scheme preference: [${Theme.preferences.dark_or_light}]`)
-        Theme.preferences.is_dark_mode = force_dark_mode ?? Theme.preferences.is_dark_mode
+        console.info(`${DarkLightModeSwitch.prototype}.initialize: color-scheme preference: [${DarkLightModeSwitch.preferences.dark_or_light}]`)
+        DarkLightModeSwitch.preferences.is_dark_mode = force_dark_mode ?? DarkLightModeSwitch.preferences.is_dark_mode
 
         // switch to default theme, if any
-        const default_theme_name = Theme.default_theme
+        const default_theme_name = DarkLightModeSwitch.default_theme
         if (default_theme_name) {
-            console.info(`${Theme.prototype}.initialize: default theme name: [${default_theme_name}]`)
-            Theme.value = default_theme_name
+            console.info(`${DarkLightModeSwitch.prototype}.initialize: default theme name: [${default_theme_name}]`)
+            DarkLightModeSwitch.value = default_theme_name
         }
 
         // callable once
-        Theme.initialize = () => { console.error(`${Theme.prototype}.initialize: can only be called once`) }
+        DarkLightModeSwitch.initialize = () => { console.error(`${DarkLightModeSwitch.prototype}.initialize: can only be called once`) }
     }
     static get supports_dark_or_light_mode() {
         // Note: supports dark-mode by default (when not loaded yet)
-        return !Theme.value.url || Theme.value.dark_or_light_suffix
+        return !DarkLightModeSwitch.value.url || DarkLightModeSwitch.value.dark_or_light_suffix
     }
 
     // value
     static get value() {
 
-        const element = document.getElementById(Theme.#stylesheet_element_id);
+        const element = document.getElementById(DarkLightModeSwitch.#stylesheet_element_id);
         if (!element)
-            throw new Error(`${Theme.prototype}.value(get): missing stylesheet [${Theme.#stylesheet_element_id}]\n\tDid you forget to call ace.API.initialize(); ?`)
+            throw new Error(`${DarkLightModeSwitch.prototype}.value(get): missing stylesheet [${DarkLightModeSwitch.#stylesheet_element_id}]\n\tDid you forget to call ace.API.initialize(); ?`)
 
         return {
             url:                    element.getAttribute('href'),
@@ -3371,36 +3372,36 @@ ace.details.Theme = class Theme {
     }
     static set value(theme_name) {
 
-        console.info(`${Theme.prototype}.value(set): setting theme to [${theme_name}]`)
+        console.info(`${DarkLightModeSwitch.prototype}.value(set): setting theme to [${theme_name}]`)
 
         try {
-            if (Theme.value.name === theme_name) {
-                console.info(`${Theme.prototype}.value(set): already loaded`)
+            if (DarkLightModeSwitch.value.name === theme_name) {
+                console.info(`${DarkLightModeSwitch.prototype}.value(set): already loaded`)
                 return
             }
         } catch(error){}
 
         if (!theme_name) {
-            Theme.value.element.setAttribute('href', '')
-            Theme.value.element.setAttribute('theme_name', '')
-            Theme.value.element.setAttribute('theme_dark_or_light_suffix', '')
+            DarkLightModeSwitch.value.element.setAttribute('href', '')
+            DarkLightModeSwitch.value.element.setAttribute('theme_name', '')
+            DarkLightModeSwitch.value.element.setAttribute('theme_dark_or_light_suffix', '')
             return
         }
 
         const set_stylesheet_content = ({ url }) => {
-            Theme.value.element.setAttribute('href', url)
+            DarkLightModeSwitch.value.element.setAttribute('href', url)
 
-            const theme_infos = Theme.url_builder.retrieve(url)
-            Theme.value.element.setAttribute('theme_name', theme_infos.name)
-            Theme.value.element.setAttribute('theme_dark_or_light_suffix', theme_infos.dark_or_light_suffix || '')
+            const theme_infos = DarkLightModeSwitch.url_builder.retrieve(url)
+            DarkLightModeSwitch.value.element.setAttribute('theme_name', theme_infos.name)
+            DarkLightModeSwitch.value.element.setAttribute('theme_dark_or_light_suffix', theme_infos.dark_or_light_suffix || '')
 
-            console.info(`${Theme.prototype}.value(set): stylesheet successfully loaded\n\t[${url}]`)
+            console.info(`${DarkLightModeSwitch.prototype}.value(set): stylesheet successfully loaded\n\t[${url}]`)
         }
 
         const try_to_load_stylesheet = ({ theme_name, dark_or_light, on_failure }) => {
 
-            let url = Theme.url_builder.build({ name : theme_name, dark_or_light: dark_or_light })
-            console.debug(`${Theme.prototype}.value(set): loading stylesheet\n\t[${url}] ...`)
+            let url = DarkLightModeSwitch.url_builder.build({ name : theme_name, dark_or_light: dark_or_light })
+            console.debug(`${DarkLightModeSwitch.prototype}.value(set): loading stylesheet\n\t[${url}] ...`)
 
             fetch(url, { method: 'GET' })
                 .then(response => {
@@ -3412,7 +3413,7 @@ ace.details.Theme = class Theme {
                 .catch(error => {
                     let message = on_failure ? `\nBut a fallback strategy is provided (wait for it ...)` : ''
                     let console_stream = on_failure ? console.debug : console.error
-                        console_stream(`${Theme.prototype}: unable to load\n\t[${url}]\n${error}${message}`)
+                        console_stream(`${DarkLightModeSwitch.prototype}: unable to load\n\t[${url}]\n${error}${message}`)
                     if (on_failure)
                         on_failure()
                 })
@@ -3422,7 +3423,7 @@ ace.details.Theme = class Theme {
         const force_light_or_dark_mode = theme_name.search(/(-dark|-light)$/, '') !== -1
         try_to_load_stylesheet({
             theme_name: theme_name,
-            dark_or_light: force_light_or_dark_mode ? '' : Theme.preferences.dark_or_light,
+            dark_or_light: force_light_or_dark_mode ? '' : DarkLightModeSwitch.preferences.dark_or_light,
             on_failure: force_light_or_dark_mode ? undefined : () => {
                 // handles themes that do not support light/dark variations
                 try_to_load_stylesheet({
@@ -3435,33 +3436,33 @@ ace.details.Theme = class Theme {
 
     static set is_dark_mode(value) {
 
-        Theme.preferences.is_dark_mode = value
+        DarkLightModeSwitch.preferences.is_dark_mode = value
 
-        if (!Theme.value.support_dark_or_light_mode) {
-            console.info(`${Theme.prototype}.is_dark_mode(set): theme does not supports dark/light mode, aborting.`)
+        if (!DarkLightModeSwitch.value.support_dark_or_light_mode) {
+            console.info(`${DarkLightModeSwitch.prototype}.is_dark_mode(set): theme does not supports dark/light mode, aborting.`)
             return
         }
-        if ((value  && Theme.value.dark_or_light_suffix === '-dark')
-        ||  (!value && Theme.value.dark_or_light_suffix === '-light')) {
-            console.info(`${Theme.prototype}.is_dark_mode(set): theme already has the right dark/light mode, aborting.`)
+        if ((value  && DarkLightModeSwitch.value.dark_or_light_suffix === '-dark')
+        ||  (!value && DarkLightModeSwitch.value.dark_or_light_suffix === '-light')) {
+            console.info(`${DarkLightModeSwitch.prototype}.is_dark_mode(set): theme already has the right dark/light mode, aborting.`)
             return
         }
-        Theme.value = Theme.url_builder.toggle_dark_mode(Theme.value.fullname)
+        DarkLightModeSwitch.value = DarkLightModeSwitch.url_builder.toggle_dark_mode(DarkLightModeSwitch.value.fullname)
     }
     static ToggleDarkMode() {
-        Theme.is_dark_mode = !Theme.preferences.is_dark_mode
+        DarkLightModeSwitch.is_dark_mode = !DarkLightModeSwitch.preferences.is_dark_mode
     }
 }
 // Events: monitor system preference changes
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
     $(document).find(`button[is=${ace.API.HTMLElements.ToggleDarkModeButton.HTMLElement_tagName}]`)
         .each((index, element) => { element.updateIcon() })
-    ace.details.Theme.is_dark_mode = event.matches
+    ace.details.HTMLUtils.DarkLightModeSwitch.is_dark_mode = event.matches
 })
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', event => {
     $(document).find(`button[is=${ace.API.HTMLElements.ToggleDarkModeButton.HTMLElement_tagName}]`)
         .each((index, element) => { element.updateIcon() })
-    ace.details.Theme.is_dark_mode = !event.matches
+    ace.details.HTMLUtils.DarkLightModeSwitch.is_dark_mode = !event.matches
 })
 ace.API.HTMLElements.ToggleDarkModeButton = class ToggleDarkModeButton extends HTMLButtonElement {
 
@@ -3481,7 +3482,7 @@ ace.API.HTMLElements.ToggleDarkModeButton = class ToggleDarkModeButton extends H
         this.innerHTML = `${ToggleDarkModeButton.#lightModeIcon}${ToggleDarkModeButton.#darkModeIcon}`
         this.addEventListener('click', this.#on_click);
     }
-    #on_click(){ ace.details.Theme.ToggleDarkMode() }
+    #on_click(){ ace.details.HTMLUtils.DarkLightModeSwitch.ToggleDarkMode() }
 }
 customElements.define(
     ace.API.HTMLElements.ToggleDarkModeButton.HTMLElement_tagName,
@@ -3535,7 +3536,7 @@ ace.API.HTMLElements.ThemeSelector = class ThemeSelector extends HTMLSelectEleme
 
             let selected_option = $(this).find('option:selected')
             console.info(`ace.API.HTMLElements.ThemeSelector.onchange: switching to [${selected_option.text()}]`)
-            ace.details.Theme.value = selected_option.text()
+            ace.details.HTMLUtils.DarkLightModeSwitch.value = selected_option.text()
         }
     }
 
@@ -3657,7 +3658,7 @@ ace.API.initialize = () => {
                     '\tSome features might be disabled.\n',
                     '\t[ace.API.configuration] = ', ace.API.configuration.value
                 );
-            ace.details.Style.initialize()
+            ace.details.HTMLUtils.StyleSheetManager.initialize()
 
             let replace_HTML_element_placeholders = (type) => {
 
@@ -3701,7 +3702,7 @@ ace.API.initialize = () => {
                 ace.API.initializers.PreCodeHTMLElements()
             }
 
-            ace.details.Theme.initialize({ force_dark_mode: (() => {
+            ace.details.HTMLUtils.DarkLightModeSwitch.initialize({ force_dark_mode: (() => {
                 switch (ace.API.configuration.value.force_dark_light_scheme) {
                     case 'light':   return false;
                     case 'dark':    return true;
