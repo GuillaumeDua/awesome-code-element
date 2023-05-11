@@ -129,6 +129,9 @@ let ace = {}
 
 ace.details.dependency = {};
 ace.details.dependency.descriptor = class {
+
+    get [Symbol.toStringTag](){ return 'ace.details.dependency.descriptor' }
+
     constructor(args) {
         for (const property in args)
             this[property] = args[property]
@@ -146,6 +149,8 @@ ace.details.dependency.descriptor = class {
     // TODO: post-dl configure ?
 }
 ace.details.dependency.manager = new class dependency_manager {
+
+    get [Symbol.toStringTag](){ return 'ace.details.dependency.manager' }
 
     dependencies = {}
 
@@ -280,6 +285,8 @@ ace.details.containers.translation_map = class extends Map {
 //     }
 // );
 
+    get [Symbol.toStringTag](){ return 'ace.details.containers.translation_map' }
+
     key_translator      = undefined
     mapped_translator   = undefined
 
@@ -335,7 +342,7 @@ ace.API.configuration = new class configuration {
     //      compiler_id,    //     mandatory
     //      default_options // not mandatory
     // }
-        get [Symbol.toStringTag](){ return 'ace.API.configuration.#compiler_explorer_type' }
+        get [Symbol.toStringTag](){ return 'ace.API.configuration.compiler_explorer_type' }
     
         constructor(values) {
             super(values, {
@@ -479,6 +486,7 @@ ace.API.configuration = new class configuration {
         ;
     }
 }
+ace.API.configure = ace.API.configuration.configure.bind(ace.API.configuration);
 
 // ================
 // internal details
@@ -516,7 +524,8 @@ ace.details.remote.resources_cache = class {
 }
 ace.details.utility = class utility {
 // TODO: move to another module ?
-    constructor(){ throw new Error('not instanciable'); }
+    get [Symbol.toStringTag](){ return `ace.details.utility` }
+    constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
 
     static html_codec = class html_codec {
         static entities = new Array(
@@ -826,7 +835,8 @@ ace.details.utility = class utility {
 }
 ace.details.utility.data_binder = class data_binder {
 
-    constructor(){ throw new Error('not instanciable'); }
+    get [Symbol.toStringTag](){ return `ace.details.utility.data_binder` }
+    constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
 
     static get default_projection(){
         return {
@@ -1045,7 +1055,8 @@ ace.details.utility.data_binder = class data_binder {
 ace.details.remote.CE_API = class CE_API {
 // fetch CE API informations asynchronously
 
-    constructor(){ throw new Error('not instanciable'); }
+    get [Symbol.toStringTag](){ return `ace.details.remote.CE_API` }
+    constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
 
     static #static_initializer = (async function(){
         CE_API.#fetch_languages()
@@ -1162,6 +1173,9 @@ ace.details.remote.CE_API = class CE_API {
 // details: logging
 ace.details.log_facility = class {
     
+    get [Symbol.toStringTag](){ return `ace.details.log_facility` }
+    constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
+
     static #default_channels = {
         debug:  console.debug,
         error:  console.error,
@@ -1225,7 +1239,6 @@ ace.details.log_facility = class {
 // HTMLElements : details
 
 ace.details.HTMLUtils = {}
-
 // TODO: should be replaced by dynamic CSS at some point ?
 ace.details.HTMLUtils.ResizeObserver = new ResizeObserver(entries => {
 
@@ -1404,10 +1417,15 @@ ace.details.HTMLElements.DeferedHTMLElement = class extends HTMLElement {
 //  - acquire_parameters({}) -> bool(ready_to_initialize?)
 //  - initialize()
 
+    get [Symbol.toStringTag](){ return 'ace.details.HTMLElements.DeferedHTMLElement' }
+
     _parameters = {} // temporary storage for possibly constructor-provided arguments
 
     constructor(parameters) {
         super();
+
+        if (this.constructor === ace.details.HTMLElements.DeferedHTMLElement)
+            throw new Error(`${this}.constructor: is abstract, must be inherited from.`)
 
         this.#acquire_parameters_impl(parameters)
 
@@ -1946,6 +1964,7 @@ ace.details.code.mvc_details = class code_mvc_details {
     static html_parser = class html_parser {
 
         get [Symbol.toStringTag](){ return 'code.mvc_details.html_parser' }
+        constructor(){ throw new Error(`${html_parser.prototype}.constructor: not instanciable`) }
 
         static is_valid_HTMLElement({ element }){
             if (element === undefined)
@@ -2042,6 +2061,9 @@ ace.details.code.mvc_details = class code_mvc_details {
     };
 
     static factory = class factory {
+
+        get [Symbol.toStringTag](){ return 'ace.details.code.mvc_details.factory' }
+        constructor(){ throw new Error(`${factory.prototype}.constructor: not instanciable`) }
 
         static result_type = class {
 
@@ -3206,7 +3228,7 @@ customElements.define(
 ace.details.HTMLUtils.StyleSheetManager = class StyleSheetManager {
 // class-as-namespace, for structuring styles and minor cosmetic tweaks
     get [Symbol.toStringTag](){ return `ace.details.Style` }
-    constructor(){ throw new Error(`${StyleSheetManager.prototype}: not instanciable (class-as-namespace)`) }
+    constructor(){ throw new Error(`${this}: not instanciable (class-as-namespace)`) }
 
     static #stylesheet_element_id = 'ace-stylesheet'
     static initialize() {
