@@ -855,7 +855,7 @@ ace.details.utility.data_binder = class data_binder {
 
         attribute_name = attribute_name.replace(/\s+/g, '_') // whitespace are not valid in attributes names
         if (!target || !(target instanceof HTMLElement) || !attribute_name)
-            throw new Error('data_binder.#make_attribute_bound_adapter: invalid argument')
+            throw new Error(`${this.prototype}.#make_attribute_bound_adapter: invalid argument`)
     
         let observer = (() => {
             let observer = undefined
@@ -874,7 +874,7 @@ ace.details.utility.data_binder = class data_binder {
                     // reset to old value
                         observer.suspend_while(() => target.setAttribute(attribute_name, mutation.oldValue))
                         console.warn(
-                            'data_binder.bound_attribute_adapter: data-source is read-only',
+                            `${this.prototype}.#make_attribute_bound_adapter: data-source is read-only`,
                             '\n\tcanceling requested attr change [', mutation.oldValue, '->', value, ']',
                             '\n\tinspect property [', attribute_name, '] of target', target
                         )
@@ -906,7 +906,7 @@ ace.details.utility.data_binder = class data_binder {
     static #make_property_bound_adapter({ owner, property_name, on_value_changed }){
     // uniform access to properties. for descriptor= { get and/or set, value }
         if (!owner || !property_name || !(property_name in owner) || !on_value_changed)
-            throw new Error('data_binder.#make_property_bound_adapter: invalid argument')
+            throw new Error(`${this.prototype}.#make_property_bound_adapter: invalid argument`)
     
         const descriptor = data_binder.get_property_descriptor({ owner: owner, property_name: property_name })
     
@@ -961,7 +961,7 @@ ace.details.utility.data_binder = class data_binder {
     // bind one data-source to {1,} attributes
 
         if (!data_source || !attributes || !(attributes instanceof Array) || attributes.length === 0)
-            throw new Error('data_binder.bind_attr: invalid argument')
+            throw new Error(`${this.prototype}.bind_attr: invalid argument`)
 
         projection ??= data_binder.default_projection
 
@@ -1005,7 +1005,7 @@ ace.details.utility.data_binder = class data_binder {
                 extend_binding: ({ attributes, projection }) => {
 
                     if (!(attributes instanceof Array) || attributes.length === 0)
-                        throw new Error('data_binder.make_binding: extend_binding: invalid argument')
+                        throw new Error(`${data_binder.prototype}.<binding_result>.extend_binding: invalid argument`)
 
                     // console.debug('extend_binding: from', bound_attributes, 'to', [ ...bound_attributes, ...attributes ])
 
@@ -1025,7 +1025,7 @@ ace.details.utility.data_binder = class data_binder {
         // spread data_source initiale value
         if (source_adapter.initiale.get === undefined){
             console.debug(source_adapter)
-            console.error('data_binder.bind_attr: data-source is write-only. Initiale value is undefined.', data_source)
+            console.error(`${this.prototype}.bind_attr: data-source is write-only. Initiale value is undefined. data_source=[${data_source}]`)
             broadcast_to_attributes(undefined)
         }
         else broadcast_to_attributes(source_adapter.initiale.get())
@@ -1037,7 +1037,7 @@ ace.details.utility.data_binder = class data_binder {
         
         if (!target || !(target instanceof HTMLElement)
             || !data_sources || !(data_sources instanceof Array) || data_sources.length === 0
-        ) throw new Error('make_attr_binding: invalid argument')
+        ) throw new Error(`${this.prototype}.make_attr_binding: invalid argument`)
     
         return data_sources.map(({ owner, property_name, projection }) => {
     
