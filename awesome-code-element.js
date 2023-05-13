@@ -528,6 +528,10 @@ ace.details.utility = class utility {
     constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
 
     static html_codec = class html_codec {
+
+        get [Symbol.toStringTag](){ return `ace.details.utility.html_codec` }
+        constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
+
         static entities = new Array(
         //    [ '\\\\' , '\\'],
            [ '&gt;', '>' ],
@@ -559,7 +563,7 @@ ace.details.utility = class utility {
     }
     static unfold_into({target, properties = {}}) {
         if (!target)
-            throw new Error(`ace.details.utility: invalid argument [target] with value [${target}]`)
+            throw new Error(`${utility.prototype}: invalid argument "target" = [${target}]`)
 
         for (const property in properties) {
             // HTMLElement
@@ -639,13 +643,13 @@ ace.details.utility = class utility {
 
         let xhr = new XMLHttpRequest();
             xhr.open('GET', url);
-            xhr.onerror = function() {
-                on_error(`ace.details.utility.fetch_resource: network error on url [${url}]`)
+            xhr.onerror = () => {
+                on_error(`${this.prototype}.fetch_resource: network error on url [${url}]`)
             };
-            xhr.onload = function() {
+            xhr.onload = () => {
 
                 if (xhr.status != 200) {
-                    on_error(`ace.details.utility.fetch_resource: bad request status ${xhr.status} on url [${url}]`)
+                    on_error(`${this.prototype}.fetch_resource: bad request status ${xhr.status} on url [${url}]`)
                     return;
                 }
                 on_success(xhr.responseText)
@@ -664,7 +668,7 @@ ace.details.utility = class utility {
 
         if (1 === (Boolean(target.__lookupSetter__(property_name) === undefined)
                 +  Boolean(target.__lookupGetter__(property_name) === undefined)
-        ))   console.warn(`utility.inject_field_proxy: target property [${target.constructor.name}.${property_name}] has a getter but no setter, or vice-versa`)
+        ))   console.warn(`${this.prototype}.inject_field_proxy: target property [${target.constructor.name}.${property_name}] has a getter but no setter, or vice-versa`)
         
         var _target = target
         var storage = _target[property_name]
@@ -712,7 +716,7 @@ ace.details.utility = class utility {
                                  ?? Object.getOwnPropertyDescriptor(Object.getPrototypeOf(target), property_name)
         if (property_descriptor === undefined
          || !property_descriptor.configurable)
-            throw new Error(`ace.details.utility.inject_on_property_change_proxy: invalid property descriptor: ${target.toString()}[${property_name}] is not configurable`)
+            throw new Error(`${this.prototype}.inject_on_property_change_proxy: invalid property descriptor: ${target.toString()}[${property_name}] is not configurable`)
 
         var storage = target[property_name]
         delete target[property_name]
@@ -796,9 +800,13 @@ ace.details.utility = class utility {
     }
 
     static types = class types {
+
+        get [Symbol.toStringTag](){ return `ace.details.utility.types` }
+        constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
+
         static typename_of({ value }){
             if (!(value instanceof Object))
-                throw new Error('ace.details.utility.types.typename_of: invalid argument')
+                throw new Error(`${this.prototype}.typename_of: invalid argument`)
             const matches = value.toString().match(/\[object (.+)\]/)
             return matches.length === 2 ? matches[1] : undefined
         }
