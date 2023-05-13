@@ -115,6 +115,7 @@
 //          - soft-(error|warning) icon (opt-out)
 //              - language detection failed
 //          - active language
+// TODO: [OPT-IN] compiler-explorer instance -> godbolt.org by default, can be another
 
 export { ace as default }
 
@@ -506,8 +507,9 @@ ace.details.remote.resources_cache = class {
         }
         catch (error) {
             console.error(
-                "awesome-code-element.js:remote_resources_cache: error\n" +
-                "\t" + error
+                `${this.prototype}.#fetch_remote_file(): error`,
+                `\n\twith error = [${error}]`,
+                `\n\twith uri   = [${uri}]`,
             )
         }
     }
@@ -563,7 +565,7 @@ ace.details.utility = class utility {
     }
     static unfold_into({target, properties = {}}) {
         if (!target)
-            throw new Error(`${utility.prototype}: invalid argument "target" = [${target}]`)
+            throw new Error(`${this.prototype}: invalid argument "target" = [${target}]`)
 
         for (const property in properties) {
             // HTMLElement
@@ -1090,7 +1092,7 @@ ace.details.remote.CE_API = class CE_API {
             })
         }
         catch (error) {
-            console.error(`ace.details.remote.CE_API: godbolt API exception (fetch_languages)\n\t${error}`)
+            console.error(`${this.prototype}.#fetch_languages: godbolt APIerror\n\twith error = [${error}]`)
         }
     }
     static async #fetch_compilers() {
@@ -1107,7 +1109,7 @@ ace.details.remote.CE_API = class CE_API {
             })
         }
         catch (error) {
-            console.error(`ace.details.remote.CE_API: godbolt API exception (fetch_compilers)\n\t${error}`)
+            console.error(`${this.prototype}.fetch_compilers: godbolt API error\n\twith error = [${error}]`)
         }
     }
     static open_in_new_tab(request_data) {
@@ -1124,7 +1126,7 @@ ace.details.remote.CE_API = class CE_API {
     // https://godbolt.org/api/compiler/${compiler_id}/compile
 
         if (ce_options.compiler_id === undefined)
-            throw new Error('awesome-code-element.js::CE_API::fetch_execution_result: invalid argument, missing .compiler_id')
+            throw new Error(`${this.prototype}.fetch_execution_result: invalid argument, missing .compiler_id.\n\twith ce_options = [${ce_options}]`)
 
         // POST /api/compiler/<compiler-id>/compile endpoint is not working with remote header-files in `#include`s PP directions
         // https://github.com/compiler-explorer/compiler-explorer/issues/4190
@@ -1168,6 +1170,7 @@ ace.details.remote.CE_API = class CE_API {
                 body: JSON.stringify(body)
             };
 
+            // TODO: [opt-in] another compiler-instance instead of godbolt.org
             return await fetch(`https://godbolt.org/api/compiler/${ce_options.compiler_id}/compile`, options)
                 .then(response => response.text())
         }
@@ -1284,11 +1287,11 @@ ace.details.HTMLElements.buttons.CopyToClipboard = class CopyToClipboardButton e
 
             let text = this.parentElement.textContent
             navigator.clipboard.writeText(text).then(
-                function() {
-                    console.info('awesome-code-element.js:CopyToClipboardButton: success');
+                () => {
+                    console.info(`${this}.click: success`);
                 },
-                function(error) {
-                    console.error(`awesome-code-element.js:CopyToClipboardButton: failed: ${error}`);
+                (error) => {
+                    console.error(`${this}.click: failed\n\twith error = [${error}]`);
                 }
             );
             window.setTimeout(() => {
@@ -1352,14 +1355,14 @@ ace.details.HTMLElements.buttons.ShowInGodbolt = class ShowInGodboltButton exten
         const code_mvc_HTMLelement = this.parentElement
         const code_mvc_value = (() => {
             if (!(code_mvc_HTMLelement instanceof ace.API.HTMLElements.CodeMVC))
-                throw new Error('awesome-code-element.js: ShowInGodboltButton.onClickSend: ill-formed element: unexpected parentElement.parentElement layout (must be an ace.code_mvc_HTMLElement)')
+                throw new Error(`${this}.onClickSend: ill-formed element.\n\tunexpected parentElement.parentElement layout\n\t(must be an ${ace.API.HTMLElements.CodeMVC})`)
             const mvc = code_mvc_HTMLelement.mvc
             if (!(mvc instanceof ace.API.HTMLElements.CodeMVC.mvc_type))
-                throw new Error('awesome-code-element.js: ShowInGodboltButton.onClickSend: ill-formed element: unexpected parentElement.parentElement.code_mvc (must be an ace.code_mvc)')
+                throw new Error(`${this}.onClickSend: ill-formed element.\n\tunexpected parentElement.parentElement.mvc_type\n\t(must be an ${ace.API.HTMLElements.CodeMVC.mvc_type})`)
             return mvc
         })()
 
-        console.info('awesome-code-element.js: ShowInGodboltButton.onClickSend: sending request ...')
+        console.info(`${this}.onClickSend: sending request ...`)
 
         const accessor = {
             get ce_options(){
@@ -1372,12 +1375,12 @@ ace.details.HTMLElements.buttons.ShowInGodbolt = class ShowInGodboltButton exten
 
         try {
             if (!accessor.ce_options)
-                throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: missing CE configuration for language: [${code_mvc_value.controler.language}]`)
+                throw new Error(`${this}.onClickSend: missing CE configuration for language: [${code_mvc_value.controler.language}]`)
 
             if (!ace.details.remote.CE_API.languages.includes(accessor.language))
                 //      hljs    https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
                 //  vs. CE      https://godbolt.org/api/languages
-                throw new Error(`awesome-code-element.js:ShowInGodboltButton::onClickSend: invalid CE API language: [${accessor.language}]`);
+                throw new Error(`${this}.onClickSend: invalid CE API language: [${accessor.language}]`);
         }
         catch (error){
             code_mvc_HTMLelement.status_for = { value: "error-CE-button", message: error, duration: 2000 }
