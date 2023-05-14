@@ -800,6 +800,21 @@ ace.details.utility = class utility {
         }, delay);
         return update_controler
     }
+    static get_inherited_typenames = function(value){
+
+        if (!value || !value.constructor)
+            return "";
+    
+        const inheritedTypes = [];
+    
+        for (
+            let currentType = Object.getPrototypeOf(value.constructor);
+            currentType && currentType !== Object && currentType.name;
+            currentType = Object.getPrototypeOf(currentType)) {
+            inheritedTypes.push(currentType.name);
+        }
+        return inheritedTypes.join(', ')
+    }
 
     static types = class types {
 
@@ -1283,8 +1298,6 @@ ace.details.HTMLElements.buttons.CopyToClipboard = class CopyToClipboardButton e
             this.innerHTML = CopyToClipboardButton.successIcon
             this.style.fill = 'green'
 
-            console.log(this)
-
             let text = this.parentElement.textContent
             navigator.clipboard.writeText(text).then(
                 () => {
@@ -1419,14 +1432,18 @@ customElements.define(
     ace.details.HTMLElements.buttons.ShowInGodbolt.HTMLElement_tagName,
     ace.details.HTMLElements.buttons.ShowInGodbolt, { extends: 'button' }
 );
-ace.details.HTMLElements.DeferedHTMLElement = class extends HTMLElement {
-// HTMLElements that handles defered initialization
-//  if first added to the DOM empty, then triggers initialization when a first child is attached
-//  otherwise, initialize when created
 
+
+
+ace.details.HTMLElements.DeferedHTMLElement = class DeferedHTMLElement extends HTMLElement {
+// HTMLElements which initialization is - possibly - defered
+//  Interface for child-dependent custom HTMLElements
+//  when created - and everytime it is attached to a DOM -, will attempt to accumulate required parameters prior to initialization
+//      if all pre-requisites are gathered, then initialize
+//      otherwise, create a shadown-root and wait for childs to be attached to re-trigger initialization attempts
 //  interface:
-//  - acquire_parameters({}) -> bool(ready_to_initialize?)
-//  - initialize()
+//  - acquire_parameters({ ... }) -> bool(ready_to_initialize?)
+//  - initialize() /* pure virtual, invocable once */
 
     get [Symbol.toStringTag](){ return 'ace.details.HTMLElements.DeferedHTMLElement' }
 
@@ -1440,10 +1457,11 @@ ace.details.HTMLElements.DeferedHTMLElement = class extends HTMLElement {
 
         this.#acquire_parameters_impl(parameters)
 
-        // TODO: useless ?
         // explicit, user-provided attributes
-        if (this._parameters.attributes) {
-            console.debug(`ace.details.HTMLElements.DeferedHTMLElement: constructor: explicit attributes:`, this._parameters.attributes)
+        if (this._parameters.attributes
+        &&  !ace.details.utility.types.is_empty(this._parameters.attributes)
+        ){
+            console.debug(`(${this} as ${DeferedHTMLElement.prototype}).constructor: explicit attributes:`, this._parameters.attributes)
             for (const property in this._parameters.attributes)
                 this.setAttribute(property, this._parameters.attributes[property])
         }
@@ -1457,17 +1475,17 @@ ace.details.HTMLElements.DeferedHTMLElement = class extends HTMLElement {
         const initialize_when_ready = () => {
 
             if (!this.acquire_parameters(this._parameters)) {
-                console.debug('ace.details.HTMLElements.DeferedHTMLElement: create shadowroot slot')
+                console.debug(`(${this} as ${DeferedHTMLElement.prototype}).ConnectedCallback: create shadowroot slot`)
                 this.shadowroot_accessor = ace.details.utility.create_shadowroot_slot(
                     this, () => {
                         if (!this.acquire_parameters(this._parameters))
-                            throw new Error('acquire_parameters failed (no detailed informations)')
+                            throw new Error(`(${this} as ${DeferedHTMLElement.prototype}).ConnectedCallback: acquire_parameters failed (no detailed informations)`)
                         this.initialize()
                     }
                 )
             }
             else {
-                console.debug('ace.details.HTMLElements.DeferedHTMLElement: no need for shadowroot slot')
+                console.debug(`(${this} as ${DeferedHTMLElement.prototype}).ConnectedCallback: no need for shadowroot slot`)
                 this.initialize()
             }
         }
@@ -1476,7 +1494,7 @@ ace.details.HTMLElements.DeferedHTMLElement = class extends HTMLElement {
             resolve()
         })
         .catch((error) => {
-            console.error('ace.details.DeferedHTMLElement: error:', error)
+            console.error(`(${this} as ${DeferedHTMLElement.prototype}).ConnectedCallback: error:`, error)
             this.on_critical_internal_error(error)
         })
 
@@ -1498,13 +1516,13 @@ ace.details.HTMLElements.DeferedHTMLElement = class extends HTMLElement {
 
     on_critical_internal_error(error = "") {
 
-        console.error('ace.details.HTMLElements.DeferedHTMLElement.on_critical_internal_error: fallback rendering (No recovery possible)\n\t', error)
+        console.error(`(${this} as ${DeferedHTMLElement.prototype}).on_critical_internal_error: fallback rendering (No recovery possible)\n\t`, error)
 
         if (!this.isConnected)
             return
 
         let error_element = document.createElement('pre')
-            error_element.textContent = `ace.details.HTMLElements.DeferedHTMLElement.on_critical_internal_error:\n\t${error || 'unknown error'}\n\t(No recovery possible)`
+            error_element.textContent = `(${this} as ${DeferedHTMLElement.prototype}).on_critical_internal_error:\n\t${error || 'unknown error'}\n\t(No recovery possible)`
         // TODO: status => error + CSS style for such status
         ace.details.utility.apply_css(error_element, {
             color: "red",
