@@ -1676,7 +1676,11 @@ ace.details.loading_animation = ace.details.animation_factory.make({
 ace.details.code = {}
 ace.details.code.policies = class policies {
 
+    get [Symbol.toStringTag](){ return `ace.details.code.policies` }
+
     static language = class language_policies {
+
+        get [Symbol.toStringTag](){ return `ace.details.code.policies.language` }
 
         static define_ce_output_language = (() => {
         // WIP
@@ -1701,6 +1705,9 @@ ace.details.code.policies = class policies {
         })()
 
         static detectors = class {
+
+            get [Symbol.toStringTag](){ return `ace.details.code.policies.language.detectors` }
+
 
             static check_concept = function(argument) {
                 return argument
@@ -1762,6 +1769,9 @@ ace.details.code.policies = class policies {
         }
 
         static highlighters = class {
+
+            get [Symbol.toStringTag](){ return `ace.details.code.policies.language.highlighters` }
+
             static check_concept = function(argument) {
                 return argument
                     && argument.highlight
@@ -1791,9 +1801,9 @@ ace.details.code.policies = class policies {
                         throw new Error(`${this}.highlight requires hljs (the HighlightJS library), which is missing`)
 
                     if (!code_element || !(code_element instanceof HTMLElement))
-                        throw new Error('use_hljs.highlight: invalid argument. Expect [code_element] to be a valid HTMLElement')
+                        throw new Error(`${this.prototype}.highlight: invalid argument. Expect [code_element] to be a valid HTMLElement`)
                     if (language && !language_policies.detectors.use_hljs.is_valid_language(language)) {
-                        console.warn(`use_hljs.highlight: invalid language [${language}], attempting fallback detection`)
+                        console.warn(`${this}.highlight: invalid language [${language}], attempting fallback detection`)
                         language = undefined
                     }
                     
@@ -1802,8 +1812,9 @@ ace.details.code.policies = class policies {
                         : hljs.highlightAuto(code_element.textContent)
                     if (result.relevance < 5 && code_element.textContent.length > 0)
                         console.warn(
-                            `use_hljs.highlight: poor language relevance [${result.relevance}/10] for language [${result.language}]\n`,
-                            `Perhaps the code is too small ? (${code_element.textContent.length} characters):`, result
+                            `${this.prototype}.highlight:`,
+                            `\n\tpoor language relevance [${result.relevance}/10] for language [${result.language}]`,
+                            `\n\tPerhaps the code is too small ? (${code_element.textContent.length} characters):`, result
                         )
                     return result
                 }
@@ -1829,12 +1840,17 @@ ace.details.code.policies = class policies {
     }
     static code_parsers = class code_parsing_policies {
 
+        get [Symbol.toStringTag](){ return `ace.details.code.policies.code_parsers` }
+
         static check_concept = function(argument) {
             return argument
                 && argument.parse
         }
 
         static result_type = class {
+
+            get [Symbol.toStringTag](){ return `ace.details.code.policies.code_parsers.result_type` }
+
             constructor(arg){ Object.assign(this,arg) }
             
             raw        = undefined
@@ -1859,6 +1875,8 @@ ace.details.code.policies = class policies {
         static use_ace_metadata_parser = class ace_metadata_parser {
         // TODO: @awesome-code-element::keep : keep tag anyway as comment (for documentation purpose)
 
+            get [Symbol.toStringTag](){ return `ace.details.code.policies.code_parsers.use_ace_metadata_parser` }
+
         // @awesome-code-element::CE={
         //  "language"            : "c++",
         //  "compiler_id"         : "clang1400",
@@ -1882,7 +1900,7 @@ ace.details.code.policies = class policies {
             static parse({ code }) {
 
                 if (code === undefined)
-                    throw new Error('ace.details.code.code_parsing_policies.ace_metadata_parser.parse: invalid argument')
+                    throw new Error(`${this.prototype}.parse: invalid argument`)
 
                 let result = new code_parsing_policies.result_type({ raw: code })
                     result = ace_metadata_parser.#parse_impl({ result: result})
@@ -1906,7 +1924,7 @@ ace.details.code.policies = class policies {
                     const matches = [...result.raw.matchAll(regexp)] // expect exactly 1 match
                     if (matches.length > 1)
                         console.warn(
-                            `ace.details.code.code_parsing_policies.ace_metadata_parser.parse: found multiples CE configurations\n`,
+                            `${this.prototype}.parse_impl: found multiples CE configurations\n`,
                             ...matches.map((value) => value.at(0))
                         )
             
@@ -1993,19 +2011,17 @@ ace.details.code.mvc_details = class code_mvc_details {
     static html_parser = class html_parser {
 
         get [Symbol.toStringTag](){ return 'code.mvc_details.html_parser' }
-        constructor(){ throw new Error(`${html_parser.prototype}.constructor: not instanciable`) }
+        constructor(){ throw new Error(`${this.prototype}.constructor: not instanciable`) }
 
         static is_valid_HTMLElement({ element }){
             if (element === undefined)
-                throw new Error(`${this}.is_valid_HTMLElement: invalid argument`)
+                throw new Error(`${this.prototype}.is_valid_HTMLElement: invalid argument`)
             return element instanceof HTMLElement && !(element instanceof HTMLUnknownElement)
         }
         static #valid_tagName_cache = new Map
         static is_valid_tagName({ tagName }) {
-            if (element === undefined)
-                throw new Error(`${this}.html_parser.is_valid_tagName: invalid argument`)
             if (!(typeof tagName === 'string') && !(tagName instanceof String))
-                throw new Error('html_parser.is_valid_tagName: invalid argument')
+                throw new Error(`${this.prototype}.is_valid_tagName: invalid argument`)
 
             return (() => {
                 let value = this.#valid_tagName_cache.get(tagName)
@@ -2018,7 +2034,7 @@ ace.details.code.mvc_details = class code_mvc_details {
         }
         static count_valid_childrens({ element, is_recursive = false }) {
             if (element === undefined)
-                throw new Error(`${this}.html_parser.count_valid_childrens: invalid argument`)
+                throw new Error(`${this.prototype}.count_valid_childrens: invalid argument`)
             return Array
                 .from(element.children)
                 .map((element) => {
@@ -2033,7 +2049,7 @@ ace.details.code.mvc_details = class code_mvc_details {
         // TODO?: faster approach?: use regex on outerHTML: \<(?'closing'\/?)(?'tagname'\w+\-?)+.*?\>
         // replace invalid HTMLElement by their localName as text
             if (elements === undefined)
-                throw new Error(`${this}.html_parser.to_code: invalid argument`)
+                throw new Error(`${this.prototype}.to_code: invalid argument`)
             return elements
                 .map(element => {
                     switch (element.nodeType) {
@@ -2048,7 +2064,7 @@ ace.details.code.mvc_details = class code_mvc_details {
                         case Node.COMMENT_NODE:
                         case Node.CDATA_SECTION_NODE:
                         default:
-                            console.debug(`${this}.parser.to_code: unhandled tags [comment, cdata, etc.]`)
+                            console.debug(`${this.prototype}.to_code: unhandled tags [comment, cdata, etc.]`)
                             return ''                        
                     }
                 })
@@ -2057,7 +2073,7 @@ ace.details.code.mvc_details = class code_mvc_details {
         static cleanup({ element }){
         // recursively replaces invalid childrens element by their tagname as text
             if (element === undefined)
-                throw new Error(`${this}..html_parser.cleanup: invalid argument`)
+                throw new Error(`${this.prototype}.cleanup: invalid argument`)
 
             let childNodes = Array.from(element.childNodes)
             childNodes
@@ -2071,7 +2087,7 @@ ace.details.code.mvc_details = class code_mvc_details {
         // recursively replaces invalid element by their tagname as text
 
             if (element === undefined)
-                throw new Error(`${this}.html_parser.cleanup_impl: invalid argument`)
+                throw new Error(`${this.prototype}.cleanup_impl: invalid argument`)
 
             let childNodes = Array.from(element.childNodes)                                         // preserve reference/offset integrity
             if (!html_parser.is_valid_HTMLElement({ element: element })) {
