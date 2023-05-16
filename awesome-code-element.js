@@ -2330,7 +2330,7 @@ ace.details.code.mvc = class code_mvc {
                             this.#toggle_parsing = value
                             this.#target.update_view()
                         }
-                        : () => { console.warn('code.set(toggle_parsing): no-op: not editable') }
+                        : () => { console.warn(`${this}.set(toggle_parsing): no-op: not editable`) }
                 })
                 return this.#target.is_mutable
                     ? Boolean(options.toggle_parsing) ?? Boolean(this.#target.model_details.ce_options)
@@ -2365,7 +2365,7 @@ ace.details.code.mvc = class code_mvc {
                 if (this.language_policies.detector.is_valid_language(this.#language))
                     return this.#language
 
-                console.info(`code_mvc.controler.get(language) : invalid language [${this.#language}], attempting fallback detections`)
+                console.info(`${this}.get(language) : invalid language [${this.#language}], attempting fallback detections`)
                 return this.language_policies.detector.get_language(this.#target.view)
                     ?? this.language_policies.detector.detect_language(this.#target.#model.to_display).language
             })()
@@ -2393,7 +2393,7 @@ ace.details.code.mvc = class code_mvc {
 
             this.toggle_language_detection = !argument.is_valid;
             if (!argument.is_valid)
-                console.warn(`ace.details.code.language(set): invalid input [${value}], attempting fallback detection.`)
+                console.warn(`${this}.language(set): invalid input [${value}], attempting fallback detection.`)
 
             const result = this.#target.is_mutable
                 ? this.#language_policies.highlighter.highlight({
@@ -2439,16 +2439,19 @@ ace.details.code.mvc = class code_mvc {
             && ace.API.configuration.value.CE.has(language)
             ){  // attempt to load the appropriate ce options
                 this.#target.#model.ce_options = ace.API.configuration.value.CE.get(language)
-                console.info(`code_mvc.is_executable(get): loaded matching CE configuration for language [${language}]: `, this.#target.#model.ce_options)
+                console.info(`${this}.is_executable(get): loaded matching CE configuration for language [${language}]: `, this.#target.#model.ce_options)
             }
 
             return Boolean(
                 language === this.language_policies.detector.get_language_name(this.#target.#model.ce_options?.language)
             && !ace.details.utility.types.is_empty(this.#target.#model.ce_options)
-            )
+            );
         }
     }
     static #modelChanged_Mutations_handler = new class cancelable_MutationObserver {
+
+        get [Symbol.toStringTag](){ return `ace.details.code.mvc.#cancelable_MutationObserver (#modelChanged_Mutations_handler)` }
+
         #pending_update_controler = { canceled: false }
         #observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
@@ -2463,7 +2466,7 @@ ace.details.code.mvc = class code_mvc {
                         : candidate.closest(expected_element_localName)
                 })()
                 if (!code_mvc_element)
-                    throw new Error('ace.cs.code_mvc: MutationObserver: model change: invalid target')
+                    throw new Error(`${this}: MutationObserver: model change: invalid target`)
                 const code_mvc = code_mvc_element.code_mvc
 
                 if (mutation.type !== 'characterData'
@@ -2508,12 +2511,15 @@ ace.details.code.mvc = class code_mvc {
         language_policies = { ...code_mvc.default_arguments.policies.language },
         controler_options = { ...code_mvc.default_arguments.controler_options }
     }){
-        Object.assign(this, ace.details.code.mvc_details.factory.build_from(code_origin))
+        Object.assign(
+            this,
+            ace.details.code.mvc_details.factory.build_from(code_origin)
+        )
 
         const is_mutable = this.is_mutable // or seal/non-writable ?
         Object.defineProperty(this, 'is_mutable', {
             get: () => { return is_mutable },
-            set: () => { console.warn('ace.details.code.set(is_mutable): no-op, const property') },
+            set: () => { console.warn(`${this}.set(is_mutable): no-op, const property`) },
         })
 
         this.#initialize_behaviors()
@@ -2535,12 +2541,11 @@ ace.details.code.mvc = class code_mvc {
         this.#model_parser = (() => {
 
             const parsers = ace.details.code.policies.code_parsers;
-        
             let value = this.is_mutable
                 ? parsers.use_ace_metadata_parser
                 : parsers.use_none
             if (!parsers.check_concept(value))
-                throw new Error('ace.details.code_mvc.#initialize_behaviors: invalid argument (parser)')
+                throw new Error(`${this}.#initialize_behaviors: invalid argument (parser) does not meet concept requirements`)
             return value;
         })();
 
@@ -2572,7 +2577,7 @@ ace.details.code.mvc = class code_mvc {
                         })()
 
                     if (!ace.details.utility.types.is_string(value))
-                        throw new Error('code_mvc.set(model): invalid parameter')
+                        throw new Error(`${this}.set(model): invalid parameter`)
 
                     if (value === this.#model.raw)
                         return
