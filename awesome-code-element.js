@@ -2624,7 +2624,7 @@ ace.API.HTMLElements.CodeMVC = class code_mvc_HTMLElement extends ace.details.HT
     constructor(parameters = {}) {
         if (typeof parameters !== "object")
             throw new Error(
-                `${this}.constructor: invalid argument.
+                `${code_mvc_HTMLElement.prototype}.constructor: invalid argument.
                 Expected object layout: { ${code_mvc_HTMLElement.named_parameters } }
                 or valid childs/textContent when onConnectedCallback triggers`)
         
@@ -2667,9 +2667,9 @@ ace.API.HTMLElements.CodeMVC = class code_mvc_HTMLElement extends ace.details.HT
         // post-condition: valid code content
         const is_valid = Boolean(this._parameters.code)
         if (is_valid)
-            this.acquire_parameters = () => { throw new Error('code_mvc_HTMLElement.acquire_parameters: already called') }
+            this.acquire_parameters = () => { throw new Error(`${this}.acquire_parameters: already called`) }
 
-        console.debug(`${this.toString()}.acquire_parameters ... ${is_valid}`, this._parameters)
+        console.debug(`${this}.acquire_parameters ... ${is_valid}`, this._parameters)
         return is_valid
     }
     initialize(){
@@ -2713,7 +2713,7 @@ ace.API.HTMLElements.CodeMVC = class code_mvc_HTMLElement extends ace.details.HT
     static add_buttons_to = ({ value }) => {
 
         if (!(value instanceof code_mvc_HTMLElement))
-            throw new Error('code_mvc_HTMLElement.add_buttons_to: invalid argument type')
+            throw new Error(`${this.prototype}.add_buttons_to: invalid argument type`)
 
         let CopyToClipboard_button = new ace.details.HTMLElements.buttons.CopyToClipboard()
             CopyToClipboard_button = value.appendChild(CopyToClipboard_button)
@@ -2762,7 +2762,7 @@ ace.API.HTMLElements.CodeMVC = class code_mvc_HTMLElement extends ace.details.HT
     set status({ value, message }){
         
         if (!value)
-            throw new Error('ace.code_mvc_HTMLElement.status(set): invalid argument')
+            throw new Error(`${this}.status(set): invalid argument`)
 
         if (!this.isConnected)
             return
@@ -2774,7 +2774,7 @@ ace.API.HTMLElements.CodeMVC = class code_mvc_HTMLElement extends ace.details.HT
     set status_for({ value, message, duration }){
 
         if (!value || !ace.details.utility.types.is_int(duration))
-            throw new Error('ace.code_mvc_HTMLElement.status_for(set): invalid argument')
+            throw new Error(`${this}.status_for(set): invalid argument`)
 
         const status = this.status
         this.status = { value: value, message: message }
@@ -2782,6 +2782,7 @@ ace.API.HTMLElements.CodeMVC = class code_mvc_HTMLElement extends ace.details.HT
     }
 }
 customElements.define(ace.API.HTMLElements.CodeMVC.HTMLElement_tagName, ace.API.HTMLElements.CodeMVC);
+
 ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.DeferedHTMLElement {
 
     static get HTMLElement_tagName() { return 'ace-cs' }
@@ -2830,7 +2831,8 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
             if (!is_code_empty)
             // warn only if code is non-empty (either a string or seq of nodes)
                 console.warn(
-                    this.toString(), 'both parameters [code] and [url] provided.\n\tfallback behavior: use only [url]',
+                    `${this}.acquire_parameters: both parameters [code] and [url] provided.`,
+                    '\n\tfallback behavior: use only [url]',
                     `\t\ncode = [${this._parameters.code}]`,
                     `\t\nurl  = [${this._parameters.url}]`
                 )
