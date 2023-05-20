@@ -800,6 +800,7 @@ ace.details.utility = class utility {
         }, delay);
         return update_controler
     }
+    // typeinfo
     static get_inherited_typenames = function(value){
 
         if (!value || !value.constructor)
@@ -814,6 +815,11 @@ ace.details.utility = class utility {
             inheritedTypes.push(currentType.name);
         }
         return inheritedTypes.join(', ')
+    }
+    static get_object_typename = function(value){
+        if (!value || !value.toString)
+            return "";
+        return value.toString().replace(/^\[object\ (?:(.*)\/)?(.*)\]$/, '$1')
     }
 
     static types = class types {
@@ -1526,7 +1532,8 @@ ace.details.HTMLElements.DeferedHTMLElement = class DeferedHTMLElement extends H
         // TODO: status => error + CSS style for such status
         ace.details.utility.apply_css(error_element, {
             color: "red",
-            border : "2px solid red"
+            border : "2px solid red",
+            overflow: "auto"
             // overflow-wrap: break-word;
             // word-break: break-all;
         })
@@ -2786,7 +2793,16 @@ customElements.define(ace.API.HTMLElements.CodeMVC.HTMLElement_tagName, ace.API.
 ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.DeferedHTMLElement {
 
     static get HTMLElement_tagName() { return 'ace-cs' }
-    get [Symbol.toStringTag](){ return `ace.API.HTMLElements.CodeMVC/${cs.HTMLElement_tagName}` }
+    get [Symbol.toStringTag](){
+        const value = `ace.API.HTMLElements.CodeSection/${cs.HTMLElement_tagName}`
+        try { return this.id ? value + `(id=${this.id})` : value }
+        catch (error){
+            if (error.name === 'TypeError')
+            // HTMLElement constructor not called yet
+                return value
+            throw error
+        }
+    }
 
     static get named_parameters(){ return [
         'language',
@@ -2801,7 +2817,7 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
     constructor(parameters = {}){
         if (!new.target || typeof parameters !== "object")
             throw new Error(
-                `ace.API.HTMLElements.CodeMVC.constructor: invalid argument.
+                `${cs.prototype}.constructor: invalid argument.
                 Expected object layout: { ${cs.named_parameters } }
                 or valid childs/textContent when onConnectedCallback triggers`)
         super(parameters)
@@ -2843,11 +2859,11 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
         // post-condition: valid code content
         const is_valid = Boolean(this._parameters.code ?? this._parameters.url)
         if (is_valid)
-            this.acquire_parameters = () => { throw new Error('CodeSection.acquire_parameters: already called') }
+            this.acquire_parameters = () => { throw new Error(`${this}.acquire_parameters: already called`) }
         return is_valid
     }
     initialize() {
-        console.debug(`ace.details.HTMLElements.CodeSection.initialize: initializing with parameters:`, this._parameters)
+        console.debug(`${this}.initialize: with parameters:`, this._parameters)
 
         this.ace_panels = (() => {
 
@@ -2952,8 +2968,8 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
         id_attribute_mutation_observer.observe(this, { attributeFilter: ['id'], attributeOldValue: true })
 
         // callable once
-        // delete this._parameters
-        this.initialize = () => { throw new Error('ace.details.HTMLElements.CodeSection.initialize: already called') }
+        delete this._parameters;
+        this.initialize = () => { throw new Error(`${this}.initialize: already called`) }
     }
 
     static #id_generator = (() => {
@@ -2965,12 +2981,12 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
     })()
     #initialize_ids(){
         this.id ||= cs.#id_generator()
-        this.ace_panels.presentation.id                                    = `${this.id}.panels.presentation`
-        this.ace_panels.execution.id                                       = `${this.id}.panels.execution`
-        this.ace_panels.presentation.ace_cs_buttons.CE.id                  = `${this.id}.panels.presentation.buttons.CE`
-        this.ace_panels.presentation.ace_cs_buttons.CopyToClipboard.id   = `${this.id}.panels.presentation.buttons.CopyToClipboard`
-        this.ace_panels.execution.ace_cs_buttons.CE.id                     = `${this.id}.panels.execution.buttons.CE`
-        this.ace_panels.execution.ace_cs_buttons.CopyToClipboard.id      = `${this.id}.panels.execution.buttons.CopyToClipboard`
+        this.ace_panels.presentation.id                                 = `${this.id}.panels.presentation`
+        this.ace_panels.execution.id                                    = `${this.id}.panels.execution`
+        this.ace_panels.presentation.ace_cs_buttons.CE.id               = `${this.id}.panels.presentation.buttons.CE`
+        this.ace_panels.presentation.ace_cs_buttons.CopyToClipboard.id  = `${this.id}.panels.presentation.buttons.CopyToClipboard`
+        this.ace_panels.execution.ace_cs_buttons.CE.id                  = `${this.id}.panels.execution.buttons.CE`
+        this.ace_panels.execution.ace_cs_buttons.CopyToClipboard.id     = `${this.id}.panels.execution.buttons.CopyToClipboard`
     }
 
     #toggle_execution = false
@@ -2990,12 +3006,19 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
     static fetch_execution_controler_t = class {
     // warning: operations are not guarantee to be concurrency safe
 
-        get [Symbol.toStringTag](){ return `cs.fetch_execution_controler_t` }
+        get [Symbol.toStringTag](){
+            const cs_typename = ace.details.utility.get_object_typename(cs.prototype);
+            const value = `${cs_typename}.fetch_execution_controler_t`
+            return this.#target
+                ? `${value} with target (${cs_typename} id=${this.#target.id})`
+                : value
+        }
 
         #target = undefined
         constructor(target){
+
             if (!target || !(target instanceof cs))
-                throw new Error('cs.fetch_execution_controler: invalid input')
+                throw new Error(`${this}: invalid input`)
             this.#target = target
         }
 
@@ -3009,7 +3032,7 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
         get #expect_target_is_executable(){
 
             if (!this.#target.#toggle_execution)
-                throw new Error('ace.cs.fetch_execution_controler_t.expect_target_is_executable: prerequisite: target.toggle_execution')
+                throw new Error(`${this}.expect_target_is_executable: prerequisite: target.toggle_execution`)
 
             const execution_panel = this.#target.ace_panels.execution
             const presentation_mvc = this.#target.ace_panels.presentation.mvc
@@ -3048,12 +3071,12 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
 
             const code_mvc = this.#target.ace_panels.presentation.mvc;
             if (this.last_input === code_mvc.model_details.to_execute){
-                console.warn(this.toString(), '.fetch: no-op: already fetching or fetched')
+                console.warn(`${this}.fetch: no-op: already fetching or fetched`)
                 return
             }
             this.#last_input = code_mvc.model_details.to_execute;
             if (this.is_loading){
-                console.warn(this.toString(), 'already loading')
+                console.warn(`${this}.already loading`)
                 return
             }
 
@@ -3085,7 +3108,7 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
     
             const presentation_panel = this.#target.ace_panels.presentation;
             if (!presentation_panel.mvc.controler.is_executable) {
-                const error = `CodeSection:fetch_execution: not executable.\n\tNo known valid configuration for language [${presentation_panel.mvc.controler.language}]`
+                const error = `${this}.fetch_execution: not executable.\n\tNo known valid configuration for language [${presentation_panel.mvc.controler.language}]`
                 set_error({ error: error })
             }
     
@@ -3113,7 +3136,7 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
                     set_execution_content({ content : content })
                 })
                 .catch((error) => {
-                    error = `CodeSection:fetch_execution: CE_API.fetch_execution_result: failed:\n\t[${error}]`
+                    error = `${this}.fetch_execution: CE_API.fetch_execution_result: failed:\n\t[${error}]`
                     set_error({ error: error })
                     console.error(error)
                 })
@@ -3140,13 +3163,13 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
         if (!this.#url){
             presentation_panel.status = {
                 value: 'error-network-invalid-url',
-                message: `ace.cs.set(url): network error:\n\tinvalid or empty url`
+                message: `${this}.set(url): network error:\n\tinvalid or empty url`
             }
             return
         }
         presentation_panel.status = {
             value: 'network-fetching',
-            message: `ace.cs.set(url): fetching:\n\turl = [${this.#url}]`
+            message: `${this}.set(url): fetching:\n\turl = [${this.#url}]`
         }
 
         let fetch_url_result_promise = new Promise((resolve, reject) => {
@@ -3154,14 +3177,14 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
             ace.details.utility.fetch_resource(this.#url, {
                 on_error: (error) => reject({
                     value: 'error-network-invalid-url',
-                    message: `ace.cs.set(url): network error:\n\t${error}`
+                    message: `${this}.set(url): network error:\n\t${error}`
                 }),
                 on_success: (code) => {
 
                     if (!code) {
                         reject({
                             value: 'error-network-invalid-fetched-code',
-                            message: `ace.cs.set(url): network error:\n\tfetched invalid (possibly empty) result\n\tcode=[${code}]`
+                            message: `${this}.set(url): network error:\n\tfetched invalid (possibly empty) result\n\tcode=[${code}]`
                         })
                     }
     
@@ -3183,11 +3206,11 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
                     // update status with success
                     presentation_panel.status = {
                         value: 'success-network-fetch',
-                        message: `ace.cs.set(url): network success:\n\tfetched [${this.url}]`
+                        message: `${this}.set(url): network success:\n\tfetched [${this.url}]`
                     }
                     // update model
                     presentation_panel.mvc.model = code
-                    resolve('ace.cs.set(url) -> on_success')
+                    resolve(`${this}.set(url) -> on_success`)
                 }
             })
         })
@@ -3195,7 +3218,7 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
 
             const { value, message } = error
             value ??= 'error-network-unknown'
-            message ??= 'ace.cs.set(url): network error:\n\tunknown'
+            message ??= `${this}.set(url): network error:\n\tunknown`
 
             presentation_panel.status = {
                 value: value,
@@ -3220,7 +3243,7 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
             (error) => { 
                 presentation_panel.status = {
                     value: 'error-network-fetch-failed',
-                    message: `${cs.HTMLElement_tagName}.set(url): fetch failed\n\t${error}`
+                    message: `${this}.set(url): fetch failed\n\t${error}`
                 }
             }
         );
