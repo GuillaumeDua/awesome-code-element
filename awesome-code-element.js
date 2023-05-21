@@ -2018,7 +2018,7 @@ ace.details.code.mvc_details = class code_mvc_details {
     static html_parser = class html_parser {
 
         get [Symbol.toStringTag](){ return 'code.mvc_details.html_parser' }
-        constructor(){ throw new Error(`${this.prototype}.constructor: not instanciable`) }
+        constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
 
         static is_valid_HTMLElement({ element }){
             if (element === undefined)
@@ -2115,7 +2115,7 @@ ace.details.code.mvc_details = class code_mvc_details {
     static factory = class factory {
 
         get [Symbol.toStringTag](){ return 'ace.details.code.mvc_details.factory' }
-        constructor(){ throw new Error(`${factory.prototype}.constructor: not instanciable`) }
+        constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
 
         static result_type = class {
 
@@ -3348,12 +3348,12 @@ ace.details.HTMLUtils.StyleSheetManager = class StyleSheetManager {
 ace.details.HTMLUtils.Theme = class DarkLightModeSwitch {
 // class-as-namespace, for code-related syntax coloration and toggling dark/light mode switch
 
-    get [Symbol.toStringTag](){ return `ace.details.Theme` }
+    get [Symbol.toStringTag](){ return `ace.details.HTMLUtils.Theme` }
     constructor(){ throw new Error(`${this}: not instanciable (class-as-namespace)`) }
 
     static preferences = class ThemePreferences {
 
-        get [Symbol.toStringTag](){ return `ace.details.Theme.preferences` }
+        get [Symbol.toStringTag](){ return `ace.details.HTMLUtils.Theme.preferences` }
         constructor(){ throw new Error(`${this}: not instanciable (class-as-namespace)`) }
 
         static #prefersLightModeInDarkModeKey = "prefers-light-mode-in-dark-mode"
@@ -3390,7 +3390,7 @@ ace.details.HTMLUtils.Theme = class DarkLightModeSwitch {
     }
     static url_builder = class url_builder {
 
-        get [Symbol.toStringTag](){ return `ace.details.Theme.url_builder` }
+        get [Symbol.toStringTag](){ return `ace.details.HTMLUtils.Theme.url_builder` }
         constructor(){ throw new Error(`${this}: not instanciable (class-as-namespace)`) }
 
         static #base = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/${ace.details.dependency.manager.dependencies.hljs.version}/styles/`
@@ -3398,9 +3398,9 @@ ace.details.HTMLUtils.Theme = class DarkLightModeSwitch {
 
         static build({ name, dark_or_light = DarkLightModeSwitch.preferences.dark_or_light }) {
             if (typeof name !== 'string' && !(name instanceof String))
-                throw new Error(`${url_builder.prototype}.build : invalid argument [name]`)
+                throw new Error(`${this.prototype}.build : invalid argument [name]`)
             if (dark_or_light && dark_or_light !== 'light' && dark_or_light !== 'dark')
-                throw new Error(`${url_builder.prototype}.build : invalid argument : [dark_or_light]`)
+                throw new Error(`${this.prototype}.build : invalid argument : [dark_or_light]`)
 
             dark_or_light = `${Boolean(dark_or_light) ? '-' : ''}${dark_or_light}`
             return `${url_builder.#base}${name}${dark_or_light}${url_builder.#ext}`
