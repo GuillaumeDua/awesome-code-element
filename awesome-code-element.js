@@ -3345,16 +3345,16 @@ ace.details.HTMLUtils.StyleSheetManager = class StyleSheetManager {
 // Theme
 
 // TODO: check doxygen-awesome-css compatiblity
-ace.details.HTMLUtils.DarkLightModeSwitch = class DarkLightModeSwitch {
-// class-as-namespace, for syntax coloration and toggling dark/light mode
+ace.details.HTMLUtils.Theme = class DarkLightModeSwitch {
+// class-as-namespace, for code-related syntax coloration and toggling dark/light mode switch
 
     get [Symbol.toStringTag](){ return `ace.details.Theme` }
-    constructor(){ throw new Error(`${DarkLightModeSwitch.prototype}: not instanciable (class-as-namespace)`) }
+    constructor(){ throw new Error(`${this}: not instanciable (class-as-namespace)`) }
 
     static preferences = class ThemePreferences {
 
         get [Symbol.toStringTag](){ return `ace.details.Theme.preferences` }
-        constructor(){ throw new Error(`${ThemePreferences.prototype}: not instanciable (class-as-namespace)`) }
+        constructor(){ throw new Error(`${this}: not instanciable (class-as-namespace)`) }
 
         static #prefersLightModeInDarkModeKey = "prefers-light-mode-in-dark-mode"
         static #prefersDarkModeInLightModeKey = "prefers-dark-mode-in-light-mode"
@@ -3391,7 +3391,7 @@ ace.details.HTMLUtils.DarkLightModeSwitch = class DarkLightModeSwitch {
     static url_builder = class url_builder {
 
         get [Symbol.toStringTag](){ return `ace.details.Theme.url_builder` }
-        constructor(){ throw new Error(`${url_builder.prototype}: not instanciable (class-as-namespace)`) }
+        constructor(){ throw new Error(`${this}: not instanciable (class-as-namespace)`) }
 
         static #base = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/${ace.details.dependency.manager.dependencies.hljs.version}/styles/`
         static #ext = '.min.css'
@@ -3432,7 +3432,7 @@ ace.details.HTMLUtils.DarkLightModeSwitch = class DarkLightModeSwitch {
             : ace.API.configuration.value.hljs.default_theme
     }
 
-    static #stylesheet_element_id = 'ace-cs-code_theme-stylesheet_placeholder'
+    static #stylesheet_element_id = 'ace-code-theme-stylesheet-placeholder'
     static initialize({ force_dark_mode = undefined }) {
         // generates the stylesheet HTML element used to import CSS content
         let stylesheet = document.createElement('link')
@@ -3566,12 +3566,12 @@ ace.details.HTMLUtils.DarkLightModeSwitch = class DarkLightModeSwitch {
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
     $(document).find(`button[is=${ace.API.HTMLElements.ToggleDarkModeButton.HTMLElement_tagName}]`)
         .each((index, element) => { element.updateIcon() })
-    ace.details.HTMLUtils.DarkLightModeSwitch.is_dark_mode = event.matches
+    ace.details.HTMLUtils.Theme.is_dark_mode = event.matches
 })
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', event => {
     $(document).find(`button[is=${ace.API.HTMLElements.ToggleDarkModeButton.HTMLElement_tagName}]`)
         .each((index, element) => { element.updateIcon() })
-    ace.details.HTMLUtils.DarkLightModeSwitch.is_dark_mode = !event.matches
+    ace.details.HTMLUtils.Theme.is_dark_mode = !event.matches
 })
 ace.API.HTMLElements.ToggleDarkModeButton = class ToggleDarkModeButton extends HTMLButtonElement {
 
@@ -3591,7 +3591,7 @@ ace.API.HTMLElements.ToggleDarkModeButton = class ToggleDarkModeButton extends H
         this.innerHTML = `${ToggleDarkModeButton.#lightModeIcon}${ToggleDarkModeButton.#darkModeIcon}`
         this.addEventListener('click', this.#on_click);
     }
-    #on_click(){ ace.details.HTMLUtils.DarkLightModeSwitch.ToggleDarkMode() }
+    #on_click(){ ace.details.HTMLUtils.Theme.ToggleDarkMode() }
 }
 customElements.define(
     ace.API.HTMLElements.ToggleDarkModeButton.HTMLElement_tagName,
@@ -3645,7 +3645,7 @@ ace.API.HTMLElements.ThemeSelector = class ThemeSelector extends HTMLSelectEleme
 
             let selected_option = $(this).find('option:selected')
             console.info(`ace.API.HTMLElements.ThemeSelector.onchange: switching to [${selected_option.text()}]`)
-            ace.details.HTMLUtils.DarkLightModeSwitch.value = selected_option.text()
+            ace.details.HTMLUtils.Theme.value = selected_option.text()
         }
     }
 
@@ -3811,7 +3811,7 @@ ace.API.initialize = () => {
                 ace.API.initializers.PreCodeHTMLElements()
             }
 
-            ace.details.HTMLUtils.DarkLightModeSwitch.initialize({ force_dark_mode: (() => {
+            ace.details.HTMLUtils.Theme.initialize({ force_dark_mode: (() => {
                 switch (ace.API.configuration.value.force_dark_light_scheme) {
                     case 'light':   return false;
                     case 'dark':    return true;
