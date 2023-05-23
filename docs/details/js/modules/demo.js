@@ -60,14 +60,14 @@ ace.showcase.HTMLElements.demo = class cs_demo extends HTMLElement {
         })
         this.ace_cs = this.appendChild(this.ace_cs)
 
-        ace.details.utility.apply_css(this.ace_cs, {
+        ace.details.utility.html.apply_css(this.ace_cs, {
             border: '1px dashed green',
             padding: '5px',
         })
 
         // view proxies
         let options_container = document.createElement('div')
-        ace.details.utility.apply_css(options_container, {
+        ace.details.utility.html.apply_css(options_container, {
             flexDirection: 'column',
             display: 'flex',
         })
@@ -142,7 +142,7 @@ ace.showcase.HTMLElements.demo = class cs_demo extends HTMLElement {
         let printable_name = property_name.replaceAll(/[\-|\_]/g, ' ')
         // html
         let sub_container = document.createElement('div')
-        ace.details.utility.apply_css(sub_container, {
+        ace.details.utility.html.apply_css(sub_container, {
             flex: '0 0 fit-content',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
@@ -183,7 +183,7 @@ ace.showcase.HTMLElements.demo = class cs_demo extends HTMLElement {
             throw new Error(`ace.showcase.HTMLElements.demo: invalid argument (view)\n\t[${view}] -> [${property_name}]`)
 
         let sub_container = document.createElement('div')
-        ace.details.utility.apply_css(sub_container, {
+        ace.details.utility.html.apply_css(sub_container, {
             display: 'flex',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
@@ -194,7 +194,7 @@ ace.showcase.HTMLElements.demo = class cs_demo extends HTMLElement {
             input_field.type = "text"
             input_field.value = model[property_name] ?? ''
             input_field.title = hint
-            ace.details.utility.apply_css(input_field, {
+            ace.details.utility.html.apply_css(input_field, {
                 width: '100%',
                 marginLeft: '10px'
             })

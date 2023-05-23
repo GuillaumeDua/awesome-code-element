@@ -126,7 +126,7 @@ ace.test_utils.HTMLElements.toolbar = class test_utils extends HTMLElement {
         }
 
         this.id = 'test_utils_toolbar'
-        ace.details.utility.apply_css(this, {
+        ace.details.utility.html.apply_css(this, {
             display : 'flex',
             border  : '1px solid var(--primary-color)',
             width   : 'fit-content',

@@ -48,8 +48,8 @@ ace.showcase.HTMLElements.wrapper  = class HTMLShowCase extends HTMLElement {
 
         this.wrapped_HTML_code = {
             raw: text_content,
-            decoded: ace.details.utility.html_codec.decode(text_content),
-            encoded: ace.details.utility.html_codec.encode(text_content)
+            decoded: ace.details.utility.html.codec.decode(text_content),
+            encoded: ace.details.utility.html.codec.encode(text_content)
         }
 
         this.#initialize()
@@ -68,7 +68,7 @@ ace.showcase.HTMLElements.wrapper  = class HTMLShowCase extends HTMLElement {
             html_code_label.className = 'trapezoid trapezoid-up'
 
         let html_code_view = content_view.appendChild(document.createElement('pre'))
-            ace.details.utility.apply_css(html_code_view, {
+            ace.details.utility.html.apply_css(html_code_view, {
                 border       : '1px solid var(--separator-color)',
                 borderRadius : 'var(--border-radius-small)',
                 display      : 'block',

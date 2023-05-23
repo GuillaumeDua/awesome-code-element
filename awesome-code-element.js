@@ -524,33 +524,11 @@ ace.details.remote.resources_cache = class {
         return this.#remote_files.get(uri)
     }
 }
+
 ace.details.utility = class utility {
 // TODO: move to another module ?
     get [Symbol.toStringTag](){ return `ace.details.utility` }
     constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
-
-    static html_codec = class html_codec {
-
-        get [Symbol.toStringTag](){ return `ace.details.utility.html_codec` }
-        constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
-
-        static entities = new Array(
-        //    [ '\\\\' , '\\'],
-           [ '&gt;', '>' ],
-           [ '&lt;', '<' ],
-           [ '&amp;', '&' ],
-           [ '&quot;', '"' ],
-           [ '&#39;', '\'' ]
-        )
-        static decode = (text) => {
-            html_codec.entities.forEach(([key, value]) => text = text.replaceAll(key, value))
-            return text
-        }
-        static encode = (text) => {
-            html_codec.entities.forEach(([value, key]) => text = text.replaceAll(key, value))
-            return text
-        }
-    }
 
     static accumulate_objects = (lhs, rhs) => {
         lhs ??= {}
@@ -590,45 +568,7 @@ ace.details.utility = class utility {
             target[property] = properties[property];
         }
     }
-    static apply_css(element, properties) {
-        ace.details.utility.unfold_into({target : element.style, properties })
-    }
-    static create_shadowroot_slot(element, when_childrens_attached) {
-
-        if (!element.shadowRoot)
-            element.attachShadow({ mode: 'open' });
-        element.shadowRoot.innerHTML = `<slot></slot>`;
-        const slot = element.shadowRoot.querySelector('slot');
     
-        let callback = (event) => {
-            const childrens = event.target.assignedElements();
-            when_childrens_attached(childrens)
-        }
-        slot.addEventListener('slotchange', callback, { once: true });
-        return { // accessor
-            remove: () => {
-                slot.removeEventListener('slotchange', callback);
-                element.shadowRoot.innerHTML = ""
-                element.outerHTML = element.outerHTML
-                return element
-            }
-        }
-    }
-    static remove_shadowroot(element) {
-
-        element.shadowRoot.innerHTML = ""
-        element.outerHTML = element.outerHTML
-    }
-    static remove_all_childrens(element) {
-        while (element.firstChild)
-            element.removeChild(element.lastChild)
-    }
-    static is_scrolling(element) {
-        return {
-            horizontally    : element.scrollWidth  > element.clientWidth,
-            vertically      : element.scrollHeight > element.clientHeight
-        }
-    }
     static get_url_extension(url) {
         try {
             return url.split(/[#?]/)[0].split('.').pop().trim();
@@ -663,6 +603,15 @@ ace.details.utility = class utility {
         let i = 0;
         while (true) { yield i++; }
     }
+    static cancelable_setTimeout = function(func, delay){
+        let update_controler = { canceled: false }
+        setTimeout(() => {
+            if (!update_controler.canceled)
+                func()
+        }, delay);
+        return update_controler
+    }
+
     static inject_field_proxy = function(target, property_name, { getter_payload, setter_payload } = {}) {
     // generate a proxy to a value's field, injecting optional payload
     //  getter: post-op
@@ -792,15 +741,79 @@ ace.details.utility = class utility {
             revoke: () => Object.defineProperty(target, property_name, property_descriptor)
         }
     }
-    static cancelable_setTimeout = function(func, delay){
-        let update_controler = { canceled: false }
-        setTimeout(() => {
-            if (!update_controler.canceled)
-                func()
-        }, delay);
-        return update_controler
+}
+ace.details.utility.html = class html_utility {
+    get [Symbol.toStringTag](){ return `ace.details.utility.html` }
+    constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
+
+    static codec = class html_codec {
+
+        get [Symbol.toStringTag](){ return `ace.details.utility.html_codec` }
+        constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
+
+        static entities = new Array(
+        //    [ '\\\\' , '\\'],
+           [ '&gt;', '>' ],
+           [ '&lt;', '<' ],
+           [ '&amp;', '&' ],
+           [ '&quot;', '"' ],
+           [ '&#39;', '\'' ]
+        )
+        static decode = (text) => {
+            html_codec.entities.forEach(([key, value]) => text = text.replaceAll(key, value))
+            return text
+        }
+        static encode = (text) => {
+            html_codec.entities.forEach(([value, key]) => text = text.replaceAll(key, value))
+            return text
+        }
     }
-    // typeinfo
+
+    static apply_css(element, properties) {
+        ace.details.utility.unfold_into({target : element.style, properties })
+    }
+    static create_shadowroot_slot(element, when_childrens_attached) {
+
+        if (!element.shadowRoot)
+            element.attachShadow({ mode: 'open' });
+        element.shadowRoot.innerHTML = `<slot></slot>`;
+        const slot = element.shadowRoot.querySelector('slot');
+    
+        let callback = (event) => {
+            const childrens = event.target.assignedElements();
+            when_childrens_attached(childrens)
+        }
+        slot.addEventListener('slotchange', callback, { once: true });
+        return { // accessor
+            remove: () => {
+                slot.removeEventListener('slotchange', callback);
+                element.shadowRoot.innerHTML = ""
+                element.outerHTML = element.outerHTML
+                return element
+            }
+        }
+    }
+    static remove_shadowroot(element) {
+
+        element.shadowRoot.innerHTML = ""
+        element.outerHTML = element.outerHTML
+    }
+    static remove_all_childrens(element) {
+        while (element.firstChild)
+            element.removeChild(element.lastChild)
+    }
+    static is_scrolling(element) {
+        return {
+            horizontally    : element.scrollWidth  > element.clientWidth,
+            vertically      : element.scrollHeight > element.clientHeight
+        }
+    }
+}
+ace.details.utility.types = class types {
+
+    get [Symbol.toStringTag](){ return `ace.details.utility.types.types` }
+    constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
+
     static get_inherited_typenames = function(value){
 
         if (!value || !value.constructor)
@@ -822,45 +835,40 @@ ace.details.utility = class utility {
         return value.toString().replace(/^\[object\ (?:(.*)\/)?(.*)\]$/, '$1')
     }
 
-    static types = class types {
-
-        get [Symbol.toStringTag](){ return `ace.details.utility.types` }
-        constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
-
-        static typename_of({ value }){
-            if (!(value instanceof Object))
-                throw new Error(`${this.prototype}.typename_of: invalid argument`)
-            const matches = value.toString().match(/\[object (.+)\]/)
-            return matches.length === 2 ? matches[1] : undefined
+    static typename_of({ value }){
+        if (!(value instanceof Object))
+            throw new Error(`${this.prototype}.typename_of: invalid argument`)
+        const matches = value.toString().match(/\[object (.+)\]/)
+        return matches.length === 2 ? matches[1] : undefined
+    }
+    static is_string(value){ return typeof value === 'string' || value instanceof String }
+    static is_int(value){ return !isNaN(value) && parseInt(Number(value)) == value }
+    static is_empty(value){
+        return Boolean(value)
+            && Object.keys(value).length === 0
+            && Object.getPrototypeOf(value) === Object.prototype
+    }
+    
+    static projections = class {
+        static no_op = {
+            from: (value) => { return value },
+            to:   (value) => { return value }
         }
-        static is_string(value){ return typeof value === 'string' || value instanceof String }
-        static is_int(value){ return !isNaN(value) && parseInt(Number(value)) == value }
-        static is_empty(value){
-            return Boolean(value)
-                && Object.keys(value).length === 0
-                && Object.getPrototypeOf(value) === Object.prototype
+        static boolean = {
+            from: (value) => { return String(value) },
+            to:   (value) => { return value === 'true' || false }
         }
-        static projections = class {
-            static no_op = {
-                from: (value) => { return value },
-                to:   (value) => { return value }
-            }
-            static boolean = {
-                from: (value) => { return String(value) },
-                to:   (value) => { return value === 'true' || false }
-            }
-            static integer = {
-                from: (value) => { return String(value) },
-                to:   (value) => { return parseInt(value) }
-            }
-            static float = {
-                from: (value) => { return String(value) },
-                to:   (value) => { return parseFloat(value) }
-            }
-            static string = {
-                from: (value) => { return types.is_string(value) ? value : String(value) },
-                to:   (value) => { return String(value) }
-            }
+        static integer = {
+            from: (value) => { return String(value) },
+            to:   (value) => { return parseInt(value) }
+        }
+        static float = {
+            from: (value) => { return String(value) },
+            to:   (value) => { return parseFloat(value) }
+        }
+        static string = {
+            from: (value) => { return types.is_string(value) ? value : String(value) },
+            to:   (value) => { return String(value) }
         }
     }
 }
@@ -1280,8 +1288,8 @@ ace.details.HTMLUtils.ResizeObserver = new ResizeObserver(entries => {
 });
 
 ace.details.HTMLElements = {}
-ace.details.HTMLElements.buttons = {}
-ace.details.HTMLElements.buttons.CopyToClipboard = class CopyToClipboardButton extends HTMLButtonElement {
+ace.details.HTMLElements.Buttons = {}
+ace.details.HTMLElements.Buttons.CopyToClipboard = class CopyToClipboardButton extends HTMLButtonElement {
 // Copy text context of this previousSibling HTMLelement
 
     static get HTMLElement_tagName() { return 'ace-cs-button_copy-to-clipboard' }
@@ -1321,10 +1329,10 @@ ace.details.HTMLElements.buttons.CopyToClipboard = class CopyToClipboardButton e
     }
 }
 customElements.define(
-    ace.details.HTMLElements.buttons.CopyToClipboard.HTMLElement_tagName,
-    ace.details.HTMLElements.buttons.CopyToClipboard, { extends: 'button' }
+    ace.details.HTMLElements.Buttons.CopyToClipboard.HTMLElement_tagName,
+    ace.details.HTMLElements.Buttons.CopyToClipboard, { extends: 'button' }
 );
-ace.details.HTMLElements.buttons.ShowInGodbolt = class ShowInGodboltButton extends HTMLButtonElement {
+ace.details.HTMLElements.Buttons.ShowInGodbolt = class ShowInGodboltButton extends HTMLButtonElement {
 // Re-open (code.mvc.model_details.to_execute) in a godbolt.org tab
 
     static get HTMLElement_tagName() { return 'ace-cs-button_open-in-godbolt' }
@@ -1435,8 +1443,8 @@ ace.details.HTMLElements.buttons.ShowInGodbolt = class ShowInGodboltButton exten
     }
 }
 customElements.define(
-    ace.details.HTMLElements.buttons.ShowInGodbolt.HTMLElement_tagName,
-    ace.details.HTMLElements.buttons.ShowInGodbolt, { extends: 'button' }
+    ace.details.HTMLElements.Buttons.ShowInGodbolt.HTMLElement_tagName,
+    ace.details.HTMLElements.Buttons.ShowInGodbolt, { extends: 'button' }
 );
 
 
@@ -1482,7 +1490,7 @@ ace.details.HTMLElements.DeferedHTMLElement = class DeferedHTMLElement extends H
 
             if (!this.acquire_parameters(this._parameters)) {
                 console.debug(`(${this} as ${DeferedHTMLElement.prototype}).ConnectedCallback: create shadowroot slot`)
-                this.shadowroot_accessor = ace.details.utility.create_shadowroot_slot(
+                this.shadowroot_accessor = ace.details.utility.html.create_shadowroot_slot(
                     this, () => {
                         if (!this.acquire_parameters(this._parameters))
                             throw new Error(`(${this} as ${DeferedHTMLElement.prototype}).ConnectedCallback: acquire_parameters failed (no detailed informations)`)
@@ -1530,7 +1538,7 @@ ace.details.HTMLElements.DeferedHTMLElement = class DeferedHTMLElement extends H
         let error_element = document.createElement('pre')
             error_element.textContent = `(${this} as ${DeferedHTMLElement.prototype}).on_critical_internal_error:\n\t${error || 'unknown error'}\n\t(No recovery possible)`
         // TODO: status => error + CSS style for such status
-        ace.details.utility.apply_css(error_element, {
+        ace.details.utility.html.apply_css(error_element, {
             color: "red",
             border : "2px solid red",
             overflow: "auto"
@@ -2722,10 +2730,10 @@ ace.API.HTMLElements.CodeMVC = class code_mvc_HTMLElement extends ace.details.HT
         if (!(value instanceof code_mvc_HTMLElement))
             throw new Error(`${this.prototype}.add_buttons_to: invalid argument type`)
 
-        let CopyToClipboard_button = new ace.details.HTMLElements.buttons.CopyToClipboard()
+        let CopyToClipboard_button = new ace.details.HTMLElements.Buttons.CopyToClipboard()
             CopyToClipboard_button = value.appendChild(CopyToClipboard_button)
 
-        let CE_button = new ace.details.HTMLElements.buttons.ShowInGodbolt()
+        let CE_button = new ace.details.HTMLElements.Buttons.ShowInGodbolt()
             CE_button = value.appendChild(CE_button)
 
         return value.ace_cs_buttons = {
@@ -2750,7 +2758,7 @@ ace.API.HTMLElements.CodeMVC = class code_mvc_HTMLElement extends ace.details.HT
                 // cheaper than a proper AABB to check if code's content overlap with other elements
                 let functor = (
                         ace.API.configuration.value.auto_hide_buttons
-                    ||  ace.details.utility.is_scrolling(owner).horizontally
+                    ||  ace.details.utility.html.is_scrolling(owner).horizontally
                 )   ? auto_hide_elements
                     : no_auto_hide_elements
     
@@ -3007,7 +3015,7 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
     // warning: operations are not guarantee to be concurrency safe
 
         get [Symbol.toStringTag](){
-            const cs_typename = ace.details.utility.get_object_typename(cs.prototype);
+            const cs_typename = ace.details.utility.types.get_object_typename(cs.prototype);
             const value = `${cs_typename}.fetch_execution_controler_t`
             return this.#target
                 ? `${value} with target (${cs_typename} id=${this.#target.id})`
