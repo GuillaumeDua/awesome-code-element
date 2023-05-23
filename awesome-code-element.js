@@ -345,18 +345,20 @@ ace.API.configuration = new class configuration {
     // }
         get [Symbol.toStringTag](){ return 'ace.API.configuration.compiler_explorer_type' }
     
+        static get base(){ return ace.details.containers.translation_map; }
+
         constructor(values) {
             super(values, {
                 key_translator: (key) => {
                 // transform any language alias into a consistent name
                     let language = hljs.getLanguage(key)
                     if (!language)
-                        console.warn(`ce_configuration: invalid language [${key}]`)
+                        console.warn(`${this} as ${base.prototype}: invalid language [${key}]`)
                     return language ? language.name : undefined
                 },
                 mapped_translator : (mapped) => {
                     if (!mapped || !mapped.compiler_id)
-                        throw new Error(`ce_configuration: missing mandatory field '.compiler_id' in configuration ${mapped}`)
+                        throw new Error(`${this} as ${base.prototype}: missing mandatory field '.compiler_id' in configuration ${mapped}`)
                     return mapped
                 }
             })
@@ -1063,7 +1065,7 @@ ace.details.utility.data_binder = class data_binder {
 
         // spread data_source initiale value
         if (source_adapter.initiale.get === undefined){
-            console.debug(source_adapter)
+            // console.debug(source_adapter)
             console.error(`${this.prototype}.bind_attr: data-source is write-only. Initiale value is undefined. data_source=[${data_source}]`)
             broadcast_to_attributes(undefined)
         }
