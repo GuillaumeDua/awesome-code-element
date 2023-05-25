@@ -94,7 +94,7 @@ SOFTWARE.
 
             import ace from "../../awesome-code-element/awesome-code-element.js"
 
-            ace.API.configuration.configure({
+            ace.configuration.configure({
                 doxygen_awesome_css_compatibility: true,
                 CodeSection: {
                     // language        : 'cpp',
@@ -112,8 +112,8 @@ SOFTWARE.
                     ]
                 ])
             })
-            console.info(`docs/showcase/live_demo/index.html: ace.API.configuration:`, ace.API.configuration.value)
-            ace.API.initialize();
+            console.info(`docs/showcase/live_demo/index.html: ace.configuration:`, ace.configuration.value)
+            ace.initialize();
 
             // hljs configuration
             hljs.configure({

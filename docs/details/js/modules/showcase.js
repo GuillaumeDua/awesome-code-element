@@ -22,7 +22,7 @@
 
 // WARNING: INTERNAL USE FOR SHOWCASE ONLY.
 
-import ace from '../../../awesome-code-element/awesome-code-element.js'
+import ace, { ace_details } from '../../../awesome-code-element/awesome-code-element.js'
 if (ace === undefined)
     throw new Error('docs/details/js/modules/utils.js: missing [ace]')
 
@@ -48,8 +48,8 @@ ace.showcase.HTMLElements.wrapper  = class HTMLShowCase extends HTMLElement {
 
         this.wrapped_HTML_code = {
             raw: text_content,
-            decoded: ace.details.utility.html.codec.decode(text_content),
-            encoded: ace.details.utility.html.codec.encode(text_content)
+            decoded: ace_details.utility.html.codec.decode(text_content),
+            encoded: ace_details.utility.html.codec.encode(text_content)
         }
 
         this.#initialize()
@@ -68,7 +68,7 @@ ace.showcase.HTMLElements.wrapper  = class HTMLShowCase extends HTMLElement {
             html_code_label.className = 'trapezoid trapezoid-up'
 
         let html_code_view = content_view.appendChild(document.createElement('pre'))
-            ace.details.utility.html.apply_css(html_code_view, {
+            ace_details.utility.html.apply_css(html_code_view, {
                 border       : '1px solid var(--separator-color)',
                 borderRadius : 'var(--border-radius-small)',
                 display      : 'block',
@@ -83,7 +83,7 @@ ace.showcase.HTMLElements.wrapper  = class HTMLShowCase extends HTMLElement {
 
         let cs_label = content_view.appendChild(document.createElement('h5'))
             cs_label.style.marginTop = '1em'
-            cs_label.textContent = 'rendering:' // ace.API.HTMLElement.CS
+            cs_label.textContent = 'rendering:' // ace.HTMLElement.CS
             cs_label.className = 'trapezoid trapezoid-up'
 
         this.prepend(content_view)

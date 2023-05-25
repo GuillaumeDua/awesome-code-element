@@ -117,11 +117,14 @@
 //          - active language
 // TODO: [OPT-IN] compiler-explorer instance -> godbolt.org by default, can be another
 
-export { ace as default }
+export { ace_API as default, ace_details }
 
 let ace = {}
     ace.API = {};
     ace.details = {};
+
+const ace_API = ace.API
+const ace_details = ace.details
 
 // ----------------------------------------------------------------------------------------------------------------------------
 
@@ -813,7 +816,7 @@ ace.details.utility.html = class html_utility {
 }
 ace.details.utility.types = class types {
 
-    get [Symbol.toStringTag](){ return `ace.details.utility.types.types` }
+    get [Symbol.toStringTag](){ return `ace.details.utility.types` }
     constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
 
     static get_inherited_typenames = function(value){
@@ -1093,10 +1096,11 @@ ace.details.utility.data_binder = class data_binder {
         })
     }
 }
-ace.details.remote.CE_API = class CE_API {
+ace.details.remote.API = {}
+ace.details.remote.API.compiler_explorer = class CE_API {
 // fetch CE API informations asynchronously
 
-    get [Symbol.toStringTag](){ return `ace.details.remote.CE_API` }
+    get [Symbol.toStringTag](){ return `ace.details.remote.API.compiler_explorer` }
     constructor(){ throw new Error(`${this}.constructor: not instanciable`) }
 
     static #static_initializer = (async function(){
@@ -1406,7 +1410,7 @@ ace.details.HTMLElements.Buttons.ShowInGodbolt = class ShowInGodboltButton exten
             if (!accessor.ce_options)
                 throw new Error(`${this}.onClickSend: missing CE configuration for language: [${code_mvc_value.controler.language}]`)
 
-            if (!ace.details.remote.CE_API.languages.includes(accessor.language))
+            if (!ace.details.remote.API.compiler_explorer.languages.includes(accessor.language))
                 //      hljs    https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
                 //  vs. CE      https://godbolt.org/api/languages
                 throw new Error(`${this}.onClickSend: invalid CE API language: [${accessor.language}]`);
@@ -1441,7 +1445,7 @@ ace.details.HTMLElements.Buttons.ShowInGodbolt = class ShowInGodboltButton exten
             }]
         };
         // CE /clientstate API
-        ace.details.remote.CE_API.open_in_new_tab(data)
+        ace.details.remote.API.compiler_explorer.open_in_new_tab(data)
     }
 }
 customElements.define(
@@ -2612,6 +2616,7 @@ ace.details.code.mvc = class code_mvc {
         })()
     }
 }
+ace.API.code_mvc = ace.details.code.mvc;
 
 // =========================
 // API: HTML custom elements
@@ -3123,7 +3128,7 @@ ace.API.HTMLElements.CodeSection = class cs extends ace.details.HTMLElements.Def
             }
     
             // execution panel: replace with result
-            return ace.details.remote.CE_API.fetch_execution_result(
+            return ace.details.remote.API.compiler_explorer.fetch_execution_result(
                 presentation_panel.mvc.model_details.ce_options,
                 presentation_panel.mvc.model_details.to_execute
             )

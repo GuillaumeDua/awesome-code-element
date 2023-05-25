@@ -22,10 +22,10 @@
 
 // WARNING: INTERNAL USE, FOR SHOWCASE ONLY.
 
-import ace from '../../../awesome-code-element/awesome-code-element.js'
+import ace, { ace_details } from '../../../awesome-code-element/awesome-code-element.js'
 if (ace === undefined)
     throw new Error('docs/details/js/modules/utils.js: missing [ace]')
-if (ace.API.HTMLElements.CodeSection === undefined)
+if (ace.HTMLElements.CodeSection === undefined)
     throw new Error('CodeSection_demo: missing mandatory dependency [ace.CodeSection]')
 
 import ace_test_utils from '../../../details/js/modules/utils.js';
@@ -55,19 +55,19 @@ ace.showcase.HTMLElements.demo = class cs_demo extends HTMLElement {
         if (!this.isConnected)
             throw new Error('ace.cs_demo: not connected yet ')
 
-        this.ace_cs = new ace.API.HTMLElements.CodeSection({
-            code: ace.details.code.mvc_details.factory.build_from({ nodes: this.childNodes })
+        this.ace_cs = new ace.HTMLElements.CodeSection({
+            code: ace_details.code.mvc_details.factory.build_from({ nodes: this.childNodes })
         })
         this.ace_cs = this.appendChild(this.ace_cs)
 
-        ace.details.utility.html.apply_css(this.ace_cs, {
+        ace_details.utility.html.apply_css(this.ace_cs, {
             border: '1px dashed green',
             padding: '5px',
         })
 
         // view proxies
         let options_container = document.createElement('div')
-        ace.details.utility.html.apply_css(options_container, {
+        ace_details.utility.html.apply_css(options_container, {
             flexDirection: 'column',
             display: 'flex',
         })
@@ -142,7 +142,7 @@ ace.showcase.HTMLElements.demo = class cs_demo extends HTMLElement {
         let printable_name = property_name.replaceAll(/[\-|\_]/g, ' ')
         // html
         let sub_container = document.createElement('div')
-        ace.details.utility.html.apply_css(sub_container, {
+        ace_details.utility.html.apply_css(sub_container, {
             flex: '0 0 fit-content',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
@@ -155,7 +155,7 @@ ace.showcase.HTMLElements.demo = class cs_demo extends HTMLElement {
         let label = sub_container.appendChild(document.createElement('label'))
             label.textContent = ` ${printable_name}`
 
-        ace.details.utility.inject_field_proxy(target, property_name, {
+        ace_details.utility.inject_field_proxy(target, property_name, {
             getter_payload : (value) => checkbox.checked = value,
             setter_payload : (value) => checkbox.checked = value
         })
@@ -183,7 +183,7 @@ ace.showcase.HTMLElements.demo = class cs_demo extends HTMLElement {
             throw new Error(`ace.showcase.HTMLElements.demo: invalid argument (view)\n\t[${view}] -> [${property_name}]`)
 
         let sub_container = document.createElement('div')
-        ace.details.utility.html.apply_css(sub_container, {
+        ace_details.utility.html.apply_css(sub_container, {
             display: 'flex',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
@@ -194,7 +194,7 @@ ace.showcase.HTMLElements.demo = class cs_demo extends HTMLElement {
             input_field.type = "text"
             input_field.value = model[property_name] ?? ''
             input_field.title = hint
-            ace.details.utility.html.apply_css(input_field, {
+            ace_details.utility.html.apply_css(input_field, {
                 width: '100%',
                 marginLeft: '10px'
             })

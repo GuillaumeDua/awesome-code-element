@@ -97,7 +97,7 @@ SOFTWARE.
 
             import ace from "../../awesome-code-element/awesome-code-element.js"
 
-            ace.API.configuration.configure({
+            ace.configuration.configure({
                 doxygen_awesome_css_compatibility: true,
                 hljs: {         // useless, for demo purpose
                     default_theme   : 'obsidian' // unused, as there is a valid theme-selector. (Obsidian theme does not supports dark/light variations)
@@ -119,8 +119,8 @@ SOFTWARE.
                     ]
                 ])
             })
-            console.info(`docs/showcase/ace_code_section/index.html: ace.API.configuration:`, ace.API.configuration.value)
-            ace.API.initialize();
+            console.info(`docs/showcase/ace_code_section/index.html: ace.configuration:`, ace.configuration.value)
+            ace.initialize();
 
             // hljs configuration
             hljs.configure({
@@ -218,7 +218,7 @@ auto main() -> int { return 42; } // this is a pretty long comment, so it should
             <div class="note">
                 <h4>&#9432; Note:</h4>
                 <pre>Relevant JS console error:
-    <code> [object ace.API.HTMLElements.CodeSection/ace-cs(id=cs_5)].set(url): network error:
+    <code> [object ace.HTMLElements.CodeSection/ace-cs(id=cs_5)].set(url): network error:
         [object ace.details.utility].fetch_resource: bad request status 404 on url [/DOES_NOT_EXISTS]</code></pre>
             </div>
             </li></ul>
