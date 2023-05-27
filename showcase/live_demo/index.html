@@ -94,7 +94,7 @@ SOFTWARE.
 
             import ace from "../../awesome-code-element/awesome-code-element.js"
 
-            ace.API.configuration.configure({
+            ace.configuration.configure({
                 doxygen_awesome_css_compatibility: true,
                 CodeSection: {
                     // language        : 'cpp',
@@ -112,8 +112,8 @@ SOFTWARE.
                     ]
                 ])
             })
-            console.info(`docs/showcase/live_demo/index.html: ace.API.configuration:`, ace.API.configuration.value)
-            ace.API.initialize();
+            console.info(`docs/showcase/live_demo/index.html: ace.configuration:`, ace.configuration.value)
+            ace.initialize();
 
             // hljs configuration
             hljs.configure({
@@ -137,11 +137,26 @@ SOFTWARE.
                 languages: ['cpp', 'c', 'bash', 'cmake', 'markdown', 'json', 'plaintext']
             })
         </script>
+
+        <script>
+
+            let add_elem;
+
+            import("../../awesome-code-element/awesome-code-element.js")
+            .then(ace_cs => {
+                add_elem = () => {
+                    alert('toto')
+                }
+            })
+        </script>
+
     </head>
 <body>
 
     <awesome_code_element_test-utility-toolbar></awesome_code_element_test-utility-toolbar>
  
+    <button onclick="add_elem()">toto</button>
+
     <h2 style="color:purple">Live demo</h2>
     <div class="note">
         <h4>&#9432; Note:</h4>
@@ -149,7 +164,7 @@ SOFTWARE.
 and play with ace-cs HTML elements' attributes.</pre>
     </div>
     <!-- TODO: select various pre-defined scenaris, that users can play with -->
-    <ace-code-section-demo>
+    <ace-cs-demo>
         THIS IS REMOVED // @ace::skip::line
 #include <iostream>
 auto main() -> int {    
@@ -160,7 +175,7 @@ return i;
                         // @ace::show::block::end
 }                       
         THIS IS REMOVED TOO // @ace::skip::line
-    </ace-code-section-demo>
+    </ace-cs-demo>
 
     <!-- TODO: CS builder from current demo state -->
 

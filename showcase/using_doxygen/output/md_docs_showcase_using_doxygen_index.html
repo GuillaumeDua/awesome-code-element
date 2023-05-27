@@ -158,11 +158,11 @@ $(document).ready(function(){initNavTree('md_docs_showcase_using_doxygen_index.h
 <div class="contents">
 <div class="textblock"><p>This showcase demonstrates various ways to use <code>ace-cs</code> in a <code>Doxygen</code> documentation. <br  />
  Here, such documentation is generated using a <code>Markdown</code> index file (see <code>docs/showcase/using_doxygen/index.md</code>).</p>
-<p><b>Q</b>: Why use <code>&lt;div class="ace-code-section"&gt;</code> rather than <code>&lt;ace-code-section&gt;</code> tags ? <br  />
+<p><b>Q</b>: Why use <code>&lt;div class="ace-cs"&gt;</code> rather than <code>&lt;ace-cs&gt;</code> tags ? <br  />
 </p>
 <ul>
 <li>Plain Markdown does not (by default) allow custom <code>HTMLElement</code>s. <br  />
- Here, we use <code>&lt;div class="ace-code-section"&gt;</code> tags which are <code>acs-cs</code>'s placeholders for <code>&lt;ace-code-section&gt;</code> tags, that are automatically replaced by the <code>ace-cs</code> library.</li>
+ Here, we use <code>&lt;div class="ace-cs"&gt;</code> tags which are <code>acs-cs</code>'s placeholders for <code>&lt;ace-cs&gt;</code> tags, that are automatically replaced by the <code>ace-cs</code> library.</li>
 </ul>
 <p><b>Q</b>: Why the extra <code>&lt;pre&gt;&lt;/pre&gt;</code> tags ? <br  />
 </p>
@@ -174,10 +174,10 @@ $(document).ready(function(){initNavTree('md_docs_showcase_using_doxygen_index.h
 <hr  />
 <h1><a class="anchor" id="autotoc_md2"></a>
 Using `\include` doxygen directive</h1>
-<div class="fragment"><div class="line">&lt;div class=&quot;ace-code-section&quot; language=&quot;cpp&quot; toggle_execution=&quot;true&quot;&gt;</div>
+<div class="fragment"><div class="line">&lt;div class=&quot;ace-cs&quot; language=&quot;cpp&quot; toggle_execution=&quot;true&quot;&gt;</div>
 <div class="line">\include noexecute_show_block_with_output.cpp</div>
 <div class="line">&lt;/div&gt;</div>
-</div><!-- fragment --><div class="ace-code-section" language="cpp" toggle_execution="true"> <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;iostream&gt;</span></div>
+</div><!-- fragment --><div class="ace-cs" language="cpp" toggle_execution="true"> <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;iostream&gt;</span></div>
 <div class="line"><span class="keyword">auto</span> main() -&gt; <span class="keywordtype">int</span> {</div>
 <div class="line">    std::cout &lt;&lt; <span class="stringliteral">&quot;Hello, there\n&quot;</span>;</div>
 <div class="line">    <span class="keyword">auto</span> i = 42; <span class="comment">// test</span></div>
@@ -185,14 +185,14 @@ Using `\include` doxygen directive</h1>
 <div class="line">}</div>
 </div><!-- fragment --> </div><h1><a class="anchor" id="autotoc_md3"></a>
 Using external, remote-located code</h1>
-<div class="fragment"><div class="line">&lt;div class=&quot;ace-code-section&quot;</div>
+<div class="fragment"><div class="line">&lt;div class=&quot;ace-cs&quot;</div>
 <div class="line">     language=&quot;cpp&quot;</div>
 <div class="line">     toggle_execution=&quot;true&quot;</div>
 <div class="line">     url=&quot;https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/docs/details/resources/code_content/noexecute_show_block_with_output.cpp&quot;&gt;</div>
 <div class="line">&lt;/div&gt;</div>
-</div><!-- fragment --><div class="ace-code-section" language="cpp" toggle_execution="true" url="https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/docs/details/resources/code_content/noexecute_show_block_with_output.cpp"> </div><h1><a class="anchor" id="autotoc_md4"></a>
+</div><!-- fragment --><div class="ace-cs" language="cpp" toggle_execution="true" url="https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/docs/details/resources/code_content/noexecute_show_block_with_output.cpp"> </div><h1><a class="anchor" id="autotoc_md4"></a>
 Using embedded code example</h1>
-<div class="fragment"><div class="line">&lt;div class=&quot;ace-code-section&quot; language=&quot;cpp&quot; toggle_execution=&quot;true&quot;&gt;</div>
+<div class="fragment"><div class="line">&lt;div class=&quot;ace-cs&quot; language=&quot;cpp&quot; toggle_execution=&quot;true&quot;&gt;</div>
 <div class="line">&lt;pre&gt;</div>
 <div class="line">#include &lt;iostream&gt;</div>
 <div class="line">auto main() -&gt; int {</div>
@@ -202,7 +202,7 @@ Using embedded code example</h1>
 <div class="line">}</div>
 <div class="line">&lt;/pre&gt;</div>
 <div class="line">&lt;/div&gt;</div>
-</div><!-- fragment --><div class="ace-code-section" language="cpp" toggle_execution="true"> <pre>
+</div><!-- fragment --><div class="ace-cs" language="cpp" toggle_execution="true"> <pre>
 #include &lt;iostream&gt;
 auto main() -&gt; int {
     auto i = 42;
@@ -218,12 +218,12 @@ auto main() -&gt; int {
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <div style="display:flex; float:left; height: 30px; align-content: flex-start; align-items: center;">
-      <button is="ace-toggle-dark-mode-button" title="Toggle light/dark Mode" style="display: flex;">
+      <button is="ace-cs-button_toggle-dark-mode" title="Toggle light/dark Mode" style="display: flex;">
       </button>
       <!-- <p style="display: flex; margin-left: 10px; "> Code theme : </p> -->
         <!-- https://cdnjs.com/libraries/highlight.js -->
         <!-- The default one is the first one -->
-      <select is="ace-theme-selector" style="display: flex; margin-left: 5px; ">
+      <select is="ace-cs-theme-selector" style="display: flex; margin-left: 5px; ">
         <option value="tokyo-night"></option>
         <option value="base16/google"></option>
       </select>
