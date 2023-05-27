@@ -22,13 +22,13 @@
 
 // WARNING: INTERNAL USE FOR SHOWCASE ONLY.
 
-import ace from '../../../awesome-code-element/awesome-code-element.js'
+import ace, { ace_details } from '../../../awesome-code-element/awesome-code-element.js'
 if (ace === undefined)
     throw new Error('docs/details/js/modules/utils.js: missing [ace]')
 
 ace.showcase                        = ace.showcase ?? {}
-ace.showcase.HTML_elements          = ace.showcase.HTML_elements ?? {}
-ace.showcase.HTML_elements.wrapper  = class HTMLShowCase extends HTMLElement {
+ace.showcase.HTMLElements          = ace.showcase.HTMLElements ?? {}
+ace.showcase.HTMLElements.wrapper  = class HTMLShowCase extends HTMLElement {
     static HTMLElement_name = 'ace-showcase-wrapper'
 
     constructor(){
@@ -48,8 +48,8 @@ ace.showcase.HTML_elements.wrapper  = class HTMLShowCase extends HTMLElement {
 
         this.wrapped_HTML_code = {
             raw: text_content,
-            decoded: ace.details.utility.html_codec.decode(text_content),
-            encoded: ace.details.utility.html_codec.encode(text_content)
+            decoded: ace_details.utility.html.codec.decode(text_content),
+            encoded: ace_details.utility.html.codec.encode(text_content)
         }
 
         this.#initialize()
@@ -68,12 +68,14 @@ ace.showcase.HTML_elements.wrapper  = class HTMLShowCase extends HTMLElement {
             html_code_label.className = 'trapezoid trapezoid-up'
 
         let html_code_view = content_view.appendChild(document.createElement('pre'))
-            html_code_view.style.border       = '1px solid var(--separator-color)'
-            html_code_view.style.borderRadius = 'var(--border-radius-small)'
-            html_code_view.style.display    = 'block'
-            html_code_view.style.padding    = '1em'
-            html_code_view.style.margin     = '0'
-            html_code_view.style.overflow   = 'auto'
+            ace_details.utility.html.apply_css(html_code_view, {
+                border       : '1px solid var(--separator-color)',
+                borderRadius : 'var(--border-radius-small)',
+                display      : 'block',
+                padding      : '0.3em',
+                margin       : '0',
+                overflow     : 'auto'
+            })
             html_code_view.textContent      = this.wrapped_HTML_code.raw
             html_code_view.className        = 'hljs language-HTML'
 
@@ -81,7 +83,7 @@ ace.showcase.HTML_elements.wrapper  = class HTMLShowCase extends HTMLElement {
 
         let cs_label = content_view.appendChild(document.createElement('h5'))
             cs_label.style.marginTop = '1em'
-            cs_label.textContent = 'rendering:' // ace.API.HTMLElement.CS
+            cs_label.textContent = 'rendering:' // ace.HTMLElement.CS
             cs_label.className = 'trapezoid trapezoid-up'
 
         this.prepend(content_view)
@@ -89,8 +91,8 @@ ace.showcase.HTML_elements.wrapper  = class HTMLShowCase extends HTMLElement {
 
 }
 customElements.define(
-    ace.showcase.HTML_elements.wrapper.HTMLElement_name,
-    ace.showcase.HTML_elements.wrapper
+    ace.showcase.HTMLElements.wrapper.HTMLElement_name,
+    ace.showcase.HTMLElements.wrapper
 );
 
-export default ace.showcase.HTML_elements.wrapper
+export default ace.showcase.HTMLElements.wrapper

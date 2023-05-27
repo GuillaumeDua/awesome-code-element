@@ -3,10 +3,10 @@
 This showcase demonstrates various ways to use `ace-cs` in a `Doxygen` documentation.  
 Here, such documentation is generated using a `Markdown` index file (see `docs/showcase/using_doxygen/index.md`).
 
-**Q**: Why use `<div class="ace-code-section">` rather than `<ace-code-section>` tags ?  
+**Q**: Why use `<div class="ace-cs">` rather than `<ace-cs>` tags ?  
 
 - Plain Markdown does not (by default) allow custom `HTMLElement`s.  
-  Here, we use `<div class="ace-code-section">` tags which are `acs-cs`'s placeholders for `<ace-code-section>` tags, that are automatically replaced by the `ace-cs` library.
+  Here, we use `<div class="ace-cs">` tags which are `acs-cs`'s placeholders for `<ace-cs>` tags, that are automatically replaced by the `ace-cs` library.
 
 **Q**: Why the extra `<pre></pre>` tags ?  
 
@@ -19,26 +19,26 @@ Here, such documentation is generated using a `Markdown` index file (see `docs/s
 ## Using \`\include\` doxygen directive
 
 ```html
-<div class="ace-code-section" language="cpp" toggle_execution="true">
+<div class="ace-cs" language="cpp" toggle_execution="true">
 \include noexecute_show_block_with_output.cpp
 </div>
 ```
 
-<div class="ace-code-section" language="cpp" toggle_execution="true">
+<div class="ace-cs" language="cpp" toggle_execution="true">
 \include noexecute_show_block_with_output.cpp
 </div>
 
 ## Using external, remote-located code
 
 ```html
-<div class="ace-code-section"
+<div class="ace-cs"
      language="cpp"
      toggle_execution="true"
      url="https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/docs/details/resources/code_content/noexecute_show_block_with_output.cpp">
 </div>
 ```
 
-<div class="ace-code-section"
+<div class="ace-cs"
      language="cpp"
      toggle_execution="true"
      url="https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/docs/details/resources/code_content/noexecute_show_block_with_output.cpp">
@@ -47,7 +47,7 @@ Here, such documentation is generated using a `Markdown` index file (see `docs/s
 ## Using embedded code example
 
 ```html
-<div class="ace-code-section" language="cpp" toggle_execution="true">
+<div class="ace-cs" language="cpp" toggle_execution="true">
 <pre>
 #include <iostream>
 auto main() -> int {
@@ -59,7 +59,7 @@ auto main() -> int {
 </div>
 ```
 
-<div class="ace-code-section" language="cpp" toggle_execution="true">
+<div class="ace-cs" language="cpp" toggle_execution="true">
 <pre>
 #include <iostream>
 auto main() -> int {

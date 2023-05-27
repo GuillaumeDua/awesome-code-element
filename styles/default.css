@@ -1,9 +1,11 @@
-/* TODO: vars */
-/* TODO: is there a better way to reuse existing recipes ? */
-/*       otherwise, consider creating a script to generate a decoupled stylesheet for the sole purpose of ace-code-section-demo ?*/
 /*
+    TODO: vars
+    TODO: decouple demo-related elements from this file
+        - either (in the demo) redefined what ace-cs is, so ace-cs-demo overwrite its definition
+        - otherwise, consider creating a script to generate a decoupled stylesheet for the sole purpose of ace-cs-demo ?
     TODO: button visibility based on @media (max-width), rather than JS window listener
-          when `CS > code` is scrolling, then CS > buttons toggle display blokc/none
+          when `CS > code` is scrolling, then CS > buttons toggle display block/none
+    TODO: move ace-cs-demo related rules to showcase/demo
 */
 
 :root {
@@ -30,10 +32,21 @@ html.dark-mode {
     --default-text-color: steelblue;
     --document-background-color: #1c1b22;
     --default-background-color:  #2b2a33;
-}/* #1a1b26 #2b2a33 */
+}
 
-ace-code-section        img#ace-loading-animation,
-ace-code-section-demo   img#ace-loading-animation{
+/* ace.API.HTMLElements.ToggleDarkModeButton */
+button[is=ace-cs-button_toggle-dark-mode] > * {
+    display: none;
+}
+html.dark-mode button[is=ace-cs-button_toggle-dark-mode] > svg[id='light-mode-icon'] {
+    display: block;
+}
+html.light-mode button[is=ace-cs-button_toggle-dark-mode] > svg[id='dark-mode-icon'] {
+    display: block;
+}
+
+ace-cs        img#ace-loading-animation,
+ace-cs-demo   img#ace-loading-animation{
     contain             : strict;
     border              : 1px solid var(--separator-color);
     border-radius       : var(--border-radius-small);
@@ -41,17 +54,6 @@ ace-code-section-demo   img#ace-loading-animation{
     /* height              : 100%; */
     box-sizing          : border-box;
     display             : none
-}   /* hidden by default */
-img.ace-animation,
-img.ace-animation{
-    contain             : strict;
-    /* border              : 1px solid var(--separator-color);
-    border-radius       : var(--border-radius-small); */
-    width               : 100%;
-    /* height              : 100%; */
-    box-sizing          : border-box;
-    /* display             : none */
-    flex:       1 1 content;
 }   /* hidden by default */
 
 /* CS */
@@ -109,7 +111,7 @@ ace-cs-code-mvc[status|='error'] > ace-cs-status-display {
 /* ace-cs-code-mvc > code > * {
     margin-left: calc(var(--ace-cs-code-line-height) * 2px);
 } */
-ace-cs-code-mvc > button[is^='ace-button-'] {
+ace-cs-code-mvc > button[is^='ace-cs-button_'] {
     z-index:            var(--ace-cs-buttons-z-index);
     position:           absolute;
 
@@ -127,23 +129,23 @@ ace-cs-code-mvc > button[is^='ace-button-'] {
     max-height: 30px;
     max-width: 30px;
 }
-ace-cs-code-mvc > button[is='ace-button-copy-to-clipboard'] {
-    right       : 2px;
-}
-ace-cs-code-mvc > button[is='ace-button-send-to-godbolt'] {
-    right       : 34px;
-    display : none;  /* hidden by default  */
-}
-ace-cs-code-mvc > button[is^='ace-button-'] > * {
+ace-cs-code-mvc > button[is^='ace-cs-button_'] > * {
     height: inherit;
     width: inherit;
 }
-ace-cs-code-mvc[is_executable="true"] > button[is="ace-button-send-to-godbolt"] {
+ace-cs-code-mvc > button[is='ace-cs-button_copy-to-clipboard'] {
+    right       : 2px;
+}
+ace-cs-code-mvc > button[is='ace-cs-button_open-in-godbolt'] {
+    right       : 34px;
+    display : none;  /* hidden by default  */
+}
+ace-cs-code-mvc[is_executable="true"] > button[is="ace-cs-button_open-in-godbolt"] {
     display     : block;
 }
 
-ace-code-section,
-ace-code-section-demo {
+ace-cs,
+ace-cs-demo {
     /* border          : 1px solid var(--separator-color);
     border-radius   : var(--border-radius-small); */
 
@@ -155,41 +157,41 @@ ace-code-section-demo {
     /* padding: 5px 0px 5px 0px; */
 }
 /* ace.cs: panels : left, right */
-ace-code-section        > [id*='.panels.'],
-ace-code-section-demo   > [id*='.panels.'] {
+ace-cs        > [id*='.panels.'],
+ace-cs-demo   > [id*='.panels.'] {
     flex:       1 1 fit-content;
 }
-ace-code-section      > [id$='.panels.presentation'],
-ace-code-section-demo > [id$='.panels.presentation'] {
+ace-cs      > [id$='.panels.presentation'],
+ace-cs-demo > [id$='.panels.presentation'] {
     width:      100%;
     box-sizing: border-box;
 }
 /* TODO: ace-cs-code-mvc[id$='.panels.execution'] vs. nth-child() ? */
-ace-code-section[toggle_execution='false'] > ace-cs-code-mvc[id$='.panels.execution']{
+ace-cs[toggle_execution='false'] > ace-cs-code-mvc[id$='.panels.execution']{
     display: none
 }
-ace-code-section[toggle_execution='true']  > ace-cs-code-mvc[id$='.panels.execution']{
+ace-cs[toggle_execution='true']  > ace-cs-code-mvc[id$='.panels.execution']{
     display: flex
 }
 
-ace-code-section      > [id$='.panels.presentation'] > [id$='.code'],
-ace-code-section-demo > [id$='.panels.presentation'] > [id$='.code'] {
+ace-cs      > [id$='.panels.presentation'] > [id$='.code'],
+ace-cs-demo > [id$='.panels.presentation'] > [id$='.code'] {
     width:      auto;
     height:     100%;
     box-sizing: border-box;
     display:    block;
 }
 
-ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'], 
-ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] {
+ace-cs      > ace-cs-code-mvc[id$='.panels.execution'], 
+ace-cs-demo > ace-cs-code-mvc[id$='.panels.execution'] {
     /* flex:       1 1 content; */
     display:     flex;
     align-items: stretch;
     box-sizing:  border-box;
 }
 
-ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'],
-ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'] {
+ace-cs      > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'],
+ace-cs-demo > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execution'] {
     display:        block;
     width:          100%;
     overflow:       auto;
@@ -198,19 +200,19 @@ ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'] > [id$='.execut
 }
 
 /* style */
-ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'][status|='success'],
-ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='success'] {
+ace-cs      > ace-cs-code-mvc[id$='.panels.execution'][status|='success'],
+ace-cs-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='success'] {
     border-top: 2px solid green;
 }
-ace-code-section      > ace-cs-code-mvc[id$='.panels.execution'][status|='failure'],
-ace-code-section-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='failure'] {
+ace-cs      > ace-cs-code-mvc[id$='.panels.execution'][status|='failure'],
+ace-cs-demo > ace-cs-code-mvc[id$='.panels.execution'][status|='failure'] {
     border-top: 2px solid orange;
 }
 
 /* ace-cs-code-mvc[status|='error']::before {
     content: 'test';
 } */
-ace-code-section[direction='column']{
+ace-cs[direction='column']{
     flex-direction: column;
 }
 

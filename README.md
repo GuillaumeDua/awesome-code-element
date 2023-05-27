@@ -1,27 +1,19 @@
-# **ACE** - HTML Awesome code element
+# **ACE** - HTML **A**wesome **C**ode **E**lement
 
-![](https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/docs/images/simple_test_output.JPG)
+<!-- TODO: replace with gif -->
 
-ACE is a `JS` modules which offers both `HTML` and `JS` APIs to integrate code examples in web pages and various documentations systems.  
+![overview](https://raw.githubusercontent.com/GuillaumeDua/awesome-code-element/main/docs/images/simple_test_output.JPG)
 
----
-
-Internaly uses [compiler-explorer API](https://github.com/compiler-explorer/compiler-explorer/blob/main/docs/API.md) for languages supports, code compilation and execution.
-
-- See [supported languages](https://godbolt.org/api/languages)
-- See [supported compilers](https://godbolt.org/api/compilers)
-
-Such code-sections behaviors and styles are highly customizables *(supports themes, dark-mode, styles/layouts, etc.)*.
+ACE is a `JS` modules which offers both `HTML` and `JS` APIs to integrate code samples in web pages and various documentations systems.  
+Supports **syntax highlighting**, **compilation**, and **execution** of a wide range of programming languages.
 
 ---
 
-## Showcases
-
-*The following showcases are CI-deployed.*
+## Showcases (CI-deployed)
 
 | showcase name | status |
 |-|-|
-| 🌐 [*\<ace-code-section\>*](https://guillaumedua.github.io/awesome-code-element/showcase/ace_code_section/)          | ✔️ |
+| 🌐 [*\<ace-cs\>*](https://guillaumedua.github.io/awesome-code-element/showcase/ace_code_section/)          | ✔️ |
 | 🌐[*\<div\> placeholders*](https://guillaumedua.github.io/awesome-code-element/showcase/html_divs_placeholders/)     | ✔️ |
 | 🌐 [acs miscs](https://guillaumedua.github.io/awesome-code-element/showcase/misc/)                                   | ✔️ |
 | 🔌 [**Doxygen** integration (plain)](https://guillaumedua.github.io/awesome-code-element/showcase/using_doxygen/output/md_docs_showcase_using_doxygen_index.html) | ✔️ |
@@ -30,15 +22,26 @@ Such code-sections behaviors and styles are highly customizables *(supports them
 
 ---
 
-<!-- TODO: iframe to live demo here ?    -->
 <!-- TODO: iframe showcase subset here ? -->
 <!-- TODO: integrate ace-cs elements that best demonstrates standard usage -->
 
 <!--
+TODOs:
 - bindings
 - html structure/hierarchy
+- CSS stylesheet
+  - ace-cs-status-display
 - thanks to hljs, compiler-explorer
 -->
+
+## How does it work ?
+
+Internaly, ace-cs module uses the [compiler-explorer API](https://github.com/compiler-explorer/compiler-explorer/blob/main/docs/API.md) for languages supports, code compilation and execution.
+
+- See [supported languages](https://godbolt.org/api/languages)
+- See [supported compilers](https://godbolt.org/api/compilers)
+
+Such code-sections **behaviors** and **styles** are highly customizables *(supports themes, dark-mode, styles/layouts, etc.)*.
 
 ## Content
 
@@ -49,14 +52,14 @@ Ths is the module's main components. It represents a code example, which can opt
 ### HTML API
 
 ```html
-<ace-code-section language="cpp" toggle_execution="true">
+<ace-cs language="cpp" toggle_execution="true">
 #include <iostream>
 auto main() -> int {
     auto i = 42;
     std::cout << "some console output : " << i;
     return i;
 }                       
-</ace-code-section>
+</ace-cs>
 ```
 
 Note that users do not have to care about invalid HTML in the provided code. For instance, in the example above, `<iostream>` does not generates invalid HTML, neither shift operators `<<`.
@@ -67,12 +70,12 @@ Note that users do not have to care about invalid HTML in the provided code. For
 let code = `
 #include <iostream>
 auto main() -> int {
-    std::cout << 'Hello, there';
+    std::cout << 'Hello, there';~
     return 42;
 }
 `
 let code_section = new CodeSection(code, 'cpp')
-    // equivalent to:  awesome_doc_code_sections.HTML_elements.CodeSection
+    // equivalent to:  awesome_doc_code_sections.HTMLElements.CodeSection
 // attach `code_section` to the DOM ...
 ```
 

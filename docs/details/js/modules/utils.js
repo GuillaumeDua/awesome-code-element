@@ -22,7 +22,7 @@
 
 // WARNING: INTERNAL USE FOR SHOWCASE ONLY.
 
-import ace from '../../../awesome-code-element/awesome-code-element.js'
+import ace, { ace_details } from '../../../awesome-code-element/awesome-code-element.js'
 if (ace === undefined)
     throw new Error('docs/details/js/modules/utils.js: missing [ace]')
 
@@ -45,17 +45,17 @@ ace.test_utils.global_behavior_modifiers = class global_behavior_modifiers {
 
     // slow fetch resource (emulates slow network)
     static #original_fetch_resource = (() => {
-        let value = ace.details.utility.fetch_resource
+        let value = ace_details.utility.fetch_resource
         if (value === undefined)
             throw new Error('ace.test_utils.global_behavior_modifiers.toggle_slow_fetch_resource (initialization): missing utility.fetch_resource')
         return value
     })()
     static get toggle_slow_fetch_resource() {
-        return global_behavior_modifiers.#original_fetch_resource !== ace.details.utility.fetch_resource
+        return global_behavior_modifiers.#original_fetch_resource !== ace_details.utility.fetch_resource
     }
     static set toggle_slow_fetch_resource(value) {
         value = value ?? !global_behavior_modifiers.toggle_slow_fetch_resource
-        ace.details.utility.fetch_resource = (value
+        ace_details.utility.fetch_resource = (value
             ? global_behavior_modifiers.#slow_fetch_resource
             : global_behavior_modifiers.#original_fetch_resource
         );
@@ -104,8 +104,8 @@ ace.test_utils.global_behavior_modifiers = class global_behavior_modifiers {
 // UI elements
 
 // TODO: make always visible on top
-ace.test_utils.HTML_elements = {}
-ace.test_utils.HTML_elements.toolbar = class test_utils extends HTMLElement {
+ace.test_utils.HTMLElements = {}
+ace.test_utils.HTMLElements.toolbar = class test_utils extends HTMLElement {
     static HTMLElement_name = 'awesome_code_element_test-utility-toolbar'
 
     constructor() {
@@ -126,7 +126,7 @@ ace.test_utils.HTML_elements.toolbar = class test_utils extends HTMLElement {
         }
 
         this.id = 'test_utils_toolbar'
-        ace.details.utility.apply_css(this, {
+        ace_details.utility.html.apply_css(this, {
             display : 'flex',
             border  : '1px solid var(--primary-color)',
             width   : 'fit-content',
@@ -137,13 +137,13 @@ ace.test_utils.HTML_elements.toolbar = class test_utils extends HTMLElement {
 
         this.appendChild(generate_toggle_button('toggle_small'))
         this.appendChild(generate_toggle_button('toggle_slow_fetch_resource'))
-        this.appendChild(new ace.API.HTML_elements.ToggleDarkModeButton())
-        this.appendChild(new ace.API.HTML_elements.ThemeSelector(['tokyo-night', 'base16/google']))
+        this.appendChild(new ace.HTMLElements.ToggleDarkModeButton())
+        this.appendChild(new ace.HTMLElements.ThemeSelector(['tokyo-night', 'base16/google']))
     }
 }
 customElements.define(
-    ace.test_utils.HTML_elements.toolbar.HTMLElement_name,
-    ace.test_utils.HTML_elements.toolbar
+    ace.test_utils.HTMLElements.toolbar.HTMLElement_name,
+    ace.test_utils.HTMLElements.toolbar
 );
 
 // module

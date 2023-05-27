@@ -22,10 +22,10 @@
 
 // WARNING: INTERNAL USE, FOR SHOWCASE ONLY.
 
-import ace from '../../../awesome-code-element/awesome-code-element.js'
+import ace, { ace_details } from '../../../awesome-code-element/awesome-code-element.js'
 if (ace === undefined)
     throw new Error('docs/details/js/modules/utils.js: missing [ace]')
-if (ace.API.HTML_elements.CodeSection === undefined)
+if (ace.HTMLElements.CodeSection === undefined)
     throw new Error('CodeSection_demo: missing mandatory dependency [ace.CodeSection]')
 
 import ace_test_utils from '../../../details/js/modules/utils.js';
@@ -37,10 +37,10 @@ if (ace.test_utils === undefined)
 // - url                    -> not working (no effect)
 
 ace.showcase                    = ace.showcase ?? {}
-ace.showcase.HTML_elements      = ace.showcase.HTML_elements ?? {}
-ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
+ace.showcase.HTMLElements      = ace.showcase.HTMLElements ?? {}
+ace.showcase.HTMLElements.demo = class cs_demo extends HTMLElement {
 
-    static get HTMLElement_tagName() { return 'ace-code-section-demo' }
+    static get HTMLElement_tagName() { return 'ace-cs-demo' }
     get [Symbol.toStringTag](){ return cs_demo.HTMLElement_tagName }
 
     constructor() { super() }
@@ -55,24 +55,24 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
         if (!this.isConnected)
             throw new Error('ace.cs_demo: not connected yet ')
 
-        this.ace_cs = new ace.API.HTML_elements.CodeSection({
-            code: ace.details.code_utility.mvc.details.factory.build_from({ nodes: this.childNodes })
+        this.ace_cs = new ace.HTMLElements.CodeSection({
+            code: ace_details.code.mvc_details.factory.build_from({ nodes: this.childNodes })
         })
         this.ace_cs = this.appendChild(this.ace_cs)
 
-        ace.details.utility.apply_css(this.ace_cs, {
+        ace_details.utility.html.apply_css(this.ace_cs, {
             border: '1px dashed green',
             padding: '5px',
         })
 
         // view proxies
         let options_container = document.createElement('div')
-        ace.details.utility.apply_css(options_container, {
+        ace_details.utility.html.apply_css(options_container, {
             flexDirection: 'column',
             display: 'flex',
         })
         // two-way binding ...
-        const presentation_mvc = this.ace_cs.ace_cs_panels.presentation.code_mvc;
+        const presentation_mvc = this.ace_cs.ace_panels.presentation.mvc;
         options_container.appendChild(this.#make_boolean_field_view({ target: presentation_mvc.controler, property_name: 'toggle_parsing' }))
         options_container.appendChild(this.#make_boolean_field_view({ target: presentation_mvc.controler, property_name: 'toggle_language_detection' }))
         options_container.appendChild(this.#make_boolean_field_view({ target: this.ace_cs, property_name: 'toggle_execution' }))
@@ -80,8 +80,8 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
 
         options_container.appendChild(this.#make_string_view({
             target: {
-                view:  this.ace_cs.ace_cs_panels.presentation,
-                model: this.ace_cs.ace_cs_panels.presentation.code_mvc.controler
+                view:  this.ace_cs.ace_panels.presentation,
+                model: this.ace_cs.ace_panels.presentation.mvc.controler
             },
             property_name: 'language',
             hint: 'set, or clear to attempt a fallback autodetection'
@@ -103,7 +103,7 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
     // TODO: rich code editor
     #transform_code_into_editable() {
         // make code editable
-        const presentation_mvc = this.ace_cs.ace_cs_panels.presentation.code_mvc;
+        const presentation_mvc = this.ace_cs.ace_panels.presentation.mvc;
         presentation_mvc.view.title = 'Edit me ! (requires toggle_parsing off)'
         presentation_mvc.view.addEventListener('click', () => {
             presentation_mvc.view.setAttribute('contentEditable', !presentation_mvc.controler.toggle_parsing)
@@ -137,12 +137,12 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
     #make_boolean_field_view({ target, property_name }) {
 
         if (!target.hasOwnProperty(property_name) && !Object.getPrototypeOf(target).hasOwnProperty(property_name))
-            throw new Error(`ace.showcase.HTML_elements.demo: invalid argument\n\t[${target}] -> [${property_name}]`)
+            throw new Error(`ace.showcase.HTMLElements.demo: invalid argument\n\t[${target}] -> [${property_name}]`)
 
         let printable_name = property_name.replaceAll(/[\-|\_]/g, ' ')
         // html
         let sub_container = document.createElement('div')
-        ace.details.utility.apply_css(sub_container, {
+        ace_details.utility.html.apply_css(sub_container, {
             flex: '0 0 fit-content',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
@@ -155,7 +155,7 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
         let label = sub_container.appendChild(document.createElement('label'))
             label.textContent = ` ${printable_name}`
 
-        ace.details.utility.inject_field_proxy(target, property_name, {
+        ace_details.utility.inject_field_proxy(target, property_name, {
             getter_payload : (value) => checkbox.checked = value,
             setter_payload : (value) => checkbox.checked = value
         })
@@ -177,13 +177,13 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
 
         // assert: valid target model
         if (!model.hasOwnProperty(property_name) && !Object.getPrototypeOf(model).hasOwnProperty(property_name))
-            throw new Error(`ace.showcase.HTML_elements.demo: invalid argument (model)\n\t[${model}] -> [${property_name}]`)
+            throw new Error(`ace.showcase.HTMLElements.demo: invalid argument (model)\n\t[${model}] -> [${property_name}]`)
         // assert: valid target view (attr)
         if (!(view instanceof HTMLElement) || !view.hasAttribute(property_name))
-            throw new Error(`ace.showcase.HTML_elements.demo: invalid argument (view)\n\t[${view}] -> [${property_name}]`)
+            throw new Error(`ace.showcase.HTMLElements.demo: invalid argument (view)\n\t[${view}] -> [${property_name}]`)
 
         let sub_container = document.createElement('div')
-        ace.details.utility.apply_css(sub_container, {
+        ace_details.utility.html.apply_css(sub_container, {
             display: 'flex',
             borderRadius: 'var(--border-radius-small)',
             border: '1px solid var(--separator-color)'
@@ -194,7 +194,7 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
             input_field.type = "text"
             input_field.value = model[property_name] ?? ''
             input_field.title = hint
-            ace.details.utility.apply_css(input_field, {
+            ace_details.utility.html.apply_css(input_field, {
                 width: '100%',
                 marginLeft: '10px'
             })
@@ -218,8 +218,8 @@ ace.showcase.HTML_elements.demo = class cs_demo extends HTMLElement {
     }
 }
 customElements.define(
-    ace.showcase.HTML_elements.demo.HTMLElement_tagName,
-    ace.showcase.HTML_elements.demo
+    ace.showcase.HTMLElements.demo.HTMLElement_tagName,
+    ace.showcase.HTMLElements.demo
 );
 
-export default ace.showcase.HTML_elements.demo
+export default ace.showcase.HTMLElements.demo
